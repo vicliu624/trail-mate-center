@@ -1,0 +1,74 @@
+# .NET / Avalonia
+**/bin/
+**/obj/
+artifacts/
+TestResults/
+BenchmarkDotNet.Artifacts/
+*.nupkg
+*.snupkg
+*.pdb
+*.dll
+*.exe
+*.runtimeconfig.json
+*.deps.json
+*.log
+*.cache
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.pidb
+*.svclog
+*.VC.db
+*.VC.VC.opendb
+
+# Build outputs
+*.app
+*.dylib
+*.so
+*.so.*
+*.a
+*.lib
+*.exp
+*.ilk
+*.map
+
+# IDEs
+.vs/
+.vscode/
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+*.iml
+*.ipr
+*.iws
+*.code-workspace
+
+# Avalonia designer
+*.axaml.cache
+
+# OS
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+Desktop.ini
+$RECYCLE.BIN/
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+.Spotlight-V100
+.Trashes
+
+# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+# Logs
+logs/
+*.log.*

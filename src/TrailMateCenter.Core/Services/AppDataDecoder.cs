@@ -1,0 +1,477 @@
+using System.Text;
+using Google.Protobuf;
+using Meshtastic.Protobufs;
+using TrailMateCenter.Models;
+using TrailMateCenter.Protocol;
+
+namespace TrailMateCenter.Services;
+
+public sealed class AppDataDecoder
+{
+    public const uint TeamMgmtPort = 300;
+    public const uint TeamPositionPort = 301;
+    public const uint TeamWaypointPort = 302;
+    public const uint TeamChatPort = 303;
+    public const uint TeamTrackPort = 304;
+    public const uint NodeInfoPort = (uint)PortNum.NodeinfoApp;
+    public const uint PositionPort = (uint)PortNum.PositionApp;
+
+    public AppDataDecodeResult Decode(AppDataPacket packet)
+    {
+        var events = new List<TacticalEvent>();
+        var positions = new List<PositionUpdate>();
+        var nodeInfos = new List<NodeInfoUpdate>();
+
+        switch (packet.Portnum)
+        {
+            case TeamTrackPort:
+                DecodeTeamTrack(packet, events, positions);
+                break;
+            case TeamChatPort:
+                DecodeTeamChat(packet, events, positions);
+                break;
+            case TeamMgmtPort:
+                DecodeTeamMgmt(packet, events);
+                break;
+            case TeamPositionPort:
+                DecodeTeamPosition(packet, events, positions);
+                break;
+            case TeamWaypointPort:
+                DecodeTeamWaypoint(packet, events, positions);
+                break;
+            case NodeInfoPort:
+                DecodeNodeInfo(packet, nodeInfos, positions);
+                break;
+            case PositionPort:
+                DecodePosition(packet, positions);
+                break;
+            default:
+                events.Add(BuildOpaqueEvent(packet, TacticalEventKind.Unknown, $"APP {packet.Portnum}", $"payload {packet.Payload.Length} bytes"));
+                break;
+        }
+
+        return new AppDataDecodeResult(packet, events, positions, nodeInfos);
+    }
+
+    private static void DecodeTeamTrack(AppDataPacket packet, List<TacticalEvent> events, List<PositionUpdate> positions)
+    {
+        var reader = new HostLinkSpanReader(packet.Payload);
+        if (!reader.TryReadByte(out var version) || version != 1)
+        {
+            events.Add(BuildOpaqueEvent(packet, TacticalEventKind.TrackUpdate, "Team Track", "版本不支持"));
+            return;
+        }
+        if (!reader.TryReadUInt32(out var startTs) ||
+            !reader.TryReadUInt16(out var intervalS) ||
+            !reader.TryReadByte(out var count) ||
+            !reader.TryReadUInt32(out var validMask))
+        {
+            events.Add(BuildOpaqueEvent(packet, TacticalEventKind.TrackUpdate, "Team Track", "解析失败"));
+            return;
+        }
+
+        var baseTs = DateTimeOffset.FromUnixTimeSeconds(startTs);
+        var validPoints = 0;
+        for (var i = 0; i < count; i++)
+        {
+            if (!reader.TryReadInt32(out var latE7) || !reader.TryReadInt32(out var lonE7))
+                break;
+            if ((validMask & (1u << i)) == 0)
+                continue;
+            var ts = baseTs.AddSeconds(intervalS * i);
+            var lat = latE7 / 1e7;
+            var lon = lonE7 / 1e7;
+            positions.Add(new PositionUpdate(ts, packet.From, lat, lon, null, null, PositionSource.TeamTrack, null));
+            validPoints++;
+        }
+
+        events.Add(new TacticalEvent(
+            DateTimeOffset.UtcNow,
+            TacticalRules.GetDefaultSeverity(TacticalEventKind.TrackUpdate),
+            TacticalEventKind.TrackUpdate,
+            "轨迹更新",
+            $"来自 0x{packet.From:X8} · {validPoints} 点",
+            packet.From,
+            $"0x{packet.From:X8}",
+            null,
+            null));
+    }
+
+    private static void DecodeTeamChat(AppDataPacket packet, List<TacticalEvent> events, List<PositionUpdate> positions)
+    {
+        var reader = new HostLinkSpanReader(packet.Payload);
+        if (!reader.TryReadByte(out var version) || version != 1)
+        {
+            events.Add(BuildOpaqueEvent(packet, TacticalEventKind.ChatText, "Team Chat", "版本不支持"));
+            return;
+        }
+        if (!reader.TryReadByte(out var type) ||
+            !reader.TryReadUInt16(out var flags) ||
+            !reader.TryReadUInt32(out var msgId) ||
+            !reader.TryReadUInt32(out var ts) ||
+            !reader.TryReadUInt32(out var from))
+        {
+            events.Add(BuildOpaqueEvent(packet, TacticalEventKind.ChatText, "Team Chat", "解析失败"));
+            return;
+        }
+
+        var when = ts > 0 ? DateTimeOffset.FromUnixTimeSeconds(ts) : DateTimeOffset.UtcNow;
+
+        switch (type)
+        {
+            case 1:
+                var text = Encoding.UTF8.GetString(reader.Remaining);
+                events.Add(new TacticalEvent(
+                    when,
+                    TacticalRules.GetDefaultSeverity(TacticalEventKind.ChatText),
+                    TacticalEventKind.ChatText,
+                    $"消息 · 0x{from:X8}",
+                    text,
+                    from,
+                    $"0x{from:X8}",
+                    null,
+                    null));
+                break;
+            case 2:
+                DecodeChatLocation(packet, from, when, reader, events, positions);
+                break;
+            case 3:
+                DecodeChatCommand(packet, from, when, reader, events);
+                break;
+            default:
+                events.Add(BuildOpaqueEvent(packet, TacticalEventKind.ChatText, "Team Chat", $"未知类型 {type}"));
+                break;
+        }
+
+        _ = flags; // reserved for future use
+        _ = msgId;
+    }
+
+    private static void DecodeChatLocation(AppDataPacket packet, uint from, DateTimeOffset when, HostLinkSpanReader reader, List<TacticalEvent> events, List<PositionUpdate> positions)
+    {
+        if (!reader.TryReadInt32(out var latE7) ||
+            !reader.TryReadInt32(out var lonE7) ||
+            !reader.TryReadInt16(out var altM) ||
+            !reader.TryReadUInt16(out var accM) ||
+            !reader.TryReadUInt32(out var fixTs) ||
+            !reader.TryReadByte(out var source) ||
+            !reader.TryReadUInt16(out var labelLen))
+        {
+            events.Add(BuildOpaqueEvent(packet, TacticalEventKind.ChatLocation, "位置", "解析失败"));
+            return;
+        }
+
+        var label = string.Empty;
+        if (labelLen > 0 && reader.Remaining.Length >= labelLen)
+        {
+            label = Encoding.UTF8.GetString(reader.Remaining.Slice(0, labelLen));
+        }
+
+        var ts = fixTs > 0 ? DateTimeOffset.FromUnixTimeSeconds(fixTs) : when;
+        var lat = latE7 / 1e7;
+        var lon = lonE7 / 1e7;
+        positions.Add(new PositionUpdate(ts, from, lat, lon, altM, accM, PositionSource.TeamChatLocation, label));
+
+        var detail = string.IsNullOrWhiteSpace(label)
+            ? $"精度 {accM}m · 来源 {source}"
+            : $"{label} · 精度 {accM}m · 来源 {source}";
+
+        events.Add(new TacticalEvent(
+            ts,
+            TacticalRules.GetDefaultSeverity(TacticalEventKind.ChatLocation),
+            TacticalEventKind.ChatLocation,
+            $"位置 · 0x{from:X8}",
+            detail,
+            from,
+            $"0x{from:X8}",
+            lat,
+            lon));
+    }
+
+    private static void DecodeChatCommand(AppDataPacket packet, uint from, DateTimeOffset when, HostLinkSpanReader reader, List<TacticalEvent> events)
+    {
+        if (!reader.TryReadByte(out var cmdType) ||
+            !reader.TryReadInt32(out var latE7) ||
+            !reader.TryReadInt32(out var lonE7) ||
+            !reader.TryReadUInt16(out var radiusM) ||
+            !reader.TryReadByte(out var priority) ||
+            !reader.TryReadUInt16(out var noteLen))
+        {
+            events.Add(BuildOpaqueEvent(packet, TacticalEventKind.CommandIssued, "指令", "解析失败"));
+            return;
+        }
+
+        var note = string.Empty;
+        if (noteLen > 0 && reader.Remaining.Length >= noteLen)
+        {
+            note = Encoding.UTF8.GetString(reader.Remaining.Slice(0, noteLen));
+        }
+
+        var lat = latE7 / 1e7;
+        var lon = lonE7 / 1e7;
+        var cmdName = cmdType switch
+        {
+            1 => "RallyTo",
+            2 => "MoveTo",
+            3 => "Hold",
+            _ => $"Cmd{cmdType}",
+        };
+        var detail = $"半径 {radiusM}m · 优先级 {priority}" + (string.IsNullOrWhiteSpace(note) ? string.Empty : $" · {note}");
+
+        events.Add(new TacticalEvent(
+            when,
+            TacticalRules.GetDefaultSeverity(TacticalEventKind.CommandIssued),
+            TacticalEventKind.CommandIssued,
+            $"指令 {cmdName} · 0x{from:X8}",
+            detail,
+            from,
+            $"0x{from:X8}",
+            lat,
+            lon));
+    }
+
+    private static void DecodeTeamMgmt(AppDataPacket packet, List<TacticalEvent> events)
+    {
+        var reader = new HostLinkSpanReader(packet.Payload);
+        if (!reader.TryReadByte(out var version) || version != 1)
+        {
+            events.Add(BuildOpaqueEvent(packet, TacticalEventKind.TeamMgmt, "Team Mgmt", "版本不支持"));
+            return;
+        }
+        if (!reader.TryReadByte(out var type) ||
+            !reader.TryReadUInt16(out var reserved) ||
+            !reader.TryReadUInt16(out var payloadLen))
+        {
+            events.Add(BuildOpaqueEvent(packet, TacticalEventKind.TeamMgmt, "Team Mgmt", "解析失败"));
+            return;
+        }
+
+        var typeName = type switch
+        {
+            1 => "Advertise",
+            2 => "JoinRequest",
+            3 => "JoinAccept",
+            4 => "JoinConfirm",
+            5 => "Status",
+            9 => "JoinDecision",
+            10 => "Kick",
+            11 => "TransferLeader",
+            12 => "KeyDist",
+            _ => $"Type{type}",
+        };
+
+        var detail = $"payload {payloadLen} bytes";
+        if (payloadLen > 0 && reader.Remaining.Length >= payloadLen)
+        {
+            detail = $"{typeName} · {payloadLen} bytes";
+        }
+
+        _ = reserved;
+        events.Add(new TacticalEvent(
+            DateTimeOffset.UtcNow,
+            TacticalRules.GetDefaultSeverity(TacticalEventKind.TeamMgmt),
+            TacticalEventKind.TeamMgmt,
+            $"TeamMgmt {typeName}",
+            detail,
+            packet.From,
+            $"0x{packet.From:X8}",
+            null,
+            null));
+    }
+
+    private static void DecodeTeamPosition(AppDataPacket packet, List<TacticalEvent> events, List<PositionUpdate> positions)
+    {
+        Position pos;
+        try
+        {
+            pos = Position.Parser.ParseFrom(packet.Payload);
+        }
+        catch (InvalidProtocolBufferException)
+        {
+            events.Add(BuildOpaqueEvent(packet, TacticalEventKind.PositionUpdate, "Team Position", "解析失败"));
+            return;
+        }
+
+        if (!pos.HasLatitudeI || !pos.HasLongitudeI)
+        {
+            events.Add(BuildOpaqueEvent(packet, TacticalEventKind.PositionUpdate, "Team Position", "缺少坐标"));
+            return;
+        }
+
+        var lat = pos.LatitudeI / 1e7;
+        var lon = pos.LongitudeI / 1e7;
+        var ts = ExtractPositionTimestamp(pos);
+        positions.Add(new PositionUpdate(ts, packet.From, lat, lon, pos.Altitude, null, PositionSource.TeamPositionApp, null));
+
+        events.Add(new TacticalEvent(
+            ts,
+            TacticalRules.GetDefaultSeverity(TacticalEventKind.PositionUpdate),
+            TacticalEventKind.PositionUpdate,
+            $"位置更新 · 0x{packet.From:X8}",
+            $"来源 TeamPosition · alt {pos.Altitude}m",
+            packet.From,
+            $"0x{packet.From:X8}",
+            lat,
+            lon));
+    }
+
+    private static void DecodeTeamWaypoint(AppDataPacket packet, List<TacticalEvent> events, List<PositionUpdate> positions)
+    {
+        Waypoint wp;
+        try
+        {
+            wp = Waypoint.Parser.ParseFrom(packet.Payload);
+        }
+        catch (InvalidProtocolBufferException)
+        {
+            events.Add(BuildOpaqueEvent(packet, TacticalEventKind.Waypoint, "航点", "解析失败"));
+            return;
+        }
+
+        if (!wp.HasLatitudeI || !wp.HasLongitudeI)
+        {
+            events.Add(BuildOpaqueEvent(packet, TacticalEventKind.Waypoint, "航点", "缺少坐标"));
+            return;
+        }
+
+        var lat = wp.LatitudeI / 1e7;
+        var lon = wp.LongitudeI / 1e7;
+        var ts = wp.Expire > 0 ? DateTimeOffset.FromUnixTimeSeconds(wp.Expire) : DateTimeOffset.UtcNow;
+        positions.Add(new PositionUpdate(ts, packet.From, lat, lon, null, null, PositionSource.TeamWaypointApp, wp.Name));
+
+        var title = string.IsNullOrWhiteSpace(wp.Name) ? "航点" : $"航点 · {wp.Name}";
+        var detail = string.IsNullOrWhiteSpace(wp.Description) ? $"id {wp.Id}" : wp.Description;
+        events.Add(new TacticalEvent(
+            DateTimeOffset.UtcNow,
+            TacticalRules.GetDefaultSeverity(TacticalEventKind.Waypoint),
+            TacticalEventKind.Waypoint,
+            title,
+            detail,
+            packet.From,
+            $"0x{packet.From:X8}",
+            lat,
+            lon));
+    }
+
+    private static void DecodeNodeInfo(AppDataPacket packet, List<NodeInfoUpdate> nodeInfos, List<PositionUpdate> positions)
+    {
+        try
+        {
+            var user = User.Parser.ParseFrom(packet.Payload);
+            if (user is not null &&
+                (!string.IsNullOrWhiteSpace(user.ShortName) ||
+                 !string.IsNullOrWhiteSpace(user.LongName) ||
+                 !string.IsNullOrWhiteSpace(user.Id)))
+            {
+                nodeInfos.Add(new NodeInfoUpdate(
+                    packet.From,
+                    string.IsNullOrWhiteSpace(user.ShortName) ? null : user.ShortName,
+                    string.IsNullOrWhiteSpace(user.LongName) ? null : user.LongName,
+                    string.IsNullOrWhiteSpace(user.Id) ? null : user.Id,
+                    null,
+                    DateTimeOffset.UtcNow,
+                    null,
+                    null,
+                    null));
+                return;
+            }
+        }
+        catch (InvalidProtocolBufferException)
+        {
+            // ignore and fallback
+        }
+
+        NodeInfo? info = null;
+        try
+        {
+            info = NodeInfo.Parser.ParseFrom(packet.Payload);
+        }
+        catch (InvalidProtocolBufferException)
+        {
+            return;
+        }
+
+        if (info is null)
+            return;
+
+        var userInfo = info.User;
+        var nodeId = info.Num != 0 ? info.Num : packet.From;
+        var lastHeard = info.LastHeard > 0
+            ? DateTimeOffset.FromUnixTimeSeconds(info.LastHeard)
+            : DateTimeOffset.UtcNow;
+
+        double? lat = null;
+        double? lon = null;
+        double? alt = null;
+        if (info.Position is { } pos && pos.HasLatitudeI && pos.HasLongitudeI)
+        {
+            lat = pos.LatitudeI / 1e7;
+            lon = pos.LongitudeI / 1e7;
+            if (pos.Altitude != 0)
+                alt = pos.Altitude;
+            var ts = ExtractPositionTimestamp(pos);
+            positions.Add(new PositionUpdate(ts, nodeId, lat.Value, lon.Value, alt, null, PositionSource.DeviceGps, null));
+        }
+
+        nodeInfos.Add(new NodeInfoUpdate(
+            nodeId,
+            string.IsNullOrWhiteSpace(userInfo?.ShortName) ? null : userInfo.ShortName,
+            string.IsNullOrWhiteSpace(userInfo?.LongName) ? null : userInfo.LongName,
+            string.IsNullOrWhiteSpace(userInfo?.Id) ? null : userInfo.Id,
+            info.Channel == 0 ? null : (byte?)Math.Clamp((int)info.Channel, 0, 255),
+            lastHeard,
+            lat,
+            lon,
+            alt));
+    }
+
+    private static void DecodePosition(AppDataPacket packet, List<PositionUpdate> positions)
+    {
+        Position pos;
+        try
+        {
+            pos = Position.Parser.ParseFrom(packet.Payload);
+        }
+        catch (InvalidProtocolBufferException)
+        {
+            return;
+        }
+
+        if (!pos.HasLatitudeI || !pos.HasLongitudeI)
+            return;
+
+        var lat = pos.LatitudeI / 1e7;
+        var lon = pos.LongitudeI / 1e7;
+        var ts = ExtractPositionTimestamp(pos);
+        positions.Add(new PositionUpdate(ts, packet.From, lat, lon, pos.Altitude, null, PositionSource.DeviceGps, null));
+    }
+
+    private static DateTimeOffset ExtractPositionTimestamp(Position pos)
+    {
+        if (pos.Timestamp != 0)
+            return DateTimeOffset.FromUnixTimeSeconds(pos.Timestamp);
+        if (pos.Time != 0)
+            return DateTimeOffset.FromUnixTimeSeconds(pos.Time);
+        return DateTimeOffset.UtcNow;
+    }
+
+    private static TacticalEvent BuildOpaqueEvent(AppDataPacket packet, TacticalEventKind kind, string title, string detail)
+    {
+        return new TacticalEvent(
+            DateTimeOffset.UtcNow,
+            TacticalRules.GetDefaultSeverity(kind),
+            kind,
+            title,
+            detail,
+            packet.From,
+            $"0x{packet.From:X8}",
+            null,
+            null);
+    }
+}
+
+public sealed record AppDataDecodeResult(
+    AppDataPacket Packet,
+    IReadOnlyList<TacticalEvent> TacticalEvents,
+    IReadOnlyList<PositionUpdate> Positions,
+    IReadOnlyList<NodeInfoUpdate> NodeInfos);
