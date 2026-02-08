@@ -1,0 +1,20 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:TrailMateCenter.ViewModels"
+             x:Class="TrailMateCenter.Views.LogsView"
+             x:DataType="vm:MainWindowViewModel">
+  <StackPanel Spacing="8" Margin="12">
+    <StackPanel Orientation="Horizontal" Spacing="8">
+      <CheckBox Content="INFO" IsChecked="{Binding Logs.ShowInfo}"/>
+      <CheckBox Content="WARN" IsChecked="{Binding Logs.ShowWarning}"/>
+      <CheckBox Content="ERROR" IsChecked="{Binding Logs.ShowError}"/>
+    </StackPanel>
+    <StackPanel Orientation="Horizontal" Spacing="8">
+      <TextBox Width="220" Text="{Binding Logs.ExportPath}" Watermark="日志输出路径"/>
+      <Button Content="保存日志" Command="{Binding Logs.SaveLogsCommand}"/>
+      <Button Content="复制日志" Command="{Binding Logs.CopyLogsCommand}"/>
+      <TextBlock Text="{Binding Logs.StatusMessage}" Foreground="{StaticResource TextDim}"/>
+    </StackPanel>
+    <ListBox ItemsSource="{Binding Logs.Entries}" ItemTemplate="{StaticResource LogTemplate}"/>
+  </StackPanel>
+</UserControl>

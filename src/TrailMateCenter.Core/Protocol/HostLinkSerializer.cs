@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using System.Buffers.Binary;
 using TrailMateCenter.Models;
 
 namespace TrailMateCenter.Protocol;
@@ -103,9 +104,18 @@ public static class HostLinkSerializer
         reader.TryReadUInt16(out var textLen);
 
         var text = string.Empty;
-        if (textLen > 0 && reader.Remaining.Length >= textLen)
+        var remaining = reader.Remaining;
+        if (textLen > 0)
         {
-            text = System.Text.Encoding.UTF8.GetString(reader.Remaining.Slice(0, textLen));
+            if (remaining.Length >= textLen)
+            {
+                text = System.Text.Encoding.UTF8.GetString(remaining.Slice(0, textLen));
+                remaining = remaining.Slice(textLen);
+            }
+            else
+            {
+                remaining = ReadOnlySpan<byte>.Empty;
+            }
         }
 
         return new RxMessageEvent(
@@ -114,7 +124,8 @@ public static class HostLinkSerializer
             from,
             to,
             channel,
-            text);
+            text,
+            ParseRxMetadata(remaining));
     }
 
     public static TxResultEvent ParseTxResult(ReadOnlySpan<byte> payload)
@@ -180,7 +191,7 @@ public static class HostLinkSerializer
                 case HostLinkStatusKey.LastError:
                     if (len >= 4)
                     {
-                        var lastError = System.Buffers.Binary.BinaryPrimitives.ReadUInt32LittleEndian(valueSpan);
+                        var lastError = BinaryPrimitives.ReadUInt32LittleEndian(valueSpan);
                         status = status with { LastError = lastError };
                     }
                     break;
@@ -265,9 +276,18 @@ public static class HostLinkSerializer
         reader.TryReadUInt16(out var chunkLen);
 
         var chunk = Array.Empty<byte>();
-        if (chunkLen > 0 && reader.Remaining.Length >= chunkLen)
+        var remaining = reader.Remaining;
+        if (chunkLen > 0)
         {
-            chunk = reader.Remaining.Slice(0, chunkLen).ToArray();
+            if (remaining.Length >= chunkLen)
+            {
+                chunk = remaining.Slice(0, chunkLen).ToArray();
+                remaining = remaining.Slice(chunkLen);
+            }
+            else
+            {
+                remaining = ReadOnlySpan<byte>.Empty;
+            }
         }
 
         return new AppDataEvent(
@@ -283,7 +303,181 @@ public static class HostLinkSerializer
             totalLen,
             offset,
             chunkLen,
-            chunk);
+            chunk,
+            ParseRxMetadata(remaining));
+    }
+
+    private static RxMetadata? ParseRxMetadata(ReadOnlySpan<byte> payload)
+    {
+        if (payload.Length < 2)
+            return null;
+
+        var reader = new HostLinkSpanReader(payload);
+        DateTimeOffset? timestampUtc = null;
+        uint? timestampMs = null;
+        var timeSource = RxTimeSource.Unknown;
+        bool? direct = null;
+        byte? hopCount = null;
+        byte? hopLimit = null;
+        var origin = RxOrigin.Unknown;
+        bool? fromIs = null;
+        int? rssiDbm = null;
+        int? snrDb = null;
+        uint? freqHz = null;
+        uint? bwHz = null;
+        byte? sf = null;
+        byte? cr = null;
+        uint? packetId = null;
+        var hasAny = false;
+
+        while (reader.Remaining.Length >= 2)
+        {
+            if (!reader.TryReadByte(out var key))
+                break;
+            if (!reader.TryReadByte(out var len))
+                break;
+            if (reader.Remaining.Length < len)
+                break;
+
+            var value = reader.Remaining.Slice(0, len);
+            reader = new HostLinkSpanReader(reader.Remaining.Slice(len));
+
+            switch (key)
+            {
+                case 1:
+                    if (len >= 4)
+                    {
+                        var ts = BinaryPrimitives.ReadUInt32LittleEndian(value);
+                        timestampUtc = DateTimeOffset.FromUnixTimeSeconds(ts);
+                        hasAny = true;
+                    }
+                    break;
+                case 2:
+                    if (len >= 4)
+                    {
+                        timestampMs = BinaryPrimitives.ReadUInt32LittleEndian(value);
+                        hasAny = true;
+                    }
+                    break;
+                case 3:
+                    if (len >= 1)
+                    {
+                        timeSource = (RxTimeSource)value[0];
+                        hasAny = true;
+                    }
+                    break;
+                case 4:
+                    if (len >= 1)
+                    {
+                        direct = value[0] != 0;
+                        hasAny = true;
+                    }
+                    break;
+                case 5:
+                    if (len >= 1)
+                    {
+                        hopCount = value[0];
+                        hasAny = true;
+                    }
+                    break;
+                case 6:
+                    if (len >= 1)
+                    {
+                        hopLimit = value[0];
+                        hasAny = true;
+                    }
+                    break;
+                case 7:
+                    if (len >= 1)
+                    {
+                        origin = (RxOrigin)value[0];
+                        hasAny = true;
+                    }
+                    break;
+                case 8:
+                    if (len >= 1)
+                    {
+                        fromIs = value[0] != 0;
+                        hasAny = true;
+                    }
+                    break;
+                case 9:
+                    if (len >= 2)
+                    {
+                        var rssiX10 = BinaryPrimitives.ReadInt16LittleEndian(value);
+                        rssiDbm = (int)Math.Round(rssiX10 / 10.0);
+                        hasAny = true;
+                    }
+                    break;
+                case 10:
+                    if (len >= 2)
+                    {
+                        var snrX10 = BinaryPrimitives.ReadInt16LittleEndian(value);
+                        snrDb = (int)Math.Round(snrX10 / 10.0);
+                        hasAny = true;
+                    }
+                    break;
+                case 11:
+                    if (len >= 4)
+                    {
+                        freqHz = BinaryPrimitives.ReadUInt32LittleEndian(value);
+                        hasAny = true;
+                    }
+                    break;
+                case 12:
+                    if (len >= 4)
+                    {
+                        bwHz = BinaryPrimitives.ReadUInt32LittleEndian(value);
+                        hasAny = true;
+                    }
+                    break;
+                case 13:
+                    if (len >= 1)
+                    {
+                        sf = value[0];
+                        hasAny = true;
+                    }
+                    break;
+                case 14:
+                    if (len >= 1)
+                    {
+                        cr = value[0];
+                        hasAny = true;
+                    }
+                    break;
+                case 15:
+                    if (len >= 4)
+                    {
+                        packetId = BinaryPrimitives.ReadUInt32LittleEndian(value);
+                        hasAny = true;
+                    }
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        if (!hasAny)
+            return null;
+
+        return new RxMetadata
+        {
+            TimestampUtc = timestampUtc,
+            TimestampMs = timestampMs,
+            TimeSource = timeSource,
+            Direct = direct,
+            HopCount = hopCount,
+            HopLimit = hopLimit,
+            Origin = origin,
+            FromIs = fromIs,
+            RssiDbm = rssiDbm,
+            SnrDb = snrDb,
+            FreqHz = freqHz,
+            BwHz = bwHz,
+            Sf = sf,
+            Cr = cr,
+            PacketId = packetId,
+        };
     }
 
     public static TeamStateEvent ParseTeamState(ReadOnlySpan<byte> payload)

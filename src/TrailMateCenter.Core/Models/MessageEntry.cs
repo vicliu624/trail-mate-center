@@ -35,6 +35,9 @@ public sealed record MessageEntry
     public int? Rssi { get; init; }
     public int? Snr { get; init; }
     public int? Hop { get; init; }
+    public bool? Direct { get; init; }
+    public RxOrigin? Origin { get; init; }
+    public bool? FromIs { get; init; }
     public int? Retry { get; init; }
     public int? AirtimeMs { get; init; }
     public ushort Seq { get; init; }

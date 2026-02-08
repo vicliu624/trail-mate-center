@@ -1,0 +1,101 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:TrailMateCenter.ViewModels"
+        xmlns:mapsui="using:Mapsui.UI.Avalonia"
+        xmlns:views="using:TrailMateCenter.Views"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="720"
+        x:Class="TrailMateCenter.Views.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        Icon="/Assets/avalonia-logo.ico"
+        Title="TrailMateCenter"
+        Background="#0F1216"
+        FontFamily="Segoe UI">
+
+    <Design.DataContext>
+        <!-- This only sets the DataContext for the previewer in an IDE,
+             to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
+        <vm:MainWindowViewModel/>
+    </Design.DataContext>
+
+
+    <Grid RowDefinitions="40,*" ColumnDefinitions="*">
+        <Border Grid.Row="0" Background="{StaticResource TopBarGradient}" BorderBrush="#2B323B" BorderThickness="0,0,0,1" Classes="panel">
+            <Grid ColumnDefinitions="Auto,*,Auto" Margin="12,0">
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Spacing="12">
+                    <TextBlock Text="TrailMateCenter" FontSize="16" FontWeight="Bold" Foreground="#D6D9DE"/>
+                    <Border Background="#14181E" BorderBrush="{StaticResource PanelBorder}" BorderThickness="1" CornerRadius="4" Padding="6,2">
+                        <TextBlock Text="{Binding ConnectionStateText}" Foreground="#9FE870" FontSize="11"/>
+                    </Border>
+                    <Border Background="#14181E" BorderBrush="{StaticResource PanelBorder}" BorderThickness="1" CornerRadius="4" Padding="6,2">
+                        <TextBlock Text="{Binding AprsConnectionText}" Foreground="{Binding AprsConnectionColor}" FontSize="11"/>
+                    </Border>
+                    <TextBlock Text="{Binding LastError}" Foreground="#F97316" FontSize="11"/>
+                </StackPanel>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" HorizontalAlignment="Center">
+                    <ComboBox Width="260" ItemsSource="{Binding Ports}" SelectedItem="{Binding SelectedPort}">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate x:DataType="vm:SerialPortInfoViewModel">
+                                <StackPanel>
+                                    <TextBlock Text="{Binding DisplayTitle}" FontWeight="Bold"/>
+                                    <TextBlock Text="{Binding DisplayDetail}" FontSize="10" Foreground="{StaticResource TextDim}" TextWrapping="NoWrap"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+                    <TextBox Width="90" Text="{Binding AckTimeoutMs}" Watermark="ACK(ms)"/>
+                    <TextBox Width="70" Text="{Binding MaxRetries}" Watermark="重试"/>
+                    <CheckBox Content="回放" IsChecked="{Binding UseReplay}"/>
+                    <TextBox Width="200" Watermark="Replay file" Text="{Binding ReplayFile}"/>
+                    <CheckBox Content="自动连接" IsChecked="{Binding AutoConnectOnDetect}"/>
+                    <CheckBox Content="自动重连" IsChecked="{Binding AutoReconnect}"/>
+                </StackPanel>
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                    <Button Content="刷新" Command="{Binding RefreshPortsCommand}"/>
+                    <Button Content="连接" Command="{Binding ConnectCommand}"/>
+                    <Button Content="断开" Command="{Binding DisconnectCommand}"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <TabControl Grid.Row="1" SelectedIndex="{Binding SelectedTabIndex}">
+            <TabItem Header="态势">
+                <views:DashboardView/>
+            </TabItem>
+
+            <TabItem>
+                <TabItem.Header>
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <TextBlock Text="聊天"/>
+                        <Border Background="#EF4444" CornerRadius="12" Padding="8,2" IsVisible="{Binding HasUnreadChat}">
+                            <TextBlock Text="{Binding UnreadChatCount}" FontSize="11" Foreground="White" FontWeight="Bold"/>
+                        </Border>
+                    </StackPanel>
+                </TabItem.Header>
+                <views:ChatView/>
+            </TabItem>
+
+            <TabItem Header="配置">
+                <views:ConfigView/>
+            </TabItem>
+
+            <TabItem Header="日志">
+                <views:LogsView/>
+            </TabItem>
+
+            <TabItem Header="事件监视">
+                <views:EventsView/>
+            </TabItem>
+
+            <TabItem Header="原始帧">
+                <views:RawFramesView/>
+            </TabItem>
+
+            <TabItem Header="导出">
+                <views:ExportView/>
+            </TabItem>
+        </TabControl>
+    </Grid>
+
+</Window>

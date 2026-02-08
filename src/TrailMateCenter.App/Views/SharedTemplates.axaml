@@ -1,0 +1,214 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:vm="using:TrailMateCenter.ViewModels">
+  <LinearGradientBrush x:Key="TopBarGradient" StartPoint="0,0" EndPoint="0,1">
+    <GradientStop Color="#2A2E34" Offset="0"/>
+    <GradientStop Color="#1C2026" Offset="1"/>
+  </LinearGradientBrush>
+  <SolidColorBrush x:Key="PanelBg" Color="#1B1F25"/>
+  <SolidColorBrush x:Key="PanelBg2" Color="#1A1D22"/>
+  <SolidColorBrush x:Key="PanelBorder" Color="#2B323B"/>
+  <SolidColorBrush x:Key="TextDim" Color="#B9C2CC"/>
+  <SolidColorBrush x:Key="Accent" Color="#8BC34A"/>
+  <DrawingBrush x:Key="MapGridBrush" TileMode="Tile" DestinationRect="0,0,0.125,0.125" Stretch="Fill">
+    <DrawingBrush.Drawing>
+      <GeometryDrawing Brush="Transparent">
+        <GeometryDrawing.Pen>
+          <Pen Brush="#10FFFFFF" Thickness="1"/>
+        </GeometryDrawing.Pen>
+        <GeometryDrawing.Geometry>
+          <GeometryGroup>
+            <LineGeometry StartPoint="0,0" EndPoint="0,64"/>
+            <LineGeometry StartPoint="0,0" EndPoint="64,0"/>
+            <LineGeometry StartPoint="32,0" EndPoint="32,64"/>
+            <LineGeometry StartPoint="0,32" EndPoint="64,32"/>
+          </GeometryGroup>
+        </GeometryDrawing.Geometry>
+      </GeometryDrawing>
+    </DrawingBrush.Drawing>
+  </DrawingBrush>
+  <RadialGradientBrush x:Key="MapVignette" Center="0.5,0.5" GradientOrigin="0.5,0.5" RadiusX="0.95" RadiusY="0.95">
+    <GradientStop Color="#00000000" Offset="0.6"/>
+    <GradientStop Color="#22000000" Offset="1"/>
+  </RadialGradientBrush>
+  <ImageBrush x:Key="MapNoiseBrush" Source="avares://TrailMateCenter.App/Assets/noise.png" TileMode="Tile" Stretch="None"/>
+
+  <DataTemplate x:Key="MessageTemplate" x:DataType="vm:MessageItemViewModel">
+    <Border Padding="10"
+            Margin="{Binding BubbleMargin}"
+            HorizontalAlignment="{Binding BubbleAlignment}"
+            BorderThickness="1"
+            BorderBrush="{Binding BubbleBorder}"
+            Background="{Binding BubbleBackground}"
+            CornerRadius="8"
+            Classes="panel">
+      <Grid RowDefinitions="Auto,Auto,Auto" ColumnDefinitions="*,Auto" ColumnSpacing="8">
+        <StackPanel Orientation="Horizontal" Spacing="6">
+          <TextBlock Text="{Binding TitleText}" FontWeight="Bold" Foreground="{Binding TitleColor}"/>
+          <Border Background="#10161C" BorderBrush="#2B323B" BorderThickness="1" CornerRadius="4" Padding="6,1">
+            <TextBlock Text="{Binding ChannelTag}" FontSize="10" Foreground="#FBBF24"/>
+          </Border>
+        </StackPanel>
+        <StackPanel Grid.Column="1" HorizontalAlignment="Right" Spacing="2">
+          <TextBlock Text="{Binding TimeText}" FontSize="10" Foreground="{StaticResource TextDim}"/>
+          <TextBlock Text="{Binding DeviceTimeText}" FontSize="9" Foreground="{StaticResource TextDim}" IsVisible="{Binding HasDeviceTime}"/>
+        </StackPanel>
+        <TextBlock Grid.Row="1" Grid.ColumnSpan="2" Text="{Binding Text}" TextWrapping="Wrap" Foreground="{Binding TextColor}"/>
+        <WrapPanel Grid.Row="2" Grid.ColumnSpan="2">
+          <Border Background="#0F1419" BorderBrush="{Binding StatusColor}" BorderThickness="1" CornerRadius="4" Padding="6,2" Margin="0,0,6,6">
+            <TextBlock Text="{Binding StatusText}" FontSize="10" Foreground="{Binding StatusColor}"/>
+          </Border>
+          <Border Background="#0F1419" BorderBrush="#2B323B" BorderThickness="1" CornerRadius="4" Padding="6,2" IsVisible="{Binding HasMessageId}" Margin="0,0,6,6">
+            <TextBlock Text="{Binding MessageIdText}" FontSize="10" Foreground="#9AA3AE"/>
+          </Border>
+          <Border Background="#0F1419" BorderBrush="#2B323B" BorderThickness="1" CornerRadius="4" Padding="6,2" IsVisible="{Binding HasRssi}" Margin="0,0,6,6">
+            <TextBlock Text="{Binding RssiText}" FontSize="10" Foreground="#34D399"/>
+          </Border>
+          <Border Background="#0F1419" BorderBrush="#2B323B" BorderThickness="1" CornerRadius="4" Padding="6,2" IsVisible="{Binding HasSnr}" Margin="0,0,6,6">
+            <TextBlock Text="{Binding SnrText}" FontSize="10" Foreground="#FBBF24"/>
+          </Border>
+          <Border Background="#0F1419" BorderBrush="#2B323B" BorderThickness="1" CornerRadius="4" Padding="6,2" IsVisible="{Binding HasHop}" Margin="0,0,6,6">
+            <TextBlock Text="{Binding HopText}" FontSize="10" Foreground="#93C5FD"/>
+          </Border>
+          <Border Background="#0F1419" BorderBrush="{Binding DirectColor}" BorderThickness="1" CornerRadius="4" Padding="6,2" IsVisible="{Binding HasDirect}" Margin="0,0,6,6">
+            <TextBlock Text="{Binding DirectText}" FontSize="10" Foreground="{Binding DirectColor}"/>
+          </Border>
+          <Border Background="#0F1419" BorderBrush="{Binding OriginColor}" BorderThickness="1" CornerRadius="4" Padding="6,2" IsVisible="{Binding HasOrigin}" Margin="0,0,6,6">
+            <TextBlock Text="{Binding OriginText}" FontSize="10" Foreground="{Binding OriginColor}"/>
+          </Border>
+          <Border Background="#0F1419" BorderBrush="{Binding FromIsColor}" BorderThickness="1" CornerRadius="4" Padding="6,2" IsVisible="{Binding HasFromIs}" Margin="0,0,6,6">
+            <TextBlock Text="{Binding FromIsText}" FontSize="10" Foreground="{Binding FromIsColor}"/>
+          </Border>
+          <Border Background="#0F1419" BorderBrush="#2B323B" BorderThickness="1" CornerRadius="4" Padding="6,2" IsVisible="{Binding HasRetry}" Margin="0,0,6,6">
+            <TextBlock Text="{Binding RetryText}" FontSize="10" Foreground="#F97316"/>
+          </Border>
+          <Border Background="#0F1419" BorderBrush="#2B323B" BorderThickness="1" CornerRadius="4" Padding="6,2" IsVisible="{Binding HasAirtime}" Margin="0,0,6,6">
+            <TextBlock Text="{Binding AirtimeText}" FontSize="10" Foreground="#A78BFA"/>
+          </Border>
+          <TextBlock Text="{Binding ErrorMessage}" Foreground="#EF4444" FontSize="10" Margin="0,0,6,6"/>
+        </WrapPanel>
+      </Grid>
+    </Border>
+  </DataTemplate>
+
+  <DataTemplate x:Key="TacticalEventTemplate" x:DataType="vm:TacticalEventViewModel">
+    <Border Padding="8" Margin="4" BorderThickness="1" BorderBrush="{Binding SeverityColor}" CornerRadius="6" Classes="panel">
+      <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto">
+        <Border Width="10" Height="10" Background="{Binding SeverityColor}" CornerRadius="2" Margin="0,2,6,0"/>
+        <TextBlock Grid.Column="1" Text="{Binding Title}" FontWeight="Bold" Foreground="#E6EDF3"/>
+        <TextBlock Grid.Column="1" Grid.Row="1" Text="{Binding Detail}" Foreground="{StaticResource TextDim}" TextWrapping="Wrap"/>
+        <TextBlock Grid.Column="1" Grid.Row="2" Text="{Binding Timestamp}" Foreground="{StaticResource TextDim}" FontSize="10"/>
+      </Grid>
+    </Border>
+  </DataTemplate>
+
+  <DataTemplate x:Key="SubjectTemplate" x:DataType="vm:SubjectViewModel">
+    <Border Padding="8" Margin="0,4" BorderThickness="1" BorderBrush="#2D343E" CornerRadius="6" Background="#14181E" Classes="panel"
+            HorizontalAlignment="Stretch">
+      <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto">
+        <Border Width="18" Height="18" Background="{Binding StatusColor}" CornerRadius="9" VerticalAlignment="Center"/>
+        <StackPanel Grid.Column="1" Margin="8,0,0,0">
+          <TextBlock Text="{Binding DisplayName}" FontWeight="Bold" Foreground="#E6EDF3"/>
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <TextBlock Text="{Binding DisplayDetail}" Foreground="#C7D0DA" FontSize="10"/>
+            <TextBlock Text="{Binding StatusText}" Foreground="{Binding StatusColor}" FontSize="10" FontWeight="Bold"/>
+          </StackPanel>
+        </StackPanel>
+        <TextBlock Grid.ColumnSpan="2" Grid.Row="1" Text="{Binding LastSeen}" Foreground="#C7D0DA" FontSize="10"/>
+      </Grid>
+    </Border>
+  </DataTemplate>
+
+  <DataTemplate x:Key="TeamGroupTemplate" x:DataType="vm:TeamGroupViewModel">
+    <Border Margin="0,6" Background="Transparent" HorizontalAlignment="Stretch">
+      <Grid RowDefinitions="Auto,Auto">
+        <Border Background="#14181E" BorderBrush="#2D343E" BorderThickness="1" CornerRadius="6,6,0,0" Padding="10,6"
+                HorizontalAlignment="Stretch">
+          <Grid ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center">
+            <Border Width="10" Height="10" Background="#8BC34A" CornerRadius="5" VerticalAlignment="Center"/>
+            <TextBlock Grid.Column="1" Text="{Binding Name}" FontWeight="Bold" Foreground="#E6EDF3" Margin="6,0,0,0"/>
+            <TextBlock Grid.Column="2" Text="{Binding Count}" Foreground="#C7D0DA" FontSize="10" HorizontalAlignment="Right"/>
+          </Grid>
+        </Border>
+        <Border Grid.Row="1" Background="#11151A" BorderBrush="#2D343E" BorderThickness="1" CornerRadius="0,0,6,6" Padding="6,4,6,6"
+                HorizontalAlignment="Stretch">
+          <ListBox ItemsSource="{Binding Members}"
+                   SelectedItem="{Binding SelectedSubject}"
+                   Background="Transparent"
+                   BorderThickness="0"
+                   ItemTemplate="{StaticResource SubjectTemplate}"
+                   HorizontalAlignment="Stretch"/>
+        </Border>
+      </Grid>
+    </Border>
+  </DataTemplate>
+
+  <DataTemplate x:Key="ConversationTemplate" x:DataType="vm:ConversationItemViewModel">
+    <Border Padding="8" Margin="4" BorderThickness="1" BorderBrush="#2D343E" CornerRadius="6" Background="#14181E" Classes="panel">
+      <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto">
+        <TextBlock Text="{Binding Title}" FontWeight="Bold" Foreground="#E6EDF3"/>
+        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+          <Border Background="#EF4444" CornerRadius="12" Padding="8,2" IsVisible="{Binding HasUnread}">
+            <TextBlock Text="{Binding UnreadCount}" FontSize="11" Foreground="White" FontWeight="Bold"/>
+          </Border>
+          <TextBlock Text="{Binding TimeText}" FontSize="10" Foreground="{StaticResource TextDim}"/>
+        </StackPanel>
+        <TextBlock Grid.Row="1" Grid.ColumnSpan="2" Text="{Binding Subtitle}" Foreground="{StaticResource TextDim}" FontSize="10"/>
+        <TextBlock Grid.Row="2" Grid.ColumnSpan="2" Text="{Binding Preview}" Foreground="{StaticResource TextDim}" TextTrimming="CharacterEllipsis"/>
+      </Grid>
+    </Border>
+  </DataTemplate>
+
+  <DataTemplate x:Key="LogTemplate" x:DataType="vm:LogEntryViewModel">
+    <StackPanel>
+      <TextBlock Text="{Binding Timestamp}" FontSize="10" Foreground="{StaticResource TextDim}"/>
+      <TextBlock Text="{Binding Level}" FontSize="10" Foreground="{StaticResource TextDim}"/>
+      <TextBlock Text="{Binding Message}" TextWrapping="Wrap" Foreground="#E6EDF3"/>
+    </StackPanel>
+  </DataTemplate>
+
+  <DataTemplate x:Key="EventTemplate" x:DataType="vm:EventItemViewModel">
+    <StackPanel>
+      <TextBlock Text="{Binding Timestamp}" FontSize="10" Foreground="{StaticResource TextDim}"/>
+      <StackPanel Orientation="Horizontal" Spacing="6">
+        <TextBlock Text="{Binding Type}" FontWeight="Bold" Foreground="#E6EDF3"/>
+        <Border Background="#2B1111" BorderBrush="{Binding FromIsTagColor}" BorderThickness="1" CornerRadius="4" Padding="6,1" IsVisible="{Binding HasFromIsTag}">
+          <TextBlock Text="{Binding FromIsTagText}" FontSize="10" Foreground="{Binding FromIsTagColor}" FontWeight="Bold"/>
+        </Border>
+      </StackPanel>
+      <TextBlock Text="{Binding Detail}" TextWrapping="Wrap" Foreground="#E6EDF3"/>
+      <TextBlock Text="{Binding RxMetaText}" TextWrapping="Wrap" Foreground="{StaticResource TextDim}" FontSize="10" IsVisible="{Binding HasRxMeta}"/>
+    </StackPanel>
+  </DataTemplate>
+
+  <DataTemplate x:Key="RawFrameTemplate" x:DataType="vm:RawFrameViewModel">
+    <Border Padding="6" Margin="4" BorderThickness="1" BorderBrush="#2B323B" CornerRadius="6" Background="#12161B" Classes="panel">
+      <StackPanel Spacing="4">
+        <StackPanel Orientation="Horizontal" Spacing="8">
+          <TextBlock Text="{Binding Timestamp}" FontSize="10" Foreground="{StaticResource TextDim}"/>
+          <Border Background="#0F1419" BorderBrush="{Binding DirectionColor}" BorderThickness="1" CornerRadius="4" Padding="4,1">
+            <TextBlock Text="{Binding Direction}" FontSize="10" Foreground="{Binding DirectionColor}"/>
+          </Border>
+          <Border Background="#0F1419" BorderBrush="{Binding StatusColor}" BorderThickness="1" CornerRadius="4" Padding="4,1">
+            <TextBlock Text="{Binding Status}" FontSize="10" Foreground="{Binding StatusColor}"/>
+          </Border>
+          <TextBlock Text="{Binding Note}" FontSize="10" Foreground="#F97316"/>
+        </StackPanel>
+        <ItemsControl ItemsSource="{Binding Segments}">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+              <WrapPanel/>
+            </ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="vm:RawFrameSegmentViewModel">
+              <Border Background="#0F1419" BorderBrush="{Binding Color}" BorderThickness="1" CornerRadius="4" Padding="6,2" Margin="0,0,6,6">
+                <TextBlock Text="{Binding Display}" FontSize="10" Foreground="{Binding Color}"/>
+              </Border>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </StackPanel>
+    </Border>
+  </DataTemplate>
+</ResourceDictionary>

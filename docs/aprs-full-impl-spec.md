@@ -235,15 +235,25 @@ APRS-IS 相关配置建议由主机侧管理(不要求设备理解 APRS)。若�
 
 主机侧建议配置项:
 - `AprsEnable`(bool)
+- `AprsServerHost`(string, 默认 `rotate.aprs2.net`)
+- `AprsServerPort`(uint16, 默认 `14580`，直连 TCP)
 - `AprsIgateCallsign`(string)
 - `AprsIgateSsid`(uint8)
+- `AprsPasscode`(string)
 - `AprsToCall`(string)
 - `AprsPath`(string)
+- `AprsFilter`(string, APRS-IS 登录过滤器)
 - `AprsTxMinIntervalSec`(uint16)
 - `AprsDedupeWindowSec`(uint16)
+- `AprsPositionIntervalSec`(uint16)
 - `AprsSymbolTable`(char)
 - `AprsSymbolCode`(char)
-- `AprsPositionIntervalSec`(uint16)
+- `AprsUseCompressed`(bool)
+- `AprsEmitStatus`(bool)
+- `AprsEmitTelemetry`(bool)
+- `AprsEmitWeather`(bool)
+- `AprsEmitMessages`(bool)
+- `AprsEmitWaypoints`(bool)
 - `NodeIdToCallsignMap`(map)
 
 注: 若将上述配置下发到设备侧，应与现有 HostLink config TLV 兼容(1 byte key + 1 byte len + value)。
@@ -265,20 +275,22 @@ AppData 必须包含:
 - 必须提供 `direct` 判定来源，用于 qAR/qAO 决策。
 - 必须标记 `from_is` 或等价字段，以避免回注。
 - `payload` 必须原样传递，不得清洗或重写。
+- 当设备声明 `CapAprsGateway` 时，`rx_meta_tlv` 必须随 EV_APP_DATA/EV_RX_MSG 一并上报。
 
 #### 15.3.1 AppData 仍缺少的接收元数据(必须补充)
 
-仅靠 Meshtastic AppData(含 from/to/channel/flags/timestamp/payload)不足以满足 iGate 语义与去重/限速需求。设备侧需要通过 HostLink 额外提供以下 RX 元数据(可用扩展字段或 TLV 追加):
+仅靠 Meshtastic AppData(含 from/to/channel/flags/timestamp/payload)不足以满足 iGate 语义与去重/限速需求。设备侧必须通过 HostLink 额外提供以下 RX 元数据(可用扩展字段或 TLV 追加):
 
+**必须字段(缺一不可):**
 - `rx_timestamp_utc` 或 `rx_timestamp_s`(UTC/GPS 时间优先): 用于 APRS 包时间与去重窗口
 - `direct` 判定(直收/非直收): 用于 qAR vs qAO
-- `rx_rssi_dbm`, `rx_snr_db`(可选但强烈建议): 便于质量评估与调试
-- `rx_channel`/`freq`/`bw`/`sf`(可选): 便于多信道/多制式分析
-- `hop_count` 或 `rx_relayed`(可选): 辅助判定是否经由网内转发
-- `packet_id` 或 `seq`(可选): 便于跨链路去重
-- `rx_origin`(必须): 标记来源是否为“RF/mesh”或“外部注入”，避免回注环路
+- `rx_origin` 与 `from_is`: 标记来源是否为“RF/mesh”或“外部注入”，避免回注环路
+- `rx_rssi_dbm` 与 `rx_snr_db`: 便于质量评估与调试
+- `hop_count` 或 `rx_relayed`: 辅助判定是否经由网内转发
+- `packet_id` 或 `seq`: 便于跨链路去重
 
-注: 如果设备侧无法提供上述字段，应至少提供 `direct`, `rx_origin`, `rx_timestamp` 三项最小集合。
+**建议字段(可选):**
+- `rx_channel`/`freq`/`bw`/`sf`: 便于多信道/多制式分析
 
 #### 15.3.2 主机侧 APRS-IS 映射所需的 Meshtastic 数据(必须上报)
 

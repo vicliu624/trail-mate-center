@@ -1,0 +1,111 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:TrailMateCenter.ViewModels"
+             x:Class="TrailMateCenter.Views.ConfigView"
+             x:DataType="vm:MainWindowViewModel">
+  <StackPanel Spacing="8" Margin="12">
+    <TextBlock Text="{Binding DeviceInfo}" FontWeight="Bold" Foreground="#E6EDF3"/>
+    <TextBlock Text="{Binding CapabilitiesInfo}" Foreground="{StaticResource TextDim}"/>
+    <TextBlock Text="{Binding StatusPanel}" Foreground="{StaticResource TextDim}"/>
+    <StackPanel Orientation="Horizontal" Spacing="8">
+      <Button Content="读取配置" Command="{Binding Config.LoadConfigCommand}"/>
+      <Button Content="写入配置" Command="{Binding Config.SaveConfigCommand}"/>
+      <CheckBox Content="高级模式" IsChecked="{Binding Config.IsAdvancedMode}" Foreground="#E6EDF3"/>
+      <TextBlock Text="{Binding Config.StatusMessage}" Foreground="{StaticResource TextDim}"/>
+    </StackPanel>
+    <ListBox ItemsSource="{Binding Config.Items}" Height="300">
+      <ListBox.ItemTemplate>
+        <DataTemplate x:DataType="vm:ConfigItemViewModel">
+          <Grid ColumnDefinitions="200,*,80" Margin="0,2">
+            <TextBlock Grid.Column="0" Text="{Binding KeyName}" VerticalAlignment="Center" Foreground="#E6EDF3"/>
+            <TextBox Grid.Column="1" Text="{Binding Value}" IsReadOnly="{Binding IsReadOnly}"/>
+            <TextBlock Grid.Column="2" Text="{Binding IsDangerous}" VerticalAlignment="Center" Foreground="{StaticResource TextDim}"/>
+          </Grid>
+        </DataTemplate>
+      </ListBox.ItemTemplate>
+    </ListBox>
+    <Border BorderBrush="#2B323B" BorderThickness="1" Padding="8" CornerRadius="6" Background="#11151A">
+      <StackPanel Spacing="6">
+        <TextBlock Text="态势设置" FontWeight="Bold" Foreground="#E6EDF3"/>
+        <StackPanel Orientation="Horizontal" Spacing="8">
+          <TextBlock Text="在线阈值(s)" VerticalAlignment="Center" Foreground="#E6EDF3"/>
+          <TextBox Width="80" Text="{Binding OnlineThresholdSeconds}"/>
+          <TextBlock Text="弱联阈值(s)" VerticalAlignment="Center" Foreground="#E6EDF3"/>
+          <TextBox Width="80" Text="{Binding WeakThresholdSeconds}"/>
+          <TextBlock Text="指令通道" VerticalAlignment="Center" Foreground="#E6EDF3"/>
+          <TextBox Width="60" Text="{Binding CommandChannel}"/>
+          <Button Content="保存设置" Command="{Binding SaveSettingsCommand}"/>
+        </StackPanel>
+        <ListBox ItemsSource="{Binding SeverityRules}" Height="180">
+          <ListBox.ItemTemplate>
+            <DataTemplate x:DataType="vm:SeverityRuleViewModel">
+              <Grid ColumnDefinitions="200,*,80" Margin="0,2">
+                <TextBlock Grid.Column="0" Text="{Binding Kind}" VerticalAlignment="Center" Foreground="#E6EDF3"/>
+                <ComboBox Grid.Column="1"
+                          ItemsSource="{Binding Options}"
+                          SelectedItem="{Binding Severity}"/>
+              </Grid>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+      </StackPanel>
+    </Border>
+    <Border BorderBrush="#2B323B" BorderThickness="1" Padding="8" CornerRadius="6" Background="#11151A">
+      <StackPanel Spacing="6">
+        <TextBlock Text="APRS-IS 设置" FontWeight="Bold" Foreground="#E6EDF3"/>
+        <StackPanel Orientation="Horizontal" Spacing="8">
+          <CheckBox Content="启用 APRS-IS" IsChecked="{Binding AprsEnabled}" Foreground="#E6EDF3"/>
+          <TextBlock Text="{Binding AprsConnectionText}" Foreground="{Binding AprsConnectionColor}" FontSize="10" VerticalAlignment="Center"/>
+          <TextBlock Text="{Binding AprsStatsText}" Foreground="{StaticResource TextDim}" FontSize="10" VerticalAlignment="Center"/>
+        </StackPanel>
+        <Grid ColumnDefinitions="120,*,120,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto" RowSpacing="6" ColumnSpacing="8">
+          <TextBlock Grid.Row="0" Grid.Column="0" Text="服务器" VerticalAlignment="Center" Foreground="#E6EDF3"/>
+          <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding AprsServerHost}"/>
+          <TextBlock Grid.Row="0" Grid.Column="2" Text="端口" VerticalAlignment="Center" Foreground="#E6EDF3"/>
+          <TextBox Grid.Row="0" Grid.Column="3" Text="{Binding AprsServerPort}"/>
+
+          <TextBlock Grid.Row="1" Grid.Column="0" Text="Callsign" VerticalAlignment="Center" Foreground="#E6EDF3"/>
+          <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding AprsIgateCallsign}"/>
+          <TextBlock Grid.Row="1" Grid.Column="2" Text="SSID" VerticalAlignment="Center" Foreground="#E6EDF3"/>
+          <TextBox Grid.Row="1" Grid.Column="3" Text="{Binding AprsIgateSsid}"/>
+
+          <TextBlock Grid.Row="2" Grid.Column="0" Text="Passcode" VerticalAlignment="Center" Foreground="#E6EDF3"/>
+          <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding AprsPasscode}" PasswordChar="●"/>
+          <TextBlock Grid.Row="2" Grid.Column="2" Text="TOCALL" VerticalAlignment="Center" Foreground="#E6EDF3"/>
+          <TextBox Grid.Row="2" Grid.Column="3" Text="{Binding AprsToCall}"/>
+
+          <TextBlock Grid.Row="3" Grid.Column="0" Text="PATH" VerticalAlignment="Center" Foreground="#E6EDF3"/>
+          <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding AprsPath}"/>
+          <TextBlock Grid.Row="3" Grid.Column="2" Text="Filter" VerticalAlignment="Center" Foreground="#E6EDF3"/>
+          <TextBox Grid.Row="3" Grid.Column="3" Text="{Binding AprsFilter}"/>
+
+          <TextBlock Grid.Row="4" Grid.Column="0" Text="间隔(s)" VerticalAlignment="Center" Foreground="#E6EDF3"/>
+          <TextBox Grid.Row="4" Grid.Column="1" Text="{Binding AprsTxMinIntervalSec}"/>
+          <TextBlock Grid.Row="4" Grid.Column="2" Text="去重窗(s)" VerticalAlignment="Center" Foreground="#E6EDF3"/>
+          <TextBox Grid.Row="4" Grid.Column="3" Text="{Binding AprsDedupeWindowSec}"/>
+        </Grid>
+        <Grid ColumnDefinitions="120,*,120,*" RowDefinitions="Auto,Auto" RowSpacing="6" ColumnSpacing="8">
+          <TextBlock Grid.Row="0" Grid.Column="0" Text="位置间隔(s)" VerticalAlignment="Center" Foreground="#E6EDF3"/>
+          <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding AprsPositionIntervalSec}"/>
+          <TextBlock Grid.Row="0" Grid.Column="2" Text="压缩位置" VerticalAlignment="Center" Foreground="#E6EDF3"/>
+          <CheckBox Grid.Row="0" Grid.Column="3" IsChecked="{Binding AprsUseCompressed}"/>
+
+          <TextBlock Grid.Row="1" Grid.Column="0" Text="符号表/码" VerticalAlignment="Center" Foreground="#E6EDF3"/>
+          <StackPanel Grid.Row="1" Grid.Column="1" Orientation="Horizontal" Spacing="6">
+            <TextBox Width="40" Text="{Binding AprsSymbolTable}"/>
+            <TextBox Width="40" Text="{Binding AprsSymbolCode}"/>
+          </StackPanel>
+          <TextBlock Grid.Row="1" Grid.Column="2" Text="发射类型" VerticalAlignment="Center" Foreground="#E6EDF3"/>
+          <StackPanel Grid.Row="1" Grid.Column="3" Orientation="Horizontal" Spacing="8">
+            <CheckBox Content="状态" IsChecked="{Binding AprsEmitStatus}"/>
+            <CheckBox Content="遥测" IsChecked="{Binding AprsEmitTelemetry}"/>
+            <CheckBox Content="气象" IsChecked="{Binding AprsEmitWeather}"/>
+            <CheckBox Content="消息" IsChecked="{Binding AprsEmitMessages}"/>
+            <CheckBox Content="路点" IsChecked="{Binding AprsEmitWaypoints}"/>
+          </StackPanel>
+        </Grid>
+        <TextBlock Text="改动后请点击“保存设置”" Foreground="{StaticResource TextDim}" FontSize="10"/>
+      </StackPanel>
+    </Border>
+  </StackPanel>
+</UserControl>

@@ -25,7 +25,8 @@ public sealed class AppDataReassembler
                     ev.TeamId,
                     ev.TeamKeyId,
                     ev.DeviceUptimeSeconds,
-                    payload)
+                    payload,
+                    ev.RxMeta)
             };
         }
 
@@ -41,8 +42,15 @@ public sealed class AppDataReassembler
             var key = new AppDataKey(ev.Portnum, ev.From, ev.To, ev.Channel, ev.TeamKeyId, ev.TeamId, ev.TotalLength, ev.DeviceUptimeSeconds);
             if (!_assemblies.TryGetValue(key, out var assembly))
             {
-                assembly = new AppDataAssembly(ev.TotalLength);
+                assembly = new AppDataAssembly(ev.TotalLength)
+                {
+                    RxMeta = ev.RxMeta
+                };
                 _assemblies[key] = assembly;
+            }
+            else if (assembly.RxMeta is null && ev.RxMeta is not null)
+            {
+                assembly.RxMeta = ev.RxMeta;
             }
 
             if (ev.Offset < ev.TotalLength)
@@ -65,7 +73,8 @@ public sealed class AppDataReassembler
                     ev.TeamId,
                     ev.TeamKeyId,
                     ev.DeviceUptimeSeconds,
-                    assembly.Buffer));
+                    assembly.Buffer,
+                    assembly.RxMeta));
             }
         }
 
@@ -120,6 +129,7 @@ public sealed class AppDataReassembler
         public byte[] Buffer { get; }
         public DateTimeOffset LastUpdated { get; set; }
         public bool IsComplete => _receivedCount == _received.Length;
+        public RxMetadata? RxMeta { get; set; }
 
         public void Write(uint offset, ReadOnlySpan<byte> data)
         {

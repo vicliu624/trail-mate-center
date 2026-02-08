@@ -11,7 +11,8 @@ public sealed record RxMessageEvent(
     uint From,
     uint To,
     byte Channel,
-    string Text) : HostLinkEvent(Timestamp);
+    string Text,
+    RxMetadata? RxMeta = null) : HostLinkEvent(Timestamp);
 
 public sealed record TxResultEvent(
     DateTimeOffset Timestamp,
@@ -64,7 +65,8 @@ public sealed record AppDataEvent(
     uint TotalLength,
     uint Offset,
     ushort ChunkLength,
-    byte[] Chunk) : HostLinkEvent(Timestamp);
+    byte[] Chunk,
+    RxMetadata? RxMeta = null) : HostLinkEvent(Timestamp);
 
 public sealed record TeamStateEvent(
     DateTimeOffset Timestamp,

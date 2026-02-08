@@ -11,4 +11,5 @@ public sealed record AppDataPacket(
     byte[] TeamId,
     uint TeamKeyId,
     uint DeviceUptimeSeconds,
-    byte[] Payload);
+    byte[] Payload,
+    RxMetadata? RxMeta = null);

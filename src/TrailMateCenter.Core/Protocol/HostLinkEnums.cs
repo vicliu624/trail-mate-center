@@ -44,6 +44,7 @@ public enum HostLinkCapabilities : uint
     CapGps = 1u << 5,
     CapAppData = 1u << 6,
     CapTeamState = 1u << 7,
+    CapAprsGateway = 1u << 8,
 }
 
 [Flags]
@@ -62,6 +63,17 @@ public enum HostLinkConfigKey : byte
     Channel = 3,
     DutyCycle = 4,
     ChannelUtil = 5,
+    AprsEnable = 20,
+    AprsIgateCallsign = 21,
+    AprsIgateSsid = 22,
+    AprsToCall = 23,
+    AprsPath = 24,
+    AprsTxMinIntervalSec = 25,
+    AprsDedupeWindowSec = 26,
+    AprsSymbolTable = 27,
+    AprsSymbolCode = 28,
+    AprsPositionIntervalSec = 29,
+    AprsNodeIdMap = 30,
 }
 
 public enum HostLinkStatusKey : byte

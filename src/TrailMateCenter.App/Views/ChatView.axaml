@@ -1,0 +1,61 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:TrailMateCenter.ViewModels"
+             x:Class="TrailMateCenter.Views.ChatView"
+             x:DataType="vm:MainWindowViewModel"
+             x:Name="Root">
+  <Grid ColumnDefinitions="240,*,300" RowDefinitions="*,Auto">
+    <Border BorderBrush="#2B323B" BorderThickness="0,0,1,0" Background="#11151A">
+      <ListBox ItemsSource="{Binding Conversations}" SelectedItem="{Binding SelectedConversation}" ItemTemplate="{StaticResource ConversationTemplate}" Background="#11151A"/>
+    </Border>
+
+    <Border Grid.Column="1" Background="#0F1216" BorderBrush="#2B323B" BorderThickness="1,0,0,0">
+      <ListBox ItemsSource="{Binding FilteredMessages}"
+               SelectedItem="{Binding SelectedMessage}"
+               ItemTemplate="{StaticResource MessageTemplate}"
+               Background="#0F1216"/>
+    </Border>
+
+    <Border Grid.Column="2" Grid.RowSpan="2" Background="{StaticResource PanelBg2}" BorderBrush="#2B323B" BorderThickness="1,0,0,0" Padding="10" Classes="panel">
+      <StackPanel Spacing="8">
+        <TextBlock Text="节点信息" FontWeight="Bold" Foreground="#C7CBD1"/>
+        <Border Background="#11151A" BorderBrush="#2B323B" BorderThickness="1" CornerRadius="6" Padding="8"
+                IsVisible="{Binding DataContext.HasSelectedSubject, ElementName=Root}"
+                DataContext="{Binding SelectedSubject}">
+          <StackPanel Spacing="4">
+            <TextBlock Text="{Binding DisplayName, TargetNullValue=--}" FontWeight="Bold" Foreground="#E6EDF3"/>
+            <TextBlock Text="{Binding DisplayDetail, TargetNullValue=--}" Foreground="{StaticResource TextDim}" FontSize="10"/>
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <Border Width="8" Height="8" Background="{Binding StatusColor, TargetNullValue=#9AA3AE}" CornerRadius="4"/>
+              <TextBlock Text="{Binding StatusText, TargetNullValue=--}" Foreground="{Binding StatusColor, TargetNullValue=#9AA3AE}" FontSize="10"/>
+            </StackPanel>
+            <TextBlock Text="{Binding LastSeenText, TargetNullValue=--}" Foreground="{StaticResource TextDim}" FontSize="10"/>
+            <TextBlock Text="{Binding LocationText, TargetNullValue=--}" Foreground="{StaticResource TextDim}" FontSize="10"/>
+            <TextBlock Text="{Binding UserId, TargetNullValue=--}" Foreground="{StaticResource TextDim}" FontSize="10"/>
+            <TextBlock Text="Telemetry" Foreground="#FBBF24" FontSize="10" IsVisible="{Binding HasTelemetry}"/>
+            <TextBlock Text="{Binding TelemetryText}" Foreground="{StaticResource TextDim}" FontSize="10" TextWrapping="Wrap" IsVisible="{Binding HasTelemetry}"/>
+            <TextBlock Text="{Binding TelemetryTimeText}" Foreground="{StaticResource TextDim}" FontSize="10" IsVisible="{Binding HasTelemetry}"/>
+          </StackPanel>
+        </Border>
+        <Border Background="#11151A" BorderBrush="#2B323B" BorderThickness="1" CornerRadius="6" Padding="8"
+                IsVisible="{Binding DataContext.HasNoSelectedSubject, ElementName=Root}">
+          <TextBlock Text="请选择一个节点查看详情" Foreground="{StaticResource TextDim}" FontSize="11"/>
+        </Border>
+        <Button Content="设为消息目标" Command="{Binding SetTargetToSelectedSubjectCommand}" IsEnabled="{Binding HasSelectedSubject}" Classes="primary" MinHeight="32"/>
+        <TextBox Watermark="快速消息" Text="{Binding QuickMessageText, UpdateSourceTrigger=PropertyChanged}" Height="48"/>
+        <Button Content="快速发送" Command="{Binding QuickSendCommand}" Classes="primary" IsEnabled="{Binding HasSelectedSubject}" MinHeight="36"/>
+        <TextBlock Text="提示：从左侧会话选择节点可快速切换目标" Foreground="{StaticResource TextDim}" FontSize="10"/>
+      </StackPanel>
+    </Border>
+
+    <Border Grid.Row="1" Grid.ColumnSpan="2" Padding="8" BorderBrush="#333" BorderThickness="0,1,0,0" Background="#14181E" Classes="panel">
+      <Grid ColumnDefinitions="100,110,*,Auto,Auto" RowDefinitions="Auto" ColumnSpacing="6">
+        <TextBox Grid.Column="0" Watermark="目标" Text="{Binding Target}"/>
+        <ComboBox Grid.Column="1" ItemsSource="{Binding Channels}" SelectedItem="{Binding SelectedChannel}"/>
+        <TextBox Grid.Column="2" Watermark="输入消息" Text="{Binding OutgoingText, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" Height="56" MinWidth="240"/>
+        <Button Grid.Column="3" Content="发送" Command="{Binding SendCommand}" Classes="primary" MinWidth="110" MinHeight="36"/>
+        <Button Grid.Column="4" Content="重试" Command="{Binding RetryCommand}" Classes="primary" MinWidth="80" MinHeight="36"/>
+      </Grid>
+    </Border>
+  </Grid>
+</UserControl>

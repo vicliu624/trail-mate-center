@@ -1,0 +1,15 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:TrailMateCenter.ViewModels"
+             x:Class="TrailMateCenter.Views.EventsView"
+             x:DataType="vm:MainWindowViewModel">
+  <Grid RowDefinitions="Auto,*">
+    <Border Background="#14181E" BorderBrush="#2B323B" BorderThickness="0,0,0,1" Padding="10" Classes="panel">
+      <StackPanel Orientation="Horizontal" Spacing="12">
+        <TextBlock Text="筛选" Foreground="#C7CBD1" FontWeight="Bold"/>
+        <CheckBox Content="仅 From IS" IsChecked="{Binding Events.FilterFromIs}"/>
+      </StackPanel>
+    </Border>
+    <ListBox Grid.Row="1" ItemsSource="{Binding Events.Events}" ItemTemplate="{StaticResource EventTemplate}" Margin="12"/>
+  </Grid>
+</UserControl>

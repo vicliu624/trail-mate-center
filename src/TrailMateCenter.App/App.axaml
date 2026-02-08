@@ -1,0 +1,191 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="TrailMateCenter.App"
+             xmlns:local="using:TrailMateCenter"
+             RequestedThemeVariant="Default">
+             <!-- "Default" ThemeVariant follows system theme variant. "Dark" or "Light" are other available options. -->
+
+    <Application.DataTemplates>
+        <local:ViewLocator/>
+    </Application.DataTemplates>
+
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceInclude Source="avares://TrailMateCenter.App/Views/SharedTemplates.axaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Application.Resources>
+  
+    <Application.Styles>
+        <FluentTheme />
+        <Style Selector="Button">
+            <Setter Property="Background" Value="#F6FFB0"/>
+            <Setter Property="BorderBrush" Value="#FFD166"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="4"/>
+            <Setter Property="Foreground" Value="#0B0E12"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Padding" Value="10,4"/>
+        </Style>
+        <Style Selector="Button:pointerover">
+            <Setter Property="Background" Value="#ECF79A"/>
+            <Setter Property="BorderBrush" Value="#FFC857"/>
+        </Style>
+        <Style Selector="Button:pressed">
+            <Setter Property="Background" Value="#D5E96F"/>
+            <Setter Property="BorderBrush" Value="#F4B942"/>
+        </Style>
+        <Style Selector="Button:disabled">
+            <Setter Property="Background" Value="#E8F2A2"/>
+            <Setter Property="BorderBrush" Value="#FFD166"/>
+            <Setter Property="Foreground" Value="#1D232B"/>
+            <Setter Property="Opacity" Value="0.85"/>
+        </Style>
+        <Style Selector="Button:disabled /template/ ContentPresenter">
+            <Setter Property="Opacity" Value="1"/>
+            <Setter Property="Foreground" Value="#1D232B"/>
+        </Style>
+        <Style Selector="Button:disabled /template/ Border">
+            <Setter Property="Opacity" Value="1"/>
+        </Style>
+
+        <Style Selector="Button.primary">
+            <Setter Property="Background" Value="#F6FFB0"/>
+            <Setter Property="BorderBrush" Value="#FFD166"/>
+            <Setter Property="Foreground" Value="#0B0E12"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+        </Style>
+        <Style Selector="Button.primary:pointerover">
+            <Setter Property="Background" Value="#ECF79A"/>
+            <Setter Property="BorderBrush" Value="#FFC857"/>
+        </Style>
+        <Style Selector="Button.primary:pressed">
+            <Setter Property="Background" Value="#D5E96F"/>
+            <Setter Property="BorderBrush" Value="#F4B942"/>
+        </Style>
+        <Style Selector="Button.primary:disabled">
+            <Setter Property="Background" Value="#E8F2A2"/>
+            <Setter Property="BorderBrush" Value="#FFD166"/>
+            <Setter Property="Foreground" Value="#1D232B"/>
+            <Setter Property="Opacity" Value="0.85"/>
+        </Style>
+        <Style Selector="Button.primary:disabled /template/ ContentPresenter">
+            <Setter Property="Opacity" Value="1"/>
+            <Setter Property="Foreground" Value="#1D232B"/>
+        </Style>
+        <Style Selector="Button.primary:disabled /template/ Border">
+            <Setter Property="Opacity" Value="1"/>
+        </Style>
+
+        <Style Selector="TextBox">
+            <Setter Property="Background" Value="#2C323A"/>
+            <Setter Property="BorderBrush" Value="#4B5563"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="3"/>
+            <Setter Property="Foreground" Value="#FFFFFF"/>
+            <Setter Property="Padding" Value="6,3"/>
+        </Style>
+        <Style Selector="TextBox:pointerover">
+            <Setter Property="BorderBrush" Value="#6B7786"/>
+        </Style>
+        <Style Selector="TextBox:focus">
+            <Setter Property="BorderBrush" Value="#9FB0C4"/>
+        </Style>
+
+        <Style Selector="ComboBox">
+            <Setter Property="Background" Value="#14181E"/>
+            <Setter Property="BorderBrush" Value="#2B323B"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="3"/>
+            <Setter Property="Foreground" Value="#E2E8F0"/>
+            <Setter Property="Padding" Value="6,3"/>
+        </Style>
+        <Style Selector="ComboBox:pointerover">
+            <Setter Property="BorderBrush" Value="#3B4653"/>
+        </Style>
+        <Style Selector="ComboBox:focus">
+            <Setter Property="BorderBrush" Value="#6B7280"/>
+        </Style>
+
+        <Style Selector="CheckBox">
+            <Setter Property="Foreground" Value="#E6EDF3"/>
+        </Style>
+
+        <Style Selector="TabControl">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+        </Style>
+        <Style Selector="TabItem">
+            <Setter Property="Foreground" Value="#C7CBD1"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="#2B323B"/>
+            <Setter Property="BorderThickness" Value="0,0,0,2"/>
+            <Setter Property="Padding" Value="16,8"/>
+            <Setter Property="MinWidth" Value="90"/>
+        </Style>
+        <Style Selector="TabItem:pointerover">
+            <Setter Property="Foreground" Value="#FFFFFF"/>
+            <Setter Property="Background" Value="#2A2F36"/>
+        </Style>
+        <Style Selector="TabItem:selected">
+            <Setter Property="Foreground" Value="#FFFFFF"/>
+            <Setter Property="Background" Value="#2A2F36"/>
+            <Setter Property="BorderBrush" Value="#5B6675"/>
+        </Style>
+
+        <Style Selector="ListBoxItem">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="2"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+        </Style>
+        <Style Selector="ListBoxItem:pointerover">
+            <Setter Property="Background" Value="#1E242B"/>
+            <Setter Property="BorderBrush" Value="#2F3944"/>
+        </Style>
+        <Style Selector="ListBoxItem:selected">
+            <Setter Property="Background" Value="#242B33"/>
+            <Setter Property="BorderBrush" Value="#4B5563"/>
+        </Style>
+
+        <Style Selector="Border.panel">
+            <Setter Property="BorderBrush" Value="#2B323B"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="4"/>
+            <Setter Property="BoxShadow" Value="0 2 8 0 #00000080"/>
+        </Style>
+
+        <Style Selector="Expander">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+        </Style>
+        <Style Selector="Expander /template/ ToggleButton">
+            <Setter Property="Background" Value="#14181E"/>
+            <Setter Property="BorderBrush" Value="#2B323B"/>
+            <Setter Property="BorderThickness" Value="0,0,0,1"/>
+            <Setter Property="Padding" Value="10,6"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="Foreground" Value="#E6EDF3"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+        </Style>
+        <Style Selector="Expander /template/ ContentPresenter">
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+        </Style>
+
+        <Style Selector="ToggleButton.sectionHeader">
+            <Setter Property="Background" Value="#14181E"/>
+            <Setter Property="BorderBrush" Value="#2B323B"/>
+            <Setter Property="BorderThickness" Value="0,0,0,1"/>
+            <Setter Property="Padding" Value="10,6"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="Foreground" Value="#E6EDF3"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+        </Style>
+    </Application.Styles>
+</Application>

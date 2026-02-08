@@ -398,7 +398,7 @@ public sealed class HostLinkClient : IAsyncDisposable
         var hasGps = TrailMateCenter.Helpers.GpsParser.TryExtract(rx.Text, out var lat, out var lon);
 
         var receivedAt = DateTimeOffset.UtcNow;
-        var deviceTimestamp = rx.Timestamp == DateTimeOffset.UnixEpoch ? (DateTimeOffset?)null : rx.Timestamp;
+        var deviceTimestamp = rx.RxMeta?.TimestampUtc ?? (rx.Timestamp == DateTimeOffset.UnixEpoch ? (DateTimeOffset?)null : rx.Timestamp);
 
         var message = new MessageEntry
         {
@@ -414,6 +414,12 @@ public sealed class HostLinkClient : IAsyncDisposable
             Status = MessageDeliveryStatus.Succeeded,
             Timestamp = receivedAt,
             DeviceTimestamp = deviceTimestamp,
+            Rssi = rx.RxMeta?.RssiDbm,
+            Snr = rx.RxMeta?.SnrDb,
+            Hop = rx.RxMeta?.HopCount,
+            Direct = rx.RxMeta?.Direct,
+            Origin = rx.RxMeta?.Origin,
+            FromIs = rx.RxMeta?.FromIs,
             Latitude = hasGps ? lat : null,
             Longitude = hasGps ? lon : null,
         };
