@@ -4,43 +4,43 @@
              x:Class="TrailMateCenter.Views.ConfigView"
              x:DataType="vm:MainWindowViewModel">
   <StackPanel Spacing="8" Margin="12">
-    <TextBlock Text="{Binding DeviceInfo}" FontWeight="Bold" Foreground="#E6EDF3"/>
-    <TextBlock Text="{Binding CapabilitiesInfo}" Foreground="{StaticResource TextDim}"/>
-    <TextBlock Text="{Binding StatusPanel}" Foreground="{StaticResource TextDim}"/>
+    <TextBlock Text="{Binding DeviceInfo}" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}"/>
+    <TextBlock Text="{Binding CapabilitiesInfo}" Foreground="{DynamicResource TextDim}"/>
+    <TextBlock Text="{Binding StatusPanel}" Foreground="{DynamicResource TextDim}"/>
     <StackPanel Orientation="Horizontal" Spacing="8">
-      <Button Content="读取配置" Command="{Binding Config.LoadConfigCommand}"/>
-      <Button Content="写入配置" Command="{Binding Config.SaveConfigCommand}"/>
-      <CheckBox Content="高级模式" IsChecked="{Binding Config.IsAdvancedMode}" Foreground="#E6EDF3"/>
-      <TextBlock Text="{Binding Config.StatusMessage}" Foreground="{StaticResource TextDim}"/>
+      <Button Content="{DynamicResource Ui.Config.Load}" Command="{Binding Config.LoadConfigCommand}"/>
+      <Button Content="{DynamicResource Ui.Config.Save}" Command="{Binding Config.SaveConfigCommand}"/>
+      <CheckBox Content="{DynamicResource Ui.Config.Advanced}" IsChecked="{Binding Config.IsAdvancedMode}" Foreground="{DynamicResource TextPrimary}"/>
+      <TextBlock Text="{Binding Config.StatusMessage}" Foreground="{DynamicResource TextDim}"/>
     </StackPanel>
     <ListBox ItemsSource="{Binding Config.Items}" Height="300">
       <ListBox.ItemTemplate>
         <DataTemplate x:DataType="vm:ConfigItemViewModel">
           <Grid ColumnDefinitions="200,*,80" Margin="0,2">
-            <TextBlock Grid.Column="0" Text="{Binding KeyName}" VerticalAlignment="Center" Foreground="#E6EDF3"/>
+            <TextBlock Grid.Column="0" Text="{Binding KeyName}" VerticalAlignment="Center" Foreground="{DynamicResource TextPrimary}"/>
             <TextBox Grid.Column="1" Text="{Binding Value}" IsReadOnly="{Binding IsReadOnly}"/>
-            <TextBlock Grid.Column="2" Text="{Binding IsDangerous}" VerticalAlignment="Center" Foreground="{StaticResource TextDim}"/>
+            <TextBlock Grid.Column="2" Text="{Binding IsDangerous}" VerticalAlignment="Center" Foreground="{DynamicResource TextDim}"/>
           </Grid>
         </DataTemplate>
       </ListBox.ItemTemplate>
     </ListBox>
-    <Border BorderBrush="#2B323B" BorderThickness="1" Padding="8" CornerRadius="6" Background="#11151A">
+    <Border BorderBrush="{DynamicResource PanelBorder}" BorderThickness="1" Padding="8" CornerRadius="6" Background="{DynamicResource PanelBg}">
       <StackPanel Spacing="6">
-        <TextBlock Text="态势设置" FontWeight="Bold" Foreground="#E6EDF3"/>
+        <TextBlock Text="{DynamicResource Ui.Config.TacticalSettings}" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}"/>
         <StackPanel Orientation="Horizontal" Spacing="8">
-          <TextBlock Text="在线阈值(s)" VerticalAlignment="Center" Foreground="#E6EDF3"/>
+          <TextBlock Text="{DynamicResource Ui.Config.OnlineThreshold}" VerticalAlignment="Center" Foreground="{DynamicResource TextPrimary}"/>
           <TextBox Width="80" Text="{Binding OnlineThresholdSeconds}"/>
-          <TextBlock Text="弱联阈值(s)" VerticalAlignment="Center" Foreground="#E6EDF3"/>
+          <TextBlock Text="{DynamicResource Ui.Config.WeakThreshold}" VerticalAlignment="Center" Foreground="{DynamicResource TextPrimary}"/>
           <TextBox Width="80" Text="{Binding WeakThresholdSeconds}"/>
-          <TextBlock Text="指令通道" VerticalAlignment="Center" Foreground="#E6EDF3"/>
+          <TextBlock Text="{DynamicResource Ui.Config.CommandChannel}" VerticalAlignment="Center" Foreground="{DynamicResource TextPrimary}"/>
           <TextBox Width="60" Text="{Binding CommandChannel}"/>
-          <Button Content="保存设置" Command="{Binding SaveSettingsCommand}"/>
+          <Button Content="{DynamicResource Ui.Config.SaveSettings}" Command="{Binding SaveSettingsCommand}"/>
         </StackPanel>
         <ListBox ItemsSource="{Binding SeverityRules}" Height="180">
           <ListBox.ItemTemplate>
             <DataTemplate x:DataType="vm:SeverityRuleViewModel">
               <Grid ColumnDefinitions="200,*,80" Margin="0,2">
-                <TextBlock Grid.Column="0" Text="{Binding Kind}" VerticalAlignment="Center" Foreground="#E6EDF3"/>
+                <TextBlock Grid.Column="0" Text="{Binding Kind}" VerticalAlignment="Center" Foreground="{DynamicResource TextPrimary}"/>
                 <ComboBox Grid.Column="1"
                           ItemsSource="{Binding Options}"
                           SelectedItem="{Binding Severity}"/>
@@ -50,61 +50,61 @@
         </ListBox>
       </StackPanel>
     </Border>
-    <Border BorderBrush="#2B323B" BorderThickness="1" Padding="8" CornerRadius="6" Background="#11151A">
+    <Border BorderBrush="{DynamicResource PanelBorder}" BorderThickness="1" Padding="8" CornerRadius="6" Background="{DynamicResource PanelBg}">
       <StackPanel Spacing="6">
-        <TextBlock Text="APRS-IS 设置" FontWeight="Bold" Foreground="#E6EDF3"/>
+        <TextBlock Text="{DynamicResource Ui.Config.AprsSettings}" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}"/>
         <StackPanel Orientation="Horizontal" Spacing="8">
-          <CheckBox Content="启用 APRS-IS" IsChecked="{Binding AprsEnabled}" Foreground="#E6EDF3"/>
+          <CheckBox Content="{DynamicResource Ui.Config.AprsEnable}" IsChecked="{Binding AprsEnabled}" Foreground="{DynamicResource TextPrimary}"/>
           <TextBlock Text="{Binding AprsConnectionText}" Foreground="{Binding AprsConnectionColor}" FontSize="10" VerticalAlignment="Center"/>
-          <TextBlock Text="{Binding AprsStatsText}" Foreground="{StaticResource TextDim}" FontSize="10" VerticalAlignment="Center"/>
+          <TextBlock Text="{Binding AprsStatsText}" Foreground="{DynamicResource TextDim}" FontSize="10" VerticalAlignment="Center"/>
         </StackPanel>
         <Grid ColumnDefinitions="120,*,120,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto" RowSpacing="6" ColumnSpacing="8">
-          <TextBlock Grid.Row="0" Grid.Column="0" Text="服务器" VerticalAlignment="Center" Foreground="#E6EDF3"/>
+          <TextBlock Grid.Row="0" Grid.Column="0" Text="{DynamicResource Ui.Config.Server}" VerticalAlignment="Center" Foreground="{DynamicResource TextPrimary}"/>
           <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding AprsServerHost}"/>
-          <TextBlock Grid.Row="0" Grid.Column="2" Text="端口" VerticalAlignment="Center" Foreground="#E6EDF3"/>
+          <TextBlock Grid.Row="0" Grid.Column="2" Text="{DynamicResource Ui.Config.Port}" VerticalAlignment="Center" Foreground="{DynamicResource TextPrimary}"/>
           <TextBox Grid.Row="0" Grid.Column="3" Text="{Binding AprsServerPort}"/>
 
-          <TextBlock Grid.Row="1" Grid.Column="0" Text="Callsign" VerticalAlignment="Center" Foreground="#E6EDF3"/>
+          <TextBlock Grid.Row="1" Grid.Column="0" Text="{DynamicResource Ui.Config.Callsign}" VerticalAlignment="Center" Foreground="{DynamicResource TextPrimary}"/>
           <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding AprsIgateCallsign}"/>
-          <TextBlock Grid.Row="1" Grid.Column="2" Text="SSID" VerticalAlignment="Center" Foreground="#E6EDF3"/>
+          <TextBlock Grid.Row="1" Grid.Column="2" Text="{DynamicResource Ui.Config.Ssid}" VerticalAlignment="Center" Foreground="{DynamicResource TextPrimary}"/>
           <TextBox Grid.Row="1" Grid.Column="3" Text="{Binding AprsIgateSsid}"/>
 
-          <TextBlock Grid.Row="2" Grid.Column="0" Text="Passcode" VerticalAlignment="Center" Foreground="#E6EDF3"/>
+          <TextBlock Grid.Row="2" Grid.Column="0" Text="{DynamicResource Ui.Config.Passcode}" VerticalAlignment="Center" Foreground="{DynamicResource TextPrimary}"/>
           <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding AprsPasscode}" PasswordChar="●"/>
-          <TextBlock Grid.Row="2" Grid.Column="2" Text="TOCALL" VerticalAlignment="Center" Foreground="#E6EDF3"/>
+          <TextBlock Grid.Row="2" Grid.Column="2" Text="{DynamicResource Ui.Config.ToCall}" VerticalAlignment="Center" Foreground="{DynamicResource TextPrimary}"/>
           <TextBox Grid.Row="2" Grid.Column="3" Text="{Binding AprsToCall}"/>
 
-          <TextBlock Grid.Row="3" Grid.Column="0" Text="PATH" VerticalAlignment="Center" Foreground="#E6EDF3"/>
+          <TextBlock Grid.Row="3" Grid.Column="0" Text="{DynamicResource Ui.Config.Path}" VerticalAlignment="Center" Foreground="{DynamicResource TextPrimary}"/>
           <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding AprsPath}"/>
-          <TextBlock Grid.Row="3" Grid.Column="2" Text="Filter" VerticalAlignment="Center" Foreground="#E6EDF3"/>
+          <TextBlock Grid.Row="3" Grid.Column="2" Text="{DynamicResource Ui.Config.Filter}" VerticalAlignment="Center" Foreground="{DynamicResource TextPrimary}"/>
           <TextBox Grid.Row="3" Grid.Column="3" Text="{Binding AprsFilter}"/>
 
-          <TextBlock Grid.Row="4" Grid.Column="0" Text="间隔(s)" VerticalAlignment="Center" Foreground="#E6EDF3"/>
+          <TextBlock Grid.Row="4" Grid.Column="0" Text="{DynamicResource Ui.Config.Interval}" VerticalAlignment="Center" Foreground="{DynamicResource TextPrimary}"/>
           <TextBox Grid.Row="4" Grid.Column="1" Text="{Binding AprsTxMinIntervalSec}"/>
-          <TextBlock Grid.Row="4" Grid.Column="2" Text="去重窗(s)" VerticalAlignment="Center" Foreground="#E6EDF3"/>
+          <TextBlock Grid.Row="4" Grid.Column="2" Text="{DynamicResource Ui.Config.DedupeWindow}" VerticalAlignment="Center" Foreground="{DynamicResource TextPrimary}"/>
           <TextBox Grid.Row="4" Grid.Column="3" Text="{Binding AprsDedupeWindowSec}"/>
         </Grid>
         <Grid ColumnDefinitions="120,*,120,*" RowDefinitions="Auto,Auto" RowSpacing="6" ColumnSpacing="8">
-          <TextBlock Grid.Row="0" Grid.Column="0" Text="位置间隔(s)" VerticalAlignment="Center" Foreground="#E6EDF3"/>
+          <TextBlock Grid.Row="0" Grid.Column="0" Text="{DynamicResource Ui.Config.PositionInterval}" VerticalAlignment="Center" Foreground="{DynamicResource TextPrimary}"/>
           <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding AprsPositionIntervalSec}"/>
-          <TextBlock Grid.Row="0" Grid.Column="2" Text="压缩位置" VerticalAlignment="Center" Foreground="#E6EDF3"/>
+          <TextBlock Grid.Row="0" Grid.Column="2" Text="{DynamicResource Ui.Config.CompressPosition}" VerticalAlignment="Center" Foreground="{DynamicResource TextPrimary}"/>
           <CheckBox Grid.Row="0" Grid.Column="3" IsChecked="{Binding AprsUseCompressed}"/>
 
-          <TextBlock Grid.Row="1" Grid.Column="0" Text="符号表/码" VerticalAlignment="Center" Foreground="#E6EDF3"/>
+          <TextBlock Grid.Row="1" Grid.Column="0" Text="{DynamicResource Ui.Config.SymbolTable}" VerticalAlignment="Center" Foreground="{DynamicResource TextPrimary}"/>
           <StackPanel Grid.Row="1" Grid.Column="1" Orientation="Horizontal" Spacing="6">
             <TextBox Width="40" Text="{Binding AprsSymbolTable}"/>
             <TextBox Width="40" Text="{Binding AprsSymbolCode}"/>
           </StackPanel>
-          <TextBlock Grid.Row="1" Grid.Column="2" Text="发射类型" VerticalAlignment="Center" Foreground="#E6EDF3"/>
+          <TextBlock Grid.Row="1" Grid.Column="2" Text="{DynamicResource Ui.Config.TxTypes}" VerticalAlignment="Center" Foreground="{DynamicResource TextPrimary}"/>
           <StackPanel Grid.Row="1" Grid.Column="3" Orientation="Horizontal" Spacing="8">
-            <CheckBox Content="状态" IsChecked="{Binding AprsEmitStatus}"/>
-            <CheckBox Content="遥测" IsChecked="{Binding AprsEmitTelemetry}"/>
-            <CheckBox Content="气象" IsChecked="{Binding AprsEmitWeather}"/>
-            <CheckBox Content="消息" IsChecked="{Binding AprsEmitMessages}"/>
-            <CheckBox Content="路点" IsChecked="{Binding AprsEmitWaypoints}"/>
+            <CheckBox Content="{DynamicResource Ui.Config.TxStatus}" IsChecked="{Binding AprsEmitStatus}"/>
+            <CheckBox Content="{DynamicResource Ui.Config.TxTelemetry}" IsChecked="{Binding AprsEmitTelemetry}"/>
+            <CheckBox Content="{DynamicResource Ui.Config.TxWeather}" IsChecked="{Binding AprsEmitWeather}"/>
+            <CheckBox Content="{DynamicResource Ui.Config.TxMessages}" IsChecked="{Binding AprsEmitMessages}"/>
+            <CheckBox Content="{DynamicResource Ui.Config.TxWaypoints}" IsChecked="{Binding AprsEmitWaypoints}"/>
           </StackPanel>
         </Grid>
-        <TextBlock Text="改动后请点击“保存设置”" Foreground="{StaticResource TextDim}" FontSize="10"/>
+        <TextBlock Text="{DynamicResource Ui.Config.SaveHint}" Foreground="{DynamicResource TextDim}" FontSize="10"/>
       </StackPanel>
     </Border>
   </StackPanel>

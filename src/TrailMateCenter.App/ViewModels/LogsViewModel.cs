@@ -8,15 +8,18 @@ using System.Text;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
+using TrailMateCenter.Localization;
 using TrailMateCenter.Models;
 using TrailMateCenter.Services;
 
 namespace TrailMateCenter.ViewModels;
 
-public sealed partial class LogsViewModel : ObservableObject
+public sealed partial class LogsViewModel : ObservableObject, ILocalizationAware
 {
     private readonly LogStore _logStore;
     private readonly List<HostLinkLogEntry> _all = new();
+    private string? _statusKey;
+    private object[] _statusArgs = Array.Empty<object>();
 
     public LogsViewModel(LogStore logStore)
     {
@@ -98,11 +101,11 @@ public sealed partial class LogsViewModel : ObservableObject
         {
             var text = BuildLogText();
             await File.WriteAllTextAsync(ExportPath, text);
-            StatusMessage = "日志已保存";
+            SetStatus("Status.Logs.Saved");
         }
         catch (Exception ex)
         {
-            StatusMessage = $"保存失败: {ex.Message}";
+            SetStatus("Status.Logs.SaveFailed", ex.Message);
         }
     }
 
@@ -116,11 +119,33 @@ public sealed partial class LogsViewModel : ObservableObject
             {
                 await clipboard.SetTextAsync(text);
             }
-            StatusMessage = "日志已复制";
+            SetStatus("Status.Logs.Copied");
         }
         catch (Exception ex)
         {
-            StatusMessage = $"复制失败: {ex.Message}";
+            SetStatus("Status.Logs.CopyFailed", ex.Message);
         }
+    }
+
+    private void SetStatus(string key, params object[] args)
+    {
+        _statusKey = key;
+        _statusArgs = args ?? Array.Empty<object>();
+        StatusMessage = _statusArgs.Length == 0
+            ? LocalizationService.Instance.GetString(key)
+            : LocalizationService.Instance.Format(key, _statusArgs);
+    }
+
+    public void RefreshLocalization()
+    {
+        if (string.IsNullOrWhiteSpace(_statusKey))
+        {
+            StatusMessage = string.Empty;
+            return;
+        }
+
+        StatusMessage = _statusArgs.Length == 0
+            ? LocalizationService.Instance.GetString(_statusKey)
+            : LocalizationService.Instance.Format(_statusKey, _statusArgs);
     }
 }

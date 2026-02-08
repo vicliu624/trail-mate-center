@@ -1,11 +1,12 @@
 using Avalonia;
 using Avalonia.Layout;
 using CommunityToolkit.Mvvm.ComponentModel;
+using TrailMateCenter.Localization;
 using TrailMateCenter.Models;
 
 namespace TrailMateCenter.ViewModels;
 
-public sealed partial class MessageItemViewModel : ObservableObject
+public sealed partial class MessageItemViewModel : ObservableObject, ILocalizationAware
 {
     public MessageItemViewModel(MessageEntry entry)
     {
@@ -198,6 +199,7 @@ public sealed partial class MessageItemViewModel : ObservableObject
 
     public void UpdateFrom(MessageEntry entry)
     {
+        var loc = LocalizationService.Instance;
         Timestamp = entry.Timestamp;
         DeviceTimestamp = entry.DeviceTimestamp;
         Direction = entry.Direction;
@@ -226,12 +228,12 @@ public sealed partial class MessageItemViewModel : ObservableObject
         TimeText = Timestamp.ToLocalTime().ToString("HH:mm:ss");
         HasDeviceTime = DeviceTimestamp.HasValue;
         DeviceTimeText = HasDeviceTime
-            ? $"设备 {DeviceTimestamp.Value.ToLocalTime():yyyy-MM-dd HH:mm:ss}"
+            ? loc.Format("Status.Message.DeviceTime", DeviceTimestamp.Value.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss"))
             : string.Empty;
         StatusText = BuildStatus();
         var outgoing = Direction == MessageDirection.Outgoing;
-        BubbleBackground = outgoing ? "#1C2A2F" : "#1A1E24";
-        BubbleBorder = outgoing ? "#2B4D3B" : "#2E3238";
+        BubbleBackground = outgoing ? "#17241E" : "#141A20";
+        BubbleBorder = outgoing ? "#2E4A3A" : "#28323C";
         BubbleAlignment = outgoing ? HorizontalAlignment.Right : HorizontalAlignment.Left;
         BubbleMargin = outgoing ? new Thickness(60, 6, 6, 6) : new Thickness(6, 6, 60, 6);
         TitleColor = Direction switch
@@ -251,27 +253,29 @@ public sealed partial class MessageItemViewModel : ObservableObject
             _ => "#9AA3AE",
         };
 
-        ChannelTag = $"CH {ChannelId}";
+        ChannelTag = loc.Format("Status.Message.ChannelTag", ChannelId);
 
         HasMessageId = MessageId.HasValue;
-        MessageIdText = HasMessageId ? $"MSG {MessageId}" : string.Empty;
+        MessageIdText = HasMessageId ? loc.Format("Status.Message.MessageIdTag", MessageId) : string.Empty;
 
         HasRssi = Rssi.HasValue;
-        RssiText = HasRssi ? $"RSSI {Rssi}" : string.Empty;
+        RssiText = HasRssi ? loc.Format("Status.Message.RssiTag", Rssi) : string.Empty;
         HasSnr = Snr.HasValue;
-        SnrText = HasSnr ? $"SNR {Snr}" : string.Empty;
+        SnrText = HasSnr ? loc.Format("Status.Message.SnrTag", Snr) : string.Empty;
         HasHop = Hop.HasValue;
-        HopText = HasHop ? $"HOP {Hop}" : string.Empty;
+        HopText = HasHop ? loc.Format("Status.Message.HopTag", Hop) : string.Empty;
 
         HasDirect = Direct.HasValue;
-        DirectText = Direct.HasValue ? (Direct.Value ? "Direct" : "Relayed") : string.Empty;
+        DirectText = Direct.HasValue
+            ? (Direct.Value ? loc.GetString("Status.Message.Direct") : loc.GetString("Status.Message.Relayed"))
+            : string.Empty;
         DirectColor = Direct is true ? "#22C55E" : "#F97316";
 
         HasOrigin = Origin.HasValue && Origin.Value != RxOrigin.Unknown;
         OriginText = Origin switch
         {
-            RxOrigin.Mesh => "Origin RF",
-            RxOrigin.External => "Origin IS",
+            RxOrigin.Mesh => loc.GetString("Status.Message.OriginRf"),
+            RxOrigin.External => loc.GetString("Status.Message.OriginIs"),
             _ => string.Empty,
         };
         OriginColor = Origin switch
@@ -282,41 +286,78 @@ public sealed partial class MessageItemViewModel : ObservableObject
         };
 
         HasFromIs = FromIs.HasValue;
-        FromIsText = FromIs.HasValue ? (FromIs.Value ? "From IS" : "From RF") : string.Empty;
+        FromIsText = FromIs.HasValue
+            ? (FromIs.Value ? loc.GetString("Status.Message.FromIs") : loc.GetString("Status.Message.FromRf"))
+            : string.Empty;
         FromIsColor = FromIs is true ? "#F59E0B" : "#10B981";
         HasRetry = Retry.HasValue;
-        RetryText = HasRetry ? $"RETRY {Retry}" : string.Empty;
+        RetryText = HasRetry ? loc.Format("Status.Message.RetryTag", Retry) : string.Empty;
         HasAirtime = AirtimeMs.HasValue;
-        AirtimeText = HasAirtime ? $"AIR {AirtimeMs}ms" : string.Empty;
+        AirtimeText = HasAirtime ? loc.Format("Status.Message.AirtimeTag", AirtimeMs) : string.Empty;
     }
 
     private string BuildTitle()
     {
-        return Direction == MessageDirection.Outgoing ? $"我 → {To}" : From;
+        return Direction == MessageDirection.Outgoing
+            ? LocalizationService.Instance.Format("Status.Message.MeTo", To)
+            : From;
     }
 
     private string BuildStatus()
     {
         return Status switch
         {
-            MessageDeliveryStatus.Pending => "发送中",
-            MessageDeliveryStatus.Acked => "已接收",
-            MessageDeliveryStatus.Succeeded => "成功",
-            MessageDeliveryStatus.Timeout => "超时",
-            MessageDeliveryStatus.Failed => "失败",
+            MessageDeliveryStatus.Pending => LocalizationService.Instance.GetString("Status.Message.Pending"),
+            MessageDeliveryStatus.Acked => LocalizationService.Instance.GetString("Status.Message.Acked"),
+            MessageDeliveryStatus.Succeeded => LocalizationService.Instance.GetString("Status.Message.Succeeded"),
+            MessageDeliveryStatus.Timeout => LocalizationService.Instance.GetString("Status.Message.Timeout"),
+            MessageDeliveryStatus.Failed => LocalizationService.Instance.GetString("Status.Message.Failed"),
             _ => Status.ToString(),
         };
     }
 
     private string BuildMetadata()
     {
+        var loc = LocalizationService.Instance;
         var parts = new List<string>();
-        if (MessageId.HasValue) parts.Add($"Msg {MessageId}");
-        if (Rssi.HasValue) parts.Add($"RSSI {Rssi}");
-        if (Snr.HasValue) parts.Add($"SNR {Snr}");
-        if (Hop.HasValue) parts.Add($"Hop {Hop}");
-        if (Retry.HasValue) parts.Add($"Retry {Retry}");
-        if (AirtimeMs.HasValue) parts.Add($"Airtime {AirtimeMs}ms");
-        return string.Join(" | ", parts);
+        if (MessageId.HasValue) parts.Add(loc.Format("Status.Message.Meta.Msg", MessageId));
+        if (Rssi.HasValue) parts.Add(loc.Format("Status.Message.Meta.Rssi", Rssi));
+        if (Snr.HasValue) parts.Add(loc.Format("Status.Message.Meta.Snr", Snr));
+        if (Hop.HasValue) parts.Add(loc.Format("Status.Message.Meta.Hop", Hop));
+        if (Retry.HasValue) parts.Add(loc.Format("Status.Message.Meta.Retry", Retry));
+        if (AirtimeMs.HasValue) parts.Add(loc.Format("Status.Message.Meta.Airtime", AirtimeMs));
+        return string.Join(loc.GetString("Common.Separator"), parts);
+    }
+
+    public void RefreshLocalization()
+    {
+        var loc = LocalizationService.Instance;
+        Metadata = BuildMetadata();
+        TitleText = BuildTitle();
+        StatusText = BuildStatus();
+        HasDeviceTime = DeviceTimestamp.HasValue;
+        DeviceTimeText = HasDeviceTime
+            ? loc.Format("Status.Message.DeviceTime", DeviceTimestamp.Value.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss"))
+            : string.Empty;
+
+        ChannelTag = loc.Format("Status.Message.ChannelTag", ChannelId);
+        MessageIdText = HasMessageId ? loc.Format("Status.Message.MessageIdTag", MessageId) : string.Empty;
+        RssiText = HasRssi ? loc.Format("Status.Message.RssiTag", Rssi) : string.Empty;
+        SnrText = HasSnr ? loc.Format("Status.Message.SnrTag", Snr) : string.Empty;
+        HopText = HasHop ? loc.Format("Status.Message.HopTag", Hop) : string.Empty;
+        DirectText = HasDirect
+            ? (Direct == true ? loc.GetString("Status.Message.Direct") : loc.GetString("Status.Message.Relayed"))
+            : string.Empty;
+        OriginText = Origin switch
+        {
+            RxOrigin.Mesh => loc.GetString("Status.Message.OriginRf"),
+            RxOrigin.External => loc.GetString("Status.Message.OriginIs"),
+            _ => string.Empty,
+        };
+        FromIsText = HasFromIs
+            ? (FromIs == true ? loc.GetString("Status.Message.FromIs") : loc.GetString("Status.Message.FromRf"))
+            : string.Empty;
+        RetryText = HasRetry ? loc.Format("Status.Message.RetryTag", Retry) : string.Empty;
+        AirtimeText = HasAirtime ? loc.Format("Status.Message.AirtimeTag", AirtimeMs) : string.Empty;
     }
 }

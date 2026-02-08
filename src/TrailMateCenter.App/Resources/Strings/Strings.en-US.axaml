@@ -1,0 +1,229 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <x:String x:Key="App.Title">TrailMate Center</x:String>
+  <x:String x:Key="App.Brand">TrailMate Center</x:String>
+
+  <x:String x:Key="Common.Unknown">Unknown</x:String>
+  <x:String x:Key="Common.Yes">Yes</x:String>
+  <x:String x:Key="Common.No">No</x:String>
+  <x:String x:Key="Common.On">On</x:String>
+  <x:String x:Key="Common.Off">Off</x:String>
+  <x:String x:Key="Common.ChannelFormat">Channel {0}</x:String>
+  <x:String x:Key="Common.Separator"> | </x:String>
+
+  <x:String x:Key="Ui.Main.AckTimeout">ACK(ms)</x:String>
+  <x:String x:Key="Ui.Main.MaxRetries">Retries</x:String>
+  <x:String x:Key="Ui.Main.Replay">Replay</x:String>
+  <x:String x:Key="Ui.Main.ReplayFile">Replay file</x:String>
+  <x:String x:Key="Ui.Main.AutoConnect">Auto connect</x:String>
+  <x:String x:Key="Ui.Main.AutoReconnect">Auto reconnect</x:String>
+  <x:String x:Key="Ui.Main.RefreshPorts">Refresh</x:String>
+  <x:String x:Key="Ui.Main.Connect">Connect</x:String>
+  <x:String x:Key="Ui.Main.Disconnect">Disconnect</x:String>
+  <x:String x:Key="Ui.Main.Language">Language</x:String>
+  <x:String x:Key="Ui.Main.Theme">Theme</x:String>
+
+  <x:String x:Key="Ui.Tab.Dashboard">Dashboard</x:String>
+  <x:String x:Key="Ui.Tab.Chat">Chat</x:String>
+  <x:String x:Key="Ui.Tab.Config">Config</x:String>
+  <x:String x:Key="Ui.Tab.Logs">Logs</x:String>
+  <x:String x:Key="Ui.Tab.Events">Events</x:String>
+  <x:String x:Key="Ui.Tab.RawFrames">Raw Frames</x:String>
+  <x:String x:Key="Ui.Tab.Export">Export</x:String>
+
+  <x:String x:Key="Ui.Language.English">English</x:String>
+  <x:String x:Key="Ui.Language.Chinese">Chinese</x:String>
+  <x:String x:Key="Ui.Theme.Tactical">Night Ops</x:String>
+  <x:String x:Key="Ui.Theme.Sandstorm">Sandstorm</x:String>
+
+  <x:String x:Key="Ui.Chat.NodeInfo">Node info</x:String>
+  <x:String x:Key="Ui.Chat.SelectNodeHint">Select a node to view details</x:String>
+  <x:String x:Key="Ui.Chat.SetTarget">Set as target</x:String>
+  <x:String x:Key="Ui.Chat.QuickMessage">Quick message</x:String>
+  <x:String x:Key="Ui.Chat.QuickSend">Quick send</x:String>
+  <x:String x:Key="Ui.Chat.Tip">Tip: pick a node from the conversation list to switch target quickly</x:String>
+  <x:String x:Key="Ui.Chat.Target">Target</x:String>
+  <x:String x:Key="Ui.Chat.MessageInput">Enter message</x:String>
+  <x:String x:Key="Ui.Chat.Send">Send</x:String>
+  <x:String x:Key="Ui.Chat.Retry">Retry</x:String>
+  <x:String x:Key="Ui.Chat.Telemetry">Telemetry</x:String>
+
+  <x:String x:Key="Ui.Dashboard.Team">Team</x:String>
+  <x:String x:Key="Ui.Dashboard.NoTeams">No teams</x:String>
+  <x:String x:Key="Ui.Dashboard.NodeList">Nodes</x:String>
+  <x:String x:Key="Ui.Dashboard.Cluster">Cluster</x:String>
+  <x:String x:Key="Ui.Dashboard.Follow">Follow</x:String>
+  <x:String x:Key="Ui.Dashboard.Broadcast">Broadcast</x:String>
+  <x:String x:Key="Ui.Dashboard.InputMessage">Enter message</x:String>
+  <x:String x:Key="Ui.Dashboard.Target">Target</x:String>
+  <x:String x:Key="Ui.Dashboard.Send">Send</x:String>
+  <x:String x:Key="Ui.Dashboard.EventStream">Event stream</x:String>
+  <x:String x:Key="Ui.Dashboard.CommandOps">Command</x:String>
+  <x:String x:Key="Ui.Dashboard.Channel">Channel</x:String>
+  <x:String x:Key="Ui.Dashboard.Radius">Radius</x:String>
+  <x:String x:Key="Ui.Dashboard.Priority">Priority</x:String>
+  <x:String x:Key="Ui.Dashboard.Note">Note</x:String>
+  <x:String x:Key="Ui.Dashboard.CommandHint">Select an event or member, then issue command</x:String>
+  <x:String x:Key="Ui.Dashboard.Filter.Info">INFO</x:String>
+  <x:String x:Key="Ui.Dashboard.Filter.Warn">WARN</x:String>
+  <x:String x:Key="Ui.Dashboard.Filter.Crit">CRIT</x:String>
+  <x:String x:Key="Ui.Dashboard.Command.RallyTo">Rally</x:String>
+  <x:String x:Key="Ui.Dashboard.Command.MoveTo">Move</x:String>
+  <x:String x:Key="Ui.Dashboard.Command.Hold">Hold</x:String>
+
+  <x:String x:Key="Ui.Config.Load">Load config</x:String>
+  <x:String x:Key="Ui.Config.Save">Save config</x:String>
+  <x:String x:Key="Ui.Config.Advanced">Advanced mode</x:String>
+  <x:String x:Key="Ui.Config.TacticalSettings">Tactical settings</x:String>
+  <x:String x:Key="Ui.Config.OnlineThreshold">Online threshold (s)</x:String>
+  <x:String x:Key="Ui.Config.WeakThreshold">Weak threshold (s)</x:String>
+  <x:String x:Key="Ui.Config.CommandChannel">Command channel</x:String>
+  <x:String x:Key="Ui.Config.SaveSettings">Save settings</x:String>
+  <x:String x:Key="Ui.Config.AprsSettings">APRS-IS settings</x:String>
+  <x:String x:Key="Ui.Config.AprsEnable">Enable APRS-IS</x:String>
+  <x:String x:Key="Ui.Config.Server">Server</x:String>
+  <x:String x:Key="Ui.Config.Port">Port</x:String>
+  <x:String x:Key="Ui.Config.Callsign">Callsign</x:String>
+  <x:String x:Key="Ui.Config.Ssid">SSID</x:String>
+  <x:String x:Key="Ui.Config.Passcode">Passcode</x:String>
+  <x:String x:Key="Ui.Config.ToCall">TOCALL</x:String>
+  <x:String x:Key="Ui.Config.Path">PATH</x:String>
+  <x:String x:Key="Ui.Config.Filter">Filter</x:String>
+  <x:String x:Key="Ui.Config.Interval">Interval (s)</x:String>
+  <x:String x:Key="Ui.Config.DedupeWindow">Dedupe window (s)</x:String>
+  <x:String x:Key="Ui.Config.PositionInterval">Position interval (s)</x:String>
+  <x:String x:Key="Ui.Config.CompressPosition">Compress position</x:String>
+  <x:String x:Key="Ui.Config.SymbolTable">Symbol table/code</x:String>
+  <x:String x:Key="Ui.Config.TxTypes">Tx types</x:String>
+  <x:String x:Key="Ui.Config.TxStatus">Status</x:String>
+  <x:String x:Key="Ui.Config.TxTelemetry">Telemetry</x:String>
+  <x:String x:Key="Ui.Config.TxWeather">Weather</x:String>
+  <x:String x:Key="Ui.Config.TxMessages">Messages</x:String>
+  <x:String x:Key="Ui.Config.TxWaypoints">Waypoints</x:String>
+  <x:String x:Key="Ui.Config.SaveHint">After changes, click "Save settings"</x:String>
+
+  <x:String x:Key="Ui.Events.Filter">Filter</x:String>
+  <x:String x:Key="Ui.Events.FromIsOnly">From IS only</x:String>
+
+  <x:String x:Key="Ui.Export.Path">Output path</x:String>
+  <x:String x:Key="Ui.Export.ExportMessages">Export messages</x:String>
+  <x:String x:Key="Ui.Export.ExportEvents">Export events</x:String>
+
+  <x:String x:Key="Ui.Logs.Path">Log output path</x:String>
+  <x:String x:Key="Ui.Logs.Save">Save logs</x:String>
+  <x:String x:Key="Ui.Logs.Copy">Copy logs</x:String>
+  <x:String x:Key="Ui.Logs.Level.Info">INFO</x:String>
+  <x:String x:Key="Ui.Logs.Level.Warn">WARN</x:String>
+  <x:String x:Key="Ui.Logs.Level.Error">ERROR</x:String>
+
+  <x:String x:Key="Status.Connection.Disconnected">Disconnected</x:String>
+  <x:String x:Key="Status.Connection.Connecting">Connecting</x:String>
+  <x:String x:Key="Status.Connection.Handshaking">Handshaking</x:String>
+  <x:String x:Key="Status.Connection.Ready">Connected</x:String>
+  <x:String x:Key="Status.Connection.Error">Error</x:String>
+  <x:String x:Key="Status.Connection.Reconnecting">Reconnecting</x:String>
+
+  <x:String x:Key="Status.Aprs.Connected">APRS-IS: Connected</x:String>
+  <x:String x:Key="Status.Aprs.Connecting">APRS-IS: Connecting</x:String>
+  <x:String x:Key="Status.Aprs.Disabled">APRS-IS: Disabled</x:String>
+  <x:String x:Key="Status.Aprs.DisabledWithMessage">APRS-IS: {0}</x:String>
+  <x:String x:Key="Status.Aprs.Error">APRS-IS: Error {0}</x:String>
+  <x:String x:Key="Status.Aprs.Disconnected">APRS-IS: Disconnected</x:String>
+  <x:String x:Key="Status.Aprs.Stats">TX {0} | Drop {1} | Dedupe {2} | Rate {3} | Err {4}</x:String>
+
+  <x:String x:Key="Status.Device.Panel">Battery {0} | Charging {1} | State {2} | Channel {3} | Duty {4} | Last error {5}</x:String>
+  <x:String x:Key="Status.Device.Info">{0} | FW {1} | Proto {2}</x:String>
+  <x:String x:Key="Status.Device.Capabilities">MaxFrame {0} | Caps {1}</x:String>
+  <x:String x:Key="Status.Team.Untitled">Unnamed team</x:String>
+
+  <x:String x:Key="Error.InvalidTargetFormat">Invalid target format (supports 0x1234 or decimal)</x:String>
+  <x:String x:Key="Error.NoSubjectSelected">No node selected</x:String>
+  <x:String x:Key="Error.DeviceNotConnected">Device not connected</x:String>
+  <x:String x:Key="Error.MissingTargetLocation">Missing target location (select event or member position)</x:String>
+
+  <x:String x:Key="Command.DispatchTitle">Dispatch {0}</x:String>
+  <x:String x:Key="Command.Sending">Sending...</x:String>
+  <x:String x:Key="Command.Received">Device received command</x:String>
+  <x:String x:Key="Command.Failed">Command failed: {0}</x:String>
+  <x:String x:Key="Command.Exception">Command error: {0}</x:String>
+
+  <x:String x:Key="Status.Config.Loading">Loading config...</x:String>
+  <x:String x:Key="Status.Config.Loaded">Loaded {0} items</x:String>
+  <x:String x:Key="Status.Config.ReadFailed">Load failed: {0}</x:String>
+  <x:String x:Key="Status.Config.ReadOnly">Device config is read-only</x:String>
+  <x:String x:Key="Status.Config.Saving">Saving config...</x:String>
+  <x:String x:Key="Status.Config.InvalidValue">Invalid value: {0}</x:String>
+  <x:String x:Key="Status.Config.Saved">Config saved</x:String>
+  <x:String x:Key="Status.Config.SaveFailed">Save failed: {0}</x:String>
+  <x:String x:Key="Log.Config.ReadFailed">Config load failed</x:String>
+  <x:String x:Key="Log.Config.SaveFailed">Config save failed</x:String>
+
+  <x:String x:Key="Status.Export.MessagesInProgress">Exporting messages...</x:String>
+  <x:String x:Key="Status.Export.MessagesDone">Messages exported</x:String>
+  <x:String x:Key="Status.Export.EventsInProgress">Exporting events...</x:String>
+  <x:String x:Key="Status.Export.EventsDone">Events exported</x:String>
+  <x:String x:Key="Status.Export.Failed">Export failed: {0}</x:String>
+
+  <x:String x:Key="Status.Logs.Saved">Logs saved</x:String>
+  <x:String x:Key="Status.Logs.SaveFailed">Save failed: {0}</x:String>
+  <x:String x:Key="Status.Logs.Copied">Logs copied</x:String>
+  <x:String x:Key="Status.Logs.CopyFailed">Copy failed: {0}</x:String>
+
+  <x:String x:Key="Status.Message.Pending">Sending</x:String>
+  <x:String x:Key="Status.Message.Acked">Received</x:String>
+  <x:String x:Key="Status.Message.Succeeded">Succeeded</x:String>
+  <x:String x:Key="Status.Message.Timeout">Timeout</x:String>
+  <x:String x:Key="Status.Message.Failed">Failed</x:String>
+  <x:String x:Key="Status.Message.MeTo">Me -&gt; {0}</x:String>
+  <x:String x:Key="Status.Message.DeviceTime">Device {0}</x:String>
+  <x:String x:Key="Status.Message.ChannelTag">CH {0}</x:String>
+  <x:String x:Key="Status.Message.MessageIdTag">MSG {0}</x:String>
+  <x:String x:Key="Status.Message.RssiTag">RSSI {0}</x:String>
+  <x:String x:Key="Status.Message.SnrTag">SNR {0}</x:String>
+  <x:String x:Key="Status.Message.HopTag">HOP {0}</x:String>
+  <x:String x:Key="Status.Message.RetryTag">RETRY {0}</x:String>
+  <x:String x:Key="Status.Message.AirtimeTag">AIR {0}ms</x:String>
+  <x:String x:Key="Status.Message.Direct">Direct</x:String>
+  <x:String x:Key="Status.Message.Relayed">Relayed</x:String>
+  <x:String x:Key="Status.Message.OriginRf">Origin RF</x:String>
+  <x:String x:Key="Status.Message.OriginIs">Origin IS</x:String>
+  <x:String x:Key="Status.Message.FromIs">From IS</x:String>
+  <x:String x:Key="Status.Message.FromRf">From RF</x:String>
+  <x:String x:Key="Status.Message.Meta.Msg">Msg {0}</x:String>
+  <x:String x:Key="Status.Message.Meta.Rssi">RSSI {0}</x:String>
+  <x:String x:Key="Status.Message.Meta.Snr">SNR {0}</x:String>
+  <x:String x:Key="Status.Message.Meta.Hop">Hop {0}</x:String>
+  <x:String x:Key="Status.Message.Meta.Retry">Retry {0}</x:String>
+  <x:String x:Key="Status.Message.Meta.Airtime">Airtime {0}ms</x:String>
+
+  <x:String x:Key="Status.Link.Online">Online</x:String>
+  <x:String x:Key="Status.Link.Weak">Weak</x:String>
+  <x:String x:Key="Status.Link.Offline">Offline</x:String>
+  <x:String x:Key="Status.Link.Unknown">Unknown</x:String>
+  <x:String x:Key="Status.Location.Unknown">Location unknown</x:String>
+  <x:String x:Key="Status.Location.Format">Lat {0:F5}, Lon {1:F5}</x:String>
+
+  <x:String x:Key="Status.Port.UnknownDevice">Unknown device</x:String>
+  <x:String x:Key="Status.Port.InfoUnknown">Device info unavailable</x:String>
+
+  <x:String x:Key="Chat.Broadcast">Broadcast</x:String>
+  <x:String x:Key="Chat.WithPeer">With {0}</x:String>
+  <x:String x:Key="Chat.Private">Direct chat</x:String>
+  <x:String x:Key="Chat.ConversationSubtitle">{0} | Channel {1}</x:String>
+
+  <x:String x:Key="Event.FromIsTag">From IS</x:String>
+  <x:String x:Key="Event.RxMeta">RX Meta: {0}</x:String>
+  <x:String x:Key="Event.Meta.Utc">UTC {0}</x:String>
+  <x:String x:Key="Event.Meta.Direct">Direct</x:String>
+  <x:String x:Key="Event.Meta.Relayed">Relayed</x:String>
+  <x:String x:Key="Event.Meta.OriginRf">Origin RF</x:String>
+  <x:String x:Key="Event.Meta.OriginIs">Origin IS</x:String>
+  <x:String x:Key="Event.Meta.FromIs">From IS</x:String>
+  <x:String x:Key="Event.Meta.FromRf">From RF</x:String>
+  <x:String x:Key="Event.Meta.Rssi">RSSI {0}</x:String>
+  <x:String x:Key="Event.Meta.Snr">SNR {0}</x:String>
+  <x:String x:Key="Event.Meta.Hop">Hop {0}</x:String>
+  <x:String x:Key="Event.Meta.Packet">Pkt {0}</x:String>
+  <x:String x:Key="Event.Meta.Freq">Freq {0}</x:String>
+  <x:String x:Key="Event.Meta.Sf">SF {0}</x:String>
+</ResourceDictionary>

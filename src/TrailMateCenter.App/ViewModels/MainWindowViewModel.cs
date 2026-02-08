@@ -5,11 +5,13 @@ using Microsoft.Extensions.Logging;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using TrailMateCenter.Localization;
 using TrailMateCenter.Models;
 using TrailMateCenter.Protocol;
 using TrailMateCenter.Services;
 using TrailMateCenter.StateMachine;
 using TrailMateCenter.Storage;
+using TrailMateCenter.Styling;
 using TrailMateCenter.Transport;
 
 namespace TrailMateCenter.ViewModels;
@@ -31,6 +33,14 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     private DateTimeOffset _lastAutoConnectAttempt = DateTimeOffset.MinValue;
     private readonly HashSet<uint> _subjectListeners = new();
     private uint? _selfNodeId;
+    private bool _settingsLoaded;
+    private DeviceInfo? _lastDeviceInfo;
+    private StatusInfo? _lastStatusInfo;
+    private AprsIsStatus? _lastAprsStatus;
+    private AprsGatewayStats? _lastAprsStats;
+    private TeamStateEvent? _lastTeamState;
+    private string? _lastErrorKey;
+    private object[] _lastErrorArgs = Array.Empty<object>();
 
     public MainWindowViewModel(
         HostLinkClient client,
@@ -82,6 +92,23 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         _aprsGateway.StatsChanged += OnAprsStatsChanged;
         _aprsClient.StatusChanged += OnAprsStatusChanged;
 
+        var loc = LocalizationService.Instance;
+        ConnectionStateText = loc.GetString("Status.Connection.Disconnected");
+        AprsConnectionText = loc.GetString("Status.Aprs.Disconnected");
+
+        Languages.Add(new LanguageOptionViewModel("en-US", "Ui.Language.English"));
+        Languages.Add(new LanguageOptionViewModel("zh-CN", "Ui.Language.Chinese"));
+        foreach (var theme in ThemeService.BuiltInThemes)
+        {
+            Themes.Add(new ThemeOptionViewModel(theme));
+        }
+        SelectedLanguage = Languages.FirstOrDefault(l => l.Culture.Name == loc.CurrentCulture.Name)
+            ?? Languages.FirstOrDefault(l => l.Culture.TwoLetterISOLanguageName == loc.CurrentCulture.TwoLetterISOLanguageName)
+            ?? Languages.FirstOrDefault();
+        SelectedTheme = Themes.FirstOrDefault(t => t.Definition.Id == ThemeService.Instance.CurrentTheme.Id)
+            ?? Themes.FirstOrDefault();
+        LocalizationService.Instance.CultureChanged += (_, _) => RefreshLocalization();
+
         _ = LoadSettingsAsync();
         _ = RefreshPortsAsync();
 
@@ -111,6 +138,8 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     public ObservableCollection<SerialPortInfoViewModel> Ports { get; } = new();
     public ObservableCollection<MessageItemViewModel> Messages { get; } = new();
     public ObservableCollection<MessageItemViewModel> FilteredMessages { get; } = new();
+    public ObservableCollection<LanguageOptionViewModel> Languages { get; } = new();
+    public ObservableCollection<ThemeOptionViewModel> Themes { get; } = new();
     public ObservableCollection<ChannelOptionViewModel> Channels { get; } = new()
     {
         new ChannelOptionViewModel(0),
@@ -148,7 +177,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     private bool _autoConnectOnDetect;
 
     [ObservableProperty]
-    private string _connectionStateText = "未连接";
+    private string _connectionStateText = string.Empty;
 
     [ObservableProperty]
     private string _lastError = string.Empty;
@@ -289,7 +318,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     private bool _aprsEmitWaypoints = true;
 
     [ObservableProperty]
-    private string _aprsConnectionText = "APRS-IS: 未连接";
+    private string _aprsConnectionText = string.Empty;
 
     [ObservableProperty]
     private string _aprsConnectionColor = "#9AA3AE";
@@ -298,6 +327,12 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     private string _aprsStatsText = string.Empty;
 
     public bool HasNoSelectedSubject => !HasSelectedSubject;
+
+    [ObservableProperty]
+    private LanguageOptionViewModel? _selectedLanguage;
+
+    [ObservableProperty]
+    private ThemeOptionViewModel? _selectedTheme;
 
     [ObservableProperty]
     private int _selectedTabIndex;
@@ -320,6 +355,55 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     public IAsyncRelayCommand RallyCommand { get; }
     public IAsyncRelayCommand MoveCommand { get; }
     public IAsyncRelayCommand HoldCommand { get; }
+
+    partial void OnSelectedLanguageChanged(LanguageOptionViewModel? value)
+    {
+        if (value is null)
+            return;
+
+        var current = LocalizationService.Instance.CurrentCulture;
+        if (string.Equals(current.Name, value.Culture.Name, StringComparison.OrdinalIgnoreCase))
+            return;
+
+        LocalizationService.Instance.ApplyCulture(value.Culture);
+
+        if (_settingsLoaded)
+        {
+            _ = SaveSettingsAsync();
+        }
+    }
+
+    partial void OnSelectedThemeChanged(ThemeOptionViewModel? value)
+    {
+        if (value is null)
+            return;
+
+        if (ThemeService.Instance.CurrentTheme.Id == value.Definition.Id)
+            return;
+
+        ThemeService.Instance.ApplyTheme(value.Definition);
+
+        if (_settingsLoaded)
+        {
+            _ = SaveSettingsAsync();
+        }
+    }
+
+    private void SetLastError(string message)
+    {
+        _lastErrorKey = null;
+        _lastErrorArgs = Array.Empty<object>();
+        LastError = message;
+    }
+
+    private void SetLastErrorLocalized(string key, params object[] args)
+    {
+        _lastErrorKey = key;
+        _lastErrorArgs = args ?? Array.Empty<object>();
+        LastError = _lastErrorArgs.Length == 0
+            ? LocalizationService.Instance.GetString(key)
+            : LocalizationService.Instance.Format(key, _lastErrorArgs);
+    }
 
     private async Task LoadSettingsAsync()
     {
@@ -359,10 +443,33 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             AprsEmitWaypoints = _settings.Aprs.EmitWaypoints;
 
             _aprsGateway.ApplySettings(_settings.Aprs);
+
+            if (!string.IsNullOrWhiteSpace(_settings.Ui.Language))
+            {
+                var language = Languages.FirstOrDefault(l => string.Equals(l.Culture.Name, _settings.Ui.Language, StringComparison.OrdinalIgnoreCase))
+                    ?? Languages.FirstOrDefault(l => string.Equals(l.Culture.TwoLetterISOLanguageName, _settings.Ui.Language, StringComparison.OrdinalIgnoreCase));
+                if (language is not null)
+                {
+                    SelectedLanguage = language;
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(_settings.Ui.Theme))
+            {
+                var theme = Themes.FirstOrDefault(t => string.Equals(t.Definition.Id, _settings.Ui.Theme, StringComparison.OrdinalIgnoreCase));
+                if (theme is not null)
+                {
+                    SelectedTheme = theme;
+                }
+            }
         }
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Failed to load settings");
+        }
+        finally
+        {
+            _settingsLoaded = true;
         }
     }
 
@@ -410,7 +517,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
-            LastError = ex.Message;
+            SetLastError(ex.Message);
         }
     }
 
@@ -425,6 +532,11 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             LastReplayFile = ReplayFile,
             AckTimeoutMs = AckTimeoutMs,
             MaxRetries = MaxRetries,
+            Ui = _settings.Ui with
+            {
+                Language = SelectedLanguage?.Culture.Name ?? string.Empty,
+                Theme = SelectedTheme?.Definition.Id ?? string.Empty,
+            },
             Tactical = _settings.Tactical with
             {
                 OnlineThresholdSeconds = OnlineThresholdSeconds,
@@ -475,7 +587,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     {
         if (!TryParseNodeId(Target, out var toId))
         {
-            LastError = "目标格式无效（支持 0x1234 或十进制）";
+            SetLastErrorLocalized("Error.InvalidTargetFormat");
             return;
         }
 
@@ -500,7 +612,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     {
         if (SelectedSubject is null)
         {
-            LastError = "未选择节点";
+            SetLastErrorLocalized("Error.NoSubjectSelected");
             return;
         }
 
@@ -539,7 +651,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
 
         if (!TryParseNodeId(SelectedMessage.To, out var toId))
         {
-            LastError = "目标格式无效（支持 0x1234 或十进制）";
+            SetLastErrorLocalized("Error.InvalidTargetFormat");
             return;
         }
 
@@ -692,16 +804,17 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     {
         Dispatcher.UIThread.Post(() =>
         {
+            var loc = LocalizationService.Instance;
             ConnectionStateText = args.NewState switch
             {
-                ConnectionState.Connecting => "连接中",
-                ConnectionState.Handshaking => "握手中",
-                ConnectionState.Ready => "已连接",
-                ConnectionState.Error => "错误",
-                ConnectionState.Reconnecting => "重连中",
-                _ => "未连接",
+                ConnectionState.Connecting => loc.GetString("Status.Connection.Connecting"),
+                ConnectionState.Handshaking => loc.GetString("Status.Connection.Handshaking"),
+                ConnectionState.Ready => loc.GetString("Status.Connection.Ready"),
+                ConnectionState.Error => loc.GetString("Status.Connection.Error"),
+                ConnectionState.Reconnecting => loc.GetString("Status.Connection.Reconnecting"),
+                _ => loc.GetString("Status.Connection.Disconnected"),
             };
-            LastError = args.Reason ?? string.Empty;
+            SetLastError(args.Reason ?? string.Empty);
             IsConnected = args.NewState == ConnectionState.Ready;
             ConnectCommand.NotifyCanExecuteChanged();
             DisconnectCommand.NotifyCanExecuteChanged();
@@ -767,8 +880,10 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     {
         Dispatcher.UIThread.Post(() =>
         {
-            DeviceInfo = $"{info.Model} | FW {info.FirmwareVersion} | Proto {info.ProtocolVersion}";
-            CapabilitiesInfo = $"MaxFrame {info.Capabilities.MaxFrameLength} | Caps {info.Capabilities.CapabilitiesMask}";
+            _lastDeviceInfo = info;
+            var loc = LocalizationService.Instance;
+            DeviceInfo = loc.Format("Status.Device.Info", info.Model, info.FirmwareVersion, info.ProtocolVersion);
+            CapabilitiesInfo = loc.Format("Status.Device.Capabilities", info.Capabilities.MaxFrameLength, info.Capabilities.CapabilitiesMask);
             Config.ApplyCapabilities(info.Capabilities);
         });
     }
@@ -777,8 +892,12 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     {
         Dispatcher.UIThread.Post(() =>
         {
-            var batteryText = info.BatteryPercent.HasValue ? $"{info.BatteryPercent}%" : "未知";
-            StatusPanel = $"电量 {batteryText} | 充电 {(info.IsCharging ? "是" : "否")} | 状态 {info.LinkState} | Channel {info.Channel} | Duty {(info.DutyCycleEnabled ? "开" : "关")} | 最近错误 {info.LastError}";
+            _lastStatusInfo = info;
+            var loc = LocalizationService.Instance;
+            var batteryText = info.BatteryPercent.HasValue ? $"{info.BatteryPercent}%" : loc.GetString("Common.Unknown");
+            var chargingText = info.IsCharging ? loc.GetString("Common.Yes") : loc.GetString("Common.No");
+            var dutyText = info.DutyCycleEnabled ? loc.GetString("Common.On") : loc.GetString("Common.Off");
+            StatusPanel = loc.Format("Status.Device.Panel", batteryText, chargingText, info.LinkState, info.Channel, dutyText, info.LastError);
         });
     }
 
@@ -786,13 +905,17 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     {
         Dispatcher.UIThread.Post(() =>
         {
+            _lastAprsStatus = status;
+            var loc = LocalizationService.Instance;
             AprsConnectionText = status.State switch
             {
-                AprsIsConnectionState.Connected => $"APRS-IS: 已连接",
-                AprsIsConnectionState.Connecting => "APRS-IS: 连接中",
-                AprsIsConnectionState.Disabled => string.IsNullOrWhiteSpace(status.Message) ? "APRS-IS: 未启用" : $"APRS-IS: {status.Message}",
-                AprsIsConnectionState.Error => $"APRS-IS: 错误 {status.Message}",
-                _ => "APRS-IS: 未连接",
+                AprsIsConnectionState.Connected => loc.GetString("Status.Aprs.Connected"),
+                AprsIsConnectionState.Connecting => loc.GetString("Status.Aprs.Connecting"),
+                AprsIsConnectionState.Disabled => string.IsNullOrWhiteSpace(status.Message)
+                    ? loc.GetString("Status.Aprs.Disabled")
+                    : loc.Format("Status.Aprs.DisabledWithMessage", status.Message),
+                AprsIsConnectionState.Error => loc.Format("Status.Aprs.Error", status.Message),
+                _ => loc.GetString("Status.Aprs.Disconnected"),
             };
             AprsConnectionColor = status.State switch
             {
@@ -809,7 +932,14 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     {
         Dispatcher.UIThread.Post(() =>
         {
-            AprsStatsText = $"TX {stats.Sent} · Drop {stats.Dropped} · Dedupe {stats.DedupeHits} · Rate {stats.RateLimited} · Err {stats.Errors}";
+            _lastAprsStats = stats;
+            AprsStatsText = LocalizationService.Instance.Format(
+                "Status.Aprs.Stats",
+                stats.Sent,
+                stats.Dropped,
+                stats.DedupeHits,
+                stats.RateLimited,
+                stats.Errors);
         });
     }
 
@@ -828,7 +958,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     {
         if (!IsConnected)
         {
-            LastError = "未连接设备";
+            SetLastErrorLocalized("Error.DeviceNotConnected");
             return;
         }
 
@@ -837,13 +967,21 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         if ((type == TeamCommandType.RallyTo || type == TeamCommandType.MoveTo) &&
             (!targetLat.HasValue || !targetLon.HasValue))
         {
-            LastError = "缺少目标坐标（请选择事件或队员位置）";
+            SetLastErrorLocalized("Error.MissingTargetLocation");
             return;
         }
 
         var toId = SelectedSubject?.Id;
-        var title = $"下发指令 {type}";
-        var detail = "发送中...";
+        var loc = LocalizationService.Instance;
+        var commandLabel = type switch
+        {
+            TeamCommandType.RallyTo => loc.GetString("Ui.Dashboard.Command.RallyTo"),
+            TeamCommandType.MoveTo => loc.GetString("Ui.Dashboard.Command.MoveTo"),
+            TeamCommandType.Hold => loc.GetString("Ui.Dashboard.Command.Hold"),
+            _ => type.ToString(),
+        };
+        var title = loc.Format("Command.DispatchTitle", commandLabel);
+        var detail = loc.GetString("Command.Sending");
         var ev = new TacticalEvent(
             DateTimeOffset.UtcNow,
             TacticalRules.GetDefaultSeverity(TacticalEventKind.CommandIssued),
@@ -875,17 +1013,17 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             var result = await _client.SendTeamCommandAsync(request, CancellationToken.None);
             if (result == HostLinkErrorCode.Ok)
             {
-                vm.Detail = "设备已接收指令";
+                vm.Detail = loc.GetString("Command.Received");
             }
             else
             {
-                vm.Detail = $"指令失败: {result}";
+                vm.Detail = loc.Format("Command.Failed", result);
                 vm.ApplySeverity(TacticalSeverity.Warning);
             }
         }
         catch (Exception ex)
         {
-            vm.Detail = $"指令异常: {ex.Message}";
+            vm.Detail = loc.Format("Command.Exception", ex.Message);
             vm.ApplySeverity(TacticalSeverity.Warning);
         }
     }
@@ -1207,12 +1345,126 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         var teamState = _sessionStore.SnapshotTeamState();
         if (teamState is not null)
         {
+            _lastTeamState = teamState;
             ApplyTeamState(teamState);
         }
     }
 
+    private void RefreshLocalization()
+    {
+        Dispatcher.UIThread.Post(() =>
+        {
+            var loc = LocalizationService.Instance;
+            ConnectionStateText = _client.ConnectionState switch
+            {
+                ConnectionState.Connecting => loc.GetString("Status.Connection.Connecting"),
+                ConnectionState.Handshaking => loc.GetString("Status.Connection.Handshaking"),
+                ConnectionState.Ready => loc.GetString("Status.Connection.Ready"),
+                ConnectionState.Error => loc.GetString("Status.Connection.Error"),
+                ConnectionState.Reconnecting => loc.GetString("Status.Connection.Reconnecting"),
+                _ => loc.GetString("Status.Connection.Disconnected"),
+            };
+
+            if (_lastDeviceInfo is not null)
+            {
+                DeviceInfo = loc.Format("Status.Device.Info", _lastDeviceInfo.Model, _lastDeviceInfo.FirmwareVersion, _lastDeviceInfo.ProtocolVersion);
+                CapabilitiesInfo = loc.Format("Status.Device.Capabilities", _lastDeviceInfo.Capabilities.MaxFrameLength, _lastDeviceInfo.Capabilities.CapabilitiesMask);
+            }
+
+            if (_lastStatusInfo is not null)
+            {
+                var batteryText = _lastStatusInfo.BatteryPercent.HasValue ? $"{_lastStatusInfo.BatteryPercent}%" : loc.GetString("Common.Unknown");
+                var chargingText = _lastStatusInfo.IsCharging ? loc.GetString("Common.Yes") : loc.GetString("Common.No");
+                var dutyText = _lastStatusInfo.DutyCycleEnabled ? loc.GetString("Common.On") : loc.GetString("Common.Off");
+                StatusPanel = loc.Format("Status.Device.Panel", batteryText, chargingText, _lastStatusInfo.LinkState, _lastStatusInfo.Channel, dutyText, _lastStatusInfo.LastError);
+            }
+
+            if (_lastAprsStatus is not null)
+            {
+                AprsConnectionText = _lastAprsStatus.State switch
+                {
+                    AprsIsConnectionState.Connected => loc.GetString("Status.Aprs.Connected"),
+                    AprsIsConnectionState.Connecting => loc.GetString("Status.Aprs.Connecting"),
+                    AprsIsConnectionState.Disabled => string.IsNullOrWhiteSpace(_lastAprsStatus.Message)
+                        ? loc.GetString("Status.Aprs.Disabled")
+                        : loc.Format("Status.Aprs.DisabledWithMessage", _lastAprsStatus.Message),
+                    AprsIsConnectionState.Error => loc.Format("Status.Aprs.Error", _lastAprsStatus.Message),
+                    _ => loc.GetString("Status.Aprs.Disconnected"),
+                };
+            }
+            else
+            {
+                AprsConnectionText = loc.GetString("Status.Aprs.Disconnected");
+            }
+
+            if (_lastAprsStats is not null)
+            {
+                AprsStatsText = loc.Format(
+                    "Status.Aprs.Stats",
+                    _lastAprsStats.Sent,
+                    _lastAprsStats.Dropped,
+                    _lastAprsStats.DedupeHits,
+                    _lastAprsStats.RateLimited,
+                    _lastAprsStats.Errors);
+            }
+
+            foreach (var language in Languages)
+            {
+                language.RefreshLocalization();
+            }
+            foreach (var theme in Themes)
+            {
+                theme.RefreshLocalization();
+            }
+            foreach (var port in Ports)
+            {
+                port.RefreshLocalization();
+            }
+            foreach (var channel in Channels)
+            {
+                channel.RefreshLocalization();
+            }
+            foreach (var conversation in Conversations)
+            {
+                conversation.RefreshLocalization();
+            }
+            foreach (var message in Messages)
+            {
+                message.RefreshLocalization();
+            }
+            foreach (var subject in Subjects)
+            {
+                subject.RefreshLocalization();
+            }
+            Events.RefreshLocalization();
+            Config.RefreshLocalization();
+            Logs.RefreshLocalization();
+            Export.RefreshLocalization();
+
+            if (_lastTeamState is not null)
+            {
+                ApplyTeamState(_lastTeamState);
+            }
+
+            var currentLanguage = Languages.FirstOrDefault(l => l.Culture.Name == loc.CurrentCulture.Name)
+                ?? Languages.FirstOrDefault(l => l.Culture.TwoLetterISOLanguageName == loc.CurrentCulture.TwoLetterISOLanguageName);
+            if (currentLanguage is not null && SelectedLanguage != currentLanguage)
+            {
+                SelectedLanguage = currentLanguage;
+            }
+
+            if (!string.IsNullOrWhiteSpace(_lastErrorKey))
+            {
+                LastError = _lastErrorArgs.Length == 0
+                    ? LocalizationService.Instance.GetString(_lastErrorKey)
+                    : LocalizationService.Instance.Format(_lastErrorKey, _lastErrorArgs);
+            }
+        });
+    }
+
     private void OnTeamStateUpdated(object? sender, TeamStateEvent state)
     {
+        _lastTeamState = state;
         Dispatcher.UIThread.Post(() => ApplyTeamState(state));
     }
 
@@ -1223,7 +1475,9 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             _selfNodeId = state.SelfId;
         }
 
-        var teamName = string.IsNullOrWhiteSpace(state.TeamName) ? "未命名小队" : state.TeamName;
+        var teamName = string.IsNullOrWhiteSpace(state.TeamName)
+            ? LocalizationService.Instance.GetString("Status.Team.Untitled")
+            : state.TeamName;
         var memberIds = new HashSet<uint>(state.Members
             .Select(m => m.NodeId == 0 && state.SelfId != 0 ? state.SelfId : m.NodeId)
             .Where(id => id != 0));

@@ -1,0 +1,30 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <FontFamily x:Key="FontSans">Bahnschrift, Segoe UI</FontFamily>
+  <FontFamily x:Key="FontMono">Cascadia Mono, Consolas</FontFamily>
+
+  <LinearGradientBrush x:Key="AppBackground" StartPoint="0,0" EndPoint="0,1">
+    <GradientStop Color="#14110B" Offset="0"/>
+    <GradientStop Color="#1B1710" Offset="1"/>
+  </LinearGradientBrush>
+  <LinearGradientBrush x:Key="TopBarGradient" StartPoint="0,0" EndPoint="0,1">
+    <GradientStop Color="#2A2216" Offset="0"/>
+    <GradientStop Color="#1B1510" Offset="1"/>
+  </LinearGradientBrush>
+
+  <SolidColorBrush x:Key="PanelBg" Color="#1B160F"/>
+  <SolidColorBrush x:Key="PanelBg2" Color="#16110B"/>
+  <SolidColorBrush x:Key="PanelBorder" Color="#3A2F1F"/>
+  <SolidColorBrush x:Key="PanelBorderStrong" Color="#4A3C2B"/>
+  <SolidColorBrush x:Key="TextPrimary" Color="#F2E9DA"/>
+  <SolidColorBrush x:Key="TextDim" Color="#C3B59A"/>
+  <SolidColorBrush x:Key="Accent" Color="#F6C453"/>
+  <SolidColorBrush x:Key="AccentSoft" Color="#F9E2A0"/>
+  <SolidColorBrush x:Key="AccentWarn" Color="#F59E0B"/>
+  <SolidColorBrush x:Key="AccentDanger" Color="#EF4444"/>
+  <SolidColorBrush x:Key="AccentInfo" Color="#6EC5F4"/>
+  <SolidColorBrush x:Key="AccentNeutral" Color="#B8A98B"/>
+  <SolidColorBrush x:Key="SurfaceDark" Color="#120E08"/>
+  <SolidColorBrush x:Key="SurfaceMid" Color="#1C1610"/>
+  <SolidColorBrush x:Key="SurfaceLight" Color="#241C14"/>
+</ResourceDictionary>

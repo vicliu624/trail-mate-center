@@ -1,0 +1,229 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <x:String x:Key="App.Title">TrailMate 指挥中心</x:String>
+  <x:String x:Key="App.Brand">TrailMate 指挥中心</x:String>
+
+  <x:String x:Key="Common.Unknown">未知</x:String>
+  <x:String x:Key="Common.Yes">是</x:String>
+  <x:String x:Key="Common.No">否</x:String>
+  <x:String x:Key="Common.On">开</x:String>
+  <x:String x:Key="Common.Off">关</x:String>
+  <x:String x:Key="Common.ChannelFormat">频道 {0}</x:String>
+  <x:String x:Key="Common.Separator"> · </x:String>
+
+  <x:String x:Key="Ui.Main.AckTimeout">ACK(ms)</x:String>
+  <x:String x:Key="Ui.Main.MaxRetries">重试</x:String>
+  <x:String x:Key="Ui.Main.Replay">回放</x:String>
+  <x:String x:Key="Ui.Main.ReplayFile">回放文件</x:String>
+  <x:String x:Key="Ui.Main.AutoConnect">自动连接</x:String>
+  <x:String x:Key="Ui.Main.AutoReconnect">自动重连</x:String>
+  <x:String x:Key="Ui.Main.RefreshPorts">刷新</x:String>
+  <x:String x:Key="Ui.Main.Connect">连接</x:String>
+  <x:String x:Key="Ui.Main.Disconnect">断开</x:String>
+  <x:String x:Key="Ui.Main.Language">语言</x:String>
+  <x:String x:Key="Ui.Main.Theme">主题</x:String>
+
+  <x:String x:Key="Ui.Tab.Dashboard">态势</x:String>
+  <x:String x:Key="Ui.Tab.Chat">聊天</x:String>
+  <x:String x:Key="Ui.Tab.Config">配置</x:String>
+  <x:String x:Key="Ui.Tab.Logs">日志</x:String>
+  <x:String x:Key="Ui.Tab.Events">事件监视</x:String>
+  <x:String x:Key="Ui.Tab.RawFrames">原始帧</x:String>
+  <x:String x:Key="Ui.Tab.Export">导出</x:String>
+
+  <x:String x:Key="Ui.Language.English">英语</x:String>
+  <x:String x:Key="Ui.Language.Chinese">中文</x:String>
+  <x:String x:Key="Ui.Theme.Tactical">夜战</x:String>
+  <x:String x:Key="Ui.Theme.Sandstorm">沙暴</x:String>
+
+  <x:String x:Key="Ui.Chat.NodeInfo">节点信息</x:String>
+  <x:String x:Key="Ui.Chat.SelectNodeHint">请选择一个节点查看详情</x:String>
+  <x:String x:Key="Ui.Chat.SetTarget">设为消息目标</x:String>
+  <x:String x:Key="Ui.Chat.QuickMessage">快速消息</x:String>
+  <x:String x:Key="Ui.Chat.QuickSend">快速发送</x:String>
+  <x:String x:Key="Ui.Chat.Tip">提示：从左侧会话选择节点可快速切换目标</x:String>
+  <x:String x:Key="Ui.Chat.Target">目标</x:String>
+  <x:String x:Key="Ui.Chat.MessageInput">输入消息</x:String>
+  <x:String x:Key="Ui.Chat.Send">发送</x:String>
+  <x:String x:Key="Ui.Chat.Retry">重试</x:String>
+  <x:String x:Key="Ui.Chat.Telemetry">遥测</x:String>
+
+  <x:String x:Key="Ui.Dashboard.Team">小队</x:String>
+  <x:String x:Key="Ui.Dashboard.NoTeams">暂无小队</x:String>
+  <x:String x:Key="Ui.Dashboard.NodeList">节点列表</x:String>
+  <x:String x:Key="Ui.Dashboard.Cluster">聚合</x:String>
+  <x:String x:Key="Ui.Dashboard.Follow">跟随</x:String>
+  <x:String x:Key="Ui.Dashboard.Broadcast">全局喊话</x:String>
+  <x:String x:Key="Ui.Dashboard.InputMessage">输入消息</x:String>
+  <x:String x:Key="Ui.Dashboard.Target">目标</x:String>
+  <x:String x:Key="Ui.Dashboard.Send">发送</x:String>
+  <x:String x:Key="Ui.Dashboard.EventStream">事件流</x:String>
+  <x:String x:Key="Ui.Dashboard.CommandOps">指挥操作</x:String>
+  <x:String x:Key="Ui.Dashboard.Channel">通道</x:String>
+  <x:String x:Key="Ui.Dashboard.Radius">半径</x:String>
+  <x:String x:Key="Ui.Dashboard.Priority">优先级</x:String>
+  <x:String x:Key="Ui.Dashboard.Note">备注</x:String>
+  <x:String x:Key="Ui.Dashboard.CommandHint">选择事件或队员后下达指令</x:String>
+  <x:String x:Key="Ui.Dashboard.Filter.Info">信息</x:String>
+  <x:String x:Key="Ui.Dashboard.Filter.Warn">警告</x:String>
+  <x:String x:Key="Ui.Dashboard.Filter.Crit">严重</x:String>
+  <x:String x:Key="Ui.Dashboard.Command.RallyTo">集结</x:String>
+  <x:String x:Key="Ui.Dashboard.Command.MoveTo">前往</x:String>
+  <x:String x:Key="Ui.Dashboard.Command.Hold">待命</x:String>
+
+  <x:String x:Key="Ui.Config.Load">读取配置</x:String>
+  <x:String x:Key="Ui.Config.Save">写入配置</x:String>
+  <x:String x:Key="Ui.Config.Advanced">高级模式</x:String>
+  <x:String x:Key="Ui.Config.TacticalSettings">态势设置</x:String>
+  <x:String x:Key="Ui.Config.OnlineThreshold">在线阈值(s)</x:String>
+  <x:String x:Key="Ui.Config.WeakThreshold">弱联阈值(s)</x:String>
+  <x:String x:Key="Ui.Config.CommandChannel">指令通道</x:String>
+  <x:String x:Key="Ui.Config.SaveSettings">保存设置</x:String>
+  <x:String x:Key="Ui.Config.AprsSettings">APRS-IS 设置</x:String>
+  <x:String x:Key="Ui.Config.AprsEnable">启用 APRS-IS</x:String>
+  <x:String x:Key="Ui.Config.Server">服务器</x:String>
+  <x:String x:Key="Ui.Config.Port">端口</x:String>
+  <x:String x:Key="Ui.Config.Callsign">呼号</x:String>
+  <x:String x:Key="Ui.Config.Ssid">SSID</x:String>
+  <x:String x:Key="Ui.Config.Passcode">口令</x:String>
+  <x:String x:Key="Ui.Config.ToCall">TOCALL</x:String>
+  <x:String x:Key="Ui.Config.Path">PATH</x:String>
+  <x:String x:Key="Ui.Config.Filter">过滤器</x:String>
+  <x:String x:Key="Ui.Config.Interval">间隔(s)</x:String>
+  <x:String x:Key="Ui.Config.DedupeWindow">去重窗(s)</x:String>
+  <x:String x:Key="Ui.Config.PositionInterval">位置间隔(s)</x:String>
+  <x:String x:Key="Ui.Config.CompressPosition">压缩位置</x:String>
+  <x:String x:Key="Ui.Config.SymbolTable">符号表/码</x:String>
+  <x:String x:Key="Ui.Config.TxTypes">发射类型</x:String>
+  <x:String x:Key="Ui.Config.TxStatus">状态</x:String>
+  <x:String x:Key="Ui.Config.TxTelemetry">遥测</x:String>
+  <x:String x:Key="Ui.Config.TxWeather">气象</x:String>
+  <x:String x:Key="Ui.Config.TxMessages">消息</x:String>
+  <x:String x:Key="Ui.Config.TxWaypoints">路点</x:String>
+  <x:String x:Key="Ui.Config.SaveHint">改动后请点击“保存设置”</x:String>
+
+  <x:String x:Key="Ui.Events.Filter">筛选</x:String>
+  <x:String x:Key="Ui.Events.FromIsOnly">仅 From IS</x:String>
+
+  <x:String x:Key="Ui.Export.Path">输出路径</x:String>
+  <x:String x:Key="Ui.Export.ExportMessages">导出消息</x:String>
+  <x:String x:Key="Ui.Export.ExportEvents">导出事件</x:String>
+
+  <x:String x:Key="Ui.Logs.Path">日志输出路径</x:String>
+  <x:String x:Key="Ui.Logs.Save">保存日志</x:String>
+  <x:String x:Key="Ui.Logs.Copy">复制日志</x:String>
+  <x:String x:Key="Ui.Logs.Level.Info">信息</x:String>
+  <x:String x:Key="Ui.Logs.Level.Warn">警告</x:String>
+  <x:String x:Key="Ui.Logs.Level.Error">错误</x:String>
+
+  <x:String x:Key="Status.Connection.Disconnected">未连接</x:String>
+  <x:String x:Key="Status.Connection.Connecting">连接中</x:String>
+  <x:String x:Key="Status.Connection.Handshaking">握手中</x:String>
+  <x:String x:Key="Status.Connection.Ready">已连接</x:String>
+  <x:String x:Key="Status.Connection.Error">错误</x:String>
+  <x:String x:Key="Status.Connection.Reconnecting">重连中</x:String>
+
+  <x:String x:Key="Status.Aprs.Connected">APRS-IS: 已连接</x:String>
+  <x:String x:Key="Status.Aprs.Connecting">APRS-IS: 连接中</x:String>
+  <x:String x:Key="Status.Aprs.Disabled">APRS-IS: 未启用</x:String>
+  <x:String x:Key="Status.Aprs.DisabledWithMessage">APRS-IS: {0}</x:String>
+  <x:String x:Key="Status.Aprs.Error">APRS-IS: 错误 {0}</x:String>
+  <x:String x:Key="Status.Aprs.Disconnected">APRS-IS: 未连接</x:String>
+  <x:String x:Key="Status.Aprs.Stats">发送 {0} · 丢弃 {1} · 去重 {2} · 限速 {3} · 错误 {4}</x:String>
+
+  <x:String x:Key="Status.Device.Panel">电量 {0} | 充电 {1} | 状态 {2} | 通道 {3} | 占空 {4} | 最近错误 {5}</x:String>
+  <x:String x:Key="Status.Device.Info">{0} | 固件 {1} | 协议 {2}</x:String>
+  <x:String x:Key="Status.Device.Capabilities">最大帧 {0} | 能力 {1}</x:String>
+  <x:String x:Key="Status.Team.Untitled">未命名小队</x:String>
+
+  <x:String x:Key="Error.InvalidTargetFormat">目标格式无效（支持 0x1234 或十进制）</x:String>
+  <x:String x:Key="Error.NoSubjectSelected">未选择节点</x:String>
+  <x:String x:Key="Error.DeviceNotConnected">未连接设备</x:String>
+  <x:String x:Key="Error.MissingTargetLocation">缺少目标坐标（请选择事件或队员位置）</x:String>
+
+  <x:String x:Key="Command.DispatchTitle">下发指令 {0}</x:String>
+  <x:String x:Key="Command.Sending">发送中...</x:String>
+  <x:String x:Key="Command.Received">设备已接收指令</x:String>
+  <x:String x:Key="Command.Failed">指令失败: {0}</x:String>
+  <x:String x:Key="Command.Exception">指令异常: {0}</x:String>
+
+  <x:String x:Key="Status.Config.Loading">读取配置中...</x:String>
+  <x:String x:Key="Status.Config.Loaded">已加载 {0} 项</x:String>
+  <x:String x:Key="Status.Config.ReadFailed">读取失败: {0}</x:String>
+  <x:String x:Key="Status.Config.ReadOnly">设备配置为只读</x:String>
+  <x:String x:Key="Status.Config.Saving">写入配置中...</x:String>
+  <x:String x:Key="Status.Config.InvalidValue">配置值无效: {0}</x:String>
+  <x:String x:Key="Status.Config.Saved">写入完成</x:String>
+  <x:String x:Key="Status.Config.SaveFailed">写入失败: {0}</x:String>
+  <x:String x:Key="Log.Config.ReadFailed">读取配置失败</x:String>
+  <x:String x:Key="Log.Config.SaveFailed">写入配置失败</x:String>
+
+  <x:String x:Key="Status.Export.MessagesInProgress">导出消息中...</x:String>
+  <x:String x:Key="Status.Export.MessagesDone">消息导出完成</x:String>
+  <x:String x:Key="Status.Export.EventsInProgress">导出事件中...</x:String>
+  <x:String x:Key="Status.Export.EventsDone">事件导出完成</x:String>
+  <x:String x:Key="Status.Export.Failed">导出失败: {0}</x:String>
+
+  <x:String x:Key="Status.Logs.Saved">日志已保存</x:String>
+  <x:String x:Key="Status.Logs.SaveFailed">保存失败: {0}</x:String>
+  <x:String x:Key="Status.Logs.Copied">日志已复制</x:String>
+  <x:String x:Key="Status.Logs.CopyFailed">复制失败: {0}</x:String>
+
+  <x:String x:Key="Status.Message.Pending">发送中</x:String>
+  <x:String x:Key="Status.Message.Acked">已接收</x:String>
+  <x:String x:Key="Status.Message.Succeeded">成功</x:String>
+  <x:String x:Key="Status.Message.Timeout">超时</x:String>
+  <x:String x:Key="Status.Message.Failed">失败</x:String>
+  <x:String x:Key="Status.Message.MeTo">我 -&gt; {0}</x:String>
+  <x:String x:Key="Status.Message.DeviceTime">设备 {0}</x:String>
+  <x:String x:Key="Status.Message.ChannelTag">CH {0}</x:String>
+  <x:String x:Key="Status.Message.MessageIdTag">MSG {0}</x:String>
+  <x:String x:Key="Status.Message.RssiTag">RSSI {0}</x:String>
+  <x:String x:Key="Status.Message.SnrTag">SNR {0}</x:String>
+  <x:String x:Key="Status.Message.HopTag">HOP {0}</x:String>
+  <x:String x:Key="Status.Message.RetryTag">重试 {0}</x:String>
+  <x:String x:Key="Status.Message.AirtimeTag">AIR {0}ms</x:String>
+  <x:String x:Key="Status.Message.Direct">直连</x:String>
+  <x:String x:Key="Status.Message.Relayed">中继</x:String>
+  <x:String x:Key="Status.Message.OriginRf">来源 RF</x:String>
+  <x:String x:Key="Status.Message.OriginIs">来源 IS</x:String>
+  <x:String x:Key="Status.Message.FromIs">来自 IS</x:String>
+  <x:String x:Key="Status.Message.FromRf">来自 RF</x:String>
+  <x:String x:Key="Status.Message.Meta.Msg">消息 {0}</x:String>
+  <x:String x:Key="Status.Message.Meta.Rssi">RSSI {0}</x:String>
+  <x:String x:Key="Status.Message.Meta.Snr">SNR {0}</x:String>
+  <x:String x:Key="Status.Message.Meta.Hop">跳数 {0}</x:String>
+  <x:String x:Key="Status.Message.Meta.Retry">重试 {0}</x:String>
+  <x:String x:Key="Status.Message.Meta.Airtime">空口 {0}ms</x:String>
+
+  <x:String x:Key="Status.Link.Online">在线</x:String>
+  <x:String x:Key="Status.Link.Weak">弱联</x:String>
+  <x:String x:Key="Status.Link.Offline">失联</x:String>
+  <x:String x:Key="Status.Link.Unknown">未知</x:String>
+  <x:String x:Key="Status.Location.Unknown">位置未知</x:String>
+  <x:String x:Key="Status.Location.Format">纬度 {0:F5}, 经度 {1:F5}</x:String>
+
+  <x:String x:Key="Status.Port.UnknownDevice">未识别设备</x:String>
+  <x:String x:Key="Status.Port.InfoUnknown">设备信息未知</x:String>
+
+  <x:String x:Key="Chat.Broadcast">广播</x:String>
+  <x:String x:Key="Chat.WithPeer">与 {0}</x:String>
+  <x:String x:Key="Chat.Private">私聊</x:String>
+  <x:String x:Key="Chat.ConversationSubtitle">{0} · 频道 {1}</x:String>
+
+  <x:String x:Key="Event.FromIsTag">来自 IS</x:String>
+  <x:String x:Key="Event.RxMeta">接收信息: {0}</x:String>
+  <x:String x:Key="Event.Meta.Utc">UTC {0}</x:String>
+  <x:String x:Key="Event.Meta.Direct">直连</x:String>
+  <x:String x:Key="Event.Meta.Relayed">中继</x:String>
+  <x:String x:Key="Event.Meta.OriginRf">来源 RF</x:String>
+  <x:String x:Key="Event.Meta.OriginIs">来源 IS</x:String>
+  <x:String x:Key="Event.Meta.FromIs">来自 IS</x:String>
+  <x:String x:Key="Event.Meta.FromRf">来自 RF</x:String>
+  <x:String x:Key="Event.Meta.Rssi">RSSI {0}</x:String>
+  <x:String x:Key="Event.Meta.Snr">SNR {0}</x:String>
+  <x:String x:Key="Event.Meta.Hop">跳数 {0}</x:String>
+  <x:String x:Key="Event.Meta.Packet">包 {0}</x:String>
+  <x:String x:Key="Event.Meta.Freq">频率 {0}</x:String>
+  <x:String x:Key="Event.Meta.Sf">SF {0}</x:String>
+</ResourceDictionary>

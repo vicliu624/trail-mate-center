@@ -3,16 +3,19 @@ using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging;
 using System.Collections.ObjectModel;
 using System.Globalization;
+using TrailMateCenter.Localization;
 using TrailMateCenter.Models;
 using TrailMateCenter.Protocol;
 using TrailMateCenter.Services;
 
 namespace TrailMateCenter.ViewModels;
 
-public sealed partial class ConfigViewModel : ObservableObject
+public sealed partial class ConfigViewModel : ObservableObject, ILocalizationAware
 {
     private readonly HostLinkClient _client;
     private readonly ILogger _logger;
+    private string? _statusKey;
+    private object[] _statusArgs = Array.Empty<object>();
 
     public ConfigViewModel(HostLinkClient client, ILogger logger)
     {
@@ -44,7 +47,7 @@ public sealed partial class ConfigViewModel : ObservableObject
 
     private async Task LoadConfigAsync()
     {
-        StatusMessage = "读取配置中...";
+        SetStatus("Status.Config.Loading");
         try
         {
             var config = await _client.GetConfigAsync(CancellationToken.None);
@@ -59,12 +62,12 @@ public sealed partial class ConfigViewModel : ObservableObject
                     IsDangerousKey(key)));
             }
             RefreshItemReadOnly();
-            StatusMessage = $"已加载 {Items.Count} 项";
+            SetStatus("Status.Config.Loaded", Items.Count);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "读取配置失败");
-            StatusMessage = $"读取失败: {ex.Message}";
+            _logger.LogError(ex, LocalizationService.Instance.GetString("Log.Config.ReadFailed"));
+            SetStatus("Status.Config.ReadFailed", ex.Message);
         }
     }
 
@@ -72,11 +75,11 @@ public sealed partial class ConfigViewModel : ObservableObject
     {
         if (IsReadOnly)
         {
-            StatusMessage = "设备配置为只读";
+            SetStatus("Status.Config.ReadOnly");
             return;
         }
 
-        StatusMessage = "写入配置中...";
+        SetStatus("Status.Config.Saving");
         try
         {
             var config = new DeviceConfig();
@@ -84,20 +87,42 @@ public sealed partial class ConfigViewModel : ObservableObject
             {
                 if (!TryParseValue(item.Value, out var bytes))
                 {
-                    StatusMessage = $"配置值无效: {item.KeyName}";
+                    SetStatus("Status.Config.InvalidValue", item.KeyName);
                     return;
                 }
                 config.Items[item.Key] = bytes;
             }
 
             await _client.SetConfigAsync(config, CancellationToken.None);
-            StatusMessage = "写入完成";
+            SetStatus("Status.Config.Saved");
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "写入配置失败");
-            StatusMessage = $"写入失败: {ex.Message}";
+            _logger.LogError(ex, LocalizationService.Instance.GetString("Log.Config.SaveFailed"));
+            SetStatus("Status.Config.SaveFailed", ex.Message);
         }
+    }
+
+    private void SetStatus(string key, params object[] args)
+    {
+        _statusKey = key;
+        _statusArgs = args ?? Array.Empty<object>();
+        StatusMessage = _statusArgs.Length == 0
+            ? LocalizationService.Instance.GetString(key)
+            : LocalizationService.Instance.Format(key, _statusArgs);
+    }
+
+    public void RefreshLocalization()
+    {
+        if (string.IsNullOrWhiteSpace(_statusKey))
+        {
+            StatusMessage = string.Empty;
+            return;
+        }
+
+        StatusMessage = _statusArgs.Length == 0
+            ? LocalizationService.Instance.GetString(_statusKey)
+            : LocalizationService.Instance.Format(_statusKey, _statusArgs);
     }
 
     partial void OnIsAdvancedModeChanged(bool value)

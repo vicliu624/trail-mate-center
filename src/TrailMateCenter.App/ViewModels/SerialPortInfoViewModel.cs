@@ -1,9 +1,11 @@
+using CommunityToolkit.Mvvm.ComponentModel;
 using System.Collections.Generic;
+using TrailMateCenter.Localization;
 using TrailMateCenter.Transport;
 
 namespace TrailMateCenter.ViewModels;
 
-public sealed class SerialPortInfoViewModel
+public sealed partial class SerialPortInfoViewModel : ObservableObject, ILocalizationAware
 {
     public SerialPortInfoViewModel(SerialPortInfo info)
     {
@@ -28,7 +30,7 @@ public sealed class SerialPortInfoViewModel
             if (string.IsNullOrWhiteSpace(label))
                 label = Description;
             if (string.IsNullOrWhiteSpace(label))
-                label = "未识别设备";
+                label = LocalizationService.Instance.GetString("Status.Port.UnknownDevice");
             return $"{PortName}  {label}";
         }
     }
@@ -44,7 +46,15 @@ public sealed class SerialPortInfoViewModel
                 parts.Add($"VID:{VendorId} PID:{ProductId}");
             if (!string.IsNullOrWhiteSpace(PnpDeviceId))
                 parts.Add(PnpDeviceId);
-            return parts.Count == 0 ? "设备信息未知" : string.Join(" · ", parts);
+            return parts.Count == 0
+                ? LocalizationService.Instance.GetString("Status.Port.InfoUnknown")
+                : string.Join(LocalizationService.Instance.GetString("Common.Separator"), parts);
         }
+    }
+
+    public void RefreshLocalization()
+    {
+        OnPropertyChanged(nameof(DisplayTitle));
+        OnPropertyChanged(nameof(DisplayDetail));
     }
 }

@@ -11,8 +11,15 @@ public sealed record AppSettings
     public string? LastPort { get; init; }
     public string? LastReplayFile { get; init; }
     public double ReplaySpeed { get; init; } = 1.0;
+    public UiSettings Ui { get; init; } = new();
     public TacticalSettings Tactical { get; init; } = new();
     public AprsSettings Aprs { get; init; } = new();
+}
+
+public sealed record UiSettings
+{
+    public string Language { get; init; } = string.Empty;
+    public string Theme { get; init; } = string.Empty;
 }
 
 public sealed record TacticalSettings

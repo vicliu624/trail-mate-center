@@ -9,9 +9,7 @@
         x:Class="TrailMateCenter.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
         Icon="/Assets/avalonia-logo.ico"
-        Title="TrailMateCenter"
-        Background="#0F1216"
-        FontFamily="Segoe UI">
+        Title="{DynamicResource App.Title}">
 
     <Design.DataContext>
         <!-- This only sets the DataContext for the previewer in an IDE,
@@ -21,17 +19,17 @@
 
 
     <Grid RowDefinitions="40,*" ColumnDefinitions="*">
-        <Border Grid.Row="0" Background="{StaticResource TopBarGradient}" BorderBrush="#2B323B" BorderThickness="0,0,0,1" Classes="panel">
+        <Border Grid.Row="0" Background="{DynamicResource TopBarGradient}" BorderBrush="{DynamicResource PanelBorder}" BorderThickness="0,0,0,1" Classes="panel">
             <Grid ColumnDefinitions="Auto,*,Auto" Margin="12,0">
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Spacing="12">
-                    <TextBlock Text="TrailMateCenter" FontSize="16" FontWeight="Bold" Foreground="#D6D9DE"/>
-                    <Border Background="#14181E" BorderBrush="{StaticResource PanelBorder}" BorderThickness="1" CornerRadius="4" Padding="6,2">
-                        <TextBlock Text="{Binding ConnectionStateText}" Foreground="#9FE870" FontSize="11"/>
+                    <TextBlock Text="{DynamicResource App.Brand}" FontSize="16" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}"/>
+                    <Border Background="{DynamicResource SurfaceDark}" BorderBrush="{DynamicResource PanelBorder}" BorderThickness="1" CornerRadius="4" Padding="6,2">
+                        <TextBlock Text="{Binding ConnectionStateText}" Foreground="{DynamicResource Accent}" FontSize="11"/>
                     </Border>
-                    <Border Background="#14181E" BorderBrush="{StaticResource PanelBorder}" BorderThickness="1" CornerRadius="4" Padding="6,2">
+                    <Border Background="{DynamicResource SurfaceDark}" BorderBrush="{DynamicResource PanelBorder}" BorderThickness="1" CornerRadius="4" Padding="6,2">
                         <TextBlock Text="{Binding AprsConnectionText}" Foreground="{Binding AprsConnectionColor}" FontSize="11"/>
                     </Border>
-                    <TextBlock Text="{Binding LastError}" Foreground="#F97316" FontSize="11"/>
+                    <TextBlock Text="{Binding LastError}" Foreground="{DynamicResource AccentWarn}" FontSize="11"/>
                 </StackPanel>
                 <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" HorizontalAlignment="Center">
                     <ComboBox Width="260" ItemsSource="{Binding Ports}" SelectedItem="{Binding SelectedPort}">
@@ -39,36 +37,50 @@
                             <DataTemplate x:DataType="vm:SerialPortInfoViewModel">
                                 <StackPanel>
                                     <TextBlock Text="{Binding DisplayTitle}" FontWeight="Bold"/>
-                                    <TextBlock Text="{Binding DisplayDetail}" FontSize="10" Foreground="{StaticResource TextDim}" TextWrapping="NoWrap"/>
+                                    <TextBlock Text="{Binding DisplayDetail}" FontSize="10" Foreground="{DynamicResource TextDim}" TextWrapping="NoWrap"/>
                                 </StackPanel>
                             </DataTemplate>
                         </ComboBox.ItemTemplate>
                     </ComboBox>
-                    <TextBox Width="90" Text="{Binding AckTimeoutMs}" Watermark="ACK(ms)"/>
-                    <TextBox Width="70" Text="{Binding MaxRetries}" Watermark="重试"/>
-                    <CheckBox Content="回放" IsChecked="{Binding UseReplay}"/>
-                    <TextBox Width="200" Watermark="Replay file" Text="{Binding ReplayFile}"/>
-                    <CheckBox Content="自动连接" IsChecked="{Binding AutoConnectOnDetect}"/>
-                    <CheckBox Content="自动重连" IsChecked="{Binding AutoReconnect}"/>
+                    <TextBox Width="90" Text="{Binding AckTimeoutMs}" Watermark="{DynamicResource Ui.Main.AckTimeout}"/>
+                    <TextBox Width="70" Text="{Binding MaxRetries}" Watermark="{DynamicResource Ui.Main.MaxRetries}"/>
+                    <CheckBox Content="{DynamicResource Ui.Main.Replay}" IsChecked="{Binding UseReplay}"/>
+                    <TextBox Width="200" Watermark="{DynamicResource Ui.Main.ReplayFile}" Text="{Binding ReplayFile}"/>
+                    <CheckBox Content="{DynamicResource Ui.Main.AutoConnect}" IsChecked="{Binding AutoConnectOnDetect}"/>
+                    <CheckBox Content="{DynamicResource Ui.Main.AutoReconnect}" IsChecked="{Binding AutoReconnect}"/>
                 </StackPanel>
                 <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                    <Button Content="刷新" Command="{Binding RefreshPortsCommand}"/>
-                    <Button Content="连接" Command="{Binding ConnectCommand}"/>
-                    <Button Content="断开" Command="{Binding DisconnectCommand}"/>
+                    <Button Content="{DynamicResource Ui.Main.RefreshPorts}" Command="{Binding RefreshPortsCommand}"/>
+                    <Button Content="{DynamicResource Ui.Main.Connect}" Command="{Binding ConnectCommand}"/>
+                    <Button Content="{DynamicResource Ui.Main.Disconnect}" Command="{Binding DisconnectCommand}"/>
+                    <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                        <TextBlock Text="{DynamicResource Ui.Main.Language}" Foreground="{DynamicResource TextDim}" FontSize="11"/>
+                        <ComboBox Width="90"
+                                  ItemsSource="{Binding Languages}"
+                                  SelectedItem="{Binding SelectedLanguage}"
+                                  DisplayMemberBinding="{Binding DisplayName}"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                        <TextBlock Text="{DynamicResource Ui.Main.Theme}" Foreground="{DynamicResource TextDim}" FontSize="11"/>
+                        <ComboBox Width="120"
+                                  ItemsSource="{Binding Themes}"
+                                  SelectedItem="{Binding SelectedTheme}"
+                                  DisplayMemberBinding="{Binding DisplayName}"/>
+                    </StackPanel>
                 </StackPanel>
             </Grid>
         </Border>
 
         <TabControl Grid.Row="1" SelectedIndex="{Binding SelectedTabIndex}">
-            <TabItem Header="态势">
+            <TabItem Header="{DynamicResource Ui.Tab.Dashboard}">
                 <views:DashboardView/>
             </TabItem>
 
             <TabItem>
                 <TabItem.Header>
                     <StackPanel Orientation="Horizontal" Spacing="6">
-                        <TextBlock Text="聊天"/>
-                        <Border Background="#EF4444" CornerRadius="12" Padding="8,2" IsVisible="{Binding HasUnreadChat}">
+                        <TextBlock Text="{DynamicResource Ui.Tab.Chat}"/>
+                        <Border Background="{DynamicResource AccentDanger}" CornerRadius="12" Padding="8,2" IsVisible="{Binding HasUnreadChat}">
                             <TextBlock Text="{Binding UnreadChatCount}" FontSize="11" Foreground="White" FontWeight="Bold"/>
                         </Border>
                     </StackPanel>
@@ -76,23 +88,23 @@
                 <views:ChatView/>
             </TabItem>
 
-            <TabItem Header="配置">
+            <TabItem Header="{DynamicResource Ui.Tab.Config}">
                 <views:ConfigView/>
             </TabItem>
 
-            <TabItem Header="日志">
+            <TabItem Header="{DynamicResource Ui.Tab.Logs}">
                 <views:LogsView/>
             </TabItem>
 
-            <TabItem Header="事件监视">
+            <TabItem Header="{DynamicResource Ui.Tab.Events}">
                 <views:EventsView/>
             </TabItem>
 
-            <TabItem Header="原始帧">
+            <TabItem Header="{DynamicResource Ui.Tab.RawFrames}">
                 <views:RawFramesView/>
             </TabItem>
 
-            <TabItem Header="导出">
+            <TabItem Header="{DynamicResource Ui.Tab.Export}">
                 <views:ExportView/>
             </TabItem>
         </TabControl>

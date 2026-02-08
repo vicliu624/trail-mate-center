@@ -2,15 +2,18 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using System;
 using System.Collections.Generic;
+using TrailMateCenter.Localization;
 using TrailMateCenter.Services;
 using TrailMateCenter.Storage;
 
 namespace TrailMateCenter.ViewModels;
 
-public sealed partial class ExportViewModel : ObservableObject
+public sealed partial class ExportViewModel : ObservableObject, ILocalizationAware
 {
     private readonly ExportService _exportService;
     private readonly SessionStore _sessionStore;
+    private string? _statusKey;
+    private object[] _statusArgs = Array.Empty<object>();
 
     public ExportViewModel(ExportService exportService, SessionStore sessionStore)
     {
@@ -42,29 +45,51 @@ public sealed partial class ExportViewModel : ObservableObject
 
     private async Task ExportMessagesAsync()
     {
-        StatusMessage = "导出消息中...";
+        SetStatus("Status.Export.MessagesInProgress");
         try
         {
             await _exportService.ExportMessagesAsync(_sessionStore, ExportPath, Format, From, To, CancellationToken.None);
-            StatusMessage = "消息导出完成";
+            SetStatus("Status.Export.MessagesDone");
         }
         catch (Exception ex)
         {
-            StatusMessage = $"导出失败: {ex.Message}";
+            SetStatus("Status.Export.Failed", ex.Message);
         }
     }
 
     private async Task ExportEventsAsync()
     {
-        StatusMessage = "导出事件中...";
+        SetStatus("Status.Export.EventsInProgress");
         try
         {
             await _exportService.ExportEventsAsync(_sessionStore, ExportPath, Format, From, To, CancellationToken.None);
-            StatusMessage = "事件导出完成";
+            SetStatus("Status.Export.EventsDone");
         }
         catch (Exception ex)
         {
-            StatusMessage = $"导出失败: {ex.Message}";
+            SetStatus("Status.Export.Failed", ex.Message);
         }
+    }
+
+    private void SetStatus(string key, params object[] args)
+    {
+        _statusKey = key;
+        _statusArgs = args ?? Array.Empty<object>();
+        StatusMessage = _statusArgs.Length == 0
+            ? LocalizationService.Instance.GetString(key)
+            : LocalizationService.Instance.Format(key, _statusArgs);
+    }
+
+    public void RefreshLocalization()
+    {
+        if (string.IsNullOrWhiteSpace(_statusKey))
+        {
+            StatusMessage = string.Empty;
+            return;
+        }
+
+        StatusMessage = _statusArgs.Length == 0
+            ? LocalizationService.Instance.GetString(_statusKey)
+            : LocalizationService.Instance.Format(_statusKey, _statusArgs);
     }
 }

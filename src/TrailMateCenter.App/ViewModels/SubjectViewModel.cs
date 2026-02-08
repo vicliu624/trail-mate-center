@@ -1,4 +1,5 @@
 using CommunityToolkit.Mvvm.ComponentModel;
+using TrailMateCenter.Localization;
 using TrailMateCenter.Models;
 
 namespace TrailMateCenter.ViewModels;
@@ -10,7 +11,7 @@ public enum LinkStatus
     Offline,
 }
 
-public sealed partial class SubjectViewModel : ObservableObject
+public sealed partial class SubjectViewModel : ObservableObject, ILocalizationAware
 {
     public SubjectViewModel(uint id)
     {
@@ -56,14 +57,14 @@ public sealed partial class SubjectViewModel : ObservableObject
 
     public string TelemetryTimeText => TelemetryTimestamp.HasValue
         ? TelemetryTimestamp.Value.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss")
-        : "未知";
+        : LocalizationService.Instance.GetString("Common.Unknown");
 
     public string StatusText => Status switch
     {
-        LinkStatus.Online => "在线",
-        LinkStatus.Weak => "弱联",
-        LinkStatus.Offline => "失联",
-        _ => "未知",
+        LinkStatus.Online => LocalizationService.Instance.GetString("Status.Link.Online"),
+        LinkStatus.Weak => LocalizationService.Instance.GetString("Status.Link.Weak"),
+        LinkStatus.Offline => LocalizationService.Instance.GetString("Status.Link.Offline"),
+        _ => LocalizationService.Instance.GetString("Status.Link.Unknown"),
     };
 
     public string StatusColor => Status switch
@@ -96,15 +97,17 @@ public sealed partial class SubjectViewModel : ObservableObject
         }
     }
 
-    public string LastSeenText => LastSeen == default ? "未知" : LastSeen.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss");
+    public string LastSeenText => LastSeen == default
+        ? LocalizationService.Instance.GetString("Common.Unknown")
+        : LastSeen.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss");
 
     public string LocationText
     {
         get
         {
             if (Latitude.HasValue && Longitude.HasValue)
-                return $"Lat {Latitude.Value:F5}, Lon {Longitude.Value:F5}";
-            return "位置未知";
+                return LocalizationService.Instance.Format("Status.Location.Format", Latitude.Value, Longitude.Value);
+            return LocalizationService.Instance.GetString("Status.Location.Unknown");
         }
     }
 
@@ -176,6 +179,14 @@ public sealed partial class SubjectViewModel : ObservableObject
 
     partial void OnTelemetryTimestampChanged(DateTimeOffset? value)
     {
+        OnPropertyChanged(nameof(TelemetryTimeText));
+    }
+
+    public void RefreshLocalization()
+    {
+        OnPropertyChanged(nameof(StatusText));
+        OnPropertyChanged(nameof(LastSeenText));
+        OnPropertyChanged(nameof(LocationText));
         OnPropertyChanged(nameof(TelemetryTimeText));
     }
 }

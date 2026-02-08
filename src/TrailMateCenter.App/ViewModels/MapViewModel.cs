@@ -29,10 +29,11 @@ public sealed class MapViewModel
         Map = new Map
         {
             CRS = "EPSG:3857",
-            BackColor = Color.FromArgb(255, 240, 240, 240),
+            BackColor = Color.FromArgb(255, 11, 15, 20),
         };
 
         var tileLayer = CreateOsmLayer();
+        tileLayer.Opacity = 0.8f;
         Map.Layers.Add(tileLayer);
 
         _trackLayer = new MemoryLayer { Name = "tracks" };
@@ -144,7 +145,7 @@ public sealed class MapViewModel
             var feature = new GeometryFeature { Geometry = line };
             feature.Styles.Add(new VectorStyle
             {
-                Line = new Pen(Color.FromArgb(255, 30, 136, 229), 2),
+                Line = new Pen(Color.FromArgb(255, 56, 189, 248), 2),
             });
             features.Add(feature);
         }
@@ -159,8 +160,8 @@ public sealed class MapViewModel
             feature.Styles.Add(new SymbolStyle
             {
                 SymbolType = SymbolType.Ellipse,
-                Fill = new Brush(Color.FromArgb(220, 33, 150, 243)),
-                Outline = new Pen(Color.FromArgb(255, 25, 118, 210), 1),
+                Fill = new Brush(Color.FromArgb(210, 159, 232, 112)),
+                Outline = new Pen(Color.FromArgb(255, 90, 162, 82), 1),
                 SymbolScale = 0.7,
             });
             return feature;
@@ -199,8 +200,8 @@ public sealed class MapViewModel
             feature.Styles.Add(new SymbolStyle
             {
                 SymbolType = SymbolType.Ellipse,
-                Fill = new Brush(Color.FromArgb(200, 255, 167, 38)),
-                Outline = new Pen(Color.FromArgb(255, 245, 124, 0), 1),
+                Fill = new Brush(Color.FromArgb(200, 245, 158, 11)),
+                Outline = new Pen(Color.FromArgb(255, 180, 83, 9), 1),
                 SymbolScale = 1.6,
             });
             feature.Styles.Add(new LabelStyle

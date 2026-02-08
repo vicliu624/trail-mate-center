@@ -1,9 +1,10 @@
 using CommunityToolkit.Mvvm.ComponentModel;
+using TrailMateCenter.Localization;
 using TrailMateCenter.Models;
 
 namespace TrailMateCenter.ViewModels;
 
-public sealed partial class ConversationItemViewModel : ObservableObject
+public sealed partial class ConversationItemViewModel : ObservableObject, ILocalizationAware
 {
     public ConversationItemViewModel(string key, bool isBroadcast, uint? peerId, byte channelId)
     {
@@ -66,32 +67,40 @@ public sealed partial class ConversationItemViewModel : ObservableObject
 
     private string BuildTitle()
     {
+        var loc = LocalizationService.Instance;
         if (IsBroadcast)
         {
-            return "广播";
+            return loc.GetString("Chat.Broadcast");
         }
 
         if (!string.IsNullOrWhiteSpace(PeerLabel))
         {
-            return $"与 {PeerLabel}";
+            return loc.Format("Chat.WithPeer", PeerLabel);
         }
 
         if (PeerId.HasValue)
         {
-            return $"与 0x{PeerId.Value:X8}";
+            return loc.Format("Chat.WithPeer", $"0x{PeerId.Value:X8}");
         }
 
-        return "私聊";
+        return loc.GetString("Chat.Private");
     }
 
     private string BuildSubtitle()
     {
+        var loc = LocalizationService.Instance;
         if (IsBroadcast)
         {
-            return $"频道 {ChannelId}";
+            return loc.Format("Common.ChannelFormat", ChannelId);
         }
 
-        var idText = PeerId.HasValue ? $"0x{PeerId.Value:X8}" : "未知";
-        return $"{idText} · 频道 {ChannelId}";
+        var idText = PeerId.HasValue ? $"0x{PeerId.Value:X8}" : loc.GetString("Common.Unknown");
+        return loc.Format("Chat.ConversationSubtitle", idText, ChannelId);
+    }
+
+    public void RefreshLocalization()
+    {
+        Title = BuildTitle();
+        Subtitle = BuildSubtitle();
     }
 }

@@ -1,0 +1,163 @@
+<Styles xmlns="https://github.com/avaloniaui">
+  <Style Selector="Window">
+    <Setter Property="Background" Value="{DynamicResource AppBackground}"/>
+    <Setter Property="FontFamily" Value="{DynamicResource FontSans}"/>
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
+  </Style>
+
+  <Style Selector="Button">
+    <Setter Property="Background" Value="{DynamicResource SurfaceLight}"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource PanelBorderStrong}"/>
+    <Setter Property="BorderThickness" Value="1"/>
+    <Setter Property="CornerRadius" Value="3"/>
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
+    <Setter Property="FontSize" Value="12"/>
+    <Setter Property="FontWeight" Value="SemiBold"/>
+    <Setter Property="Padding" Value="10,4"/>
+  </Style>
+  <Style Selector="Button:pointerover">
+    <Setter Property="Background" Value="#202833"/>
+    <Setter Property="BorderBrush" Value="#465366"/>
+  </Style>
+  <Style Selector="Button:pressed">
+    <Setter Property="Background" Value="#151C24"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource Accent}"/>
+  </Style>
+  <Style Selector="Button:disabled">
+    <Setter Property="Background" Value="#1B2028"/>
+    <Setter Property="BorderBrush" Value="#2B333D"/>
+    <Setter Property="Foreground" Value="#88929E"/>
+    <Setter Property="Opacity" Value="0.85"/>
+  </Style>
+  <Style Selector="Button:disabled /template/ ContentPresenter">
+    <Setter Property="Opacity" Value="1"/>
+    <Setter Property="Foreground" Value="#88929E"/>
+  </Style>
+
+  <Style Selector="Button.primary">
+    <Setter Property="Background" Value="{DynamicResource Accent}"/>
+    <Setter Property="BorderBrush" Value="#A7F3D0"/>
+    <Setter Property="Foreground" Value="#0B0E12"/>
+    <Setter Property="FontSize" Value="13"/>
+    <Setter Property="FontWeight" Value="Bold"/>
+  </Style>
+  <Style Selector="Button.primary:pointerover">
+    <Setter Property="Background" Value="{DynamicResource AccentSoft}"/>
+    <Setter Property="BorderBrush" Value="#86EFAC"/>
+  </Style>
+  <Style Selector="Button.primary:pressed">
+    <Setter Property="Background" Value="#BFEA93"/>
+    <Setter Property="BorderBrush" Value="#4ADE80"/>
+  </Style>
+  <Style Selector="Button.primary:disabled">
+    <Setter Property="Background" Value="#CDE4A2"/>
+    <Setter Property="BorderBrush" Value="#9CBF7C"/>
+    <Setter Property="Foreground" Value="#273038"/>
+    <Setter Property="Opacity" Value="0.8"/>
+  </Style>
+
+  <Style Selector="TextBox">
+    <Setter Property="Background" Value="{DynamicResource SurfaceDark}"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource PanelBorder}"/>
+    <Setter Property="BorderThickness" Value="1"/>
+    <Setter Property="CornerRadius" Value="3"/>
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
+    <Setter Property="Padding" Value="6,3"/>
+  </Style>
+  <Style Selector="TextBox:pointerover">
+    <Setter Property="BorderBrush" Value="#445062"/>
+  </Style>
+  <Style Selector="TextBox:focus">
+    <Setter Property="BorderBrush" Value="{DynamicResource AccentInfo}"/>
+  </Style>
+
+  <Style Selector="ComboBox">
+    <Setter Property="Background" Value="{DynamicResource SurfaceDark}"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource PanelBorder}"/>
+    <Setter Property="BorderThickness" Value="1"/>
+    <Setter Property="CornerRadius" Value="3"/>
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
+    <Setter Property="Padding" Value="6,3"/>
+  </Style>
+  <Style Selector="ComboBox:pointerover">
+    <Setter Property="BorderBrush" Value="#445062"/>
+  </Style>
+  <Style Selector="ComboBox:focus">
+    <Setter Property="BorderBrush" Value="{DynamicResource AccentInfo}"/>
+  </Style>
+
+  <Style Selector="CheckBox">
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
+  </Style>
+
+  <Style Selector="TabControl">
+    <Setter Property="Background" Value="Transparent"/>
+    <Setter Property="BorderThickness" Value="0"/>
+  </Style>
+  <Style Selector="TabItem">
+    <Setter Property="Foreground" Value="{DynamicResource TextDim}"/>
+    <Setter Property="Background" Value="Transparent"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource PanelBorder}"/>
+    <Setter Property="BorderThickness" Value="0,0,0,2"/>
+    <Setter Property="Padding" Value="16,8"/>
+    <Setter Property="MinWidth" Value="90"/>
+  </Style>
+  <Style Selector="TabItem:pointerover">
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
+    <Setter Property="Background" Value="#1B232C"/>
+  </Style>
+  <Style Selector="TabItem:selected">
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
+    <Setter Property="Background" Value="#1B232C"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource Accent}"/>
+  </Style>
+
+  <Style Selector="ListBoxItem">
+    <Setter Property="Background" Value="Transparent"/>
+    <Setter Property="BorderBrush" Value="Transparent"/>
+    <Setter Property="BorderThickness" Value="1"/>
+    <Setter Property="Padding" Value="2"/>
+    <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+  </Style>
+  <Style Selector="ListBoxItem:pointerover">
+    <Setter Property="Background" Value="#182029"/>
+    <Setter Property="BorderBrush" Value="#2F3944"/>
+  </Style>
+  <Style Selector="ListBoxItem:selected">
+    <Setter Property="Background" Value="#1E2731"/>
+    <Setter Property="BorderBrush" Value="#4B5563"/>
+  </Style>
+
+  <Style Selector="Border.panel">
+    <Setter Property="BorderBrush" Value="{DynamicResource PanelBorder}"/>
+    <Setter Property="BorderThickness" Value="1"/>
+    <Setter Property="CornerRadius" Value="4"/>
+    <Setter Property="BoxShadow" Value="0 4 12 0 #00000066"/>
+  </Style>
+
+  <Style Selector="Expander">
+    <Setter Property="Background" Value="Transparent"/>
+    <Setter Property="BorderThickness" Value="0"/>
+    <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+    <Setter Property="HorizontalAlignment" Value="Stretch"/>
+  </Style>
+  <Style Selector="Expander /template/ ToggleButton">
+    <Setter Property="Background" Value="{DynamicResource SurfaceDark}"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource PanelBorder}"/>
+    <Setter Property="BorderThickness" Value="0,0,0,1"/>
+    <Setter Property="Padding" Value="10,6"/>
+    <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
+    <Setter Property="HorizontalAlignment" Value="Stretch"/>
+  </Style>
+
+  <Style Selector="ToggleButton.sectionHeader">
+    <Setter Property="Background" Value="{DynamicResource SurfaceDark}"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource PanelBorder}"/>
+    <Setter Property="BorderThickness" Value="0,0,0,1"/>
+    <Setter Property="Padding" Value="10,6"/>
+    <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
+    <Setter Property="HorizontalAlignment" Value="Stretch"/>
+  </Style>
+</Styles>

@@ -5,18 +5,18 @@
              x:Class="TrailMateCenter.Views.DashboardView"
              x:DataType="vm:MainWindowViewModel">
   <Grid ColumnDefinitions="260,*,340" RowDefinitions="*">
-    <Border Background="{StaticResource PanelBg2}" BorderBrush="{StaticResource PanelBorder}" BorderThickness="0,0,1,0" Classes="panel">
+    <Border Background="{DynamicResource PanelBg2}" BorderBrush="{DynamicResource PanelBorder}" BorderThickness="0,0,1,0" Classes="panel">
       <Grid RowDefinitions="Auto,Auto,Auto,*">
         <ToggleButton x:Name="TeamToggle" Grid.Row="0" Classes="sectionHeader" IsChecked="True" HorizontalAlignment="Stretch">
           <Grid ColumnDefinitions="*,Auto">
-            <TextBlock Text="小队" FontWeight="Bold" Foreground="#E6EDF3"/>
-            <TextBlock Grid.Column="1" Text="▾" Margin="6,0,0,0" Foreground="{StaticResource TextDim}"/>
+            <TextBlock Text="{DynamicResource Ui.Dashboard.Team}" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}"/>
+            <TextBlock Grid.Column="1" Text="▾" Margin="6,0,0,0" Foreground="{DynamicResource TextDim}"/>
           </Grid>
         </ToggleButton>
         <Border Grid.Row="1" Background="Transparent" Padding="0,6,0,8"
                 IsVisible="{Binding IsChecked, ElementName=TeamToggle}">
           <Grid RowDefinitions="Auto,*">
-            <TextBlock Text="暂无小队" Foreground="{StaticResource TextDim}" FontSize="10" Margin="8,4"
+            <TextBlock Text="{DynamicResource Ui.Dashboard.NoTeams}" Foreground="{DynamicResource TextDim}" FontSize="10" Margin="8,4"
                        IsVisible="{Binding HasNoTeams}"/>
             <ListBox Grid.Row="1"
                      ItemsSource="{Binding Teams}"
@@ -30,15 +30,15 @@
 
         <ToggleButton x:Name="NodeToggle" Grid.Row="2" Classes="sectionHeader" IsChecked="True" HorizontalAlignment="Stretch">
           <Grid ColumnDefinitions="*,Auto">
-            <TextBlock Text="节点列表" FontWeight="Bold" Foreground="#E6EDF3"/>
-            <TextBlock Grid.Column="1" Text="▾" Margin="6,0,0,0" Foreground="{StaticResource TextDim}"/>
+            <TextBlock Text="{DynamicResource Ui.Dashboard.NodeList}" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}"/>
+            <TextBlock Grid.Column="1" Text="▾" Margin="6,0,0,0" Foreground="{DynamicResource TextDim}"/>
           </Grid>
         </ToggleButton>
         <Border Grid.Row="3" Background="Transparent" Padding="0,6,0,8"
                 IsVisible="{Binding IsChecked, ElementName=NodeToggle}">
           <ListBox ItemsSource="{Binding UngroupedSubjects}" SelectedItem="{Binding SelectedSubject}"
                    ItemTemplate="{StaticResource SubjectTemplate}"
-                   Background="#11151A"
+                   Background="{DynamicResource PanelBg2}"
                    BorderThickness="0"
                    HorizontalAlignment="Stretch"/>
         </Border>
@@ -46,74 +46,74 @@
     </Border>
 
     <Grid Grid.Column="1" RowDefinitions="*,220" Margin="0">
-      <Border Background="#0B0E12" BorderBrush="{StaticResource PanelBorder}" BorderThickness="0,0,1,0" Classes="panel">
+      <Border Background="{DynamicResource SurfaceDark}" BorderBrush="{DynamicResource PanelBorder}" BorderThickness="0,0,1,0" Classes="panel">
         <Grid>
           <mapsui:MapControl Map="{Binding Map.Map}" />
           <Border IsHitTestVisible="False" Background="{StaticResource MapGridBrush}" Opacity="0.08"/>
           <Border IsHitTestVisible="False" Background="{StaticResource MapNoiseBrush}" Opacity="0.04"/>
           <Border IsHitTestVisible="False" Background="{StaticResource MapVignette}" Opacity="0.2"/>
-          <Border HorizontalAlignment="Left" VerticalAlignment="Top" Margin="12" Background="#CC12161B" CornerRadius="6" Padding="8">
+          <Border HorizontalAlignment="Left" VerticalAlignment="Top" Margin="12" Background="{DynamicResource SurfaceDark}" CornerRadius="6" Padding="8" Opacity="0.9">
             <StackPanel Orientation="Horizontal" Spacing="10">
-              <CheckBox Content="聚合" IsChecked="{Binding MapEnableCluster}"/>
-              <CheckBox Content="跟随" IsChecked="{Binding MapFollowLatest}"/>
+              <CheckBox Content="{DynamicResource Ui.Dashboard.Cluster}" IsChecked="{Binding MapEnableCluster}"/>
+              <CheckBox Content="{DynamicResource Ui.Dashboard.Follow}" IsChecked="{Binding MapFollowLatest}"/>
             </StackPanel>
           </Border>
         </Grid>
       </Border>
-      <Border Grid.Row="1" Background="{StaticResource PanelBg}" BorderBrush="{StaticResource PanelBorder}" BorderThickness="1,1,1,0" Padding="8" Classes="panel">
+      <Border Grid.Row="1" Background="{DynamicResource PanelBg}" BorderBrush="{DynamicResource PanelBorder}" BorderThickness="1,1,1,0" Padding="8" Classes="panel">
         <Grid RowDefinitions="Auto,*">
           <StackPanel Orientation="Horizontal" Spacing="8">
-            <Button Content="INFO" Width="60"/>
-            <Button Content="WARN" Width="60"/>
-            <Button Content="CRIT" Width="60"/>
+            <Button Content="{DynamicResource Ui.Dashboard.Filter.Info}" Width="60"/>
+            <Button Content="{DynamicResource Ui.Dashboard.Filter.Warn}" Width="60"/>
+            <Button Content="{DynamicResource Ui.Dashboard.Filter.Crit}" Width="60"/>
           </StackPanel>
           <ListBox Grid.Row="1" ItemsSource="{Binding TacticalEvents}" SelectedItem="{Binding SelectedTacticalEvent}" ItemTemplate="{StaticResource TacticalEventTemplate}"/>
         </Grid>
       </Border>
     </Grid>
 
-    <Border Grid.Column="2" Background="{StaticResource PanelBg2}" BorderBrush="{StaticResource PanelBorder}" BorderThickness="1,0,0,0" Classes="panel">
+    <Border Grid.Column="2" Background="{DynamicResource PanelBg2}" BorderBrush="{DynamicResource PanelBorder}" BorderThickness="1,0,0,0" Classes="panel">
       <Grid RowDefinitions="Auto,*,Auto">
-        <Border Background="#14181E" BorderBrush="{StaticResource PanelBorder}" BorderThickness="0,0,0,1" Padding="10" Classes="panel">
+        <Border Background="{DynamicResource PanelBg}" BorderBrush="{DynamicResource PanelBorder}" BorderThickness="0,0,0,1" Padding="10" Classes="panel">
           <StackPanel Spacing="6">
-            <TextBlock Text="全局喊话" Foreground="#C7CBD1" FontWeight="Bold"/>
-            <TextBox Watermark="输入消息" Text="{Binding OutgoingText, UpdateSourceTrigger=PropertyChanged}" Height="40"/>
+            <TextBlock Text="{DynamicResource Ui.Dashboard.Broadcast}" Foreground="{DynamicResource TextDim}" FontWeight="Bold"/>
+            <TextBox Watermark="{DynamicResource Ui.Dashboard.InputMessage}" Text="{Binding OutgoingText, UpdateSourceTrigger=PropertyChanged}" Height="40"/>
             <StackPanel Orientation="Horizontal" Spacing="6">
-              <TextBox Width="70" Text="{Binding Target, UpdateSourceTrigger=PropertyChanged}" Watermark="目标"/>
+              <TextBox Width="70" Text="{Binding Target, UpdateSourceTrigger=PropertyChanged}" Watermark="{DynamicResource Ui.Dashboard.Target}"/>
               <ComboBox Width="80" ItemsSource="{Binding Channels}" SelectedItem="{Binding SelectedChannel}"/>
-              <Button Content="发送" Command="{Binding SendCommand}" Classes="primary" MinWidth="80"/>
+              <Button Content="{DynamicResource Ui.Dashboard.Send}" Command="{Binding SendCommand}" Classes="primary" MinWidth="80"/>
             </StackPanel>
           </StackPanel>
         </Border>
-        <Border Grid.Row="1" Background="{StaticResource PanelBg}" BorderBrush="{StaticResource PanelBorder}" BorderThickness="0,0,0,1" Padding="8" Classes="panel">
+        <Border Grid.Row="1" Background="{DynamicResource PanelBg}" BorderBrush="{DynamicResource PanelBorder}" BorderThickness="0,0,0,1" Padding="8" Classes="panel">
           <StackPanel>
-            <TextBlock Text="事件流" FontWeight="Bold" Foreground="#C7CBD1" Margin="0,0,0,6"/>
+            <TextBlock Text="{DynamicResource Ui.Dashboard.EventStream}" FontWeight="Bold" Foreground="{DynamicResource TextDim}" Margin="0,0,0,6"/>
             <ListBox ItemsSource="{Binding TacticalEvents}"
                      SelectedItem="{Binding SelectedTacticalEvent}"
                      ItemTemplate="{StaticResource TacticalEventTemplate}"/>
           </StackPanel>
         </Border>
-        <Border Grid.Row="2" Background="{StaticResource PanelBg2}" BorderBrush="{StaticResource PanelBorder}" BorderThickness="0,1,0,0" Padding="10" Classes="panel">
+        <Border Grid.Row="2" Background="{DynamicResource PanelBg2}" BorderBrush="{DynamicResource PanelBorder}" BorderThickness="0,1,0,0" Padding="10" Classes="panel">
           <StackPanel Spacing="6">
-            <TextBlock Text="指挥操作" FontWeight="Bold" Foreground="#C7CBD1"/>
-            <TextBlock Text="{Binding SelectedSubjectDisplayId}" Foreground="{StaticResource TextDim}"/>
+            <TextBlock Text="{DynamicResource Ui.Dashboard.CommandOps}" FontWeight="Bold" Foreground="{DynamicResource TextDim}"/>
+            <TextBlock Text="{Binding SelectedSubjectDisplayId}" Foreground="{DynamicResource TextDim}"/>
             <StackPanel Orientation="Horizontal" Spacing="6">
-              <TextBlock Text="通道" VerticalAlignment="Center" Foreground="#C7CBD1"/>
+              <TextBlock Text="{DynamicResource Ui.Dashboard.Channel}" VerticalAlignment="Center" Foreground="{DynamicResource TextDim}"/>
               <TextBox Width="50" Text="{Binding CommandChannel}"/>
-              <TextBlock Text="半径" VerticalAlignment="Center" Foreground="#C7CBD1"/>
+              <TextBlock Text="{DynamicResource Ui.Dashboard.Radius}" VerticalAlignment="Center" Foreground="{DynamicResource TextDim}"/>
               <TextBox Width="60" Text="{Binding CommandRadiusMeters}"/>
             </StackPanel>
             <StackPanel Orientation="Horizontal" Spacing="6">
-              <TextBlock Text="优先级" VerticalAlignment="Center" Foreground="#C7CBD1"/>
+              <TextBlock Text="{DynamicResource Ui.Dashboard.Priority}" VerticalAlignment="Center" Foreground="{DynamicResource TextDim}"/>
               <TextBox Width="60" Text="{Binding CommandPriority}"/>
             </StackPanel>
-            <TextBox Watermark="备注" Text="{Binding CommandNote}"/>
+            <TextBox Watermark="{DynamicResource Ui.Dashboard.Note}" Text="{Binding CommandNote}"/>
             <StackPanel Orientation="Horizontal" Spacing="6">
-              <Button Content="RallyTo" Command="{Binding RallyCommand}"/>
-              <Button Content="MoveTo" Command="{Binding MoveCommand}"/>
-              <Button Content="Hold" Command="{Binding HoldCommand}"/>
+              <Button Content="{DynamicResource Ui.Dashboard.Command.RallyTo}" Command="{Binding RallyCommand}"/>
+              <Button Content="{DynamicResource Ui.Dashboard.Command.MoveTo}" Command="{Binding MoveCommand}"/>
+              <Button Content="{DynamicResource Ui.Dashboard.Command.Hold}" Command="{Binding HoldCommand}"/>
             </StackPanel>
-            <TextBlock Text="选择事件或队员后下达指令" Foreground="{StaticResource TextDim}" FontSize="10"/>
+            <TextBlock Text="{DynamicResource Ui.Dashboard.CommandHint}" Foreground="{DynamicResource TextDim}" FontSize="10"/>
           </StackPanel>
         </Border>
       </Grid>

@@ -63,4 +63,12 @@ public sealed partial class EventsViewModel : ObservableObject
             return false;
         return true;
     }
+
+    public void RefreshLocalization()
+    {
+        foreach (var item in _allEvents)
+        {
+            item.RefreshLocalization();
+        }
+    }
 }

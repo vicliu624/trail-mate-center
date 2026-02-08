@@ -4,10 +4,10 @@
              x:Class="TrailMateCenter.Views.EventsView"
              x:DataType="vm:MainWindowViewModel">
   <Grid RowDefinitions="Auto,*">
-    <Border Background="#14181E" BorderBrush="#2B323B" BorderThickness="0,0,0,1" Padding="10" Classes="panel">
+    <Border Background="{DynamicResource PanelBg}" BorderBrush="{DynamicResource PanelBorder}" BorderThickness="0,0,0,1" Padding="10" Classes="panel">
       <StackPanel Orientation="Horizontal" Spacing="12">
-        <TextBlock Text="筛选" Foreground="#C7CBD1" FontWeight="Bold"/>
-        <CheckBox Content="仅 From IS" IsChecked="{Binding Events.FilterFromIs}"/>
+        <TextBlock Text="{DynamicResource Ui.Events.Filter}" Foreground="{DynamicResource TextDim}" FontWeight="Bold"/>
+        <CheckBox Content="{DynamicResource Ui.Events.FromIsOnly}" IsChecked="{Binding Events.FilterFromIs}"/>
       </StackPanel>
     </Border>
     <ListBox Grid.Row="1" ItemsSource="{Binding Events.Events}" ItemTemplate="{StaticResource EventTemplate}" Margin="12"/>

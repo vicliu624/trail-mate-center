@@ -4,16 +4,16 @@
              x:Class="TrailMateCenter.Views.ExportView"
              x:DataType="vm:MainWindowViewModel">
   <StackPanel Spacing="8" Margin="12">
-    <TextBox Watermark="输出路径" Text="{Binding Export.ExportPath}"/>
+    <TextBox Watermark="{DynamicResource Ui.Export.Path}" Text="{Binding Export.ExportPath}"/>
     <ComboBox ItemsSource="{Binding Export.Formats}" SelectedItem="{Binding Export.Format}"/>
     <StackPanel Orientation="Horizontal" Spacing="8">
       <DatePicker SelectedDate="{Binding Export.From}"/>
       <DatePicker SelectedDate="{Binding Export.To}"/>
     </StackPanel>
     <StackPanel Orientation="Horizontal" Spacing="8">
-      <Button Content="导出消息" Command="{Binding Export.ExportMessagesCommand}"/>
-      <Button Content="导出事件" Command="{Binding Export.ExportEventsCommand}"/>
-      <TextBlock Text="{Binding Export.StatusMessage}" Foreground="{StaticResource TextDim}"/>
+      <Button Content="{DynamicResource Ui.Export.ExportMessages}" Command="{Binding Export.ExportMessagesCommand}"/>
+      <Button Content="{DynamicResource Ui.Export.ExportEvents}" Command="{Binding Export.ExportEventsCommand}"/>
+      <TextBlock Text="{Binding Export.StatusMessage}" Foreground="{DynamicResource TextDim}"/>
     </StackPanel>
   </StackPanel>
 </UserControl>

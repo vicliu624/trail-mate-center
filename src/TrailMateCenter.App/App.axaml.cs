@@ -8,7 +8,9 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Linq;
 using System.Threading;
+using TrailMateCenter.Localization;
 using TrailMateCenter.Services;
+using TrailMateCenter.Styling;
 using TrailMateCenter.Storage;
 using TrailMateCenter.Transport;
 using TrailMateCenter.ViewModels;
@@ -24,6 +26,8 @@ public partial class App : Application
     public override void Initialize()
     {
         AvaloniaXamlLoader.Load(this);
+        LocalizationService.Instance.Initialize();
+        ThemeService.Instance.ApplyTheme(ThemeService.DefaultTheme);
     }
 
     public override void OnFrameworkInitializationCompleted()
