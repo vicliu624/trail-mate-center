@@ -66,6 +66,26 @@ public sealed record AppDataEvent(
     ushort ChunkLength,
     byte[] Chunk) : HostLinkEvent(Timestamp);
 
+public sealed record TeamStateEvent(
+    DateTimeOffset Timestamp,
+    byte Version,
+    byte Flags,
+    uint SelfId,
+    byte[] TeamId,
+    byte[] JoinTargetId,
+    uint KeyId,
+    uint LastEventSeq,
+    uint LastUpdateSeconds,
+    string TeamName,
+    IReadOnlyList<TeamMemberInfo> Members) : HostLinkEvent(Timestamp);
+
+public sealed record TeamMemberInfo(
+    uint NodeId,
+    byte Role,
+    bool Online,
+    uint LastSeenSeconds,
+    string Name);
+
 public sealed record ConfigEvent(
     DateTimeOffset Timestamp,
     DeviceConfig Config) : HostLinkEvent(Timestamp);

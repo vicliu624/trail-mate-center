@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using System.Diagnostics;
 using TrailMateCenter.Models;
 using TrailMateCenter.Protocol;
 using TrailMateCenter.StateMachine;
@@ -56,6 +57,7 @@ public sealed class HostLinkClient : IAsyncDisposable
     public event EventHandler<GpsEvent>? GpsUpdated;
     public event EventHandler<PositionUpdate>? PositionUpdated;
     public event EventHandler<NodeInfoUpdate>? NodeInfoUpdated;
+    public event EventHandler<TeamStateEvent>? TeamStateUpdated;
     public event EventHandler<MessageEntry>? MessageAdded;
     public event EventHandler<MessageEntry>? MessageUpdated;
     public event EventHandler<TacticalEvent>? TacticalEventReceived;
@@ -115,6 +117,7 @@ public sealed class HostLinkClient : IAsyncDisposable
             Text = request.Text,
             Status = MessageDeliveryStatus.Pending,
             Timestamp = DateTimeOffset.UtcNow,
+            DeviceTimestamp = null,
             Seq = pending.Seq,
         };
 
@@ -301,6 +304,7 @@ public sealed class HostLinkClient : IAsyncDisposable
 
     private void HandleFrame(HostLinkFrame frame)
     {
+        Debug.WriteLine($"[HostLink] RX frame type={frame.Type} seq={frame.Seq} len={frame.Payload.Length}");
         switch (frame.Type)
         {
             case HostLinkFrameType.HelloAck:
@@ -333,6 +337,9 @@ public sealed class HostLinkClient : IAsyncDisposable
                 break;
             case HostLinkFrameType.EvAppData:
                 HandleAppData(frame.Payload.Span);
+                break;
+            case HostLinkFrameType.EvTeamState:
+                HandleTeamState(frame.Payload.Span);
                 break;
             default:
                 break;
@@ -390,6 +397,9 @@ public sealed class HostLinkClient : IAsyncDisposable
         var rx = HostLinkSerializer.ParseRxMessage(payload);
         var hasGps = TrailMateCenter.Helpers.GpsParser.TryExtract(rx.Text, out var lat, out var lon);
 
+        var receivedAt = DateTimeOffset.UtcNow;
+        var deviceTimestamp = rx.Timestamp == DateTimeOffset.UnixEpoch ? (DateTimeOffset?)null : rx.Timestamp;
+
         var message = new MessageEntry
         {
             Direction = MessageDirection.Incoming,
@@ -402,7 +412,8 @@ public sealed class HostLinkClient : IAsyncDisposable
             Channel = rx.Channel.ToString(),
             Text = rx.Text,
             Status = MessageDeliveryStatus.Succeeded,
-            Timestamp = rx.Timestamp,
+            Timestamp = receivedAt,
+            DeviceTimestamp = deviceTimestamp,
             Latitude = hasGps ? lat : null,
             Longitude = hasGps ? lon : null,
         };
@@ -502,11 +513,49 @@ public sealed class HostLinkClient : IAsyncDisposable
         var app = HostLinkSerializer.ParseAppData(payload);
         _sessionStore.AddEvent(app);
         EventReceived?.Invoke(this, app);
+        Debug.WriteLine($"[HostLink] EV_APP_DATA port={app.Portnum} from=0x{app.From:X8} to=0x{app.To:X8} ch={app.Channel} flags={app.Flags} totalLen={app.TotalLength} offset={app.Offset} chunkLen={app.ChunkLength}");
+        _logger.LogInformation(
+            "EV_APP_DATA: port={Port} from=0x{From:X8} to=0x{To:X8} ch={Channel} flags={Flags} totalLen={TotalLen} offset={Offset} chunkLen={ChunkLen}",
+            app.Portnum, app.From, app.To, app.Channel, app.Flags, app.TotalLength, app.Offset, app.ChunkLength);
+        if (app.Portnum == AppDataDecoder.NodeInfoPort)
+        {
+            Debug.WriteLine($"[HostLink] EV_APP_DATA NodeInfo from=0x{app.From:X8} totalLen={app.TotalLength} offset={app.Offset} chunkLen={app.ChunkLength}");
+            _logger.LogInformation(
+                "EV_APP_DATA NodeInfo: from=0x{From:X8} to=0x{To:X8} ch={Channel} flags={Flags} totalLen={TotalLen} offset={Offset} chunkLen={ChunkLen}",
+                app.From, app.To, app.Channel, app.Flags, app.TotalLength, app.Offset, app.ChunkLength);
+        }
         CacheTeamContext(app);
         var packets = _appDataReassembler.Accept(app);
         foreach (var packet in packets)
         {
+            if (packet.Portnum == AppDataDecoder.NodeInfoPort && packet.Payload.Length == 0)
+            {
+                Debug.WriteLine($"[HostLink] NodeInfo payload empty after reassembly: from=0x{app.From:X8} totalLen={app.TotalLength} chunkLen={app.ChunkLength}");
+                _logger.LogWarning(
+                    "NodeInfo payload is empty after reassembly: from=0x{From:X8} totalLen={TotalLen} chunkLen={ChunkLen}",
+                    app.From, app.TotalLength, app.ChunkLength);
+            }
             var decoded = _appDataDecoder.Decode(packet);
+            if (packet.Portnum == AppDataDecoder.NodeInfoPort)
+            {
+                if (decoded.NodeInfos.Count == 0)
+                {
+                    Debug.WriteLine($"[HostLink] NodeInfo decode produced no records: from=0x{packet.From:X8} payloadLen={packet.Payload.Length}");
+                    _logger.LogWarning(
+                        "NodeInfo decode produced no records: from=0x{From:X8} payloadLen={PayloadLen}",
+                        packet.From, packet.Payload.Length);
+                }
+                else
+                {
+                    foreach (var info in decoded.NodeInfos)
+                    {
+                        Debug.WriteLine($"[HostLink] NodeInfo decoded id=0x{info.NodeId:X8} short={info.ShortName} long={info.LongName} userId={info.UserId}");
+                        _logger.LogInformation(
+                            "NodeInfo decoded: id=0x{Id:X8} short={Short} long={Long} userId={UserId} lat={Lat} lon={Lon}",
+                            info.NodeId, info.ShortName, info.LongName, info.UserId, info.Latitude, info.Longitude);
+                    }
+                }
+            }
             foreach (var pos in decoded.Positions)
             {
                 _sessionStore.AddPositionUpdate(pos);
@@ -523,6 +572,15 @@ public sealed class HostLinkClient : IAsyncDisposable
                 TacticalEventReceived?.Invoke(this, te);
             }
         }
+    }
+
+    private void HandleTeamState(ReadOnlySpan<byte> payload)
+    {
+        var teamState = HostLinkSerializer.ParseTeamState(payload);
+        _sessionStore.AddEvent(teamState);
+        EventReceived?.Invoke(this, teamState);
+        _sessionStore.SetTeamState(teamState);
+        TeamStateUpdated?.Invoke(this, teamState);
     }
 
     private void CacheTeamContext(AppDataEvent app)

@@ -20,6 +20,7 @@ public sealed record MessageEntry
 {
     public Guid Id { get; init; } = Guid.NewGuid();
     public DateTimeOffset Timestamp { get; init; } = DateTimeOffset.UtcNow;
+    public DateTimeOffset? DeviceTimestamp { get; init; }
     public MessageDirection Direction { get; init; }
     public uint? MessageId { get; set; }
     public uint? FromId { get; init; }

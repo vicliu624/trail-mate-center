@@ -49,6 +49,7 @@ public sealed class SqliteStore
             CREATE TABLE IF NOT EXISTS messages (
                 id TEXT PRIMARY KEY,
                 timestamp INTEGER NOT NULL,
+                device_timestamp INTEGER,
                 direction INTEGER NOT NULL,
                 message_id INTEGER,
                 from_id INTEGER,
@@ -134,6 +135,8 @@ public sealed class SqliteStore
             );
             """;
         await cmd.ExecuteNonQueryAsync(cancellationToken);
+
+        await EnsureColumnAsync(connection, "messages", "device_timestamp", "INTEGER", cancellationToken);
     }
 
     public async Task UpsertMessageAsync(MessageEntry message, CancellationToken cancellationToken)
@@ -146,15 +149,16 @@ public sealed class SqliteStore
             await using var cmd = connection.CreateCommand();
             cmd.CommandText = """
                 INSERT INTO messages (
-                    id, timestamp, direction, message_id, from_id, to_id, from_text, to_text, channel_id, channel,
+                    id, timestamp, device_timestamp, direction, message_id, from_id, to_id, from_text, to_text, channel_id, channel,
                     text, status, error_message, rssi, snr, hop, retry, airtime_ms, seq, latitude, longitude, altitude
                 )
                 VALUES (
-                    $id, $timestamp, $direction, $message_id, $from_id, $to_id, $from_text, $to_text, $channel_id, $channel,
+                    $id, $timestamp, $device_timestamp, $direction, $message_id, $from_id, $to_id, $from_text, $to_text, $channel_id, $channel,
                     $text, $status, $error_message, $rssi, $snr, $hop, $retry, $airtime_ms, $seq, $latitude, $longitude, $altitude
                 )
                 ON CONFLICT(id) DO UPDATE SET
                     timestamp = excluded.timestamp,
+                    device_timestamp = excluded.device_timestamp,
                     direction = excluded.direction,
                     message_id = excluded.message_id,
                     from_id = excluded.from_id,
@@ -179,6 +183,7 @@ public sealed class SqliteStore
 
             cmd.Parameters.AddWithValue("$id", message.Id.ToString());
             cmd.Parameters.AddWithValue("$timestamp", message.Timestamp.ToUnixTimeMilliseconds());
+            cmd.Parameters.AddWithValue("$device_timestamp", DbValue(message.DeviceTimestamp?.ToUnixTimeMilliseconds()));
             cmd.Parameters.AddWithValue("$direction", (int)message.Direction);
             cmd.Parameters.AddWithValue("$message_id", DbValue(message.MessageId));
             cmd.Parameters.AddWithValue("$from_id", DbValue(message.FromId));
@@ -329,6 +334,9 @@ public sealed class SqliteStore
                 {
                     Id = Guid.Parse(reader.GetString(reader.GetOrdinal("id"))),
                     Timestamp = DateTimeOffset.FromUnixTimeMilliseconds(reader.GetInt64(reader.GetOrdinal("timestamp"))),
+                    DeviceTimestamp = ReadNullableLong(reader, "device_timestamp") is { } deviceTs
+                        ? DateTimeOffset.FromUnixTimeMilliseconds(deviceTs)
+                        : null,
                     Direction = (MessageDirection)reader.GetInt32(reader.GetOrdinal("direction")),
                     MessageId = ReadNullableUInt(reader, "message_id"),
                     FromId = ReadNullableUInt(reader, "from_id"),
@@ -564,6 +572,36 @@ public sealed class SqliteStore
     private static object DbValue<T>(T? value)
     {
         return value is null ? DBNull.Value : value;
+    }
+
+    private static async Task EnsureColumnAsync(
+        SqliteConnection connection,
+        string table,
+        string column,
+        string definition,
+        CancellationToken cancellationToken)
+    {
+        await using var cmd = connection.CreateCommand();
+        cmd.CommandText = $"PRAGMA table_info({table});";
+        await using var reader = await cmd.ExecuteReaderAsync(cancellationToken);
+        while (await reader.ReadAsync(cancellationToken))
+        {
+            var name = reader.GetString(reader.GetOrdinal("name"));
+            if (string.Equals(name, column, StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+        }
+
+        await using var alter = connection.CreateCommand();
+        alter.CommandText = $"ALTER TABLE {table} ADD COLUMN {column} {definition};";
+        await alter.ExecuteNonQueryAsync(cancellationToken);
+    }
+
+    private static long? ReadNullableLong(SqliteDataReader reader, string column)
+    {
+        var ordinal = reader.GetOrdinal(column);
+        return reader.IsDBNull(ordinal) ? null : reader.GetInt64(ordinal);
     }
 
     private static uint? ReadNullableUInt(SqliteDataReader reader, string column)

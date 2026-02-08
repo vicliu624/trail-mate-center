@@ -13,6 +13,7 @@ public sealed class AppDataReassembler
     {
         if (ev.TotalLength == 0)
         {
+            var payload = (ev.ChunkLength > 0 && ev.Chunk.Length > 0) ? ev.Chunk : Array.Empty<byte>();
             return new[]
             {
                 new AppDataPacket(
@@ -24,7 +25,7 @@ public sealed class AppDataReassembler
                     ev.TeamId,
                     ev.TeamKeyId,
                     ev.DeviceUptimeSeconds,
-                    Array.Empty<byte>())
+                    payload)
             };
         }
 

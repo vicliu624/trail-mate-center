@@ -19,6 +19,7 @@ public enum HostLinkFrameType : byte
     EvLog = 0x83,
     EvGps = 0x84,
     EvAppData = 0x85,
+    EvTeamState = 0x86,
 }
 
 public enum HostLinkErrorCode : byte
@@ -42,6 +43,7 @@ public enum HostLinkCapabilities : uint
     CapLogs = 1u << 4,
     CapGps = 1u << 5,
     CapAppData = 1u << 6,
+    CapTeamState = 1u << 7,
 }
 
 [Flags]

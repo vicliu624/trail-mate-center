@@ -285,4 +285,64 @@ public static class HostLinkSerializer
             chunkLen,
             chunk);
     }
+
+    public static TeamStateEvent ParseTeamState(ReadOnlySpan<byte> payload)
+    {
+        var reader = new HostLinkSpanReader(payload);
+        reader.TryReadByte(out var version);
+        reader.TryReadByte(out var flags);
+        reader.TryReadUInt16(out _);
+        reader.TryReadUInt32(out var selfId);
+        reader.TryReadBytes(8, out var teamId);
+        reader.TryReadBytes(8, out var joinTargetId);
+        reader.TryReadUInt32(out var keyId);
+        reader.TryReadUInt32(out var lastEventSeq);
+        reader.TryReadUInt32(out var lastUpdateS);
+        reader.TryReadUInt16(out var teamNameLen);
+
+        var teamName = string.Empty;
+        if (teamNameLen > 0 && reader.Remaining.Length >= teamNameLen)
+        {
+            teamName = System.Text.Encoding.UTF8.GetString(reader.Remaining.Slice(0, teamNameLen));
+            reader = new HostLinkSpanReader(reader.Remaining.Slice(teamNameLen));
+        }
+
+        reader.TryReadByte(out var memberCount);
+        var members = new List<TeamMemberInfo>();
+        for (var i = 0; i < memberCount; i++)
+        {
+            if (!reader.TryReadUInt32(out var nodeId))
+                break;
+            if (!reader.TryReadByte(out var role))
+                break;
+            if (!reader.TryReadByte(out var online))
+                break;
+            if (!reader.TryReadUInt32(out var lastSeenS))
+                break;
+            if (!reader.TryReadUInt16(out var nameLen))
+                break;
+
+            var name = string.Empty;
+            if (nameLen > 0 && reader.Remaining.Length >= nameLen)
+            {
+                name = System.Text.Encoding.UTF8.GetString(reader.Remaining.Slice(0, nameLen));
+                reader = new HostLinkSpanReader(reader.Remaining.Slice(nameLen));
+            }
+
+            members.Add(new TeamMemberInfo(nodeId, role, online != 0, lastSeenS, name));
+        }
+
+        return new TeamStateEvent(
+            DateTimeOffset.UtcNow,
+            version,
+            flags,
+            selfId,
+            teamId,
+            joinTargetId,
+            keyId,
+            lastEventSeq,
+            lastUpdateS,
+            teamName,
+            members);
+    }
 }

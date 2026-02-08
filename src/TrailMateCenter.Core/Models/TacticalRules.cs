@@ -15,6 +15,7 @@ public static class TacticalRules
             TacticalEventKind.Waypoint => TacticalSeverity.Notice,
             TacticalEventKind.StatusChange => TacticalSeverity.Notice,
             TacticalEventKind.System => TacticalSeverity.Warning,
+            TacticalEventKind.Telemetry => TacticalSeverity.Info,
             _ => TacticalSeverity.Info,
         };
     }

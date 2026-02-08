@@ -1,4 +1,5 @@
 using System.Text;
+using System.Globalization;
 using Google.Protobuf;
 using Meshtastic.Protobufs;
 using TrailMateCenter.Models;
@@ -15,6 +16,7 @@ public sealed class AppDataDecoder
     public const uint TeamTrackPort = 304;
     public const uint NodeInfoPort = (uint)PortNum.NodeinfoApp;
     public const uint PositionPort = (uint)PortNum.PositionApp;
+    public const uint TelemetryPort = (uint)PortNum.TelemetryApp;
 
     public AppDataDecodeResult Decode(AppDataPacket packet)
     {
@@ -45,8 +47,13 @@ public sealed class AppDataDecoder
             case PositionPort:
                 DecodePosition(packet, positions);
                 break;
+            case TelemetryPort:
+                DecodeTelemetry(packet, events);
+                break;
             default:
-                events.Add(BuildOpaqueEvent(packet, TacticalEventKind.Unknown, $"APP {packet.Portnum}", $"payload {packet.Payload.Length} bytes"));
+                var label = ResolvePortLabel(packet.Portnum);
+                var title = label is null ? $"APP {packet.Portnum}" : $"{label} (APP {packet.Portnum})";
+                events.Add(BuildOpaqueEvent(packet, TacticalEventKind.Unknown, title, $"payload {packet.Payload.Length} bytes"));
                 break;
         }
 
@@ -446,6 +453,163 @@ public sealed class AppDataDecoder
         positions.Add(new PositionUpdate(ts, packet.From, lat, lon, pos.Altitude, null, PositionSource.DeviceGps, null));
     }
 
+    private static void DecodeTelemetry(AppDataPacket packet, List<TacticalEvent> events)
+    {
+        Telemetry telemetry;
+        try
+        {
+            telemetry = Telemetry.Parser.ParseFrom(packet.Payload);
+        }
+        catch (InvalidProtocolBufferException)
+        {
+            events.Add(BuildOpaqueEvent(packet, TacticalEventKind.Telemetry, "Telemetry", "解析失败"));
+            return;
+        }
+
+        var when = telemetry.Time > 0
+            ? DateTimeOffset.FromUnixTimeSeconds(telemetry.Time)
+            : DateTimeOffset.UtcNow;
+
+        var detail = BuildTelemetryDetail(telemetry);
+        if (string.IsNullOrWhiteSpace(detail))
+            detail = $"payload {packet.Payload.Length} bytes";
+
+        events.Add(new TacticalEvent(
+            when,
+            TacticalRules.GetDefaultSeverity(TacticalEventKind.Telemetry),
+            TacticalEventKind.Telemetry,
+            $"Telemetry · 0x{packet.From:X8}",
+            detail,
+            packet.From,
+            $"0x{packet.From:X8}",
+            null,
+            null));
+    }
+
+    private static string BuildTelemetryDetail(Telemetry telemetry)
+    {
+        var parts = new List<string>();
+
+        switch (telemetry.VariantCase)
+        {
+            case Telemetry.VariantOneofCase.DeviceMetrics:
+            {
+                var m = telemetry.DeviceMetrics;
+                AddIf(parts, m.HasBatteryLevel, $"电量 {m.BatteryLevel}%");
+                AddIf(parts, m.HasVoltage, $"电压 {Fmt(m.Voltage)}V");
+                AddIf(parts, m.HasChannelUtilization, $"信道占用 {Fmt(m.ChannelUtilization)}%");
+                AddIf(parts, m.HasAirUtilTx, $"发射占空 {Fmt(m.AirUtilTx)}%");
+                AddIf(parts, m.HasUptimeSeconds, $"运行 {FormatUptime(m.UptimeSeconds)}");
+                return string.Join(" · ", parts);
+            }
+            case Telemetry.VariantOneofCase.EnvironmentMetrics:
+            {
+                var m = telemetry.EnvironmentMetrics;
+                AddIf(parts, m.HasTemperature, $"温度 {Fmt(m.Temperature)}°C");
+                AddIf(parts, m.HasRelativeHumidity, $"湿度 {Fmt(m.RelativeHumidity)}%");
+                AddIf(parts, m.HasBarometricPressure, $"气压 {Fmt(m.BarometricPressure)}hPa");
+                AddIf(parts, m.HasGasResistance, $"气阻 {Fmt(m.GasResistance)}MΩ");
+                AddIf(parts, m.HasVoltage, $"电压 {Fmt(m.Voltage)}V");
+                AddIf(parts, m.HasCurrent, $"电流 {Fmt(m.Current)}A");
+                AddIf(parts, m.HasIaq, $"IAQ {m.Iaq}");
+                AddIf(parts, m.HasLux, $"照度 {Fmt(m.Lux)}lx");
+                AddIf(parts, m.HasUvLux, $"UV {Fmt(m.UvLux)}lx");
+                AddIf(parts, m.HasWindSpeed, $"风速 {Fmt(m.WindSpeed)}m/s");
+                AddIf(parts, m.HasWindDirection, $"风向 {m.WindDirection}°");
+                AddIf(parts, m.HasRainfall1H, $"雨量1h {Fmt(m.Rainfall1H)}mm");
+                AddIf(parts, m.HasRainfall24H, $"雨量24h {Fmt(m.Rainfall24H)}mm");
+                AddIf(parts, m.HasSoilMoisture, $"土壤湿度 {m.SoilMoisture}%");
+                AddIf(parts, m.HasSoilTemperature, $"土壤温度 {Fmt(m.SoilTemperature)}°C");
+                return string.Join(" · ", parts);
+            }
+            case Telemetry.VariantOneofCase.AirQualityMetrics:
+            {
+                var m = telemetry.AirQualityMetrics;
+                AddIf(parts, m.HasPm25Standard, $"PM2.5 {m.Pm25Standard}μg/m³");
+                AddIf(parts, m.HasPm10Standard, $"PM10 {m.Pm10Standard}μg/m³");
+                AddIf(parts, m.HasPm100Standard, $"PM100 {m.Pm100Standard}μg/m³");
+                AddIf(parts, m.HasCo2, $"CO2 {m.Co2}ppm");
+                AddIf(parts, m.HasPmTemperature, $"温度 {Fmt(m.PmTemperature)}°C");
+                AddIf(parts, m.HasPmHumidity, $"湿度 {Fmt(m.PmHumidity)}%");
+                AddIf(parts, m.HasPmVocIdx, $"VOC {Fmt(m.PmVocIdx)}");
+                AddIf(parts, m.HasPmNoxIdx, $"NOx {Fmt(m.PmNoxIdx)}");
+                return string.Join(" · ", parts);
+            }
+            case Telemetry.VariantOneofCase.PowerMetrics:
+            {
+                var m = telemetry.PowerMetrics;
+                AddIf(parts, m.HasCh1Voltage, $"CH1 {Fmt(m.Ch1Voltage)}V");
+                AddIf(parts, m.HasCh1Current, $"CH1 {Fmt(m.Ch1Current)}A");
+                AddIf(parts, m.HasCh2Voltage, $"CH2 {Fmt(m.Ch2Voltage)}V");
+                AddIf(parts, m.HasCh2Current, $"CH2 {Fmt(m.Ch2Current)}A");
+                return string.Join(" · ", parts);
+            }
+            case Telemetry.VariantOneofCase.LocalStats:
+            {
+                var m = telemetry.LocalStats;
+                if (m.UptimeSeconds > 0) parts.Add($"运行 {FormatUptime(m.UptimeSeconds)}");
+                if (m.ChannelUtilization > 0) parts.Add($"信道占用 {Fmt(m.ChannelUtilization)}%");
+                if (m.AirUtilTx > 0) parts.Add($"发射占空 {Fmt(m.AirUtilTx)}%");
+                if (m.NumPacketsTx > 0 || m.NumPacketsRx > 0) parts.Add($"TX {m.NumPacketsTx} / RX {m.NumPacketsRx}");
+                if (m.NumPacketsRxBad > 0) parts.Add($"RX坏包 {m.NumPacketsRxBad}");
+                if (m.NoiseFloor != 0) parts.Add($"噪声 {m.NoiseFloor}dBm");
+                return string.Join(" · ", parts);
+            }
+            case Telemetry.VariantOneofCase.HealthMetrics:
+            {
+                var m = telemetry.HealthMetrics;
+                AddIf(parts, m.HasHeartBpm, $"心率 {m.HeartBpm}bpm");
+                AddIf(parts, m.HasSpO2, $"血氧 {m.SpO2}%");
+                AddIf(parts, m.HasTemperature, $"体温 {Fmt(m.Temperature)}°C");
+                return string.Join(" · ", parts);
+            }
+            case Telemetry.VariantOneofCase.HostMetrics:
+            {
+                var m = telemetry.HostMetrics;
+                if (m.UptimeSeconds > 0) parts.Add($"运行 {FormatUptime(m.UptimeSeconds)}");
+                if (m.FreememBytes > 0) parts.Add($"空闲内存 {FormatBytes(m.FreememBytes)}");
+                if (m.Diskfree1Bytes > 0) parts.Add($"/ 可用 {FormatBytes(m.Diskfree1Bytes)}");
+                if (m.Load1 > 0) parts.Add($"负载1 {m.Load1 / 100f:F2}");
+                if (!string.IsNullOrWhiteSpace(m.UserString)) parts.Add(m.UserString);
+                return string.Join(" · ", parts);
+            }
+            default:
+                return string.Empty;
+        }
+    }
+
+    private static void AddIf(List<string> parts, bool condition, string text)
+    {
+        if (condition)
+            parts.Add(text);
+    }
+
+    private static string Fmt(float value)
+    {
+        return value.ToString("0.##", CultureInfo.InvariantCulture);
+    }
+
+    private static string FormatUptime(uint seconds)
+    {
+        if (seconds < 60) return $"{seconds}s";
+        var ts = TimeSpan.FromSeconds(seconds);
+        if (ts.TotalHours >= 1)
+            return $"{(int)ts.TotalHours}h {ts.Minutes}m";
+        return $"{ts.Minutes}m {ts.Seconds}s";
+    }
+
+    private static string FormatBytes(ulong bytes)
+    {
+        const double k = 1024.0;
+        if (bytes < k) return $"{bytes}B";
+        var kb = bytes / k;
+        if (kb < k) return $"{kb:F1}KB";
+        var mb = kb / k;
+        if (mb < k) return $"{mb:F1}MB";
+        var gb = mb / k;
+        return $"{gb:F1}GB";
+    }
+
     private static DateTimeOffset ExtractPositionTimestamp(Position pos)
     {
         if (pos.Timestamp != 0)
@@ -467,6 +631,36 @@ public sealed class AppDataDecoder
             $"0x{packet.From:X8}",
             null,
             null);
+    }
+
+    private static string? ResolvePortLabel(uint port)
+    {
+        if (!Enum.IsDefined(typeof(PortNum), (int)port))
+            return null;
+
+        var name = Enum.GetName(typeof(PortNum), (int)port);
+        if (string.IsNullOrWhiteSpace(name))
+            return null;
+
+        var parts = name.Split('_', StringSplitOptions.RemoveEmptyEntries).ToList();
+        if (parts.Count > 0 && parts[^1].Equals("APP", StringComparison.OrdinalIgnoreCase))
+            parts.RemoveAt(parts.Count - 1);
+
+        if (parts.Count == 0)
+            return name;
+
+        for (var i = 0; i < parts.Count; i++)
+        {
+            var part = parts[i].ToLowerInvariant();
+            parts[i] = part.Length switch
+            {
+                0 => part,
+                1 => part.ToUpperInvariant(),
+                _ => char.ToUpperInvariant(part[0]) + part[1..],
+            };
+        }
+
+        return string.Join(' ', parts);
     }
 }
 

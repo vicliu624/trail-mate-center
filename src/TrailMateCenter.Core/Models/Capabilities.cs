@@ -14,4 +14,5 @@ public sealed record Capabilities
     public bool SupportsLogs => CapabilitiesMask.HasFlag(HostLinkCapabilities.CapLogs);
     public bool SupportsGps => CapabilitiesMask.HasFlag(HostLinkCapabilities.CapGps);
     public bool SupportsAppData => CapabilitiesMask.HasFlag(HostLinkCapabilities.CapAppData);
+    public bool SupportsTeamState => CapabilitiesMask.HasFlag(HostLinkCapabilities.CapTeamState);
 }

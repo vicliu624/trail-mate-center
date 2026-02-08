@@ -20,6 +20,7 @@ public enum TacticalEventKind
     Waypoint = 7,
     StatusChange = 8,
     System = 9,
+    Telemetry = 10,
 }
 
 public sealed record TacticalEvent(

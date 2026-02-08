@@ -9,6 +9,7 @@ public sealed class SessionStore
     private readonly List<TacticalEvent> _tacticalEvents = new();
     private readonly List<PositionUpdate> _positions = new();
     private readonly Dictionary<uint, NodeInfoUpdate> _nodeInfos = new();
+    private TeamStateEvent? _teamState;
     private readonly List<RawFrameRecord> _rawFrames = new();
     private readonly object _gate = new();
 
@@ -18,6 +19,7 @@ public sealed class SessionStore
     public event EventHandler<TacticalEvent>? TacticalEventAdded;
     public event EventHandler<PositionUpdate>? PositionUpdated;
     public event EventHandler<NodeInfoUpdate>? NodeInfoUpdated;
+    public event EventHandler<TeamStateEvent>? TeamStateUpdated;
     public event EventHandler<RawFrameRecord>? RawFrameAdded;
 
     public void AddMessage(MessageEntry message)
@@ -70,6 +72,15 @@ public sealed class SessionStore
         NodeInfoUpdated?.Invoke(this, info);
     }
 
+    public void SetTeamState(TeamStateEvent teamState)
+    {
+        lock (_gate)
+        {
+            _teamState = teamState;
+        }
+        TeamStateUpdated?.Invoke(this, teamState);
+    }
+
     public void AddRawFrame(RawFrameRecord frame)
     {
         lock (_gate)
@@ -118,6 +129,14 @@ public sealed class SessionStore
         lock (_gate)
         {
             return _nodeInfos.Values.ToList();
+        }
+    }
+
+    public TeamStateEvent? SnapshotTeamState()
+    {
+        lock (_gate)
+        {
+            return _teamState;
         }
     }
 
