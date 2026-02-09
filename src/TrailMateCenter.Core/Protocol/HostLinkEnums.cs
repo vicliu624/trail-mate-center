@@ -74,6 +74,8 @@ public enum HostLinkConfigKey : byte
     AprsSymbolCode = 28,
     AprsPositionIntervalSec = 29,
     AprsNodeIdMap = 30,
+    AprsSelfEnable = 31,
+    AprsSelfCallsign = 32,
 }
 
 public enum HostLinkStatusKey : byte

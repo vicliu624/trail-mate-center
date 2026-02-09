@@ -164,6 +164,8 @@ public sealed partial class ConfigViewModel : ObservableObject, ILocalizationAwa
             HostLinkConfigKey.AprsSymbolCode => "AprsSymbolCode",
             HostLinkConfigKey.AprsPositionIntervalSec => "AprsPositionIntervalSec",
             HostLinkConfigKey.AprsNodeIdMap => "AprsNodeIdMap",
+            HostLinkConfigKey.AprsSelfEnable => "AprsSelfEnable",
+            HostLinkConfigKey.AprsSelfCallsign => "AprsSelfCallsign",
             _ => key.ToString(),
         };
     }

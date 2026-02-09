@@ -255,8 +255,12 @@ APRS-IS 相关配置建议由主机侧管理(不要求设备理解 APRS)。若�
 - `AprsEmitMessages`(bool)
 - `AprsEmitWaypoints`(bool)
 - `NodeIdToCallsignMap`(map)
+- `AprsSelfEnable`(bool, 设备端)
+- `AprsSelfCallsign`(string, 设备端，仅设备自身 callsign)
 
-注: 若将上述配置下发到设备侧，应与现有 HostLink config TLV 兼容(1 byte key + 1 byte len + value)。
+注:
+- 若将上述配置下发到设备侧，应与现有 HostLink config TLV 兼容(1 byte key + 1 byte len + value)。
+- 当设备启用 `AprsSelfEnable` 且在 `meshtastic_User.id` 发布 callsign 时，主机侧必须优先使用设备侧 callsign；`NodeIdToCallsignMap` 仅作为回退方案。
 
 ### 15.3 AppData RX(基于 Meshtastic 业务数据)
 

@@ -405,13 +405,13 @@ public sealed class AprsGatewayService : IAsyncDisposable
 
     private bool TryResolveCallsign(uint nodeId, out string callsign)
     {
+        if (_nodeInfos.TryGetValue(nodeId, out var info) && info is not null && TryParseCallsign(info.UserId, out callsign))
+            return true;
         if (_nodeIdMap.TryGetValue(nodeId, out var mapped) && !string.IsNullOrWhiteSpace(mapped))
         {
             callsign = mapped;
             return true;
         }
-        if (_nodeInfos.TryGetValue(nodeId, out var info) && info is not null && TryParseCallsign(info.UserId, out callsign))
-            return true;
         callsign = string.Empty;
         return false;
     }

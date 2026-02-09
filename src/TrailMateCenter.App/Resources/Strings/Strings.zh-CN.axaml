@@ -20,7 +20,7 @@
   <x:String x:Key="Ui.Main.RefreshPorts">刷新</x:String>
   <x:String x:Key="Ui.Main.Connect">连接</x:String>
   <x:String x:Key="Ui.Main.Disconnect">断开</x:String>
-  <x:String x:Key="Ui.Main.Language">语言</x:String>
+  <x:String x:Key="Ui.Main.Language">Language</x:String>
   <x:String x:Key="Ui.Main.Theme">主题</x:String>
 
   <x:String x:Key="Ui.Tab.Dashboard">态势</x:String>
@@ -31,7 +31,7 @@
   <x:String x:Key="Ui.Tab.RawFrames">原始帧</x:String>
   <x:String x:Key="Ui.Tab.Export">导出</x:String>
 
-  <x:String x:Key="Ui.Language.English">英语</x:String>
+  <x:String x:Key="Ui.Language.English">English</x:String>
   <x:String x:Key="Ui.Language.Chinese">中文</x:String>
   <x:String x:Key="Ui.Theme.Tactical">夜战</x:String>
   <x:String x:Key="Ui.Theme.Sandstorm">沙暴</x:String>
