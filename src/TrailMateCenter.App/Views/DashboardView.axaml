@@ -52,11 +52,32 @@
           <Border IsHitTestVisible="False" Background="{StaticResource MapGridBrush}" Opacity="0.08"/>
           <Border IsHitTestVisible="False" Background="{StaticResource MapNoiseBrush}" Opacity="0.04"/>
           <Border IsHitTestVisible="False" Background="{StaticResource MapVignette}" Opacity="0.2"/>
-          <Border HorizontalAlignment="Left" VerticalAlignment="Top" Margin="12" Background="{DynamicResource SurfaceDark}" CornerRadius="6" Padding="8" Opacity="0.9">
-            <StackPanel Orientation="Horizontal" Spacing="10">
-              <CheckBox Content="{DynamicResource Ui.Dashboard.Cluster}" IsChecked="{Binding MapEnableCluster}"/>
-              <CheckBox Content="{DynamicResource Ui.Dashboard.Follow}" IsChecked="{Binding MapFollowLatest}"/>
+          <Border HorizontalAlignment="Left" VerticalAlignment="Top" Margin="12"
+                  Background="{DynamicResource PanelBg}" BorderBrush="{DynamicResource PanelBorder}"
+                  BorderThickness="1" CornerRadius="6" Padding="8" Opacity="0.95">
+            <StackPanel Spacing="6">
+              <StackPanel Orientation="Horizontal" Spacing="10">
+                <CheckBox Content="{DynamicResource Ui.Dashboard.Cluster}" IsChecked="{Binding MapEnableCluster}" Foreground="{DynamicResource TextPrimary}"/>
+                <CheckBox Content="{DynamicResource Ui.Dashboard.Follow}" IsChecked="{Binding MapFollowLatest}" Foreground="{DynamicResource TextPrimary}"/>
+                <CheckBox Content="{DynamicResource Ui.Dashboard.Logs}" IsChecked="{Binding MapShowLogs}" Foreground="{DynamicResource TextPrimary}"/>
+              </StackPanel>
+              <TextBlock Text="{Binding Map.CurrentZoomText}" Foreground="{DynamicResource TextPrimary}" FontSize="10"/>
+              <TextBlock Text="{Binding Map.CurrentContourText}" Foreground="{DynamicResource TextDim}" FontSize="10"/>
             </StackPanel>
+          </Border>
+          <Border HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="12"
+                  Background="{DynamicResource SurfaceDark}" BorderBrush="{DynamicResource PanelBorder}"
+                  BorderThickness="1" CornerRadius="6" Padding="8" Opacity="0.92"
+                  IsVisible="{Binding MapShowLogs}" IsHitTestVisible="False">
+            <ScrollViewer MaxHeight="160" Width="360">
+              <ItemsControl ItemsSource="{Binding Map.MapLogEntries}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate>
+                    <TextBlock Text="{Binding Message}" Foreground="{Binding Color}" FontSize="10" TextWrapping="Wrap"/>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </ScrollViewer>
           </Border>
         </Grid>
       </Border>
@@ -67,7 +88,11 @@
             <Button Content="{DynamicResource Ui.Dashboard.Filter.Warn}" Width="60"/>
             <Button Content="{DynamicResource Ui.Dashboard.Filter.Crit}" Width="60"/>
           </StackPanel>
-          <ListBox Grid.Row="1" ItemsSource="{Binding TacticalEvents}" SelectedItem="{Binding SelectedTacticalEvent}" ItemTemplate="{StaticResource TacticalEventTemplate}"/>
+          <ListBox Grid.Row="1" ItemsSource="{Binding TacticalEvents}" SelectedItem="{Binding SelectedTacticalEvent}"
+                   ItemTemplate="{StaticResource TacticalEventTemplate}"
+                   Background="{DynamicResource PanelBg2}"
+                   BorderBrush="{DynamicResource PanelBorder}"
+                   BorderThickness="1"/>
         </Grid>
       </Border>
     </Grid>
@@ -76,7 +101,7 @@
       <Grid RowDefinitions="Auto,*,Auto">
         <Border Background="{DynamicResource PanelBg}" BorderBrush="{DynamicResource PanelBorder}" BorderThickness="0,0,0,1" Padding="10" Classes="panel">
           <StackPanel Spacing="6">
-            <TextBlock Text="{DynamicResource Ui.Dashboard.Broadcast}" Foreground="{DynamicResource TextDim}" FontWeight="Bold"/>
+            <TextBlock Text="{DynamicResource Ui.Dashboard.Broadcast}" Foreground="{DynamicResource TextPrimary}" FontWeight="Bold"/>
             <TextBox Watermark="{DynamicResource Ui.Dashboard.InputMessage}" Text="{Binding OutgoingText, UpdateSourceTrigger=PropertyChanged}" Height="40"/>
             <StackPanel Orientation="Horizontal" Spacing="6">
               <TextBox Width="70" Text="{Binding Target, UpdateSourceTrigger=PropertyChanged}" Watermark="{DynamicResource Ui.Dashboard.Target}"/>
@@ -87,24 +112,27 @@
         </Border>
         <Border Grid.Row="1" Background="{DynamicResource PanelBg}" BorderBrush="{DynamicResource PanelBorder}" BorderThickness="0,0,0,1" Padding="8" Classes="panel">
           <StackPanel>
-            <TextBlock Text="{DynamicResource Ui.Dashboard.EventStream}" FontWeight="Bold" Foreground="{DynamicResource TextDim}" Margin="0,0,0,6"/>
+            <TextBlock Text="{DynamicResource Ui.Dashboard.EventStream}" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}" Margin="0,0,0,6"/>
             <ListBox ItemsSource="{Binding TacticalEvents}"
                      SelectedItem="{Binding SelectedTacticalEvent}"
-                     ItemTemplate="{StaticResource TacticalEventTemplate}"/>
+                     ItemTemplate="{StaticResource TacticalEventTemplate}"
+                     Background="{DynamicResource PanelBg2}"
+                     BorderBrush="{DynamicResource PanelBorder}"
+                     BorderThickness="1"/>
           </StackPanel>
         </Border>
         <Border Grid.Row="2" Background="{DynamicResource PanelBg2}" BorderBrush="{DynamicResource PanelBorder}" BorderThickness="0,1,0,0" Padding="10" Classes="panel">
           <StackPanel Spacing="6">
-            <TextBlock Text="{DynamicResource Ui.Dashboard.CommandOps}" FontWeight="Bold" Foreground="{DynamicResource TextDim}"/>
-            <TextBlock Text="{Binding SelectedSubjectDisplayId}" Foreground="{DynamicResource TextDim}"/>
+            <TextBlock Text="{DynamicResource Ui.Dashboard.CommandOps}" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}"/>
+            <TextBlock Text="{Binding SelectedSubjectDisplayId}" Foreground="{DynamicResource TextPrimary}"/>
             <StackPanel Orientation="Horizontal" Spacing="6">
-              <TextBlock Text="{DynamicResource Ui.Dashboard.Channel}" VerticalAlignment="Center" Foreground="{DynamicResource TextDim}"/>
+              <TextBlock Text="{DynamicResource Ui.Dashboard.Channel}" VerticalAlignment="Center" Foreground="{DynamicResource TextPrimary}"/>
               <TextBox Width="50" Text="{Binding CommandChannel}"/>
-              <TextBlock Text="{DynamicResource Ui.Dashboard.Radius}" VerticalAlignment="Center" Foreground="{DynamicResource TextDim}"/>
+              <TextBlock Text="{DynamicResource Ui.Dashboard.Radius}" VerticalAlignment="Center" Foreground="{DynamicResource TextPrimary}"/>
               <TextBox Width="60" Text="{Binding CommandRadiusMeters}"/>
             </StackPanel>
             <StackPanel Orientation="Horizontal" Spacing="6">
-              <TextBlock Text="{DynamicResource Ui.Dashboard.Priority}" VerticalAlignment="Center" Foreground="{DynamicResource TextDim}"/>
+              <TextBlock Text="{DynamicResource Ui.Dashboard.Priority}" VerticalAlignment="Center" Foreground="{DynamicResource TextPrimary}"/>
               <TextBox Width="60" Text="{Binding CommandPriority}"/>
             </StackPanel>
             <TextBox Watermark="{DynamicResource Ui.Dashboard.Note}" Text="{Binding CommandNote}"/>

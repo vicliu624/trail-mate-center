@@ -53,6 +53,13 @@
   <x:String x:Key="Ui.Dashboard.NodeList">Nodes</x:String>
   <x:String x:Key="Ui.Dashboard.Cluster">Cluster</x:String>
   <x:String x:Key="Ui.Dashboard.Follow">Follow</x:String>
+  <x:String x:Key="Ui.Dashboard.Logs">Logs</x:String>
+  <x:String x:Key="Ui.Dashboard.ZoomLabel">Zoom</x:String>
+  <x:String x:Key="Ui.Dashboard.ContoursLabel">Contours</x:String>
+  <x:String x:Key="Ui.Dashboard.ContoursOff">Off</x:String>
+  <x:String x:Key="Ui.Dashboard.ContoursNone">None</x:String>
+  <x:String x:Key="Ui.Dashboard.ContourMajor">Major</x:String>
+  <x:String x:Key="Ui.Dashboard.ContourMinor">Minor</x:String>
   <x:String x:Key="Ui.Dashboard.Broadcast">Broadcast</x:String>
   <x:String x:Key="Ui.Dashboard.InputMessage">Enter message</x:String>
   <x:String x:Key="Ui.Dashboard.Target">Target</x:String>
@@ -101,6 +108,23 @@
   <x:String x:Key="Ui.Config.TxMessages">Messages</x:String>
   <x:String x:Key="Ui.Config.TxWaypoints">Waypoints</x:String>
   <x:String x:Key="Ui.Config.SaveHint">After changes, click "Save settings"</x:String>
+  <x:String x:Key="Ui.Config.ContourSettings">Contour settings</x:String>
+  <x:String x:Key="Ui.Config.ContoursEnable">Enable contours</x:String>
+  <x:String x:Key="Ui.Config.ContoursFine5m">Enable 5m contours (zoom 17)</x:String>
+  <x:String x:Key="Ui.Config.EarthdataUser">Earthdata user</x:String>
+  <x:String x:Key="Ui.Config.EarthdataPass">Earthdata password</x:String>
+  <x:String x:Key="Ui.Config.EarthdataToken">Earthdata token</x:String>
+  <x:String x:Key="Ui.Config.EarthdataTest">Test Earthdata access</x:String>
+  <x:String x:Key="Ui.Config.ContoursNote">Requires GDAL and an Earthdata token. Tiles are stored in Documents\\TrailMateCenter\\contours.</x:String>
+
+  <x:String x:Key="Status.Earthdata.Testing">Checking Earthdata access...</x:String>
+  <x:String x:Key="Status.Earthdata.Ok">Earthdata access OK</x:String>
+  <x:String x:Key="Status.Earthdata.Missing">Enter Earthdata token first</x:String>
+  <x:String x:Key="Status.Earthdata.NoData">No NASADEM data in current view</x:String>
+  <x:String x:Key="Status.Earthdata.NoViewport">Map not ready yet</x:String>
+  <x:String x:Key="Status.Earthdata.Unauthorized">Earthdata authentication failed</x:String>
+  <x:String x:Key="Status.Earthdata.AccessDenied">Earthdata access denied for this token or dataset.</x:String>
+  <x:String x:Key="Status.Earthdata.Error">Earthdata check failed</x:String>
 
   <x:String x:Key="Ui.Events.Filter">Filter</x:String>
   <x:String x:Key="Ui.Events.FromIsOnly">From IS only</x:String>

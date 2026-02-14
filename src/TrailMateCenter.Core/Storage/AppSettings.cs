@@ -14,12 +14,14 @@ public sealed record AppSettings
     public UiSettings Ui { get; init; } = new();
     public TacticalSettings Tactical { get; init; } = new();
     public AprsSettings Aprs { get; init; } = new();
+    public ContourSettings Contours { get; init; } = new();
 }
 
 public sealed record UiSettings
 {
     public string Language { get; init; } = string.Empty;
     public string Theme { get; init; } = string.Empty;
+    public bool ShowMapLogs { get; init; }
 }
 
 public sealed record TacticalSettings
@@ -52,4 +54,16 @@ public sealed record AprsSettings
     public bool EmitWeather { get; init; } = true;
     public bool EmitMessages { get; init; } = true;
     public bool EmitWaypoints { get; init; } = true;
+}
+
+public sealed record ContourSettings
+{
+    public bool Enabled { get; init; } = true;
+    public bool EnableUltraFine { get; init; }
+    public EarthdataSettings Earthdata { get; init; } = new();
+}
+
+public sealed record EarthdataSettings
+{
+    public string Token { get; init; } = string.Empty;
 }

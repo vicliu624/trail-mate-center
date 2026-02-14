@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Linq;
 using TrailMateCenter.Localization;
 using TrailMateCenter.Models;
@@ -19,6 +20,41 @@ namespace TrailMateCenter.ViewModels;
 public sealed partial class MainWindowViewModel : ViewModelBase
 {
     private const int ChatTabIndex = 1;
+    private static readonly HashSet<string> AutoSaveProperties = new(StringComparer.Ordinal)
+    {
+        nameof(AutoReconnect),
+        nameof(AutoConnectOnDetect),
+        nameof(ReplayFile),
+        nameof(AckTimeoutMs),
+        nameof(MaxRetries),
+        nameof(OnlineThresholdSeconds),
+        nameof(WeakThresholdSeconds),
+        nameof(CommandChannel),
+        nameof(ContoursEnabled),
+        nameof(ContoursUltraFine),
+        nameof(EarthdataToken),
+        nameof(MapShowLogs),
+        nameof(AprsEnabled),
+        nameof(AprsServerHost),
+        nameof(AprsServerPort),
+        nameof(AprsIgateCallsign),
+        nameof(AprsIgateSsid),
+        nameof(AprsPasscode),
+        nameof(AprsToCall),
+        nameof(AprsPath),
+        nameof(AprsFilter),
+        nameof(AprsTxMinIntervalSec),
+        nameof(AprsDedupeWindowSec),
+        nameof(AprsPositionIntervalSec),
+        nameof(AprsSymbolTable),
+        nameof(AprsSymbolCode),
+        nameof(AprsUseCompressed),
+        nameof(AprsEmitStatus),
+        nameof(AprsEmitTelemetry),
+        nameof(AprsEmitWeather),
+        nameof(AprsEmitMessages),
+        nameof(AprsEmitWaypoints),
+    };
     private readonly HostLinkClient _client;
     private readonly AprsGatewayService _aprsGateway;
     private readonly AprsIsClient _aprsClient;
@@ -41,6 +77,11 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     private TeamStateEvent? _lastTeamState;
     private string? _lastErrorKey;
     private object[] _lastErrorArgs = Array.Empty<object>();
+    private string? _earthdataStatusKey;
+    private object[] _earthdataStatusArgs = Array.Empty<object>();
+    private string? _earthdataStatusDetail;
+    private bool _earthdataTestBusy;
+    private CancellationTokenSource? _settingsSaveDebounce;
 
     public MainWindowViewModel(
         HostLinkClient client,
@@ -75,6 +116,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         QuickSendCommand = new AsyncRelayCommand(QuickSendAsync, CanQuickSend);
         SetTargetToSelectedSubjectCommand = new RelayCommand(SetTargetToSelectedSubject, CanSetTargetToSelectedSubject);
         SaveSettingsCommand = new AsyncRelayCommand(SaveSettingsAsync);
+        TestEarthdataCommand = new AsyncRelayCommand(TestEarthdataAsync, CanTestEarthdata);
         RallyCommand = new AsyncRelayCommand(() => SendTeamCommandAsync(TeamCommandType.RallyTo));
         MoveCommand = new AsyncRelayCommand(() => SendTeamCommandAsync(TeamCommandType.MoveTo));
         HoldCommand = new AsyncRelayCommand(() => SendTeamCommandAsync(TeamCommandType.Hold));
@@ -127,6 +169,8 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         SelectedChannel = Channels.FirstOrDefault();
 
         LoadHistoryFromSession();
+
+        PropertyChanged += OnSettingsPropertyChanged;
 
         Teams.CollectionChanged += (_, _) =>
         {
@@ -240,6 +284,18 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     private bool _mapEnableCluster = true;
 
     [ObservableProperty]
+    private bool _contoursEnabled = true;
+
+    [ObservableProperty]
+    private bool _contoursUltraFine;
+
+    [ObservableProperty]
+    private string _earthdataToken = string.Empty;
+
+    [ObservableProperty]
+    private bool _mapShowLogs;
+
+    [ObservableProperty]
     private bool _isMessagePanelExpanded = true;
 
     [ObservableProperty]
@@ -326,6 +382,12 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty]
     private string _aprsStatsText = string.Empty;
 
+    [ObservableProperty]
+    private string _earthdataStatusText = string.Empty;
+
+    [ObservableProperty]
+    private string _earthdataStatusColor = "#9AA3AE";
+
     public bool HasNoSelectedSubject => !HasSelectedSubject;
 
     [ObservableProperty]
@@ -352,6 +414,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     public IAsyncRelayCommand QuickSendCommand { get; }
     public IRelayCommand SetTargetToSelectedSubjectCommand { get; }
     public IAsyncRelayCommand SaveSettingsCommand { get; }
+    public IAsyncRelayCommand TestEarthdataCommand { get; }
     public IAsyncRelayCommand RallyCommand { get; }
     public IAsyncRelayCommand MoveCommand { get; }
     public IAsyncRelayCommand HoldCommand { get; }
@@ -389,6 +452,56 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         }
     }
 
+    partial void OnContoursEnabledChanged(bool value)
+    {
+        Map.UpdateContourSettings(BuildContourSettings());
+    }
+
+    partial void OnContoursUltraFineChanged(bool value)
+    {
+        Map.UpdateContourSettings(BuildContourSettings());
+    }
+
+    partial void OnEarthdataTokenChanged(string value)
+    {
+        Map.UpdateContourSettings(BuildContourSettings());
+        ScheduleSettingsSave();
+    }
+
+    private void ScheduleSettingsSave()
+    {
+        if (!_settingsLoaded)
+            return;
+
+        _settingsSaveDebounce?.Cancel();
+        var cts = new CancellationTokenSource();
+        _settingsSaveDebounce = cts;
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await Task.Delay(800, cts.Token);
+            }
+            catch (OperationCanceledException)
+            {
+                return;
+            }
+
+            Dispatcher.UIThread.Post(async () =>
+            {
+                try
+                {
+                    await SaveSettingsAsync();
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to auto-save settings");
+                }
+            });
+        });
+    }
+
     private void SetLastError(string message)
     {
         _lastErrorKey = null;
@@ -403,6 +516,26 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         LastError = _lastErrorArgs.Length == 0
             ? LocalizationService.Instance.GetString(key)
             : LocalizationService.Instance.Format(key, _lastErrorArgs);
+    }
+
+    private void SetEarthdataStatus(string key, string color, string? detail, params object[] args)
+    {
+        _earthdataStatusKey = key;
+        _earthdataStatusArgs = args ?? Array.Empty<object>();
+        _earthdataStatusDetail = detail;
+        EarthdataStatusColor = color;
+        EarthdataStatusText = _earthdataStatusArgs.Length == 0
+            ? LocalizationService.Instance.GetString(key)
+            : LocalizationService.Instance.Format(key, _earthdataStatusArgs);
+        if (!string.IsNullOrWhiteSpace(_earthdataStatusDetail))
+        {
+            EarthdataStatusText = $"{EarthdataStatusText}\n{_earthdataStatusDetail}";
+        }
+    }
+
+    private void SetEarthdataStatus(string key, string color, params object[] args)
+    {
+        SetEarthdataStatus(key, color, null, args);
     }
 
     private async Task LoadSettingsAsync()
@@ -444,6 +577,11 @@ public sealed partial class MainWindowViewModel : ViewModelBase
 
             _aprsGateway.ApplySettings(_settings.Aprs);
 
+            ContoursEnabled = _settings.Contours.Enabled;
+            ContoursUltraFine = _settings.Contours.EnableUltraFine;
+            EarthdataToken = _settings.Contours.Earthdata.Token;
+            Map.UpdateContourSettings(_settings.Contours);
+
             if (!string.IsNullOrWhiteSpace(_settings.Ui.Language))
             {
                 var language = Languages.FirstOrDefault(l => string.Equals(l.Culture.Name, _settings.Ui.Language, StringComparison.OrdinalIgnoreCase))
@@ -462,6 +600,8 @@ public sealed partial class MainWindowViewModel : ViewModelBase
                     SelectedTheme = theme;
                 }
             }
+
+            MapShowLogs = _settings.Ui.ShowMapLogs;
         }
         catch (Exception ex)
         {
@@ -536,6 +676,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             {
                 Language = SelectedLanguage?.Culture.Name ?? string.Empty,
                 Theme = SelectedTheme?.Definition.Id ?? string.Empty,
+                ShowMapLogs = MapShowLogs,
             },
             Tactical = _settings.Tactical with
             {
@@ -567,10 +708,82 @@ public sealed partial class MainWindowViewModel : ViewModelBase
                 EmitMessages = AprsEmitMessages,
                 EmitWaypoints = AprsEmitWaypoints,
             },
+            Contours = _settings.Contours with
+            {
+                Enabled = ContoursEnabled,
+                EnableUltraFine = ContoursUltraFine,
+                Earthdata = _settings.Contours.Earthdata with
+                {
+                    Token = EarthdataToken.Trim(),
+                },
+            },
         };
         _settings = newSettings;
         await _settingsStore.SaveAsync(newSettings, CancellationToken.None);
         _aprsGateway.ApplySettings(newSettings.Aprs);
+        Map.UpdateContourSettings(newSettings.Contours);
+    }
+
+    private bool CanTestEarthdata()
+    {
+        return !_earthdataTestBusy;
+    }
+
+    private async Task TestEarthdataAsync()
+    {
+        if (_earthdataTestBusy)
+            return;
+
+        _earthdataTestBusy = true;
+        TestEarthdataCommand.NotifyCanExecuteChanged();
+        SetEarthdataStatus("Status.Earthdata.Testing", "#9AA3AE");
+        try
+        {
+            var result = await Map.TestEarthdataCredentialsAsync();
+            switch (result.Status)
+            {
+                case EarthdataTestStatus.Success:
+                    SetEarthdataStatus("Status.Earthdata.Ok", "#9FE870", result.Detail);
+                    break;
+                case EarthdataTestStatus.MissingCredentials:
+                    SetEarthdataStatus("Status.Earthdata.Missing", "#F59E0B", result.Detail);
+                    break;
+                case EarthdataTestStatus.NoDataInView:
+                    SetEarthdataStatus("Status.Earthdata.NoData", "#A4AFBC", result.Detail);
+                    break;
+                case EarthdataTestStatus.NoViewport:
+                    SetEarthdataStatus("Status.Earthdata.NoViewport", "#A4AFBC", result.Detail);
+                    break;
+                case EarthdataTestStatus.Unauthorized:
+                    SetEarthdataStatus("Status.Earthdata.Unauthorized", "#EF4444", result.Detail);
+                    break;
+                case EarthdataTestStatus.AccessDenied:
+                    SetEarthdataStatus("Status.Earthdata.AccessDenied", "#F59E0B", result.Detail);
+                    break;
+                case EarthdataTestStatus.Error:
+                    SetEarthdataStatus("Status.Earthdata.Error", "#EF4444", result.Detail ?? "Unknown");
+                    break;
+            }
+        }
+        finally
+        {
+            _earthdataTestBusy = false;
+            TestEarthdataCommand.NotifyCanExecuteChanged();
+        }
+    }
+
+    private ContourSettings BuildContourSettings()
+    {
+        var baseSettings = _settings.Contours;
+        return baseSettings with
+        {
+            Enabled = ContoursEnabled,
+            EnableUltraFine = ContoursUltraFine,
+            Earthdata = baseSettings.Earthdata with
+            {
+                Token = EarthdataToken.Trim(),
+            },
+        };
     }
 
     private async Task DisconnectAsync()
@@ -798,6 +1011,11 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     {
         Map.EnableCluster = value;
         Map.Refresh();
+    }
+
+    partial void OnMapShowLogsChanged(bool value)
+    {
+        Map.SetLogVisibility(value);
     }
 
     private void OnConnectionStateChanged(object? sender, (ConnectionState OldState, ConnectionState NewState, string? Reason) args)
@@ -1437,6 +1655,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
                 subject.RefreshLocalization();
             }
             Events.RefreshLocalization();
+            Map.RefreshLocalization();
             Config.RefreshLocalization();
             Logs.RefreshLocalization();
             Export.RefreshLocalization();
@@ -1458,6 +1677,17 @@ public sealed partial class MainWindowViewModel : ViewModelBase
                 LastError = _lastErrorArgs.Length == 0
                     ? LocalizationService.Instance.GetString(_lastErrorKey)
                     : LocalizationService.Instance.Format(_lastErrorKey, _lastErrorArgs);
+            }
+
+            if (!string.IsNullOrWhiteSpace(_earthdataStatusKey))
+            {
+                EarthdataStatusText = _earthdataStatusArgs.Length == 0
+                    ? LocalizationService.Instance.GetString(_earthdataStatusKey)
+                    : LocalizationService.Instance.Format(_earthdataStatusKey, _earthdataStatusArgs);
+                if (!string.IsNullOrWhiteSpace(_earthdataStatusDetail))
+                {
+                    EarthdataStatusText = $"{EarthdataStatusText}\n{_earthdataStatusDetail}";
+                }
             }
         });
     }
@@ -1608,8 +1838,22 @@ public sealed partial class MainWindowViewModel : ViewModelBase
                 ? overrideSeverity
                 : TacticalRules.GetDefaultSeverity(kind);
             var rule = new SeverityRuleViewModel(kind, severity);
-            rule.PropertyChanged += (_, _) => ApplySeverityOverrides(kind, rule.Severity);
+            rule.PropertyChanged += (_, _) =>
+            {
+                ApplySeverityOverrides(kind, rule.Severity);
+                ScheduleSettingsSave();
+            };
             SeverityRules.Add(rule);
+        }
+    }
+
+    private void OnSettingsPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (string.IsNullOrWhiteSpace(e.PropertyName))
+            return;
+        if (AutoSaveProperties.Contains(e.PropertyName))
+        {
+            ScheduleSettingsSave();
         }
     }
 

@@ -3,7 +3,8 @@
              xmlns:vm="using:TrailMateCenter.ViewModels"
              x:Class="TrailMateCenter.Views.ConfigView"
              x:DataType="vm:MainWindowViewModel">
-  <StackPanel Spacing="8" Margin="12">
+  <ScrollViewer VerticalScrollBarVisibility="Auto">
+    <StackPanel Spacing="8" Margin="12">
     <TextBlock Text="{Binding DeviceInfo}" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}"/>
     <TextBlock Text="{Binding CapabilitiesInfo}" Foreground="{DynamicResource TextDim}"/>
     <TextBlock Text="{Binding StatusPanel}" Foreground="{DynamicResource TextDim}"/>
@@ -13,7 +14,8 @@
       <CheckBox Content="{DynamicResource Ui.Config.Advanced}" IsChecked="{Binding Config.IsAdvancedMode}" Foreground="{DynamicResource TextPrimary}"/>
       <TextBlock Text="{Binding Config.StatusMessage}" Foreground="{DynamicResource TextDim}"/>
     </StackPanel>
-    <ListBox ItemsSource="{Binding Config.Items}" Height="300">
+    <ListBox ItemsSource="{Binding Config.Items}" Height="300"
+             Background="{DynamicResource PanelBg2}" BorderBrush="{DynamicResource PanelBorder}" BorderThickness="1">
       <ListBox.ItemTemplate>
         <DataTemplate x:DataType="vm:ConfigItemViewModel">
           <Grid ColumnDefinitions="200,*,80" Margin="0,2">
@@ -36,7 +38,8 @@
           <TextBox Width="60" Text="{Binding CommandChannel}"/>
           <Button Content="{DynamicResource Ui.Config.SaveSettings}" Command="{Binding SaveSettingsCommand}"/>
         </StackPanel>
-        <ListBox ItemsSource="{Binding SeverityRules}" Height="180">
+        <ListBox ItemsSource="{Binding SeverityRules}" Height="180"
+                 Background="{DynamicResource PanelBg2}" BorderBrush="{DynamicResource PanelBorder}" BorderThickness="1">
           <ListBox.ItemTemplate>
             <DataTemplate x:DataType="vm:SeverityRuleViewModel">
               <Grid ColumnDefinitions="200,*,80" Margin="0,2">
@@ -107,5 +110,24 @@
         <TextBlock Text="{DynamicResource Ui.Config.SaveHint}" Foreground="{DynamicResource TextDim}" FontSize="10"/>
       </StackPanel>
     </Border>
+    <Border BorderBrush="{DynamicResource PanelBorder}" BorderThickness="1" Padding="8" CornerRadius="6" Background="{DynamicResource PanelBg}">
+      <StackPanel Spacing="6">
+        <TextBlock Text="{DynamicResource Ui.Config.ContourSettings}" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}"/>
+        <StackPanel Orientation="Horizontal" Spacing="8">
+          <CheckBox Content="{DynamicResource Ui.Config.ContoursEnable}" IsChecked="{Binding ContoursEnabled}" Foreground="{DynamicResource TextPrimary}"/>
+          <CheckBox Content="{DynamicResource Ui.Config.ContoursFine5m}" IsChecked="{Binding ContoursUltraFine}" Foreground="{DynamicResource TextPrimary}"/>
+        </StackPanel>
+        <Grid ColumnDefinitions="140,*" RowDefinitions="Auto" RowSpacing="6" ColumnSpacing="8">
+          <TextBlock Grid.Row="0" Grid.Column="0" Text="{DynamicResource Ui.Config.EarthdataToken}" VerticalAlignment="Center" Foreground="{DynamicResource TextPrimary}"/>
+          <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding EarthdataToken}"/>
+        </Grid>
+        <StackPanel Orientation="Horizontal" Spacing="8">
+          <Button Content="{DynamicResource Ui.Config.EarthdataTest}" Command="{Binding TestEarthdataCommand}"/>
+          <TextBlock Text="{Binding EarthdataStatusText}" Foreground="{Binding EarthdataStatusColor}" VerticalAlignment="Center" FontSize="11"/>
+        </StackPanel>
+        <TextBlock Text="{DynamicResource Ui.Config.ContoursNote}" Foreground="{DynamicResource TextDim}" FontSize="10"/>
+      </StackPanel>
+    </Border>
   </StackPanel>
+  </ScrollViewer>
 </UserControl>

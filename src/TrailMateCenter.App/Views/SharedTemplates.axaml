@@ -83,7 +83,8 @@
   </DataTemplate>
 
   <DataTemplate x:Key="TacticalEventTemplate" x:DataType="vm:TacticalEventViewModel">
-    <Border Padding="8" Margin="4" BorderThickness="1" BorderBrush="{Binding SeverityColor}" CornerRadius="6" Classes="panel">
+    <Border Padding="8" Margin="4" BorderThickness="1" BorderBrush="{Binding SeverityColor}" CornerRadius="6" Classes="panel"
+            Background="{DynamicResource PanelBg}">
       <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto">
         <Border Width="10" Height="10" Background="{Binding SeverityColor}" CornerRadius="2" Margin="0,2,6,0"/>
         <TextBlock Grid.Column="1" Text="{Binding Title}" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}"/>

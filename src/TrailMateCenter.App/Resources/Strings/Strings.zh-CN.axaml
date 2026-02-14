@@ -53,6 +53,13 @@
   <x:String x:Key="Ui.Dashboard.NodeList">节点列表</x:String>
   <x:String x:Key="Ui.Dashboard.Cluster">聚合</x:String>
   <x:String x:Key="Ui.Dashboard.Follow">跟随</x:String>
+  <x:String x:Key="Ui.Dashboard.Logs">日志</x:String>
+  <x:String x:Key="Ui.Dashboard.ZoomLabel">缩放</x:String>
+  <x:String x:Key="Ui.Dashboard.ContoursLabel">等高线</x:String>
+  <x:String x:Key="Ui.Dashboard.ContoursOff">关闭</x:String>
+  <x:String x:Key="Ui.Dashboard.ContoursNone">无</x:String>
+  <x:String x:Key="Ui.Dashboard.ContourMajor">主</x:String>
+  <x:String x:Key="Ui.Dashboard.ContourMinor">次</x:String>
   <x:String x:Key="Ui.Dashboard.Broadcast">全局喊话</x:String>
   <x:String x:Key="Ui.Dashboard.InputMessage">输入消息</x:String>
   <x:String x:Key="Ui.Dashboard.Target">目标</x:String>
@@ -101,6 +108,23 @@
   <x:String x:Key="Ui.Config.TxMessages">消息</x:String>
   <x:String x:Key="Ui.Config.TxWaypoints">路点</x:String>
   <x:String x:Key="Ui.Config.SaveHint">改动后请点击“保存设置”</x:String>
+  <x:String x:Key="Ui.Config.ContourSettings">等高线设置</x:String>
+  <x:String x:Key="Ui.Config.ContoursEnable">启用等高线</x:String>
+  <x:String x:Key="Ui.Config.ContoursFine5m">启用 5m 等高线（缩放 17）</x:String>
+  <x:String x:Key="Ui.Config.EarthdataUser">Earthdata 账号</x:String>
+  <x:String x:Key="Ui.Config.EarthdataPass">Earthdata 密码</x:String>
+  <x:String x:Key="Ui.Config.EarthdataToken">Earthdata Token</x:String>
+  <x:String x:Key="Ui.Config.EarthdataTest">测试 Earthdata 访问</x:String>
+  <x:String x:Key="Ui.Config.ContoursNote">需要 GDAL 与 Earthdata Token。瓦片存储在 Documents\\TrailMateCenter\\contours。</x:String>
+
+  <x:String x:Key="Status.Earthdata.Testing">正在验证 Earthdata 访问...</x:String>
+  <x:String x:Key="Status.Earthdata.Ok">Earthdata 访问正常</x:String>
+  <x:String x:Key="Status.Earthdata.Missing">请先填写 Earthdata Token</x:String>
+  <x:String x:Key="Status.Earthdata.NoData">当前视图范围没有 NASADEM 数据</x:String>
+  <x:String x:Key="Status.Earthdata.NoViewport">地图尚未就绪</x:String>
+  <x:String x:Key="Status.Earthdata.Unauthorized">Earthdata 认证失败</x:String>
+  <x:String x:Key="Status.Earthdata.AccessDenied">当前 Token 或数据集访问被拒。</x:String>
+  <x:String x:Key="Status.Earthdata.Error">Earthdata 验证失败</x:String>
 
   <x:String x:Key="Ui.Events.Filter">筛选</x:String>
   <x:String x:Key="Ui.Events.FromIsOnly">仅 From IS</x:String>
