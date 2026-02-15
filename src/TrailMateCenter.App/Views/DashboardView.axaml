@@ -48,7 +48,7 @@
     <Grid Grid.Column="1" RowDefinitions="*,220" Margin="0">
       <Border Background="{DynamicResource SurfaceDark}" BorderBrush="{DynamicResource PanelBorder}" BorderThickness="0,0,1,0" Classes="panel">
         <Grid>
-          <mapsui:MapControl Map="{Binding Map.Map}" />
+          <mapsui:MapControl x:Name="MainMapControl" Map="{Binding Map.Map}" />
           <Border IsHitTestVisible="False" Background="{StaticResource MapGridBrush}" Opacity="0.08"/>
           <Border IsHitTestVisible="False" Background="{StaticResource MapNoiseBrush}" Opacity="0.04"/>
           <Border IsHitTestVisible="False" Background="{StaticResource MapVignette}" Opacity="0.2"/>
@@ -60,6 +60,15 @@
                 <CheckBox Content="{DynamicResource Ui.Dashboard.Cluster}" IsChecked="{Binding MapEnableCluster}" Foreground="{DynamicResource TextPrimary}"/>
                 <CheckBox Content="{DynamicResource Ui.Dashboard.Follow}" IsChecked="{Binding MapFollowLatest}" Foreground="{DynamicResource TextPrimary}"/>
                 <CheckBox Content="{DynamicResource Ui.Dashboard.Logs}" IsChecked="{Binding MapShowLogs}" Foreground="{DynamicResource TextPrimary}"/>
+                <CheckBox Content="{DynamicResource Ui.Dashboard.Mqtt}" IsChecked="{Binding MapShowMqtt}" Foreground="{DynamicResource TextPrimary}"/>
+                <CheckBox Content="{DynamicResource Ui.Dashboard.ContoursLabel}" IsChecked="{Binding ContoursEnabled}" Foreground="{DynamicResource TextPrimary}"/>
+                <CheckBox Content="{DynamicResource Ui.Dashboard.Gibs}" IsChecked="{Binding MapShowGibs}" Foreground="{DynamicResource TextPrimary}"/>
+              </StackPanel>
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <TextBlock Text="{DynamicResource Ui.Dashboard.BaseMap}" VerticalAlignment="Center" Foreground="{DynamicResource TextPrimary}"/>
+                <ComboBox Width="140"
+                          ItemsSource="{Binding MapBaseLayers}"
+                          SelectedItem="{Binding SelectedMapBaseLayer}"/>
               </StackPanel>
               <TextBlock Text="{Binding Map.CurrentZoomText}" Foreground="{DynamicResource TextPrimary}" FontSize="10"/>
               <TextBlock Text="{Binding Map.CurrentContourText}" Foreground="{DynamicResource TextDim}" FontSize="10"/>

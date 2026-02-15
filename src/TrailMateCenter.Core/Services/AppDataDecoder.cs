@@ -16,7 +16,9 @@ public sealed class AppDataDecoder
     public const uint TeamTrackPort = 304;
     public const uint NodeInfoPort = (uint)PortNum.NodeinfoApp;
     public const uint PositionPort = (uint)PortNum.PositionApp;
+    public const uint WaypointPort = (uint)PortNum.WaypointApp;
     public const uint TelemetryPort = (uint)PortNum.TelemetryApp;
+    public const uint MapReportPort = (uint)PortNum.MapReportApp;
 
     public AppDataDecodeResult Decode(AppDataPacket packet)
     {
@@ -47,8 +49,14 @@ public sealed class AppDataDecoder
             case PositionPort:
                 DecodePosition(packet, positions);
                 break;
+            case WaypointPort:
+                DecodeTeamWaypoint(packet, events, positions);
+                break;
             case TelemetryPort:
                 DecodeTelemetry(packet, events);
+                break;
+            case MapReportPort:
+                DecodeMapReport(packet, events, nodeInfos, positions);
                 break;
             default:
                 var label = ResolvePortLabel(packet.Portnum);
@@ -484,6 +492,77 @@ public sealed class AppDataDecoder
             $"0x{packet.From:X8}",
             null,
             null));
+    }
+
+    private static void DecodeMapReport(
+        AppDataPacket packet,
+        List<TacticalEvent> events,
+        List<NodeInfoUpdate> nodeInfos,
+        List<PositionUpdate> positions)
+    {
+        try
+        {
+            var report = MapReport.Parser.ParseFrom(packet.Payload);
+            if (report is not null && packet.From != 0)
+            {
+                double? lat = null;
+                double? lon = null;
+                double? alt = null;
+
+                // Map report coordinates use e7 integers (0 means unknown for this feed).
+                if (report.LatitudeI != 0 || report.LongitudeI != 0)
+                {
+                    lat = report.LatitudeI / 1e7;
+                    lon = report.LongitudeI / 1e7;
+                    if (report.Altitude != 0)
+                        alt = report.Altitude;
+                    if (lat.HasValue && lon.HasValue)
+                    {
+                        positions.Add(new PositionUpdate(
+                            DateTimeOffset.UtcNow,
+                            packet.From,
+                            lat.Value,
+                            lon.Value,
+                            alt,
+                            null,
+                            PositionSource.DeviceGps,
+                            null));
+                    }
+                }
+
+                var userId = $"!{packet.From:x8}";
+                nodeInfos.Add(new NodeInfoUpdate(
+                    packet.From,
+                    string.IsNullOrWhiteSpace(report.ShortName) ? null : report.ShortName,
+                    string.IsNullOrWhiteSpace(report.LongName) ? null : report.LongName,
+                    userId,
+                    null,
+                    DateTimeOffset.UtcNow,
+                    lat,
+                    lon,
+                    alt));
+                return;
+            }
+        }
+        catch (InvalidProtocolBufferException)
+        {
+            // ignore and fallback
+        }
+
+        var beforeInfos = nodeInfos.Count;
+        var beforePositions = positions.Count;
+
+        // Meshtastic map report payloads are node-centric; in current firmware this maps well to NodeInfo-like payloads.
+        DecodeNodeInfo(packet, nodeInfos, positions);
+        if (nodeInfos.Count > beforeInfos || positions.Count > beforePositions)
+            return;
+
+        // Fallback for map feeds that only publish position payloads.
+        DecodePosition(packet, positions);
+        if (positions.Count <= beforePositions)
+        {
+            events.Add(BuildOpaqueEvent(packet, TacticalEventKind.Unknown, "Map Report", $"payload {packet.Payload.Length} bytes"));
+        }
     }
 
     private static string BuildTelemetryDetail(Telemetry telemetry)

@@ -133,10 +133,47 @@ public sealed class SqliteStore
                 longitude REAL,
                 altitude REAL
             );
+
+            CREATE TABLE IF NOT EXISTS mqtt_sources (
+                id TEXT PRIMARY KEY,
+                enabled INTEGER NOT NULL,
+                name TEXT NOT NULL,
+                host TEXT NOT NULL,
+                port INTEGER NOT NULL,
+                username TEXT,
+                password TEXT,
+                topic TEXT NOT NULL,
+                use_tls INTEGER NOT NULL,
+                client_id TEXT,
+                clean_session INTEGER NOT NULL DEFAULT 0,
+                subscribe_qos INTEGER NOT NULL DEFAULT 1,
+                sort_order INTEGER NOT NULL
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_mqtt_sources_sort ON mqtt_sources(sort_order);
+
+            CREATE TABLE IF NOT EXISTS mqtt_packets (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                timestamp INTEGER NOT NULL,
+                source_id TEXT NOT NULL,
+                source_name TEXT NOT NULL,
+                topic TEXT NOT NULL,
+                qos INTEGER NOT NULL,
+                retain INTEGER NOT NULL,
+                payload BLOB NOT NULL,
+                payload_size INTEGER NOT NULL,
+                payload_sha256 TEXT NOT NULL
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_mqtt_packets_timestamp ON mqtt_packets(timestamp);
+            CREATE INDEX IF NOT EXISTS idx_mqtt_packets_source_topic ON mqtt_packets(source_id, topic);
             """;
         await cmd.ExecuteNonQueryAsync(cancellationToken);
 
         await EnsureColumnAsync(connection, "messages", "device_timestamp", "INTEGER", cancellationToken);
+        await EnsureColumnAsync(connection, "mqtt_sources", "client_id", "TEXT", cancellationToken);
+        await EnsureColumnAsync(connection, "mqtt_sources", "clean_session", "INTEGER NOT NULL DEFAULT 0", cancellationToken);
+        await EnsureColumnAsync(connection, "mqtt_sources", "subscribe_qos", "INTEGER NOT NULL DEFAULT 1", cancellationToken);
     }
 
     public async Task UpsertMessageAsync(MessageEntry message, CancellationToken cancellationToken)
@@ -309,6 +346,38 @@ public sealed class SqliteStore
             cmd.Parameters.AddWithValue("$level", (int)entry.Level);
             cmd.Parameters.AddWithValue("$message", entry.Message);
             cmd.Parameters.AddWithValue("$raw_code", DbValue(entry.RawCode));
+            await cmd.ExecuteNonQueryAsync(cancellationToken);
+        }
+        finally
+        {
+            _mutex.Release();
+        }
+    }
+
+    public async Task AddMqttPacketAsync(MqttPacketRecord packet, CancellationToken cancellationToken)
+    {
+        await _mutex.WaitAsync(cancellationToken);
+        try
+        {
+            await using var connection = new SqliteConnection(_connectionString);
+            await connection.OpenAsync(cancellationToken);
+            await using var cmd = connection.CreateCommand();
+            cmd.CommandText = """
+                INSERT INTO mqtt_packets (
+                    timestamp, source_id, source_name, topic, qos, retain, payload, payload_size, payload_sha256
+                ) VALUES (
+                    $timestamp, $source_id, $source_name, $topic, $qos, $retain, $payload, $payload_size, $payload_sha256
+                );
+                """;
+            cmd.Parameters.AddWithValue("$timestamp", packet.Timestamp.ToUnixTimeMilliseconds());
+            cmd.Parameters.AddWithValue("$source_id", packet.SourceId);
+            cmd.Parameters.AddWithValue("$source_name", packet.SourceName);
+            cmd.Parameters.AddWithValue("$topic", packet.Topic);
+            cmd.Parameters.AddWithValue("$qos", Math.Clamp(packet.Qos, 0, 2));
+            cmd.Parameters.AddWithValue("$retain", packet.Retain ? 1 : 0);
+            cmd.Parameters.AddWithValue("$payload", packet.Payload);
+            cmd.Parameters.AddWithValue("$payload_size", packet.Payload.Length);
+            cmd.Parameters.AddWithValue("$payload_sha256", packet.PayloadSha256);
             await cmd.ExecuteNonQueryAsync(cancellationToken);
         }
         finally
@@ -567,6 +636,98 @@ public sealed class SqliteStore
         }
 
         return results;
+    }
+
+    public async Task<IReadOnlyList<MeshtasticMqttSourceSettings>> LoadMqttSourcesAsync(CancellationToken cancellationToken)
+    {
+        var results = new List<MeshtasticMqttSourceSettings>();
+        await _mutex.WaitAsync(cancellationToken);
+        try
+        {
+            await using var connection = new SqliteConnection(_connectionString);
+            await connection.OpenAsync(cancellationToken);
+            await using var cmd = connection.CreateCommand();
+            cmd.CommandText = "SELECT * FROM mqtt_sources ORDER BY sort_order ASC;";
+            await using var reader = await cmd.ExecuteReaderAsync(cancellationToken);
+            while (await reader.ReadAsync(cancellationToken))
+            {
+                var source = new MeshtasticMqttSourceSettings
+                {
+                    Id = reader.GetString(reader.GetOrdinal("id")),
+                    Enabled = reader.GetInt32(reader.GetOrdinal("enabled")) != 0,
+                    Name = reader.GetString(reader.GetOrdinal("name")),
+                    Host = reader.GetString(reader.GetOrdinal("host")),
+                    Port = reader.GetInt32(reader.GetOrdinal("port")),
+                    Username = ReadNullableString(reader, "username") ?? string.Empty,
+                    Password = ReadNullableString(reader, "password") ?? string.Empty,
+                    Topic = reader.GetString(reader.GetOrdinal("topic")),
+                    UseTls = reader.GetInt32(reader.GetOrdinal("use_tls")) != 0,
+                    ClientId = ReadNullableString(reader, "client_id") ?? string.Empty,
+                    CleanSession = reader.GetInt32(reader.GetOrdinal("clean_session")) != 0,
+                    SubscribeQos = Math.Clamp(reader.GetInt32(reader.GetOrdinal("subscribe_qos")), 0, 2),
+                };
+                results.Add(source);
+            }
+        }
+        finally
+        {
+            _mutex.Release();
+        }
+
+        return results;
+    }
+
+    public async Task SaveMqttSourcesAsync(IEnumerable<MeshtasticMqttSourceSettings> sources, CancellationToken cancellationToken)
+    {
+        await _mutex.WaitAsync(cancellationToken);
+        try
+        {
+            await using var connection = new SqliteConnection(_connectionString);
+            await connection.OpenAsync(cancellationToken);
+            await using var transaction = (SqliteTransaction)await connection.BeginTransactionAsync(cancellationToken);
+
+            await using (var clear = connection.CreateCommand())
+            {
+                clear.Transaction = transaction;
+                clear.CommandText = "DELETE FROM mqtt_sources;";
+                await clear.ExecuteNonQueryAsync(cancellationToken);
+            }
+
+            var sortOrder = 0;
+            foreach (var source in sources)
+            {
+                await using var insert = connection.CreateCommand();
+                insert.Transaction = transaction;
+                insert.CommandText = """
+                    INSERT INTO mqtt_sources (
+                        id, enabled, name, host, port, username, password, topic, use_tls, client_id, clean_session, subscribe_qos, sort_order
+                    ) VALUES (
+                        $id, $enabled, $name, $host, $port, $username, $password, $topic, $use_tls, $client_id, $clean_session, $subscribe_qos, $sort_order
+                    );
+                    """;
+                insert.Parameters.AddWithValue("$id", source.Id);
+                insert.Parameters.AddWithValue("$enabled", source.Enabled ? 1 : 0);
+                insert.Parameters.AddWithValue("$name", source.Name ?? string.Empty);
+                insert.Parameters.AddWithValue("$host", source.Host ?? string.Empty);
+                insert.Parameters.AddWithValue("$port", source.Port);
+                insert.Parameters.AddWithValue("$username", DbValue(source.Username));
+                insert.Parameters.AddWithValue("$password", DbValue(source.Password));
+                insert.Parameters.AddWithValue("$topic", source.Topic ?? string.Empty);
+                insert.Parameters.AddWithValue("$use_tls", source.UseTls ? 1 : 0);
+                insert.Parameters.AddWithValue("$client_id", DbValue(source.ClientId));
+                insert.Parameters.AddWithValue("$clean_session", source.CleanSession ? 1 : 0);
+                insert.Parameters.AddWithValue("$subscribe_qos", Math.Clamp(source.SubscribeQos, 0, 2));
+                insert.Parameters.AddWithValue("$sort_order", sortOrder);
+                await insert.ExecuteNonQueryAsync(cancellationToken);
+                sortOrder++;
+            }
+
+            await transaction.CommitAsync(cancellationToken);
+        }
+        finally
+        {
+            _mutex.Release();
+        }
     }
 
     private static object DbValue<T>(T? value)

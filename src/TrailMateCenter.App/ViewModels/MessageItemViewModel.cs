@@ -209,7 +209,7 @@ public sealed partial class MessageItemViewModel : ObservableObject, ILocalizati
         FromId = entry.FromId;
         ToId = entry.ToId;
         ChannelId = entry.ChannelId;
-        IsBroadcast = entry.ToId is null || entry.ToId == 0;
+        IsBroadcast = IsBroadcastDestination(entry.ToId);
         Text = entry.Text;
         Status = entry.Status;
         ErrorMessage = entry.ErrorMessage;
@@ -294,6 +294,11 @@ public sealed partial class MessageItemViewModel : ObservableObject, ILocalizati
         RetryText = HasRetry ? loc.Format("Status.Message.RetryTag", Retry) : string.Empty;
         HasAirtime = AirtimeMs.HasValue;
         AirtimeText = HasAirtime ? loc.Format("Status.Message.AirtimeTag", AirtimeMs) : string.Empty;
+    }
+
+    private static bool IsBroadcastDestination(uint? toId)
+    {
+        return !toId.HasValue || toId.Value == 0 || toId.Value == uint.MaxValue;
     }
 
     private string BuildTitle()

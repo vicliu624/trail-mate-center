@@ -1,12 +1,12 @@
 using Microsoft.Extensions.Logging;
-using RJCP.IO.Ports;
+using System.IO.Ports;
 
 namespace TrailMateCenter.Transport;
 
 public sealed class SerialTransport : IHostLinkTransport
 {
     private readonly ILogger _logger;
-    private SerialPortStream? _port;
+    private SerialPort? _port;
     private CancellationTokenSource? _cts;
     private Task? _readerTask;
 
@@ -31,7 +31,7 @@ public sealed class SerialTransport : IHostLinkTransport
 
         try
         {
-            _port = new SerialPortStream(serialEndpoint.PortName, serialEndpoint.BaudRate, 8, Parity.None, StopBits.One)
+            _port = new SerialPort(serialEndpoint.PortName, serialEndpoint.BaudRate, Parity.None, 8, StopBits.One)
             {
                 Handshake = Handshake.None,
                 ReadTimeout = 500,
@@ -86,7 +86,8 @@ public sealed class SerialTransport : IHostLinkTransport
 
         try
         {
-            await _port.WriteAsync(data, cancellationToken);
+            await _port.BaseStream.WriteAsync(data, cancellationToken);
+            await _port.BaseStream.FlushAsync(cancellationToken);
         }
         catch (Exception ex)
         {
@@ -105,7 +106,7 @@ public sealed class SerialTransport : IHostLinkTransport
                 if (_port is null)
                     break;
 
-                var read = await _port.ReadAsync(buffer, 0, buffer.Length, cancellationToken);
+                var read = await _port.BaseStream.ReadAsync(buffer.AsMemory(0, buffer.Length), cancellationToken);
                 if (read <= 0)
                 {
                     await Task.Delay(50, cancellationToken);

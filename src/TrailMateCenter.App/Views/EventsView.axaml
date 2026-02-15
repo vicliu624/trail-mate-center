@@ -10,6 +10,12 @@
         <CheckBox Content="{DynamicResource Ui.Events.FromIsOnly}" IsChecked="{Binding Events.FilterFromIs}"/>
       </StackPanel>
     </Border>
-    <ListBox Grid.Row="1" ItemsSource="{Binding Events.Events}" ItemTemplate="{StaticResource EventTemplate}" Margin="12"/>
+    <ListBox Grid.Row="1"
+             ItemsSource="{Binding Events.Events}"
+             ItemTemplate="{StaticResource EventTemplate}"
+             Margin="12"
+             Background="{DynamicResource PanelBg2}"
+             BorderBrush="{DynamicResource PanelBorder}"
+             BorderThickness="1"/>
   </Grid>
 </UserControl>

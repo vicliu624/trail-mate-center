@@ -15,6 +15,10 @@
       <Button Content="{DynamicResource Ui.Logs.Copy}" Command="{Binding Logs.CopyLogsCommand}"/>
       <TextBlock Text="{Binding Logs.StatusMessage}" Foreground="{DynamicResource TextDim}"/>
     </StackPanel>
-    <ListBox ItemsSource="{Binding Logs.Entries}" ItemTemplate="{StaticResource LogTemplate}"/>
+    <ListBox ItemsSource="{Binding Logs.Entries}"
+             ItemTemplate="{StaticResource LogTemplate}"
+             Background="{DynamicResource PanelBg2}"
+             BorderBrush="{DynamicResource PanelBorder}"
+             BorderThickness="1"/>
   </StackPanel>
 </UserControl>

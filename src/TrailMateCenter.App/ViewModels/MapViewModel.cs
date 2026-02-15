@@ -5,16 +5,20 @@ using Mapsui.Styles;
 using Mapsui.Tiling.Fetcher;
 using Mapsui.Tiling.Layers;
 using Mapsui.Tiling.Rendering;
+using Mapsui.Rendering;
+using Mapsui.Manipulations;
 using Mapsui.Projections;
 using BruTile;
 using BruTile.Cache;
 using BruTile.FileSystem;
 using BruTile.Predefined;
+using BruTile.Web;
 using NetTopologySuite.Geometries;
 using Mapsui.Nts;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Globalization;
 using System.Linq;
 using System.Threading;
 using TrailMateCenter.Localization;
@@ -23,8 +27,22 @@ using TrailMateCenter.Storage;
 
 namespace TrailMateCenter.ViewModels;
 
+public enum MapSampleSource
+{
+    Local = 0,
+    Mqtt = 1,
+}
+
+public enum MapBaseLayerKind
+{
+    Osm = 0,
+    Terrain = 1,
+    Satellite = 2,
+}
+
 public sealed class MapViewModel : INotifyPropertyChanged
 {
+    private const string NodeIdField = "tmc_node_id";
     private readonly object _gate = new();
     private readonly List<MapSample> _samples = new();
     private readonly List<WaypointSample> _waypoints = new();
@@ -32,9 +50,12 @@ public sealed class MapViewModel : INotifyPropertyChanged
     private readonly MemoryLayer _trackLayer;
     private readonly MemoryLayer _clusterLayer;
     private readonly MemoryLayer _waypointLayer;
+    private readonly Dictionary<MapBaseLayerKind, TileLayer> _baseLayers = new();
+    private readonly TileLayer _gibsLayer;
     private readonly Action<Mapsui.Logging.LogLevel, string, Exception?> _mapsuiLogSink;
     private readonly Dictionary<ContourKey, TileLayer> _contourLayers = new();
     private readonly ContourTileService _contourService;
+    private int _contourRefreshScheduled;
     private ITileSource? _osmTileSource;
     private ContourSettings _contourSettings = new();
     private CancellationTokenSource? _contourDebounce;
@@ -42,6 +63,10 @@ public sealed class MapViewModel : INotifyPropertyChanged
     private string _currentZoomText = string.Empty;
     private string _currentContourText = string.Empty;
     private bool _showLogs;
+    private bool _showMqtt = true;
+    private bool _showGibs;
+    private MapBaseLayerKind _baseLayer = MapBaseLayerKind.Osm;
+    private string _lastContourQueueDiagnostic = string.Empty;
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -57,9 +82,21 @@ public sealed class MapViewModel : INotifyPropertyChanged
         _mapsuiLogSink = OnMapsuiLog;
         Mapsui.Logging.Logger.LogDelegate = _mapsuiLogSink;
 
-        var tileLayer = CreateOsmLayer();
-        tileLayer.Opacity = 0.8f;
-        Map.Layers.Add(tileLayer);
+        var osmLayer = CreateOsmLayer();
+        osmLayer.Opacity = 0.8f;
+        _baseLayers[MapBaseLayerKind.Osm] = osmLayer;
+        Map.Layers.Add(osmLayer);
+
+        var terrainLayer = CreateTerrainLayer();
+        _baseLayers[MapBaseLayerKind.Terrain] = terrainLayer;
+        Map.Layers.Add(terrainLayer);
+
+        var satelliteLayer = CreateSatelliteLayer();
+        _baseLayers[MapBaseLayerKind.Satellite] = satelliteLayer;
+        Map.Layers.Add(satelliteLayer);
+
+        _gibsLayer = CreateGibsLayer();
+        Map.Layers.Add(_gibsLayer);
 
         foreach (var contourLayer in CreateContourLayers())
         {
@@ -95,7 +132,7 @@ public sealed class MapViewModel : INotifyPropertyChanged
         UpdateZoomInfo();
     }
 
-    public void AddPoint(uint? fromId, double lat, double lon)
+    public void AddPoint(uint? fromId, double lat, double lon, MapSampleSource source = MapSampleSource.Local)
     {
         var id = fromId ?? 0;
         var (x, y) = SphericalMercator.FromLonLat(lon, lat);
@@ -103,20 +140,20 @@ public sealed class MapViewModel : INotifyPropertyChanged
 
         lock (_gate)
         {
-            _samples.Add(new MapSample(id, point));
+            _samples.Add(new MapSample(id, point, source));
             if (_samples.Count > 2000)
                 _samples.RemoveAt(0);
         }
 
         RefreshLayers();
 
-        if (FollowLatest)
+        if (FollowLatest && (source != MapSampleSource.Mqtt || _showMqtt))
         {
             Map.Navigator.CenterOn(point, 0, null);
         }
     }
 
-    public void AddWaypoint(uint? fromId, double lat, double lon, string? label)
+    public void AddWaypoint(uint? fromId, double lat, double lon, string? label, MapSampleSource source = MapSampleSource.Local)
     {
         var id = fromId ?? 0;
         var (x, y) = SphericalMercator.FromLonLat(lon, lat);
@@ -124,14 +161,14 @@ public sealed class MapViewModel : INotifyPropertyChanged
 
         lock (_gate)
         {
-            _waypoints.Add(new WaypointSample(id, point, label));
+            _waypoints.Add(new WaypointSample(id, point, label, source));
             if (_waypoints.Count > 500)
                 _waypoints.RemoveAt(0);
         }
 
         RefreshLayers();
 
-        if (FollowLatest)
+        if (FollowLatest && (source != MapSampleSource.Mqtt || _showMqtt))
         {
             Map.Navigator.CenterOn(point, 0, null);
         }
@@ -149,6 +186,7 @@ public sealed class MapViewModel : INotifyPropertyChanged
     {
         _contourSettings = settings ?? new ContourSettings();
         _contourService.UpdateSettings(_contourSettings);
+        _lastContourQueueDiagnostic = string.Empty;
         var zoom = GetCurrentZoom();
         UpdateContourVisibility(zoom);
         DebounceContourQueue();
@@ -173,6 +211,126 @@ public sealed class MapViewModel : INotifyPropertyChanged
         Map.Refresh(ChangeType.Discrete);
     }
 
+    public void SetMqttVisibility(bool enabled)
+    {
+        if (_showMqtt == enabled)
+            return;
+
+        _showMqtt = enabled;
+        RefreshLayers();
+        Map.Refresh(ChangeType.Discrete);
+    }
+
+    public void SetBaseLayer(MapBaseLayerKind layer)
+    {
+        if (_baseLayer == layer)
+            return;
+
+        _baseLayer = layer;
+        foreach (var (kind, baseLayer) in _baseLayers)
+        {
+            var enabled = kind == _baseLayer;
+            if (baseLayer.Enabled == enabled)
+                continue;
+
+            baseLayer.Enabled = enabled;
+            baseLayer.ClearCache();
+        }
+
+        Map.Refresh(ChangeType.Discrete);
+    }
+
+    public void SetGibsVisibility(bool enabled)
+    {
+        if (_showGibs == enabled)
+            return;
+
+        _showGibs = enabled;
+        _gibsLayer.Enabled = enabled;
+        _gibsLayer.ClearCache();
+        Map.Refresh(ChangeType.Discrete);
+    }
+
+    public uint? ResolveNodeIdFromMapInfo(Func<IEnumerable<ILayer>, MapInfo> getMapInfo)
+    {
+        if (getMapInfo is null)
+            return null;
+
+        MapInfo? mapInfo;
+        try
+        {
+            mapInfo = getMapInfo(GetNodeHitTestLayers());
+        }
+        catch
+        {
+            return null;
+        }
+
+        return ResolveNodeIdFromMapInfo(mapInfo);
+    }
+
+    public uint? ResolveNodeIdAtScreenPosition(
+        ScreenPosition screenPosition,
+        Func<ScreenPosition, IEnumerable<ILayer>, MapInfo> getMapInfo)
+    {
+        if (getMapInfo is null)
+            return null;
+
+        MapInfo? mapInfo;
+        try
+        {
+            mapInfo = getMapInfo(screenPosition, GetNodeHitTestLayers());
+        }
+        catch
+        {
+            return null;
+        }
+
+        return ResolveNodeIdFromMapInfo(mapInfo);
+    }
+
+    private uint? ResolveNodeIdFromMapInfo(MapInfo? mapInfo)
+    {
+        if (mapInfo is null)
+            return null;
+
+        var nodeId = TryGetNodeId(mapInfo.Feature);
+        if (nodeId.HasValue)
+            return nodeId;
+
+        foreach (var record in mapInfo.MapInfoRecords ?? Enumerable.Empty<MapInfoRecord>())
+        {
+            nodeId = TryGetNodeId(record.Feature);
+            if (nodeId.HasValue)
+                return nodeId;
+        }
+
+        return null;
+    }
+
+    private IEnumerable<ILayer> GetNodeHitTestLayers()
+    {
+        yield return _clusterLayer;
+        yield return _pointLayer;
+        yield return _waypointLayer;
+    }
+
+    private static uint? TryGetNodeId(IFeature? feature)
+    {
+        if (feature is null)
+            return null;
+
+        var value = feature[NodeIdField];
+        return value switch
+        {
+            uint id when id != 0 => id,
+            int id when id > 0 => (uint)id,
+            long id when id > 0 && id <= uint.MaxValue => (uint)id,
+            string text when uint.TryParse(text, out var id) && id != 0 => id,
+            _ => null,
+        };
+    }
+
     private void OnMapsuiLog(Mapsui.Logging.LogLevel level, string message, Exception? exception)
     {
         AddMapLog(level, message, exception);
@@ -187,6 +345,14 @@ public sealed class MapViewModel : INotifyPropertyChanged
             _ => Mapsui.Logging.LogLevel.Information,
         };
         AddMapLog(mapsuiLevel, $"Contours: {message}", null);
+    }
+
+    private void LogContourQueueDiagnostic(ContourLogLevel level, string message)
+    {
+        if (string.Equals(_lastContourQueueDiagnostic, message, StringComparison.Ordinal))
+            return;
+        _lastContourQueueDiagnostic = message;
+        LogContourMessage(level, message);
     }
 
     private void AddMapLog(Mapsui.Logging.LogLevel level, string message, Exception? exception, bool force = false)
@@ -236,6 +402,12 @@ public sealed class MapViewModel : INotifyPropertyChanged
         {
             snapshot = _samples.ToList();
             waypointSnapshot = _waypoints.ToList();
+        }
+
+        if (!_showMqtt)
+        {
+            snapshot = snapshot.Where(s => s.Source != MapSampleSource.Mqtt).ToList();
+            waypointSnapshot = waypointSnapshot.Where(s => s.Source != MapSampleSource.Mqtt).ToList();
         }
 
         var trackFeatures = BuildTrackFeatures(snapshot);
@@ -296,12 +468,23 @@ public sealed class MapViewModel : INotifyPropertyChanged
             var zoom = GetZoomFromResolution(resolution);
             var spec = GetContourSpec(zoom, allowUltraFine);
             if (spec.Count == 0)
+            {
+                LogContourQueueDiagnostic(ContourLogLevel.Info, $"Queue skipped at Z{zoom}: no contour profile for this zoom.");
                 return;
+            }
 
-            var range = GetTileRange(extent, zoom);
+            var range = GetTileRange(extent, zoom, out var tileCount, out var skipReason);
             if (range.IsEmpty)
+            {
+                LogContourQueueDiagnostic(ContourLogLevel.Warning, $"Queue skipped at Z{zoom}: {skipReason ?? "empty tile range"}");
                 return;
+            }
 
+            var specText = string.Join(", ", spec.OrderBy(s => s.Kind).ThenBy(s => s.Interval)
+                .Select(s => $"{s.Kind.ToString().ToLowerInvariant()}-{s.Interval}m"));
+            LogContourQueueDiagnostic(
+                ContourLogLevel.Info,
+                $"Queue at Z{zoom}: X {range.MinX}-{range.MaxX}, Y {range.MinY}-{range.MaxY}, tiles={tileCount}, spec=[{specText}]");
             _contourService.QueueTiles(zoom, range.MinX, range.MaxX, range.MinY, range.MaxY, spec);
         });
     }
@@ -389,8 +572,10 @@ public sealed class MapViewModel : INotifyPropertyChanged
         return BruTile.Utilities.GetNearestLevel(_osmTileSource.Schema.Resolutions, resolution);
     }
 
-    private static TileRange GetTileRange(MRect extent, int zoom)
+    private static TileRange GetTileRange(MRect extent, int zoom, out int tileCount, out string? skipReason)
     {
+        tileCount = 0;
+        skipReason = null;
         var (west, south, east, north) = GetLonLatBounds(extent);
 
         var xMin = ContourTileMath.LonToTileX(west, zoom);
@@ -399,16 +584,22 @@ public sealed class MapViewModel : INotifyPropertyChanged
         var yMax = ContourTileMath.LatToTileY(south, zoom);
 
         if (xMin > xMax || yMin > yMax)
+        {
+            skipReason = "invalid viewport bounds";
             return TileRange.Empty;
+        }
 
         xMin = Math.Max(0, xMin - 1);
         yMin = Math.Max(0, yMin - 1);
         xMax = Math.Min((1 << zoom) - 1, xMax + 1);
         yMax = Math.Min((1 << zoom) - 1, yMax + 1);
 
-        var total = (xMax - xMin + 1) * (yMax - yMin + 1);
-        if (total > 500)
+        tileCount = (xMax - xMin + 1) * (yMax - yMin + 1);
+        if (tileCount > 500)
+        {
+            skipReason = $"tile range too large ({tileCount} > 500)";
             return TileRange.Empty;
+        }
 
         return new TileRange(xMin, xMax, yMin, yMax);
     }
@@ -523,7 +714,36 @@ public sealed class MapViewModel : INotifyPropertyChanged
 
     private void OnContourTilesUpdated()
     {
-        Dispatcher.UIThread.Post(() => Map.Refresh(ChangeType.Discrete));
+        if (Interlocked.Exchange(ref _contourRefreshScheduled, 1) == 1)
+            return;
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await Task.Delay(120);
+            }
+            catch
+            {
+                // Ignore delay cancellation/failures and try to refresh anyway.
+            }
+
+            Dispatcher.UIThread.Post(() =>
+            {
+                try
+                {
+                    foreach (var layer in _contourLayers.Values)
+                    {
+                        layer.ClearCache();
+                    }
+                    Map.Refresh(ChangeType.Discrete);
+                }
+                finally
+                {
+                    Interlocked.Exchange(ref _contourRefreshScheduled, 0);
+                }
+            });
+        });
     }
 
     private IEnumerable<IFeature> BuildTrackFeatures(List<MapSample> samples)
@@ -551,6 +771,8 @@ public sealed class MapViewModel : INotifyPropertyChanged
         return samples.Select(sample =>
         {
             var feature = new PointFeature(sample.Point);
+            if (sample.DeviceId != 0)
+                feature[NodeIdField] = sample.DeviceId;
             feature.Styles.Add(new SymbolStyle
             {
                 SymbolType = SymbolType.Ellipse,
@@ -581,16 +803,18 @@ public sealed class MapViewModel : INotifyPropertyChanged
             }
             if (bucket is null)
             {
-                bucket = new ClusterBucket(sample.Point);
+                bucket = new ClusterBucket();
                 clusters.Add(bucket);
             }
-            bucket.Add(sample.Point);
+            bucket.Add(sample.DeviceId, sample.Point);
         }
 
         var features = new List<IFeature>();
         foreach (var cluster in clusters)
         {
             var feature = new PointFeature(cluster.Center);
+            if (cluster.TryGetSingleNodeId(out var nodeId))
+                feature[NodeIdField] = nodeId;
             feature.Styles.Add(new SymbolStyle
             {
                 SymbolType = SymbolType.Ellipse,
@@ -600,7 +824,7 @@ public sealed class MapViewModel : INotifyPropertyChanged
             });
             feature.Styles.Add(new LabelStyle
             {
-                Text = cluster.Count.ToString(),
+                Text = cluster.UniqueNodeCount.ToString(),
                 ForeColor = Color.Black,
                 Offset = new Offset(0, 0),
                 HorizontalAlignment = LabelStyle.HorizontalAlignmentEnum.Center,
@@ -617,6 +841,8 @@ public sealed class MapViewModel : INotifyPropertyChanged
         foreach (var sample in samples)
         {
             var feature = new PointFeature(sample.Point);
+            if (sample.DeviceId != 0)
+                feature[NodeIdField] = sample.DeviceId;
             feature.Styles.Add(new SymbolStyle
             {
                 SymbolType = SymbolType.Triangle,
@@ -657,33 +883,122 @@ public sealed class MapViewModel : INotifyPropertyChanged
             minExtraTiles: 0,
             maxExtraTiles: 0,
             fetchTileAsFeature: null,
-            httpClient: null);
+            httpClient: null)
+        {
+            Name = "basemap-osm",
+            Enabled = true,
+        };
     }
 
-    private sealed record MapSample(uint DeviceId, MPoint Point);
-    private sealed record WaypointSample(uint DeviceId, MPoint Point, string? Label);
+    private TileLayer CreateTerrainLayer()
+    {
+        var cacheDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "TrailMateCenter", "terrain-cache");
+        Directory.CreateDirectory(cacheDir);
+
+        var schema = new GlobalSphericalMercator(0, 17, "EPSG:3857");
+        var fileCache = new FileCache(cacheDir, "png");
+        var url = "https://tile.opentopomap.org/{z}/{x}/{y}.png";
+        var tileSource = new HttpTileSource(schema, url, name: "terrain-opentopomap", persistentCache: fileCache);
+
+        return new TileLayer(
+            tileSource,
+            minTiles: 100,
+            maxTiles: 400,
+            dataFetchStrategy: new MinimalDataFetchStrategy(),
+            renderFetchStrategy: new MinimalRenderFetchStrategy(),
+            minExtraTiles: 0,
+            maxExtraTiles: 0,
+            fetchTileAsFeature: null,
+            httpClient: null)
+        {
+            Name = "basemap-terrain",
+            Opacity = 0.95f,
+            Enabled = false,
+        };
+    }
+
+    private TileLayer CreateSatelliteLayer()
+    {
+        var cacheDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "TrailMateCenter", "satellite-cache");
+        Directory.CreateDirectory(cacheDir);
+
+        var schema = new GlobalSphericalMercator(0, 19, "EPSG:3857");
+        var fileCache = new FileCache(cacheDir, "jpg");
+        var url = "https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}";
+        var tileSource = new HttpTileSource(schema, url, name: "satellite-esri-world-imagery", persistentCache: fileCache);
+
+        return new TileLayer(
+            tileSource,
+            minTiles: 100,
+            maxTiles: 400,
+            dataFetchStrategy: new MinimalDataFetchStrategy(),
+            renderFetchStrategy: new MinimalRenderFetchStrategy(),
+            minExtraTiles: 0,
+            maxExtraTiles: 0,
+            fetchTileAsFeature: null,
+            httpClient: null)
+        {
+            Name = "basemap-satellite",
+            Enabled = false,
+        };
+    }
+
+    private TileLayer CreateGibsLayer()
+    {
+        var cacheDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "TrailMateCenter", "gibs-cache");
+        Directory.CreateDirectory(cacheDir);
+
+        var schema = new GlobalSphericalMercator(0, 9, "EPSG:3857");
+        var fileCache = new FileCache(cacheDir, "jpg");
+        var date = DateTime.UtcNow.AddDays(-1).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+        var url = $"https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/VIIRS_SNPP_CorrectedReflectance_TrueColor/default/{date}/GoogleMapsCompatible_Level9/{{z}}/{{y}}/{{x}}.jpg";
+        var tileSource = new HttpTileSource(schema, url, name: "nasa-gibs", persistentCache: fileCache);
+
+        return new TileLayer(
+            tileSource,
+            minTiles: 80,
+            maxTiles: 320,
+            dataFetchStrategy: new MinimalDataFetchStrategy(),
+            renderFetchStrategy: new MinimalRenderFetchStrategy(),
+            minExtraTiles: 0,
+            maxExtraTiles: 0,
+            fetchTileAsFeature: null,
+            httpClient: null)
+        {
+            Name = "nasa-gibs",
+            Opacity = 0.65f,
+            Enabled = false,
+        };
+    }
+
+    private sealed record MapSample(uint DeviceId, MPoint Point, MapSampleSource Source);
+    private sealed record WaypointSample(uint DeviceId, MPoint Point, string? Label, MapSampleSource Source);
 
     private sealed class ClusterBucket
     {
+        private readonly HashSet<uint> _uniqueNodeIds = new();
+        private bool _hasUnknownNode;
         private double _sumX;
         private double _sumY;
 
-        public ClusterBucket(MPoint seed)
-        {
-            _sumX = seed.X;
-            _sumY = seed.Y;
-            Count = 1;
-        }
+        public int SampleCount { get; private set; }
+        public int UniqueNodeCount => _uniqueNodeIds.Count + (_hasUnknownNode ? 1 : 0);
 
-        public int Count { get; private set; }
+        public MPoint Center => new(_sumX / SampleCount, _sumY / SampleCount);
 
-        public MPoint Center => new(_sumX / Count, _sumY / Count);
-
-        public void Add(MPoint point)
+        public void Add(uint deviceId, MPoint point)
         {
             _sumX += point.X;
             _sumY += point.Y;
-            Count++;
+            SampleCount++;
+
+            if (deviceId == 0)
+            {
+                _hasUnknownNode = true;
+                return;
+            }
+
+            _uniqueNodeIds.Add(deviceId);
         }
 
         public double DistanceTo(MPoint point)
@@ -691,6 +1006,18 @@ public sealed class MapViewModel : INotifyPropertyChanged
             var dx = point.X - Center.X;
             var dy = point.Y - Center.Y;
             return Math.Sqrt(dx * dx + dy * dy);
+        }
+
+        public bool TryGetSingleNodeId(out uint nodeId)
+        {
+            if (!_hasUnknownNode && _uniqueNodeIds.Count == 1)
+            {
+                nodeId = _uniqueNodeIds.First();
+                return true;
+            }
+
+            nodeId = 0;
+            return false;
         }
     }
 

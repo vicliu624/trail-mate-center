@@ -25,6 +25,8 @@ internal sealed class ContourTileService
     private readonly GdalRunner _gdal = new();
     private readonly Action _onTileReady;
     private ContourSettings _settings = new();
+    private bool _earthdataPausedLogged;
+    private bool _gdalPausedLogged;
 
     public ContourTileService(Action onTileReady, Action<ContourLogLevel, string>? log = null)
     {
@@ -136,19 +138,29 @@ internal sealed class ContourTileService
             return;
 
         var queued = 0;
+        var requested = 0;
+        var cached = 0;
+        var pending = 0;
         for (var x = minX; x <= maxX; x++)
         {
             for (var y = minY; y <= maxY; y++)
             {
                 foreach (var key in spec)
                 {
+                    requested++;
                     var outputPath = GetTilePath(key, zoom, x, y);
                     if (File.Exists(outputPath))
+                    {
+                        cached++;
                         continue;
+                    }
 
                     var pendingKey = $"{key.Kind}-{key.Interval}/{zoom}/{x}/{y}";
                     if (!_pending.TryAdd(pendingKey, 0))
+                    {
+                        pending++;
                         continue;
+                    }
 
                     _requests.Writer.TryWrite(new ContourTileRequest(zoom, x, y, key, outputPath, pendingKey));
                     queued++;
@@ -156,11 +168,14 @@ internal sealed class ContourTileService
             }
         }
 
-        if (queued > 0)
+        if (requested > 0)
         {
+            var mapTileCount = (maxX - minX + 1) * (maxY - minY + 1);
             var specText = string.Join(", ", spec.OrderBy(s => s.Kind).ThenBy(s => s.Interval)
                 .Select(s => $"{s.Kind.ToString().ToLowerInvariant()}-{s.Interval}m"));
-            Log(ContourLogLevel.Info, $"Queued {queued} tiles at Z{zoom} [{specText}]");
+            Log(
+                ContourLogLevel.Info,
+                $"Queue request Z{zoom}: mapTiles={mapTileCount}, lineTiles={requested}, queued={queued}, cached={cached}, pending={pending} [{specText}]");
         }
     }
 
@@ -189,14 +204,25 @@ internal sealed class ContourTileService
             return;
         if (!_earthdata.HasCredentials)
         {
-            Log(ContourLogLevel.Warning, "Earthdata token missing; contour generation paused.");
+            if (!_earthdataPausedLogged)
+            {
+                Log(ContourLogLevel.Warning, "Earthdata token missing; contour generation paused.");
+                _earthdataPausedLogged = true;
+            }
             return;
         }
+        _earthdataPausedLogged = false;
+
         if (!await _gdal.EnsureAvailableAsync(cancellationToken))
         {
-            Log(ContourLogLevel.Error, "GDAL not available; contour generation paused.");
+            if (!_gdalPausedLogged)
+            {
+                Log(ContourLogLevel.Error, "GDAL not available; contour generation paused.");
+                _gdalPausedLogged = true;
+            }
             return;
         }
+        _gdalPausedLogged = false;
 
         Log(ContourLogLevel.Info, $"Tile Z{request.Zoom} {request.X}/{request.Y} {request.Key.Kind.ToString().ToLowerInvariant()}-{request.Key.Interval}m: start");
 
@@ -213,6 +239,7 @@ internal sealed class ContourTileService
 
         var vrtPath = Path.Combine(workDir, "dem.vrt");
         var contourPath = Path.Combine(workDir, "contours.geojson");
+        var rasterPath = Path.Combine(workDir, "contours.tif");
 
         var te = $"{Fmt(bounds.West)} {Fmt(bounds.South)} {Fmt(bounds.East)} {Fmt(bounds.North)}";
         var sources = string.Join(' ', demFiles.Select(Quote));
@@ -230,15 +257,32 @@ internal sealed class ContourTileService
 
         Directory.CreateDirectory(Path.GetDirectoryName(request.OutputPath)!);
         var (r, g, b, a) = GetColor(request.Key.Kind);
-        var rasterArgs = $"-burn {r} -burn {g} -burn {b} -burn {a} -init 0 -ts {TileSize} {TileSize} -te {te} -a_nodata 0 -ot Byte -of PNG {Quote(contourPath)} {Quote(request.OutputPath)}";
+        // gdal_rasterize requires drivers with Create() capability; PNG is often CreateCopy-only.
+        // Rasterize to GeoTIFF first, then convert to PNG for map tiles.
+        var rasterArgs = $"-burn {r} -burn {g} -burn {b} -burn {a} -init 0 0 0 0 -ts {TileSize} {TileSize} -te {te} -a_nodata 0 -ot Byte -of GTiff {Quote(contourPath)} {Quote(rasterPath)}";
         if (await _gdal.RunAsync("gdal_rasterize", rasterArgs, cancellationToken) != 0)
         {
             Log(ContourLogLevel.Error, $"Tile Z{request.Zoom} {request.X}/{request.Y}: gdal_rasterize failed");
             return;
         }
+        if (await _gdal.RunAsync("gdal_translate", $"-of PNG {Quote(rasterPath)} {Quote(request.OutputPath)}", cancellationToken) != 0)
+        {
+            Log(ContourLogLevel.Error, $"Tile Z{request.Zoom} {request.X}/{request.Y}: gdal_translate failed");
+            return;
+        }
 
         _onTileReady?.Invoke();
-        Log(ContourLogLevel.Info, $"Tile Z{request.Zoom} {request.X}/{request.Y}: done");
+        var size = -1L;
+        try
+        {
+            if (File.Exists(request.OutputPath))
+                size = new FileInfo(request.OutputPath).Length;
+        }
+        catch
+        {
+            // Ignore diagnostics failure; tile output already completed.
+        }
+        Log(ContourLogLevel.Info, $"Tile Z{request.Zoom} {request.X}/{request.Y}: done ({size} bytes)");
     }
 
     private void Log(ContourLogLevel level, string message)
@@ -759,16 +803,22 @@ internal sealed class EarthdataClient
 
 internal sealed class GdalRunner
 {
+    private static readonly bool IsWindows = OperatingSystem.IsWindows();
+    private static readonly TimeSpan RetryProbeInterval = TimeSpan.FromSeconds(20);
     private bool? _available;
+    private DateTimeOffset _nextAvailabilityProbeUtc = DateTimeOffset.MinValue;
     private string? _gdalBin;
     private bool _searched;
 
     public async Task<bool> EnsureAvailableAsync(CancellationToken cancellationToken)
     {
-        if (_available.HasValue)
+        if (_available == true)
             return _available.Value;
 
-        if (!_searched)
+        if (_available == false && DateTimeOffset.UtcNow < _nextAvailabilityProbeUtc)
+            return false;
+
+        if (!_searched || _available == false)
         {
             _gdalBin = FindGdalBin();
             _searched = true;
@@ -783,6 +833,10 @@ internal sealed class GdalRunner
         {
             _available = false;
         }
+
+        _nextAvailabilityProbeUtc = _available == true
+            ? DateTimeOffset.MaxValue
+            : DateTimeOffset.UtcNow.Add(RetryProbeInterval);
 
         return _available.Value;
     }
@@ -809,9 +863,9 @@ internal sealed class GdalRunner
             CreateNoWindow = true,
         };
 
-        if (!string.IsNullOrWhiteSpace(gdalBin) && !envPath.Contains(gdalBin, StringComparison.OrdinalIgnoreCase))
+        if (!string.IsNullOrWhiteSpace(gdalBin) && !PathContainsDirectory(envPath, gdalBin))
         {
-            startInfo.Environment["PATH"] = $"{gdalBin};{envPath}";
+            startInfo.Environment["PATH"] = $"{gdalBin}{Path.PathSeparator}{envPath}";
         }
 
         var gdalRoot = GetGdalRoot(gdalBin);
@@ -839,9 +893,28 @@ internal sealed class GdalRunner
 
     private static string? FindGdalBin()
     {
-        var fromPath = FindInPath("gdalinfo.exe");
+        var executableName = ToExecutableName("gdalinfo");
+        var fromPath = FindInPath(executableName);
         if (!string.IsNullOrWhiteSpace(fromPath))
             return fromPath;
+
+        var gdalBinOverride = Environment.GetEnvironmentVariable("GDAL_BIN");
+        if (!string.IsNullOrWhiteSpace(gdalBinOverride))
+        {
+            var overrideBin = gdalBinOverride.Trim();
+            if (File.Exists(Path.Combine(overrideBin, executableName)))
+                return overrideBin;
+        }
+
+        if (!IsWindows)
+        {
+            foreach (var bin in new[] { "/opt/homebrew/bin", "/usr/local/bin", "/usr/bin", "/opt/local/bin" })
+            {
+                if (File.Exists(Path.Combine(bin, executableName)))
+                    return bin;
+            }
+            return null;
+        }
 
         var roots = new List<string>();
         var programFiles = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
@@ -861,7 +934,7 @@ internal sealed class GdalRunner
             foreach (var qgisDir in qgisDirs)
             {
                 var bin = Path.Combine(qgisDir, "bin");
-                if (File.Exists(Path.Combine(bin, "gdalinfo.exe")))
+                if (File.Exists(Path.Combine(bin, executableName)))
                     return bin;
             }
         }
@@ -869,7 +942,7 @@ internal sealed class GdalRunner
         foreach (var osgeo in new[] { "C:\\OSGeo4W64", "C:\\OSGeo4W" })
         {
             var bin = Path.Combine(osgeo, "bin");
-            if (File.Exists(Path.Combine(bin, "gdalinfo.exe")))
+            if (File.Exists(Path.Combine(bin, executableName)))
                 return bin;
         }
 
@@ -882,7 +955,7 @@ internal sealed class GdalRunner
         if (string.IsNullOrWhiteSpace(path))
             return null;
 
-        foreach (var entry in path.Split(';', StringSplitOptions.RemoveEmptyEntries))
+        foreach (var entry in path.Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries))
         {
             var trimmed = entry.Trim();
             if (string.IsNullOrWhiteSpace(trimmed))
@@ -897,14 +970,43 @@ internal sealed class GdalRunner
 
     private string ResolveExecutable(string fileName)
     {
-        var exeName = fileName.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) ? fileName : $"{fileName}.exe";
+        var exeName = ToExecutableName(fileName);
         if (!string.IsNullOrWhiteSpace(_gdalBin))
         {
             var candidate = Path.Combine(_gdalBin, exeName);
             if (File.Exists(candidate))
                 return candidate;
         }
-        return fileName;
+        return exeName;
+    }
+
+    private static bool PathContainsDirectory(string pathValue, string directory)
+    {
+        var target = NormalizePath(directory);
+        var comparison = IsWindows ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+
+        foreach (var entry in pathValue.Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries))
+        {
+            if (string.Equals(NormalizePath(entry), target, comparison))
+                return true;
+        }
+
+        return false;
+    }
+
+    private static string NormalizePath(string path)
+    {
+        return path.Trim().TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+    }
+
+    private static string ToExecutableName(string fileName)
+    {
+        if (IsWindows)
+            return fileName.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) ? fileName : $"{fileName}.exe";
+
+        return fileName.EndsWith(".exe", StringComparison.OrdinalIgnoreCase)
+            ? fileName[..^4]
+            : fileName;
     }
 
     private static string? GetGdalRoot(string? gdalBin)

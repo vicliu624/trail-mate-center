@@ -34,6 +34,9 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         nameof(ContoursUltraFine),
         nameof(EarthdataToken),
         nameof(MapShowLogs),
+        nameof(MapShowMqtt),
+        nameof(MapShowGibs),
+        nameof(SelectedMapBaseLayer),
         nameof(AprsEnabled),
         nameof(AprsServerHost),
         nameof(AprsServerPort),
@@ -56,9 +59,11 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         nameof(AprsEmitWaypoints),
     };
     private readonly HostLinkClient _client;
+    private readonly MeshtasticMqttClient _meshtasticMqtt;
     private readonly AprsGatewayService _aprsGateway;
     private readonly AprsIsClient _aprsClient;
     private readonly ISerialPortEnumerator _portEnumerator;
+    private readonly SqliteStore _sqliteStore;
     private readonly SettingsStore _settingsStore;
     private readonly SessionStore _sessionStore;
     private readonly ILogger<MainWindowViewModel> _logger;
@@ -67,6 +72,8 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     private readonly DispatcherTimer _portScanTimer;
     private bool _autoConnectBusy;
     private DateTimeOffset _lastAutoConnectAttempt = DateTimeOffset.MinValue;
+    private readonly HashSet<string> _knownPortNames = new(StringComparer.OrdinalIgnoreCase);
+    private string? _lastHotplugPortName;
     private readonly HashSet<uint> _subjectListeners = new();
     private uint? _selfNodeId;
     private bool _settingsLoaded;
@@ -85,9 +92,11 @@ public sealed partial class MainWindowViewModel : ViewModelBase
 
     public MainWindowViewModel(
         HostLinkClient client,
+        MeshtasticMqttClient meshtasticMqtt,
         AprsGatewayService aprsGateway,
         AprsIsClient aprsClient,
         ISerialPortEnumerator portEnumerator,
+        SqliteStore sqliteStore,
         SettingsStore settingsStore,
         LogStore logStore,
         SessionStore sessionStore,
@@ -95,9 +104,11 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         ILogger<MainWindowViewModel> logger)
     {
         _client = client;
+        _meshtasticMqtt = meshtasticMqtt;
         _aprsGateway = aprsGateway;
         _aprsClient = aprsClient;
         _portEnumerator = portEnumerator;
+        _sqliteStore = sqliteStore;
         _settingsStore = settingsStore;
         _sessionStore = sessionStore;
         _logger = logger;
@@ -116,6 +127,8 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         QuickSendCommand = new AsyncRelayCommand(QuickSendAsync, CanQuickSend);
         SetTargetToSelectedSubjectCommand = new RelayCommand(SetTargetToSelectedSubject, CanSetTargetToSelectedSubject);
         SaveSettingsCommand = new AsyncRelayCommand(SaveSettingsAsync);
+        AddMqttSourceCommand = new RelayCommand(AddMqttSource);
+        RemoveMqttSourceCommand = new RelayCommand(RemoveSelectedMqttSource, CanRemoveSelectedMqttSource);
         TestEarthdataCommand = new AsyncRelayCommand(TestEarthdataAsync, CanTestEarthdata);
         RallyCommand = new AsyncRelayCommand(() => SendTeamCommandAsync(TeamCommandType.RallyTo));
         MoveCommand = new AsyncRelayCommand(() => SendTeamCommandAsync(TeamCommandType.MoveTo));
@@ -131,6 +144,10 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         _client.NodeInfoUpdated += OnNodeInfoUpdated;
         _client.TeamStateUpdated += OnTeamStateUpdated;
         _client.TacticalEventReceived += OnTacticalEventReceived;
+        _meshtasticMqtt.MessageReceived += OnMqttMessageReceived;
+        _meshtasticMqtt.PositionReceived += OnMqttPositionReceived;
+        _meshtasticMqtt.NodeInfoReceived += OnMqttNodeInfoReceived;
+        _meshtasticMqtt.TacticalEventReceived += OnTacticalEventReceived;
         _aprsGateway.StatsChanged += OnAprsStatsChanged;
         _aprsClient.StatusChanged += OnAprsStatusChanged;
 
@@ -144,6 +161,10 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         {
             Themes.Add(new ThemeOptionViewModel(theme));
         }
+        MapBaseLayers.Add(new MapBaseLayerOptionViewModel(MapBaseLayerKind.Osm, "Ui.Dashboard.BaseMap.Osm"));
+        MapBaseLayers.Add(new MapBaseLayerOptionViewModel(MapBaseLayerKind.Terrain, "Ui.Dashboard.BaseMap.Terrain"));
+        MapBaseLayers.Add(new MapBaseLayerOptionViewModel(MapBaseLayerKind.Satellite, "Ui.Dashboard.BaseMap.Satellite"));
+        SelectedMapBaseLayer = MapBaseLayers.FirstOrDefault();
         SelectedLanguage = Languages.FirstOrDefault(l => l.Culture.Name == loc.CurrentCulture.Name)
             ?? Languages.FirstOrDefault(l => l.Culture.TwoLetterISOLanguageName == loc.CurrentCulture.TwoLetterISOLanguageName)
             ?? Languages.FirstOrDefault();
@@ -151,11 +172,14 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             ?? Themes.FirstOrDefault();
         LocalizationService.Instance.CultureChanged += (_, _) => RefreshLocalization();
 
+        LoadMqttSources(null);
         _ = LoadSettingsAsync();
         _ = RefreshPortsAsync();
 
         Map.EnableCluster = MapEnableCluster;
         Map.FollowLatest = MapFollowLatest;
+        Map.SetMqttVisibility(MapShowMqtt);
+        Map.SetGibsVisibility(MapShowGibs);
 
         _presenceTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(5) };
         _presenceTimer.Tick += (_, _) => RefreshSubjectStatuses();
@@ -184,6 +208,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     public ObservableCollection<MessageItemViewModel> FilteredMessages { get; } = new();
     public ObservableCollection<LanguageOptionViewModel> Languages { get; } = new();
     public ObservableCollection<ThemeOptionViewModel> Themes { get; } = new();
+    public ObservableCollection<MapBaseLayerOptionViewModel> MapBaseLayers { get; } = new();
     public ObservableCollection<ChannelOptionViewModel> Channels { get; } = new()
     {
         new ChannelOptionViewModel(0),
@@ -196,6 +221,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     public ObservableCollection<TeamGroupViewModel> Teams { get; } = new();
     public ObservableCollection<SubjectViewModel> UngroupedSubjects { get; } = new();
     public ObservableCollection<SeverityRuleViewModel> SeverityRules { get; } = new();
+    public ObservableCollection<MqttSourceViewModel> MqttSources { get; } = new();
 
     public MapViewModel Map { get; } = new();
 
@@ -294,6 +320,18 @@ public sealed partial class MainWindowViewModel : ViewModelBase
 
     [ObservableProperty]
     private bool _mapShowLogs;
+
+    [ObservableProperty]
+    private bool _mapShowMqtt = true;
+
+    [ObservableProperty]
+    private bool _mapShowGibs;
+
+    [ObservableProperty]
+    private MapBaseLayerOptionViewModel? _selectedMapBaseLayer;
+
+    [ObservableProperty]
+    private MqttSourceViewModel? _selectedMqttSource;
 
     [ObservableProperty]
     private bool _isMessagePanelExpanded = true;
@@ -414,6 +452,8 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     public IAsyncRelayCommand QuickSendCommand { get; }
     public IRelayCommand SetTargetToSelectedSubjectCommand { get; }
     public IAsyncRelayCommand SaveSettingsCommand { get; }
+    public IRelayCommand AddMqttSourceCommand { get; }
+    public IRelayCommand RemoveMqttSourceCommand { get; }
     public IAsyncRelayCommand TestEarthdataCommand { get; }
     public IAsyncRelayCommand RallyCommand { get; }
     public IAsyncRelayCommand MoveCommand { get; }
@@ -602,6 +642,15 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             }
 
             MapShowLogs = _settings.Ui.ShowMapLogs;
+            MapShowMqtt = _settings.Ui.ShowMapMqtt;
+            MapShowGibs = _settings.Ui.ShowMapGibs;
+            var desiredBaseLayer = ParseMapBaseLayer(_settings.Ui.MapBaseLayer);
+            SelectedMapBaseLayer = MapBaseLayers.FirstOrDefault(item => item.Kind == desiredBaseLayer)
+                ?? MapBaseLayers.FirstOrDefault();
+            var mqttSettings = await LoadMqttSettingsAsync(CancellationToken.None);
+            _settings = _settings with { Mqtt = mqttSettings };
+            LoadMqttSources(mqttSettings.Sources);
+            _meshtasticMqtt.ApplySettings(mqttSettings);
         }
         catch (Exception ex)
         {
@@ -615,7 +664,6 @@ public sealed partial class MainWindowViewModel : ViewModelBase
 
     private async Task RefreshPortsAsync()
     {
-        Ports.Clear();
         var ports = await _portEnumerator.GetPortsAsync(CancellationToken.None);
         var deduped = ports
             .GroupBy(p => p.PortName, StringComparer.OrdinalIgnoreCase)
@@ -624,12 +672,35 @@ public sealed partial class MainWindowViewModel : ViewModelBase
                 .ThenByDescending(p => !string.IsNullOrWhiteSpace(p.Description))
                 .ThenByDescending(p => !string.IsNullOrWhiteSpace(p.VendorId) || !string.IsNullOrWhiteSpace(p.ProductId))
                 .First())
-            .OrderBy(p => p.PortName, StringComparer.OrdinalIgnoreCase);
+            .OrderBy(p => p.PortName, StringComparer.OrdinalIgnoreCase)
+            .ToList();
 
+        var added = deduped
+            .Where(p => !_knownPortNames.Contains(p.PortName))
+            .OrderByDescending(p => IsLikelyExternalSerialPort(p.PortName))
+            .ThenByDescending(p => !string.IsNullOrWhiteSpace(p.VendorId) || !string.IsNullOrWhiteSpace(p.ProductId))
+            .ThenBy(p => p.PortName, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        if (added.Count > 0)
+        {
+            _lastHotplugPortName = added[0].PortName;
+            _logger.LogInformation("Detected serial port: {Port}", _lastHotplugPortName);
+        }
+
+        _knownPortNames.Clear();
+        foreach (var port in deduped)
+            _knownPortNames.Add(port.PortName);
+
+        var previous = SelectedPort?.PortName;
+        Ports.Clear();
         foreach (var port in deduped)
             Ports.Add(new SerialPortInfoViewModel(port));
 
-        SelectedPort ??= Ports.FirstOrDefault(p => p.PortName == _settings.LastPort) ?? Ports.FirstOrDefault();
+        var target = Ports.FirstOrDefault(p => string.Equals(p.PortName, previous, StringComparison.OrdinalIgnoreCase))
+            ?? Ports.FirstOrDefault(p => string.Equals(p.PortName, _settings.LastPort, StringComparison.OrdinalIgnoreCase))
+            ?? Ports.FirstOrDefault(p => string.Equals(p.PortName, _lastHotplugPortName, StringComparison.OrdinalIgnoreCase))
+            ?? Ports.FirstOrDefault();
+        SelectedPort = target;
     }
 
     private bool CanConnect()
@@ -664,6 +735,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     private async Task SaveSettingsAsync()
     {
         var overrides = SeverityRules.ToDictionary(r => r.Kind, r => r.Severity);
+        var mqttSettings = BuildMqttSettings();
         var newSettings = _settings with
         {
             AutoReconnect = AutoReconnect,
@@ -677,6 +749,9 @@ public sealed partial class MainWindowViewModel : ViewModelBase
                 Language = SelectedLanguage?.Culture.Name ?? string.Empty,
                 Theme = SelectedTheme?.Definition.Id ?? string.Empty,
                 ShowMapLogs = MapShowLogs,
+                ShowMapMqtt = MapShowMqtt,
+                ShowMapGibs = MapShowGibs,
+                MapBaseLayer = (SelectedMapBaseLayer?.Kind ?? MapBaseLayerKind.Osm).ToString(),
             },
             Tactical = _settings.Tactical with
             {
@@ -708,6 +783,11 @@ public sealed partial class MainWindowViewModel : ViewModelBase
                 EmitMessages = AprsEmitMessages,
                 EmitWaypoints = AprsEmitWaypoints,
             },
+            // MQTT source definitions are stored in SQLite.
+            Mqtt = new MeshtasticMqttSettings
+            {
+                Sources = new List<MeshtasticMqttSourceSettings>(),
+            },
             Contours = _settings.Contours with
             {
                 Enabled = ContoursEnabled,
@@ -718,9 +798,11 @@ public sealed partial class MainWindowViewModel : ViewModelBase
                 },
             },
         };
-        _settings = newSettings;
+        _settings = newSettings with { Mqtt = mqttSettings };
         await _settingsStore.SaveAsync(newSettings, CancellationToken.None);
+        await _sqliteStore.SaveMqttSourcesAsync(mqttSettings.Sources, CancellationToken.None);
         _aprsGateway.ApplySettings(newSettings.Aprs);
+        _meshtasticMqtt.ApplySettings(mqttSettings);
         Map.UpdateContourSettings(newSettings.Contours);
     }
 
@@ -784,6 +866,127 @@ public sealed partial class MainWindowViewModel : ViewModelBase
                 Token = EarthdataToken.Trim(),
             },
         };
+    }
+
+    private static MapBaseLayerKind ParseMapBaseLayer(string? value)
+    {
+        if (Enum.TryParse<MapBaseLayerKind>(value, true, out var parsed))
+            return parsed;
+
+        return MapBaseLayerKind.Osm;
+    }
+
+    private MeshtasticMqttSettings BuildMqttSettings()
+    {
+        var sources = MqttSources
+            .Select(s => s.ToSettings())
+            .ToList();
+
+        if (sources.Count == 0)
+            sources.Add(MeshtasticMqttSourceSettings.CreateDefault());
+
+        return new MeshtasticMqttSettings
+        {
+            Sources = sources,
+        };
+    }
+
+    private async Task<MeshtasticMqttSettings> LoadMqttSettingsAsync(CancellationToken cancellationToken)
+    {
+        var sqliteSources = await _sqliteStore.LoadMqttSourcesAsync(cancellationToken);
+        if (sqliteSources.Count > 0)
+        {
+            return new MeshtasticMqttSettings
+            {
+                Sources = sqliteSources.ToList(),
+            };
+        }
+
+        var fallbackSources = (_settings.Mqtt.Sources ?? new List<MeshtasticMqttSourceSettings>())
+            .ToList();
+        if (fallbackSources.Count == 0)
+            fallbackSources = MeshtasticMqttSettings.CreateDefault().Sources.ToList();
+
+        await _sqliteStore.SaveMqttSourcesAsync(fallbackSources, cancellationToken);
+
+        return new MeshtasticMqttSettings
+        {
+            Sources = fallbackSources,
+        };
+    }
+
+    private void LoadMqttSources(IEnumerable<MeshtasticMqttSourceSettings>? sources)
+    {
+        foreach (var source in MqttSources)
+        {
+            source.PropertyChanged -= OnMqttSourcePropertyChanged;
+        }
+
+        MqttSources.Clear();
+
+        var list = (sources ?? Array.Empty<MeshtasticMqttSourceSettings>()).ToList();
+        if (list.Count == 0)
+        {
+            list.Add(MeshtasticMqttSourceSettings.CreateDefault());
+        }
+
+        foreach (var source in list)
+        {
+            var vm = MqttSourceViewModel.FromSettings(source);
+            vm.PropertyChanged += OnMqttSourcePropertyChanged;
+            MqttSources.Add(vm);
+        }
+
+        SelectedMqttSource = MqttSources.FirstOrDefault();
+        RemoveMqttSourceCommand.NotifyCanExecuteChanged();
+    }
+
+    private void AddMqttSource()
+    {
+        var source = MqttSourceViewModel.CreateDefault();
+        source.Name = $"MQTT {MqttSources.Count + 1}";
+        source.PropertyChanged += OnMqttSourcePropertyChanged;
+        MqttSources.Add(source);
+        SelectedMqttSource = source;
+        RemoveMqttSourceCommand.NotifyCanExecuteChanged();
+        ScheduleSettingsSave();
+    }
+
+    private bool CanRemoveSelectedMqttSource()
+    {
+        return SelectedMqttSource is not null && MqttSources.Count > 1;
+    }
+
+    private void RemoveSelectedMqttSource()
+    {
+        if (SelectedMqttSource is null)
+            return;
+        if (MqttSources.Count <= 1)
+            return;
+
+        var index = MqttSources.IndexOf(SelectedMqttSource);
+        if (index < 0)
+            return;
+
+        SelectedMqttSource.PropertyChanged -= OnMqttSourcePropertyChanged;
+        MqttSources.RemoveAt(index);
+        if (MqttSources.Count == 0)
+        {
+            AddMqttSource();
+        }
+        else
+        {
+            SelectedMqttSource = MqttSources[Math.Min(index, MqttSources.Count - 1)];
+            ScheduleSettingsSave();
+        }
+        RemoveMqttSourceCommand.NotifyCanExecuteChanged();
+    }
+
+    private void OnMqttSourcePropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (string.IsNullOrWhiteSpace(e.PropertyName))
+            return;
+        ScheduleSettingsSave();
     }
 
     private async Task DisconnectAsync()
@@ -1018,6 +1221,29 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         Map.SetLogVisibility(value);
     }
 
+    partial void OnMapShowMqttChanged(bool value)
+    {
+        Map.SetMqttVisibility(value);
+    }
+
+    partial void OnMapShowGibsChanged(bool value)
+    {
+        Map.SetGibsVisibility(value);
+    }
+
+    partial void OnSelectedMapBaseLayerChanged(MapBaseLayerOptionViewModel? value)
+    {
+        if (value is null)
+            return;
+
+        Map.SetBaseLayer(value.Kind);
+    }
+
+    partial void OnSelectedMqttSourceChanged(MqttSourceViewModel? value)
+    {
+        RemoveMqttSourceCommand.NotifyCanExecuteChanged();
+    }
+
     private void OnConnectionStateChanged(object? sender, (ConnectionState OldState, ConnectionState NewState, string? Reason) args)
     {
         Dispatcher.UIThread.Post(() =>
@@ -1045,40 +1271,47 @@ public sealed partial class MainWindowViewModel : ViewModelBase
 
     private void OnMessageAdded(object? sender, MessageEntry entry)
     {
-        Dispatcher.UIThread.Post(() =>
+        Dispatcher.UIThread.Post(() => ApplyMessageAdded(entry, MapSampleSource.Local));
+    }
+
+    private void OnMqttMessageReceived(object? sender, MessageEntry entry)
+    {
+        Dispatcher.UIThread.Post(() => ApplyMessageAdded(entry, MapSampleSource.Mqtt));
+    }
+
+    private void ApplyMessageAdded(MessageEntry entry, MapSampleSource source)
+    {
+        var vm = new MessageItemViewModel(entry);
+        if (entry.FromId.HasValue)
         {
-            var vm = new MessageItemViewModel(entry);
-            if (entry.FromId.HasValue)
+            vm.From = ResolvePeerLabel(entry.FromId.Value);
+        }
+        if (entry.Direction == MessageDirection.Outgoing && entry.ToId.HasValue)
+        {
+            vm.To = ResolvePeerLabel(entry.ToId.Value);
+        }
+        Messages.Add(vm);
+        if (SelectedMessage is null || SelectedMessage == Messages.LastOrDefault())
+        {
+            SelectedMessage = vm;
+        }
+        var conversation = UpsertConversation(entry);
+        if (entry.Direction == MessageDirection.Incoming)
+        {
+            var isActive = SelectedTabIndex == ChatTabIndex &&
+                           SelectedConversation is not null &&
+                           SelectedConversation.Key == conversation.Key;
+            if (!isActive)
             {
-                vm.From = ResolvePeerLabel(entry.FromId.Value);
+                conversation.UnreadCount++;
+                RecalculateUnreadCount();
             }
-            if (entry.Direction == MessageDirection.Outgoing && entry.ToId.HasValue)
-            {
-                vm.To = ResolvePeerLabel(entry.ToId.Value);
-            }
-            Messages.Add(vm);
-            if (SelectedMessage is null || SelectedMessage == Messages.LastOrDefault())
-            {
-                SelectedMessage = vm;
-            }
-            var conversation = UpsertConversation(entry);
-            if (entry.Direction == MessageDirection.Incoming)
-            {
-                var isActive = SelectedTabIndex == ChatTabIndex &&
-                               SelectedConversation is not null &&
-                               SelectedConversation.Key == conversation.Key;
-                if (!isActive)
-                {
-                    conversation.UnreadCount++;
-                    RecalculateUnreadCount();
-                }
-            }
-            RefreshConversationMessages();
-            if (entry.Latitude.HasValue && entry.Longitude.HasValue)
-            {
-                Map.AddPoint(entry.FromId ?? entry.ToId, entry.Latitude.Value, entry.Longitude.Value);
-            }
-        });
+        }
+        RefreshConversationMessages();
+        if (entry.Latitude.HasValue && entry.Longitude.HasValue)
+        {
+            Map.AddPoint(entry.FromId ?? entry.ToId, entry.Latitude.Value, entry.Longitude.Value, source);
+        }
     }
 
     private void OnMessageUpdated(object? sender, MessageEntry entry)
@@ -1248,95 +1481,109 @@ public sealed partial class MainWindowViewModel : ViewModelBase
 
     private void OnPositionUpdated(object? sender, PositionUpdate update)
     {
-        Dispatcher.UIThread.Post(() =>
-        {
-            var normalizedId = NormalizeNodeId(update.SourceId);
-            if (update.Source == PositionSource.TeamWaypointApp)
-            {
-                Map.AddWaypoint(normalizedId, update.Latitude, update.Longitude, update.Label);
-            }
-            else
-            {
-                Map.AddPoint(normalizedId, update.Latitude, update.Longitude);
-            }
-            if (normalizedId is null)
-                return;
+        Dispatcher.UIThread.Post(() => ApplyPositionUpdate(update, MapSampleSource.Local));
+    }
 
-            var sourceId = normalizedId.Value;
-            var subject = Subjects.FirstOrDefault(s => s.Id == sourceId);
-            var created = false;
-            if (subject is null)
-            {
-                subject = new SubjectViewModel(sourceId);
-                Subjects.Add(subject);
-                EnsureSubjectTracked(subject);
-                created = true;
-            }
-            subject.LastSeen = update.Timestamp;
-            subject.Latitude = update.Latitude;
-            subject.Longitude = update.Longitude;
-            subject.UpdateStatus(ComputeStatus(update.Timestamp));
-            if (created)
-            {
-                RebuildTeamLists();
-            }
-        });
+    private void OnMqttPositionReceived(object? sender, PositionUpdate update)
+    {
+        Dispatcher.UIThread.Post(() => ApplyPositionUpdate(update, MapSampleSource.Mqtt));
+    }
+
+    private void ApplyPositionUpdate(PositionUpdate update, MapSampleSource source)
+    {
+        var normalizedId = NormalizeNodeId(update.SourceId);
+        if (update.Source == PositionSource.TeamWaypointApp)
+        {
+            Map.AddWaypoint(normalizedId, update.Latitude, update.Longitude, update.Label, source);
+        }
+        else
+        {
+            Map.AddPoint(normalizedId, update.Latitude, update.Longitude, source);
+        }
+        if (normalizedId is null)
+            return;
+
+        var sourceId = normalizedId.Value;
+        var subject = Subjects.FirstOrDefault(s => s.Id == sourceId);
+        var created = false;
+        if (subject is null)
+        {
+            subject = new SubjectViewModel(sourceId);
+            Subjects.Add(subject);
+            EnsureSubjectTracked(subject);
+            created = true;
+        }
+        subject.LastSeen = update.Timestamp;
+        subject.Latitude = update.Latitude;
+        subject.Longitude = update.Longitude;
+        subject.UpdateStatus(ComputeStatus(update.Timestamp));
+        if (created)
+        {
+            RebuildTeamLists();
+        }
     }
 
     private void OnNodeInfoUpdated(object? sender, NodeInfoUpdate info)
     {
-        Dispatcher.UIThread.Post(() =>
+        Dispatcher.UIThread.Post(() => ApplyNodeInfoUpdate(info, MapSampleSource.Local));
+    }
+
+    private void OnMqttNodeInfoReceived(object? sender, NodeInfoUpdate info)
+    {
+        Dispatcher.UIThread.Post(() => ApplyNodeInfoUpdate(info, MapSampleSource.Mqtt));
+    }
+
+    private void ApplyNodeInfoUpdate(NodeInfoUpdate info, MapSampleSource source)
+    {
+        var normalizedId = NormalizeNodeId(info.NodeId);
+        if (normalizedId is null)
+            return;
+
+        if (normalizedId.Value != info.NodeId)
         {
-            var normalizedId = NormalizeNodeId(info.NodeId);
-            if (normalizedId is null)
-                return;
+            info = info with { NodeId = normalizedId.Value };
+        }
 
-            if (normalizedId.Value != info.NodeId)
-            {
-                info = info with { NodeId = normalizedId.Value };
-            }
+        var subject = Subjects.FirstOrDefault(s => s.Id == info.NodeId);
+        var created = false;
+        if (subject is null)
+        {
+            subject = new SubjectViewModel(info.NodeId);
+            Subjects.Add(subject);
+            EnsureSubjectTracked(subject);
+            created = true;
+        }
 
-            var subject = Subjects.FirstOrDefault(s => s.Id == info.NodeId);
-            var created = false;
-            if (subject is null)
-            {
-                subject = new SubjectViewModel(info.NodeId);
-                Subjects.Add(subject);
-                EnsureSubjectTracked(subject);
-                created = true;
-            }
+        subject.ApplyNodeInfo(info);
+        subject.LastSeen = info.LastHeard;
+        subject.UpdateStatus(ComputeStatus(info.LastHeard));
 
-            subject.ApplyNodeInfo(info);
-            subject.LastSeen = info.LastHeard;
-            subject.UpdateStatus(ComputeStatus(info.LastHeard));
+        if (info.Latitude.HasValue && info.Longitude.HasValue)
+        {
+            subject.Latitude = info.Latitude;
+            subject.Longitude = info.Longitude;
+            Map.AddPoint(info.NodeId, info.Latitude.Value, info.Longitude.Value, source);
+        }
 
-            if (info.Latitude.HasValue && info.Longitude.HasValue)
-            {
-                subject.Latitude = info.Latitude;
-                subject.Longitude = info.Longitude;
-                Map.AddPoint(info.NodeId, info.Latitude.Value, info.Longitude.Value);
-            }
+        var label = ResolvePeerLabel(info.NodeId);
+        foreach (var conv in Conversations.Where(c => c.PeerId == info.NodeId))
+        {
+            conv.UpdatePeerLabel(label);
+        }
 
-            var label = ResolvePeerLabel(info.NodeId);
-            foreach (var conv in Conversations.Where(c => c.PeerId == info.NodeId))
-            {
-                conv.UpdatePeerLabel(label);
-            }
+        foreach (var msg in Messages.Where(m => m.FromId == info.NodeId))
+        {
+            msg.From = label;
+        }
+        foreach (var msg in Messages.Where(m => m.Direction == MessageDirection.Outgoing && m.ToId == info.NodeId))
+        {
+            msg.To = label;
+        }
 
-            foreach (var msg in Messages.Where(m => m.FromId == info.NodeId))
-            {
-                msg.From = label;
-            }
-            foreach (var msg in Messages.Where(m => m.Direction == MessageDirection.Outgoing && m.ToId == info.NodeId))
-            {
-                msg.To = label;
-            }
-
-            if (created)
-            {
-                RebuildTeamLists();
-            }
-        });
+        if (created)
+        {
+            RebuildTeamLists();
+        }
     }
 
     private void OnTacticalEventReceived(object? sender, TacticalEvent ev)
@@ -1391,7 +1638,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
 
     private ConversationItemViewModel UpsertConversation(MessageEntry entry)
     {
-        var isBroadcast = entry.ToId is null || entry.ToId == 0;
+        var isBroadcast = IsBroadcastDestination(entry.ToId);
         var peerId = isBroadcast
             ? (uint?)null
             : entry.Direction == MessageDirection.Outgoing ? entry.ToId : entry.FromId;
@@ -1634,6 +1881,10 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             {
                 theme.RefreshLocalization();
             }
+            foreach (var mapBaseLayer in MapBaseLayers)
+            {
+                mapBaseLayer.RefreshLocalization();
+            }
             foreach (var port in Ports)
             {
                 port.RefreshLocalization();
@@ -1770,6 +2021,34 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         return null;
     }
 
+    public void SelectSubjectByNodeId(uint nodeId, bool switchToChatTab = false)
+    {
+        var normalizedId = NormalizeNodeId(nodeId);
+        if (normalizedId is null)
+            return;
+
+        var subject = Subjects.FirstOrDefault(s => s.Id == normalizedId.Value);
+        var created = false;
+        if (subject is null)
+        {
+            subject = new SubjectViewModel(normalizedId.Value);
+            Subjects.Add(subject);
+            EnsureSubjectTracked(subject);
+            created = true;
+        }
+
+        SelectedSubject = subject;
+        if (switchToChatTab)
+        {
+            SelectedTabIndex = ChatTabIndex;
+        }
+
+        if (created)
+        {
+            RebuildTeamLists();
+        }
+    }
+
     private static bool MatchesConversation(MessageItemViewModel message, ConversationItemViewModel conversation)
     {
         if (conversation.IsBroadcast)
@@ -1783,6 +2062,11 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         var peerId = conversation.PeerId.Value;
         return message.ChannelId == conversation.ChannelId &&
                (message.FromId == peerId || message.ToId == peerId);
+    }
+
+    private static bool IsBroadcastDestination(uint? toId)
+    {
+        return !toId.HasValue || toId.Value == 0 || toId.Value == uint.MaxValue;
     }
 
     private string ResolvePeerLabel(uint peerId)
@@ -1808,7 +2092,10 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         if (now - _lastAutoConnectAttempt < TimeSpan.FromSeconds(3))
             return;
 
-        var target = Ports.FirstOrDefault(p => p.PortName == _settings.LastPort) ?? SelectedPort ?? Ports.FirstOrDefault();
+        var target = Ports.FirstOrDefault(p => string.Equals(p.PortName, _lastHotplugPortName, StringComparison.OrdinalIgnoreCase))
+            ?? Ports.FirstOrDefault(p => string.Equals(p.PortName, _settings.LastPort, StringComparison.OrdinalIgnoreCase))
+            ?? SelectedPort
+            ?? Ports.FirstOrDefault();
         if (target is null)
             return;
 
@@ -1827,6 +2114,21 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         {
             _autoConnectBusy = false;
         }
+    }
+
+    private static bool IsLikelyExternalSerialPort(string portName)
+    {
+        if (string.IsNullOrWhiteSpace(portName))
+            return false;
+
+        var name = portName.ToLowerInvariant();
+        if (name.Contains("bluetooth-incoming-port", StringComparison.Ordinal) || name.EndsWith(".blth", StringComparison.Ordinal))
+            return false;
+
+        return name.Contains("usb", StringComparison.Ordinal) ||
+               name.Contains("serial", StringComparison.Ordinal) ||
+               name.Contains("uart", StringComparison.Ordinal) ||
+               name.Contains("acm", StringComparison.Ordinal);
     }
 
     private void LoadSeverityRules(Dictionary<TacticalEventKind, TacticalSeverity> overrides)

@@ -396,6 +396,7 @@ public sealed class HostLinkClient : IAsyncDisposable
     {
         var rx = HostLinkSerializer.ParseRxMessage(payload);
         var hasGps = TrailMateCenter.Helpers.GpsParser.TryExtract(rx.Text, out var lat, out var lon);
+        var isBroadcast = rx.To == 0 || rx.To == uint.MaxValue;
 
         var receivedAt = DateTimeOffset.UtcNow;
         var deviceTimestamp = rx.RxMeta?.TimestampUtc ?? (rx.Timestamp == DateTimeOffset.UnixEpoch ? (DateTimeOffset?)null : rx.Timestamp);
@@ -405,9 +406,9 @@ public sealed class HostLinkClient : IAsyncDisposable
             Direction = MessageDirection.Incoming,
             MessageId = rx.MessageId,
             FromId = rx.From,
-            ToId = rx.To,
+            ToId = isBroadcast ? null : rx.To,
             From = $"0x{rx.From:X8}",
-            To = $"0x{rx.To:X8}",
+            To = isBroadcast ? "broadcast" : $"0x{rx.To:X8}",
             ChannelId = rx.Channel,
             Channel = rx.Channel.ToString(),
             Text = rx.Text,

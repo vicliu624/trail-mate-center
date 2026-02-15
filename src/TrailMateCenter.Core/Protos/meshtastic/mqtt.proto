@@ -1,0 +1,107 @@
+syntax = "proto3";
+
+package meshtastic;
+
+import "meshtastic/config.proto";
+import "meshtastic/mesh.proto";
+
+option csharp_namespace = "Meshtastic.Protobufs";
+option go_package = "github.com/meshtastic/go/generated";
+option java_outer_classname = "MqttProtos";
+option java_package = "org.meshtastic.proto";
+option swift_prefix = "";
+
+/*
+ * This message wraps a MeshPacket with extra metadata about the sender and how it arrived.
+ */
+message ServiceEnvelope {
+  /*
+   * The (probably encrypted) packet.
+   */
+  MeshPacket packet = 1;
+
+  /*
+   * The global channel ID it was sent on.
+   */
+  string channel_id = 2;
+
+  /*
+   * Sending gateway node ID.
+   */
+  string gateway_id = 3;
+}
+
+/*
+ * Information about a node intended to be reported unencrypted to a map using MQTT.
+ */
+message MapReport {
+  /*
+   * A full name for this user.
+   */
+  string long_name = 1;
+
+  /*
+   * A very short name (ideally two characters).
+   */
+  string short_name = 2;
+
+  /*
+   * Role of the node.
+   */
+  Config.DeviceConfig.Role role = 3;
+
+  /*
+   * Hardware model of the node.
+   */
+  HardwareModel hw_model = 4;
+
+  /*
+   * Device firmware version string.
+   */
+  string firmware_version = 5;
+
+  /*
+   * Region code (US, CN, EU433, etc).
+   */
+  Config.LoRaConfig.RegionCode region = 6;
+
+  /*
+   * Modem preset used by the radio.
+   */
+  Config.LoRaConfig.ModemPreset modem_preset = 7;
+
+  /*
+   * Whether the node has a default channel and slot.
+   */
+  bool has_default_channel = 8;
+
+  /*
+   * Latitude: multiply by 1e-7 to get degrees.
+   */
+  sfixed32 latitude_i = 9;
+
+  /*
+   * Longitude: multiply by 1e-7 to get degrees.
+   */
+  sfixed32 longitude_i = 10;
+
+  /*
+   * Altitude in meters above MSL.
+   */
+  int32 altitude = 11;
+
+  /*
+   * Position precision bits.
+   */
+  uint32 position_precision = 12;
+
+  /*
+   * Number of online local nodes heard recently.
+   */
+  uint32 num_online_local_nodes = 13;
+
+  /*
+   * User opted in to location map reporting.
+   */
+  bool has_opted_report_location = 14;
+}

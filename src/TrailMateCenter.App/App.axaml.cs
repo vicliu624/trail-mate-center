@@ -43,6 +43,9 @@ public partial class App : Application
         var aprsGateway = Services.GetRequiredService<AprsGatewayService>();
         aprsGateway.Start();
 
+        var mqttClient = Services.GetRequiredService<MeshtasticMqttClient>();
+        mqttClient.Start();
+
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             // Avoid duplicate validations from both Avalonia and the CommunityToolkit. 
@@ -79,6 +82,7 @@ public partial class App : Application
         services.AddSingleton<HostLinkClient>();
         services.AddSingleton<AprsIsClient>();
         services.AddSingleton<AprsGatewayService>();
+        services.AddSingleton<MeshtasticMqttClient>();
         services.AddSingleton<MainWindow>();
         services.AddSingleton<MainWindowViewModel>();
 

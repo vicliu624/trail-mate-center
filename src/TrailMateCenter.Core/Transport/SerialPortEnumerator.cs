@@ -8,7 +8,17 @@ public sealed class SerialPortEnumerator : ISerialPortEnumerator
 {
     public Task<IReadOnlyList<SerialPortInfo>> GetPortsAsync(CancellationToken cancellationToken)
     {
-        var ports = SerialPort.GetPortNames()
+        var names = SerialPort.GetPortNames()
+            .Where(name => !string.IsNullOrWhiteSpace(name))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        if (OperatingSystem.IsMacOS())
+        {
+            names = NormalizeMacPortNames(names);
+        }
+
+        var ports = names
             .OrderBy(name => name, StringComparer.OrdinalIgnoreCase)
             .Select(name => new SerialPortInfo { PortName = name })
             .DistinctBy(p => p.PortName, StringComparer.OrdinalIgnoreCase)
@@ -20,6 +30,47 @@ public sealed class SerialPortEnumerator : ISerialPortEnumerator
         }
 
         return Task.FromResult<IReadOnlyList<SerialPortInfo>>(ports);
+    }
+
+    private static List<string> NormalizeMacPortNames(List<string> names)
+    {
+        var all = new HashSet<string>(names, StringComparer.OrdinalIgnoreCase);
+        var filtered = new List<string>(all.Count);
+
+        foreach (var name in all.OrderBy(n => n, StringComparer.OrdinalIgnoreCase))
+        {
+            if (IsMacSystemBluetoothPort(name))
+                continue;
+            if (HasCuTwinOnMac(name, all))
+                continue;
+            filtered.Add(name);
+        }
+
+        return filtered;
+    }
+
+    private static bool HasCuTwinOnMac(string portName, HashSet<string> allPorts)
+    {
+        const string ttyPrefix = "/dev/tty.";
+        if (!portName.StartsWith(ttyPrefix, StringComparison.OrdinalIgnoreCase))
+            return false;
+
+        var suffix = portName[ttyPrefix.Length..];
+        var cuName = $"/dev/cu.{suffix}";
+        return allPorts.Contains(cuName);
+    }
+
+    private static bool IsMacSystemBluetoothPort(string portName)
+    {
+        if (string.IsNullOrWhiteSpace(portName))
+            return false;
+
+        var name = portName.ToLowerInvariant();
+        if (name.Contains("bluetooth", StringComparison.Ordinal))
+            return true;
+
+        // Common macOS short bluetooth aliases.
+        return name.EndsWith(".blth", StringComparison.Ordinal);
     }
 
     [SupportedOSPlatform("windows")]
