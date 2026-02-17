@@ -68,6 +68,8 @@ public sealed class HostLinkClient : IAsyncDisposable
     public ConnectionState ConnectionState => _stateMachine.State;
     public string? LastError => _stateMachine.LastError;
     public DeviceInfo? DeviceInfo { get; private set; }
+    public bool SupportsTxAppDataCommand =>
+        DeviceInfo?.Capabilities.CapabilitiesMask.HasFlag(HostLinkCapabilities.CapTxAppData) == true;
     public StatusInfo? Status { get; private set; }
 
     public async Task ConnectAsync(TransportEndpoint endpoint, ConnectionOptions options, CancellationToken cancellationToken)
@@ -98,6 +100,7 @@ public sealed class HostLinkClient : IAsyncDisposable
     public async Task<MessageEntry> SendMessageAsync(MessageSendRequest request, CancellationToken cancellationToken)
     {
         EnsureReady();
+        var isBroadcast = IsBroadcastDestination(request.ToId);
 
         var payload = HostLinkSerializer.BuildCmdTxMsgPayload(request);
         var pending = _requests.Register(HostLinkFrameType.CmdTxMsg, _options.AckTimeout, _options.MaxRetries);
@@ -130,6 +133,23 @@ public sealed class HostLinkClient : IAsyncDisposable
         MessageAdded?.Invoke(this, message);
 
         await WriteAsync(pending.FrameBytes, cancellationToken);
+
+        if (isBroadcast)
+        {
+            lock (_gate)
+            {
+                if (_pendingMessages.TryGetValue(pending.Seq, out var tracked))
+                {
+                    tracked.Status = MessageDeliveryStatus.Succeeded;
+                    tracked.ErrorMessage = null;
+                    _sessionStore.UpdateMessage(tracked);
+                    MessageUpdated?.Invoke(this, tracked);
+                    _pendingMessages.Remove(pending.Seq);
+                }
+                _requests.Complete(pending.Seq);
+            }
+        }
+
         return message;
     }
 
@@ -157,6 +177,8 @@ public sealed class HostLinkClient : IAsyncDisposable
     public async Task<HostLinkErrorCode> SendTeamCommandAsync(TeamCommandRequest request, CancellationToken cancellationToken)
     {
         EnsureReady();
+        if (!SupportsTxAppDataCommand)
+            return HostLinkErrorCode.Unsupported;
 
         var teamRequest = new TeamCommandRequest
         {
@@ -174,6 +196,31 @@ public sealed class HostLinkClient : IAsyncDisposable
         var channel = request.Channel;
         if (channel == 0 && _hasTeamContext)
             channel = _teamChannel;
+        var appRequest = new AppDataSendRequest
+        {
+            Portnum = AppDataDecoder.TeamChatPort,
+            To = request.To ?? 0,
+            Channel = channel,
+            Flags = _hasTeamContext ? HostLinkAppDataFlags.HasTeamMetadata : 0,
+            TeamId = _hasTeamContext ? _teamId.ToArray() : new byte[8],
+            TeamKeyId = _hasTeamContext ? _teamKeyId : 0,
+            Payload = payload,
+        };
+
+        return await SendAppDataAsync(appRequest, cancellationToken);
+    }
+
+    public async Task<HostLinkErrorCode> SendTeamLocationAsync(TeamLocationPostRequest request, CancellationToken cancellationToken)
+    {
+        EnsureReady();
+        if (!SupportsTxAppDataCommand)
+            return HostLinkErrorCode.Unsupported;
+
+        var payload = TeamChatEncoder.BuildLocationPayload(request);
+        var channel = request.Channel;
+        if (channel == 0 && _hasTeamContext)
+            channel = _teamChannel;
+
         var appRequest = new AppDataSendRequest
         {
             Portnum = AppDataDecoder.TeamChatPort,
@@ -354,14 +401,26 @@ public sealed class HostLinkClient : IAsyncDisposable
             {
                 if (code == HostLinkErrorCode.Ok)
                 {
-                    message.Status = MessageDeliveryStatus.Acked;
-                    _awaitingTxResults.Enqueue(message);
+                    if (IsBroadcastDestination(message.ToId))
+                    {
+                        // Broadcast has no deterministic TX result on many stacks, treat ACK as completion.
+                        message.Status = MessageDeliveryStatus.Succeeded;
+                        message.ErrorMessage = null;
+                        _pendingMessages.Remove(seq);
+                        _requests.Complete(seq);
+                    }
+                    else
+                    {
+                        message.Status = MessageDeliveryStatus.Acked;
+                        _awaitingTxResults.Enqueue(message);
+                    }
                 }
                 else
                 {
                     message.Status = MessageDeliveryStatus.Failed;
                     message.ErrorMessage = $"ACK {code}";
                     _pendingMessages.Remove(seq);
+                    _requests.Complete(seq);
                     _logStore.Add(new HostLinkLogEntry
                     {
                         Timestamp = DateTimeOffset.UtcNow,
@@ -388,7 +447,10 @@ public sealed class HostLinkClient : IAsyncDisposable
             _sessionStore.UpdateMessage(message);
             MessageUpdated?.Invoke(this, message);
             if (message.Seq != 0)
+            {
                 _pendingMessages.Remove(message.Seq);
+                _requests.Complete(message.Seq);
+            }
         }
     }
 
@@ -675,8 +737,20 @@ public sealed class HostLinkClient : IAsyncDisposable
                 {
                     pending.Retries++;
                     pending.LastSendAt = now;
-                    await WriteAsync(pending.FrameBytes, cancellationToken);
-                    _logger.LogDebug("Resent seq {Seq} retry {Retry}", pending.Seq, pending.Retries);
+                    try
+                    {
+                        await WriteAsync(pending.FrameBytes, cancellationToken);
+                        _logger.LogDebug("Resent seq {Seq} retry {Retry}", pending.Seq, pending.Retries);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        return;
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Resend failed seq {Seq}", pending.Seq);
+                        HandleTimeout(pending);
+                    }
                 }
                 else
                 {
@@ -713,6 +787,11 @@ public sealed class HostLinkClient : IAsyncDisposable
     {
         if (_stateMachine.State != ConnectionState.Ready)
             throw new InvalidOperationException("Not connected");
+    }
+
+    private static bool IsBroadcastDestination(uint? toId)
+    {
+        return !toId.HasValue || toId.Value == 0 || toId.Value == uint.MaxValue;
     }
 
     private IHostLinkTransport CreateTransport(TransportEndpoint endpoint)

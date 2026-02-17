@@ -51,4 +51,6 @@ public sealed record PositionUpdate(
     double? AltitudeMeters,
     double? AccuracyMeters,
     PositionSource Source,
-    string? Label);
+    string? Label,
+    byte? TeamLocationMarkerRaw = null,
+    TeamLocationSource? TeamLocationMarker = null);

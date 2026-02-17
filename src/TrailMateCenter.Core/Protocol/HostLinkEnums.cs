@@ -45,6 +45,7 @@ public enum HostLinkCapabilities : uint
     CapAppData = 1u << 6,
     CapTeamState = 1u << 7,
     CapAprsGateway = 1u << 8,
+    CapTxAppData = 1u << 9,
 }
 
 [Flags]

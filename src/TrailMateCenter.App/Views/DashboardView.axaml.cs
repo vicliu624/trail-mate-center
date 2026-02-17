@@ -6,12 +6,15 @@ using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Shapes;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Media.Imaging;
+using Avalonia.Platform;
 using Avalonia.Platform.Storage;
 using Mapsui.Extensions;
 using Mapsui.Manipulations;
 using Mapsui.Projections;
 using Mapsui.UI.Avalonia;
 using TrailMateCenter.Localization;
+using TrailMateCenter.Models;
 using TrailMateCenter.ViewModels;
 
 namespace TrailMateCenter.Views;
@@ -32,6 +35,13 @@ public partial class DashboardView : UserControl
     private bool _offlineCacheRegionsDialogOpen;
     private ContextMenu? _offlineRouteContextMenu;
     private MenuItem? _offlineRouteCacheMenuItem;
+    private MenuItem? _teamPositionMenuRootItem;
+    private MenuItem? _teamPositionAreaClearedItem;
+    private MenuItem? _teamPositionBaseCampItem;
+    private MenuItem? _teamPositionGoodFindItem;
+    private MenuItem? _teamPositionRallyItem;
+    private MenuItem? _teamPositionSosItem;
+    private (double Latitude, double Longitude)? _lastRightClickLocation;
 
     public DashboardView()
     {
@@ -186,22 +196,40 @@ public partial class DashboardView : UserControl
             return;
 
         var position = e.GetPosition(_mapControl);
-        if (vm.Map.SelectOfflineRouteAtScreenPosition(
-                new ScreenPosition(position.X, position.Y),
-                _mapControl.GetMapInfo))
-        {
-            ShowOfflineRouteContextMenu();
-            e.Handled = true;
-            return;
-        }
+        var hasRouteAction = vm.Map.SelectOfflineRouteAtScreenPosition(
+            new ScreenPosition(position.X, position.Y),
+            _mapControl.GetMapInfo);
 
         var nodeId = vm.Map.ResolveNodeIdAtScreenPosition(
             new ScreenPosition(position.X, position.Y),
             _mapControl.GetMapInfo);
+        if (nodeId.HasValue)
+        {
+            vm.SelectSubjectByNodeId(nodeId.Value, switchToChatTab: !vm.HasTeams);
+        }
+
+        if (_mapControl.Map is { } map)
+        {
+            var viewport = map.Navigator.Viewport;
+            var world = viewport.ScreenToWorld(new ScreenPosition(position.X, position.Y));
+            var (lon, lat) = SphericalMercator.ToLonLat(world.X, world.Y);
+            _lastRightClickLocation = (lat, lon);
+        }
+        else
+        {
+            _lastRightClickLocation = null;
+        }
+
+        if (hasRouteAction || vm.HasTeams)
+        {
+            ShowOfflineRouteContextMenu(vm, hasRouteAction);
+            e.Handled = true;
+            return;
+        }
+
         if (!nodeId.HasValue)
             return;
 
-        vm.SelectSubjectByNodeId(nodeId.Value, switchToChatTab: true);
         e.Handled = true;
     }
 
@@ -212,24 +240,93 @@ public partial class DashboardView : UserControl
 
         _offlineRouteCacheMenuItem = new MenuItem();
         _offlineRouteCacheMenuItem.Click += OnOfflineRouteCacheMenuItemClicked;
+
+        _teamPositionMenuRootItem = new MenuItem();
+        _teamPositionAreaClearedItem = BuildTeamPositionMenuItem("Ui.Dashboard.TeamPosition.AreaCleared", "AreaCleared.png", TeamLocationSource.AreaCleared);
+        _teamPositionBaseCampItem = BuildTeamPositionMenuItem("Ui.Dashboard.TeamPosition.BaseCamp", "BaseCamp.png", TeamLocationSource.BaseCamp);
+        _teamPositionGoodFindItem = BuildTeamPositionMenuItem("Ui.Dashboard.TeamPosition.GoodFind", "GoodFind.png", TeamLocationSource.GoodFind);
+        _teamPositionRallyItem = BuildTeamPositionMenuItem("Ui.Dashboard.TeamPosition.Rally", "rally.png", TeamLocationSource.Rally);
+        _teamPositionSosItem = BuildTeamPositionMenuItem("Ui.Dashboard.TeamPosition.Sos", "sos.png", TeamLocationSource.Sos);
+        _teamPositionMenuRootItem.ItemsSource = new MenuItem[]
+        {
+            _teamPositionAreaClearedItem,
+            _teamPositionBaseCampItem,
+            _teamPositionGoodFindItem,
+            _teamPositionRallyItem,
+            _teamPositionSosItem,
+        };
+
         _offlineRouteContextMenu = new ContextMenu
         {
-            ItemsSource = new[] { _offlineRouteCacheMenuItem },
+            ItemsSource = new[] { _offlineRouteCacheMenuItem, _teamPositionMenuRootItem },
             Placement = PlacementMode.Pointer,
         };
     }
 
-    private void ShowOfflineRouteContextMenu()
+    private MenuItem BuildTeamPositionMenuItem(string textKey, string iconFile, TeamLocationSource source)
+    {
+        var item = new MenuItem
+        {
+            Tag = source,
+        };
+        item.Click += OnTeamPositionMenuItemClicked;
+        item.Icon = CreateMenuIcon(iconFile);
+        item.Header = LocalizationService.Instance.GetString(textKey);
+        return item;
+    }
+
+    private static Image? CreateMenuIcon(string fileName)
+    {
+        try
+        {
+            var uri = new Uri($"avares://TrailMateCenter.App/Assets/{fileName}");
+            using var stream = AssetLoader.Open(uri);
+            return new Image
+            {
+                Source = new Bitmap(stream),
+                Width = 16,
+                Height = 16,
+                Stretch = Avalonia.Media.Stretch.Uniform,
+            };
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private void ShowOfflineRouteContextMenu(MainWindowViewModel vm, bool hasRouteAction)
     {
         if (_mapControl is null)
             return;
 
         EnsureOfflineRouteContextMenu();
-        if (_offlineRouteContextMenu is null || _offlineRouteCacheMenuItem is null)
+        if (_offlineRouteContextMenu is null ||
+            _offlineRouteCacheMenuItem is null ||
+            _teamPositionMenuRootItem is null ||
+            _teamPositionAreaClearedItem is null ||
+            _teamPositionBaseCampItem is null ||
+            _teamPositionGoodFindItem is null ||
+            _teamPositionRallyItem is null ||
+            _teamPositionSosItem is null)
             return;
 
         var loc = LocalizationService.Instance;
         _offlineRouteCacheMenuItem.Header = loc.GetString("Ui.Dashboard.OfflineRoute.Cache");
+        _offlineRouteCacheMenuItem.IsVisible = hasRouteAction;
+
+        _teamPositionMenuRootItem.Header = loc.GetString("Ui.Dashboard.TeamPosition");
+        _teamPositionMenuRootItem.IsVisible = vm.HasTeams;
+        _teamPositionMenuRootItem.IsEnabled = vm.IsConnected &&
+                                              vm.SupportsTeamAppPosting &&
+                                              _lastRightClickLocation.HasValue;
+
+        _teamPositionAreaClearedItem.Header = loc.GetString("Ui.Dashboard.TeamPosition.AreaCleared");
+        _teamPositionBaseCampItem.Header = loc.GetString("Ui.Dashboard.TeamPosition.BaseCamp");
+        _teamPositionGoodFindItem.Header = loc.GetString("Ui.Dashboard.TeamPosition.GoodFind");
+        _teamPositionRallyItem.Header = loc.GetString("Ui.Dashboard.TeamPosition.Rally");
+        _teamPositionSosItem.Header = loc.GetString("Ui.Dashboard.TeamPosition.Sos");
+
         _offlineRouteContextMenu.PlacementTarget = _mapControl;
         _offlineRouteContextMenu.Open();
     }
@@ -242,6 +339,21 @@ public partial class DashboardView : UserControl
             return;
 
         await ShowOfflineCacheDialogAsync(vm);
+    }
+
+    private async void OnTeamPositionMenuItemClicked(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is not MainWindowViewModel vm)
+            return;
+        if (!_lastRightClickLocation.HasValue)
+            return;
+        if (sender is not MenuItem menuItem)
+            return;
+        if (menuItem.Tag is not TeamLocationSource source)
+            return;
+
+        var point = _lastRightClickLocation.Value;
+        await vm.SendTeamLocationPostAsync(source, point.Latitude, point.Longitude);
     }
 
     private void OnMapPointerCaptureLost(object? sender, PointerCaptureLostEventArgs e)

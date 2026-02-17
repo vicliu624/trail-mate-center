@@ -28,6 +28,32 @@ public static class TeamChatEncoder
         return writer.ToArray();
     }
 
+    public static byte[] BuildLocationPayload(TeamLocationPostRequest request)
+    {
+        var writer = new HostLinkBufferWriter();
+        writer.WriteByte(1);
+        writer.WriteByte((byte)TeamChatType.Location);
+        writer.WriteUInt16(0);
+        writer.WriteUInt32(GenerateMessageId());
+        writer.WriteUInt32((uint)DateTimeOffset.UtcNow.ToUnixTimeSeconds());
+        writer.WriteUInt32(0);
+        writer.WriteInt32((int)Math.Round(request.Latitude * 1e7));
+        writer.WriteInt32((int)Math.Round(request.Longitude * 1e7));
+        writer.WriteUInt16(unchecked((ushort)(request.AltitudeMeters ?? 0)));
+        writer.WriteUInt16(request.AccuracyMeters ?? 0);
+        writer.WriteUInt32((uint)DateTimeOffset.UtcNow.ToUnixTimeSeconds());
+        writer.WriteByte((byte)request.Source);
+
+        var labelBytes = Encoding.UTF8.GetBytes(request.Label ?? string.Empty);
+        var trimmed = labelBytes.Length > ushort.MaxValue
+            ? labelBytes.AsSpan(0, ushort.MaxValue).ToArray()
+            : labelBytes;
+        writer.WriteUInt16((ushort)trimmed.Length);
+        foreach (var b in trimmed)
+            writer.WriteByte(b);
+        return writer.ToArray();
+    }
+
     private static uint GenerateMessageId()
     {
         Span<byte> buffer = stackalloc byte[4];

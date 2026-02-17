@@ -120,6 +120,14 @@
   <x:String x:Key="Ui.Dashboard.Command.RallyTo">Rally</x:String>
   <x:String x:Key="Ui.Dashboard.Command.MoveTo">Move</x:String>
   <x:String x:Key="Ui.Dashboard.Command.Hold">Hold</x:String>
+  <x:String x:Key="Ui.Dashboard.TeamPosition">TEAM Position</x:String>
+  <x:String x:Key="Ui.Dashboard.TeamPosition.None">Generic location</x:String>
+  <x:String x:Key="Ui.Dashboard.TeamPosition.Unknown">Unknown ({0})</x:String>
+  <x:String x:Key="Ui.Dashboard.TeamPosition.AreaCleared">AreaCleared</x:String>
+  <x:String x:Key="Ui.Dashboard.TeamPosition.BaseCamp">BaseCamp</x:String>
+  <x:String x:Key="Ui.Dashboard.TeamPosition.GoodFind">GoodFind</x:String>
+  <x:String x:Key="Ui.Dashboard.TeamPosition.Rally">Rally</x:String>
+  <x:String x:Key="Ui.Dashboard.TeamPosition.Sos">Sos</x:String>
 
   <x:String x:Key="Ui.Config.Load">Load config</x:String>
   <x:String x:Key="Ui.Config.Save">Save config</x:String>
@@ -220,6 +228,7 @@
   <x:String x:Key="Error.NoSubjectSelected">No node selected</x:String>
   <x:String x:Key="Error.DeviceNotConnected">Device not connected</x:String>
   <x:String x:Key="Error.MissingTargetLocation">Missing target location (select event or member position)</x:String>
+  <x:String x:Key="Error.TeamPosition.NoTeam">No active team is available for TEAM Position post</x:String>
   <x:String x:Key="Error.OfflineCacheExportFolderPickerUnavailable">Folder picker is unavailable in current environment</x:String>
   <x:String x:Key="Error.OfflineCacheExportLocalPathUnavailable">Selected folder is not a local path</x:String>
 
@@ -228,6 +237,11 @@
   <x:String x:Key="Command.Received">Device received command</x:String>
   <x:String x:Key="Command.Failed">Command failed: {0}</x:String>
   <x:String x:Key="Command.Exception">Command error: {0}</x:String>
+  <x:String x:Key="TeamPosition.DispatchTitle">Dispatch TEAM Position {0}</x:String>
+  <x:String x:Key="TeamPosition.Sending">Sending...</x:String>
+  <x:String x:Key="TeamPosition.Received">Device received TEAM Position</x:String>
+  <x:String x:Key="TeamPosition.Failed">TEAM Position failed: {0}</x:String>
+  <x:String x:Key="TeamPosition.Exception">TEAM Position error: {0}</x:String>
 
   <x:String x:Key="Status.Config.Loading">Loading config...</x:String>
   <x:String x:Key="Status.Config.Loaded">Loaded {0} items</x:String>

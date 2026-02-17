@@ -185,11 +185,25 @@ public sealed class AppDataDecoder
         var ts = fixTs > 0 ? DateTimeOffset.FromUnixTimeSeconds(fixTs) : when;
         var lat = latE7 / 1e7;
         var lon = lonE7 / 1e7;
-        positions.Add(new PositionUpdate(ts, from, lat, lon, altM, accM, PositionSource.TeamChatLocation, label));
+        TeamLocationSource? marker = TryResolveTeamLocationSource(source, out var knownSource)
+            ? knownSource
+            : null;
+        positions.Add(new PositionUpdate(
+            ts,
+            from,
+            lat,
+            lon,
+            altM,
+            accM,
+            PositionSource.TeamChatLocation,
+            label,
+            source,
+            marker));
 
+        var sourceLabel = ResolveTeamLocationSourceLabel(source, marker);
         var detail = string.IsNullOrWhiteSpace(label)
-            ? $"精度 {accM}m · 来源 {source}"
-            : $"{label} · 精度 {accM}m · 来源 {source}";
+            ? $"精度 {accM}m · 来源 {sourceLabel} (raw={source})"
+            : $"{label} · 精度 {accM}m · 来源 {sourceLabel} (raw={source})";
 
         events.Add(new TacticalEvent(
             ts,
@@ -687,6 +701,51 @@ public sealed class AppDataDecoder
         if (mb < k) return $"{mb:F1}MB";
         var gb = mb / k;
         return $"{gb:F1}GB";
+    }
+
+    private static bool TryResolveTeamLocationSource(byte raw, out TeamLocationSource source)
+    {
+        switch (raw)
+        {
+            case 0:
+                source = TeamLocationSource.None;
+                return true;
+            case 1:
+                source = TeamLocationSource.AreaCleared;
+                return true;
+            case 2:
+                source = TeamLocationSource.BaseCamp;
+                return true;
+            case 3:
+                source = TeamLocationSource.GoodFind;
+                return true;
+            case 4:
+                source = TeamLocationSource.Rally;
+                return true;
+            case 5:
+                source = TeamLocationSource.Sos;
+                return true;
+            default:
+                source = default;
+                return false;
+        }
+    }
+
+    private static string ResolveTeamLocationSourceLabel(byte raw, TeamLocationSource? source)
+    {
+        if (!source.HasValue)
+            return $"Unknown({raw})";
+
+        return source.Value switch
+        {
+            TeamLocationSource.None => "None",
+            TeamLocationSource.AreaCleared => "AreaCleared",
+            TeamLocationSource.BaseCamp => "BaseCamp",
+            TeamLocationSource.GoodFind => "GoodFind",
+            TeamLocationSource.Rally => "Rally",
+            TeamLocationSource.Sos => "Sos",
+            _ => $"Unknown({raw})",
+        };
     }
 
     private static DateTimeOffset ExtractPositionTimestamp(Position pos)

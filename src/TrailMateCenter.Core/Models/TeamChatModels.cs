@@ -7,6 +7,16 @@ public enum TeamChatType : byte
     Command = 3,
 }
 
+public enum TeamLocationSource : byte
+{
+    None = 0,
+    AreaCleared = 1,
+    BaseCamp = 2,
+    GoodFind = 3,
+    Rally = 4,
+    Sos = 5,
+}
+
 public enum TeamCommandType : byte
 {
     RallyTo = 1,
@@ -22,6 +32,18 @@ public sealed record TeamCommandRequest
     public ushort RadiusMeters { get; init; } = 50;
     public byte Priority { get; init; }
     public string? Note { get; init; }
+    public uint? To { get; init; }
+    public byte Channel { get; init; }
+}
+
+public sealed record TeamLocationPostRequest
+{
+    public TeamLocationSource Source { get; init; } = TeamLocationSource.None;
+    public double Latitude { get; init; }
+    public double Longitude { get; init; }
+    public short? AltitudeMeters { get; init; }
+    public ushort? AccuracyMeters { get; init; }
+    public string? Label { get; init; }
     public uint? To { get; init; }
     public byte Channel { get; init; }
 }

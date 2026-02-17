@@ -493,6 +493,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
                                                       !IsOfflineCacheExporting;
     public bool HasTeams => Teams.Count > 0;
     public bool HasNoTeams => Teams.Count == 0;
+    public bool SupportsTeamAppPosting => _client.SupportsTxAppDataCommand;
 
     public IAsyncRelayCommand RefreshPortsCommand { get; }
     public IAsyncRelayCommand ConnectCommand { get; }
@@ -2089,15 +2090,15 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             return;
         }
 
+        SelectedChannel = EnsureChannelOption(value.ChannelId);
+
         if (value.IsBroadcast)
         {
             Target = "0";
-            SelectedChannel = Channels.FirstOrDefault(ch => ch.Id == value.ChannelId) ?? SelectedChannel;
         }
         else if (value.PeerId.HasValue)
         {
             Target = $"0x{value.PeerId.Value:X8}";
-            SelectedChannel = Channels.FirstOrDefault(ch => ch.Id == value.ChannelId) ?? SelectedChannel;
             SelectedSubject = Subjects.FirstOrDefault(s => s.Id == value.PeerId.Value) ?? SelectedSubject;
         }
 
@@ -2273,6 +2274,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             RetryCommand.NotifyCanExecuteChanged();
             QuickSendCommand.NotifyCanExecuteChanged();
             SetTargetToSelectedSubjectCommand.NotifyCanExecuteChanged();
+            OnPropertyChanged(nameof(SupportsTeamAppPosting));
         });
     }
 
@@ -2425,6 +2427,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             DeviceInfo = loc.Format("Status.Device.Info", info.Model, info.FirmwareVersion, info.ProtocolVersion);
             CapabilitiesInfo = loc.Format("Status.Device.Capabilities", info.Capabilities.MaxFrameLength, info.Capabilities.CapabilitiesMask);
             Config.ApplyCapabilities(info.Capabilities);
+            OnPropertyChanged(nameof(SupportsTeamAppPosting));
         });
     }
 
@@ -2568,6 +2571,68 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         }
     }
 
+    public async Task SendTeamLocationPostAsync(TeamLocationSource source, double latitude, double longitude)
+    {
+        if (!IsConnected)
+        {
+            SetLastErrorLocalized("Error.DeviceNotConnected");
+            return;
+        }
+
+        if (!HasTeams)
+        {
+            SetLastErrorLocalized("Error.TeamPosition.NoTeam");
+            return;
+        }
+
+        var loc = LocalizationService.Instance;
+        var markerName = ResolveTeamLocationSourceDisplayName(loc, source, (byte)source);
+        var title = loc.Format("TeamPosition.DispatchTitle", markerName);
+        var vm = new TacticalEventViewModel(new TacticalEvent(
+            DateTimeOffset.UtcNow,
+            TacticalRules.GetDefaultSeverity(TacticalEventKind.ChatLocation),
+            TacticalEventKind.ChatLocation,
+            title,
+            loc.GetString("TeamPosition.Sending"),
+            SelectedSubject?.Id,
+            SelectedSubject is null ? null : $"0x{SelectedSubject.Id:X8}",
+            latitude,
+            longitude));
+        ApplySeverityOverride(vm);
+        TacticalEvents.Insert(0, vm);
+
+        try
+        {
+            var request = new TeamLocationPostRequest
+            {
+                Source = source,
+                Latitude = latitude,
+                Longitude = longitude,
+                AltitudeMeters = null,
+                AccuracyMeters = 0,
+                Label = markerName,
+                To = null,
+                Channel = (byte)Math.Clamp(CommandChannel, 0, 255),
+            };
+
+            var result = await _client.SendTeamLocationAsync(request, CancellationToken.None);
+            if (result == HostLinkErrorCode.Ok)
+            {
+                vm.Detail = loc.GetString("TeamPosition.Received");
+            }
+            else
+            {
+                vm.Detail = loc.Format("TeamPosition.Failed", result);
+                vm.ApplySeverity(TacticalSeverity.Warning);
+            }
+        }
+        catch (Exception ex)
+        {
+            vm.Detail = loc.Format("TeamPosition.Exception", ex.Message);
+            vm.ApplySeverity(TacticalSeverity.Warning);
+        }
+    }
+
     private void OnPositionUpdated(object? sender, PositionUpdate update)
     {
         Dispatcher.UIThread.Post(() => ApplyPositionUpdate(update, MapSampleSource.Local));
@@ -2584,9 +2649,17 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     private void ApplyPositionUpdate(PositionUpdate update, MapSampleSource source)
     {
         var normalizedId = NormalizeNodeId(update.SourceId);
-        if (update.Source == PositionSource.TeamWaypointApp)
+        if (update.Source == PositionSource.TeamWaypointApp ||
+            (update.Source == PositionSource.TeamChatLocation && update.TeamLocationMarkerRaw.GetValueOrDefault() > 0))
         {
-            Map.AddWaypoint(normalizedId, update.Latitude, update.Longitude, update.Label, source);
+            var markerLabel = update.Source == PositionSource.TeamWaypointApp
+                ? update.Label
+                : BuildTeamLocationWaypointLabel(update);
+            var pulseDuration = update.Source == PositionSource.TeamChatLocation &&
+                                update.TeamLocationMarkerRaw.GetValueOrDefault() > 0
+                ? TimeSpan.FromSeconds(10)
+                : (TimeSpan?)null;
+            Map.AddWaypoint(normalizedId, update.Latitude, update.Longitude, markerLabel, source, pulseDuration);
         }
         else
         {
@@ -2614,6 +2687,44 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         {
             RebuildTeamLists();
         }
+    }
+
+    private string BuildTeamLocationWaypointLabel(PositionUpdate update)
+    {
+        var loc = LocalizationService.Instance;
+        var markerText = ResolveTeamLocationSourceDisplayName(loc, update.TeamLocationMarker, update.TeamLocationMarkerRaw);
+        var tsText = update.Timestamp.ToLocalTime().ToString("HH:mm");
+        var sourceText = $"0x{update.SourceId:X8}";
+        if (string.IsNullOrWhiteSpace(update.Label))
+            return $"{markerText} · {sourceText} · {tsText}";
+
+        var trimmed = update.Label.Trim();
+        if (string.Equals(trimmed, markerText, StringComparison.OrdinalIgnoreCase))
+            return $"{markerText} · {sourceText} · {tsText}";
+        return $"{markerText} · {trimmed} · {tsText}";
+    }
+
+    private static string ResolveTeamLocationSourceDisplayName(LocalizationService loc, TeamLocationSource? source, byte? raw)
+    {
+        if (!source.HasValue)
+        {
+            return raw.HasValue
+                ? loc.Format("Ui.Dashboard.TeamPosition.Unknown", raw.Value)
+                : loc.GetString("Ui.Dashboard.TeamPosition.None");
+        }
+
+        return source.Value switch
+        {
+            TeamLocationSource.None => loc.GetString("Ui.Dashboard.TeamPosition.None"),
+            TeamLocationSource.AreaCleared => loc.GetString("Ui.Dashboard.TeamPosition.AreaCleared"),
+            TeamLocationSource.BaseCamp => loc.GetString("Ui.Dashboard.TeamPosition.BaseCamp"),
+            TeamLocationSource.GoodFind => loc.GetString("Ui.Dashboard.TeamPosition.GoodFind"),
+            TeamLocationSource.Rally => loc.GetString("Ui.Dashboard.TeamPosition.Rally"),
+            TeamLocationSource.Sos => loc.GetString("Ui.Dashboard.TeamPosition.Sos"),
+            _ => raw.HasValue
+                ? loc.Format("Ui.Dashboard.TeamPosition.Unknown", raw.Value)
+                : loc.GetString("Ui.Dashboard.TeamPosition.None"),
+        };
     }
 
     private void OnNodeInfoUpdated(object? sender, NodeInfoUpdate info)
@@ -2741,8 +2852,27 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         return uint.TryParse(value, out result);
     }
 
+    private ChannelOptionViewModel EnsureChannelOption(byte channelId)
+    {
+        var existing = Channels.FirstOrDefault(ch => ch.Id == channelId);
+        if (existing is not null)
+            return existing;
+
+        var option = new ChannelOptionViewModel(channelId);
+        var insertIndex = 0;
+        while (insertIndex < Channels.Count && Channels[insertIndex].Id < channelId)
+        {
+            insertIndex++;
+        }
+
+        Channels.Insert(insertIndex, option);
+        return option;
+    }
+
     private ConversationItemViewModel UpsertConversation(MessageEntry entry)
     {
+        EnsureChannelOption(entry.ChannelId);
+
         var isBroadcast = IsBroadcastDestination(entry.ToId);
         var peerId = isBroadcast
             ? (uint?)null
@@ -2929,9 +3059,13 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         foreach (var update in positions)
         {
             var normalizedId = NormalizeNodeId(update.SourceId);
-            if (update.Source == PositionSource.TeamWaypointApp)
+            if (update.Source == PositionSource.TeamWaypointApp ||
+                (update.Source == PositionSource.TeamChatLocation && update.TeamLocationMarkerRaw.GetValueOrDefault() > 0))
             {
-                Map.AddWaypoint(normalizedId, update.Latitude, update.Longitude, update.Label);
+                var markerLabel = update.Source == PositionSource.TeamWaypointApp
+                    ? update.Label
+                    : BuildTeamLocationWaypointLabel(update);
+                Map.AddWaypoint(normalizedId, update.Latitude, update.Longitude, markerLabel);
             }
             else
             {

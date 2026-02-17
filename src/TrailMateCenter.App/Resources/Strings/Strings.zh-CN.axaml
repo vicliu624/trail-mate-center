@@ -120,6 +120,14 @@
   <x:String x:Key="Ui.Dashboard.Command.RallyTo">集结</x:String>
   <x:String x:Key="Ui.Dashboard.Command.MoveTo">前往</x:String>
   <x:String x:Key="Ui.Dashboard.Command.Hold">待命</x:String>
+  <x:String x:Key="Ui.Dashboard.TeamPosition">TEAM Position</x:String>
+  <x:String x:Key="Ui.Dashboard.TeamPosition.None">普通位置</x:String>
+  <x:String x:Key="Ui.Dashboard.TeamPosition.Unknown">未知来源({0})</x:String>
+  <x:String x:Key="Ui.Dashboard.TeamPosition.AreaCleared">AreaCleared</x:String>
+  <x:String x:Key="Ui.Dashboard.TeamPosition.BaseCamp">BaseCamp</x:String>
+  <x:String x:Key="Ui.Dashboard.TeamPosition.GoodFind">GoodFind</x:String>
+  <x:String x:Key="Ui.Dashboard.TeamPosition.Rally">Rally</x:String>
+  <x:String x:Key="Ui.Dashboard.TeamPosition.Sos">Sos</x:String>
 
   <x:String x:Key="Ui.Config.Load">读取配置</x:String>
   <x:String x:Key="Ui.Config.Save">写入配置</x:String>
@@ -220,6 +228,7 @@
   <x:String x:Key="Error.NoSubjectSelected">未选择节点</x:String>
   <x:String x:Key="Error.DeviceNotConnected">未连接设备</x:String>
   <x:String x:Key="Error.MissingTargetLocation">缺少目标坐标（请选择事件或队员位置）</x:String>
+  <x:String x:Key="Error.TeamPosition.NoTeam">当前没有可用队伍，无法发送 TEAM Position</x:String>
   <x:String x:Key="Error.OfflineCacheExportFolderPickerUnavailable">当前环境不支持选择文件夹</x:String>
   <x:String x:Key="Error.OfflineCacheExportLocalPathUnavailable">目标目录不是本地路径，无法导出</x:String>
 
@@ -228,6 +237,11 @@
   <x:String x:Key="Command.Received">设备已接收指令</x:String>
   <x:String x:Key="Command.Failed">指令失败: {0}</x:String>
   <x:String x:Key="Command.Exception">指令异常: {0}</x:String>
+  <x:String x:Key="TeamPosition.DispatchTitle">发送 TEAM Position {0}</x:String>
+  <x:String x:Key="TeamPosition.Sending">发送中...</x:String>
+  <x:String x:Key="TeamPosition.Received">设备已接收 TEAM Position</x:String>
+  <x:String x:Key="TeamPosition.Failed">TEAM Position 发送失败: {0}</x:String>
+  <x:String x:Key="TeamPosition.Exception">TEAM Position 发送异常: {0}</x:String>
 
   <x:String x:Key="Status.Config.Loading">读取配置中...</x:String>
   <x:String x:Key="Status.Config.Loaded">已加载 {0} 项</x:String>

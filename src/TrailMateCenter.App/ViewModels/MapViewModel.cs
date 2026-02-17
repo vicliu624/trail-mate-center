@@ -56,6 +56,9 @@ public sealed class MapViewModel : INotifyPropertyChanged
 {
     private const string NodeIdField = "tmc_node_id";
     private const string OfflineRouteIdField = "tmc_offline_route_id";
+    private const double WaypointPulsePeriodMilliseconds = 680;
+    private const double WaypointPulseMinScale = 0.85;
+    private const double WaypointPulseMaxScale = 1.75;
     private readonly object _gate = new();
     private readonly List<MapSample> _samples = new();
     private readonly List<WaypointSample> _waypoints = new();
@@ -95,6 +98,7 @@ public sealed class MapViewModel : INotifyPropertyChanged
     private string? _selectedOfflineRouteId;
     private int _bulkUpdateDepth;
     private bool _layersDirty;
+    private readonly DispatcherTimer _waypointPulseTimer;
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -149,6 +153,11 @@ public sealed class MapViewModel : INotifyPropertyChanged
         Map.Layers.Add(_waypointLayer);
 
         Map.Navigator.ViewportChanged += (_, _) => OnViewportChanged();
+        _waypointPulseTimer = new DispatcherTimer
+        {
+            Interval = TimeSpan.FromMilliseconds(120),
+        };
+        _waypointPulseTimer.Tick += (_, _) => OnWaypointPulseTimerTick();
         UpdateZoomInfo();
     }
 
@@ -204,20 +213,31 @@ public sealed class MapViewModel : INotifyPropertyChanged
         }
     }
 
-    public void AddWaypoint(uint? fromId, double lat, double lon, string? label, MapSampleSource source = MapSampleSource.Local)
+    public void AddWaypoint(
+        uint? fromId,
+        double lat,
+        double lon,
+        string? label,
+        MapSampleSource source = MapSampleSource.Local,
+        TimeSpan? pulseDuration = null)
     {
         var id = fromId ?? 0;
         var (x, y) = SphericalMercator.FromLonLat(lon, lat);
         var point = new MPoint(x, y);
+        var now = DateTimeOffset.UtcNow;
+        DateTimeOffset? pulseUntilUtc = pulseDuration.HasValue && pulseDuration.Value > TimeSpan.Zero
+            ? now + pulseDuration.Value
+            : null;
 
         lock (_gate)
         {
-            _waypoints.Add(new WaypointSample(id, point, label, source));
+            _waypoints.Add(new WaypointSample(id, point, label, source, now, pulseUntilUtc));
             if (_waypoints.Count > 500)
                 _waypoints.RemoveAt(0);
         }
 
         RequestLayerRefresh();
+        EnsureWaypointPulseTimerState();
 
         if (FollowLatest && (source != MapSampleSource.Mqtt || _showMqtt))
         {
@@ -1035,6 +1055,41 @@ public sealed class MapViewModel : INotifyPropertyChanged
         DebounceContourQueue();
     }
 
+    private void EnsureWaypointPulseTimerState()
+    {
+        if (!_waypointPulseTimer.IsEnabled && HasActiveWaypointPulse())
+        {
+            _waypointPulseTimer.Start();
+        }
+    }
+
+    private bool HasActiveWaypointPulse()
+    {
+        var now = DateTimeOffset.UtcNow;
+        lock (_gate)
+        {
+            foreach (var waypoint in _waypoints)
+            {
+                if (waypoint.PulseUntilUtc.HasValue && waypoint.PulseUntilUtc.Value > now)
+                    return true;
+            }
+        }
+
+        return false;
+    }
+
+    private void OnWaypointPulseTimerTick()
+    {
+        if (!HasActiveWaypointPulse())
+        {
+            _waypointPulseTimer.Stop();
+            return;
+        }
+
+        RefreshLayers();
+        Map.Refresh(ChangeType.Discrete);
+    }
+
     private void DebounceContourQueue()
     {
         if (!_contourSettings.Enabled)
@@ -1648,18 +1703,29 @@ public sealed class MapViewModel : INotifyPropertyChanged
 
     private IEnumerable<IFeature> BuildWaypointFeatures(List<WaypointSample> samples)
     {
+        var now = DateTimeOffset.UtcNow;
         var features = new List<IFeature>();
         foreach (var sample in samples)
         {
             var feature = new PointFeature(sample.Point);
             if (sample.DeviceId != 0)
                 feature[NodeIdField] = sample.DeviceId;
+
+            var symbolScale = 1.0;
+            if (sample.PulseUntilUtc.HasValue && sample.PulseUntilUtc.Value > now)
+            {
+                var elapsedMs = (now - sample.CreatedAtUtc).TotalMilliseconds;
+                var cycle = elapsedMs / WaypointPulsePeriodMilliseconds;
+                var wave = (Math.Sin(cycle * Math.PI * 2) + 1) * 0.5;
+                symbolScale = WaypointPulseMinScale + ((WaypointPulseMaxScale - WaypointPulseMinScale) * wave);
+            }
+
             feature.Styles.Add(new SymbolStyle
             {
                 SymbolType = SymbolType.Triangle,
                 Fill = new Brush(Color.FromArgb(220, 239, 68, 68)),
                 Outline = new Pen(Color.FromArgb(255, 185, 28, 28), 1),
-                SymbolScale = 1.0,
+                SymbolScale = symbolScale,
             });
             if (!string.IsNullOrWhiteSpace(sample.Label))
             {
@@ -2101,7 +2167,13 @@ public sealed class MapViewModel : INotifyPropertyChanged
     }
 
     private sealed record MapSample(uint DeviceId, MPoint Point, MapSampleSource Source);
-    private sealed record WaypointSample(uint DeviceId, MPoint Point, string? Label, MapSampleSource Source);
+    private sealed record WaypointSample(
+        uint DeviceId,
+        MPoint Point,
+        string? Label,
+        MapSampleSource Source,
+        DateTimeOffset CreatedAtUtc,
+        DateTimeOffset? PulseUntilUtc);
     private sealed record OfflineRoute(string Id, string Name, IReadOnlyList<MPoint> Points)
     {
         public (double West, double South, double East, double North) Bounds

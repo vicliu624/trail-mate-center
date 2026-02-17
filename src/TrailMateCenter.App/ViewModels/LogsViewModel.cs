@@ -19,6 +19,7 @@ namespace TrailMateCenter.ViewModels;
 public sealed partial class LogsViewModel : ObservableObject, ILocalizationAware
 {
     private readonly LogStore _logStore;
+    private readonly object _allGate = new();
     private readonly List<HostLinkLogEntry> _all = new();
     private readonly SemaphoreSlim _historyLoadGate = new(1, 1);
     private bool _historyFullyLoaded;
@@ -28,8 +29,11 @@ public sealed partial class LogsViewModel : ObservableObject, ILocalizationAware
     public LogsViewModel(LogStore logStore)
     {
         _logStore = logStore;
-        foreach (var entry in _logStore.Snapshot())
-            _all.Add(entry);
+        lock (_allGate)
+        {
+            foreach (var entry in _logStore.Snapshot())
+                _all.Add(entry);
+        }
 
         _logStore.EntryAdded += OnLogAdded;
         SaveLogsCommand = new AsyncRelayCommand(SaveLogsAsync);
@@ -59,7 +63,11 @@ public sealed partial class LogsViewModel : ObservableObject, ILocalizationAware
 
     private void OnLogAdded(object? sender, HostLinkLogEntry entry)
     {
-        _all.Add(entry);
+        lock (_allGate)
+        {
+            _all.Add(entry);
+        }
+
         Dispatcher.UIThread.Post(Rebuild);
     }
 
@@ -69,8 +77,14 @@ public sealed partial class LogsViewModel : ObservableObject, ILocalizationAware
 
     private void Rebuild()
     {
+        List<HostLinkLogEntry> snapshot;
+        lock (_allGate)
+        {
+            snapshot = _all.ToList();
+        }
+
         Entries.Clear();
-        foreach (var entry in _all.OrderByDescending(e => e.Timestamp))
+        foreach (var entry in snapshot.OrderByDescending(e => e.Timestamp))
         {
             if (!MatchesFilter(entry.Level))
                 continue;
@@ -91,16 +105,18 @@ public sealed partial class LogsViewModel : ObservableObject, ILocalizationAware
 
     public async Task EnsureOlderHistoryLoadedAsync(SqliteStore sqliteStore, CancellationToken cancellationToken)
     {
-        if (_historyFullyLoaded || _all.Count == 0)
-            return;
-
         await _historyLoadGate.WaitAsync(cancellationToken);
         try
         {
-            if (_historyFullyLoaded || _all.Count == 0)
-                return;
+            DateTimeOffset oldest;
+            lock (_allGate)
+            {
+                if (_historyFullyLoaded || _all.Count == 0)
+                    return;
 
-            var oldest = _all.Min(entry => entry.Timestamp);
+                oldest = _all.Min(entry => entry.Timestamp);
+            }
+
             var older = await sqliteStore.LoadLogsAsync(cancellationToken, beforeExclusive: oldest);
             if (older.Count == 0)
             {
@@ -110,7 +126,11 @@ public sealed partial class LogsViewModel : ObservableObject, ILocalizationAware
 
             await Dispatcher.UIThread.InvokeAsync(() =>
             {
-                _all.AddRange(older);
+                lock (_allGate)
+                {
+                    _all.AddRange(older);
+                }
+
                 Rebuild();
             });
         }
@@ -122,8 +142,14 @@ public sealed partial class LogsViewModel : ObservableObject, ILocalizationAware
 
     private string BuildLogText()
     {
+        List<HostLinkLogEntry> snapshot;
+        lock (_allGate)
+        {
+            snapshot = _all.ToList();
+        }
+
         var sb = new StringBuilder();
-        foreach (var entry in _all.Where(e => MatchesFilter(e.Level)))
+        foreach (var entry in snapshot.Where(e => MatchesFilter(e.Level)))
         {
             sb.AppendLine($"{entry.Timestamp:O} [{entry.Level}] {entry.Message}");
         }
