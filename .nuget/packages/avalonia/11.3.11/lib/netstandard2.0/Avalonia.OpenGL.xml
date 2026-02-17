@@ -1,0 +1,97 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Avalonia.OpenGL</name>
+    </assembly>
+    <members>
+        <member name="T:Avalonia.OpenGL.Controls.OpenGlControlBase">
+            <summary>
+            Base class for controls that render using OpenGL.
+            Provides infrastructure for OpenGL context management, surface creation, and rendering lifecycle.
+            </summary>
+            <remarks>
+            <para>The control automatically manages OpenGL context creation, surface setup, and cleanup.</para>
+            <para>
+            <b>Important:</b> Any interaction with <see cref="T:Avalonia.OpenGL.GlInterface"/> should only happen within the 
+            <see cref="M:Avalonia.OpenGL.Controls.OpenGlControlBase.OnOpenGlInit(Avalonia.OpenGL.GlInterface)"/>, <see cref="M:Avalonia.OpenGL.Controls.OpenGlControlBase.OnOpenGlDeinit(Avalonia.OpenGL.GlInterface)"/>, or <see cref="M:Avalonia.OpenGL.Controls.OpenGlControlBase.OnOpenGlRender(Avalonia.OpenGL.GlInterface,System.Int32)"/> method overrides.
+            </para>
+            <para>
+            Avalonia ensures proper OpenGL context synchronization and makes the context current only during these method calls.
+            Accessing OpenGL functions outside of these methods may result in undefined behavior, crashes, or rendering corruption.
+            </para>
+            </remarks>
+        </member>
+        <member name="P:Avalonia.OpenGL.Controls.OpenGlControlBase.GlVersion">
+            <summary>
+            Gets the OpenGL version information for the current context.
+            </summary>
+        </member>
+        <member name="M:Avalonia.OpenGL.Controls.OpenGlControlBase.#ctor">
+            <summary>
+            Initializes a new instance of the <see cref="T:Avalonia.OpenGL.Controls.OpenGlControlBase"/> class.
+            </summary>
+        </member>
+        <member name="M:Avalonia.OpenGL.Controls.OpenGlControlBase.OnDetachedFromVisualTree(Avalonia.VisualTreeAttachmentEventArgs)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Avalonia.OpenGL.Controls.OpenGlControlBase.OnAttachedToVisualTree(Avalonia.VisualTreeAttachmentEventArgs)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Avalonia.OpenGL.Controls.OpenGlControlBase.OnPropertyChanged(Avalonia.AvaloniaPropertyChangedEventArgs)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Avalonia.OpenGL.Controls.OpenGlControlBase.InvalidateVisual">
+            <inheritdoc cref="M:Avalonia.Visual.InvalidateVisual"/>
+        </member>
+        <member name="M:Avalonia.OpenGL.Controls.OpenGlControlBase.RequestNextFrameRendering">
+            <summary>
+            Requests that the control be rendered on the next frame.
+            </summary>
+        </member>
+        <member name="M:Avalonia.OpenGL.Controls.OpenGlControlBase.OnOpenGlInit(Avalonia.OpenGL.GlInterface)">
+            <summary>
+            Called when the OpenGL context is first created.
+            </summary>
+            <param name="gl">The interface for making OpenGL calls. Use <see cref="M:Avalonia.OpenGL.GlInterface.GetProcAddress(System.String)"/> to access additional APIs not covered by <see cref="T:Avalonia.OpenGL.GlInterface"/>.</param>
+        </member>
+        <member name="M:Avalonia.OpenGL.Controls.OpenGlControlBase.OnOpenGlDeinit(Avalonia.OpenGL.GlInterface)">
+            <summary>
+            Called when the OpenGL context is being destroyed.
+            </summary>
+            <param name="gl">The OpenGL interface for making OpenGL calls. Use <see cref="M:Avalonia.OpenGL.GlInterface.GetProcAddress(System.String)"/> to access additional APIs not covered by <see cref="T:Avalonia.OpenGL.GlInterface"/>.</param>
+        </member>
+        <member name="M:Avalonia.OpenGL.Controls.OpenGlControlBase.OnOpenGlLost">
+            <summary>
+            Called when the OpenGL context is lost and cannot be recovered.
+            </summary>
+        </member>
+        <member name="M:Avalonia.OpenGL.Controls.OpenGlControlBase.OnOpenGlRender(Avalonia.OpenGL.GlInterface,System.Int32)">
+            <summary>
+            Called to render the OpenGL content for the current frame.
+            </summary>
+            <param name="gl">The OpenGL interface for making OpenGL calls. Use <see cref="M:Avalonia.OpenGL.GlInterface.GetProcAddress(System.String)"/> to access additional APIs not covered by <see cref="T:Avalonia.OpenGL.GlInterface"/>.</param>
+            <param name="fb">The framebuffer ID to render into.</param>
+        </member>
+        <member name="T:Avalonia.OpenGL.GlInterface">
+            <summary>
+            GlInterface only includes essential members and members necessary for Avalonia itself.
+            It is not a general-purpose interface for OpenGL API.
+            </summary>
+            <remarks>
+            Use <see cref="M:Avalonia.OpenGL.GlInterface.GetProcAddress(System.String)"/> to get GL procedures you need, or integrate it with third-party GL wrappers.
+            </remarks>
+        </member>
+        <member name="M:Avalonia.OpenGL.GlInterface.GetProcAddress(System.String)">
+            <summary>
+            Returns an OpenGL function by name.
+            </summary>
+            <param name="proc">Function name.</param>
+            <returns>Handle of function, which can be casted to unmanaged function pointer.</returns>
+        </member>
+        <member name="P:Avalonia.OpenGL.IGlExternalImageTexture.TextureType">
+            <summary>
+            GL_TEXTURE_2D or GL_TEXTURE_RECTANGLE
+            </summary>
+        </member>
+    </members>
+</doc>

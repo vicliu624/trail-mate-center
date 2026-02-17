@@ -1,0 +1,234 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="ArgumentEx_NotOsVersion" xml:space="preserve">
+    <value>Das Object ist nicht vom Typ OSVersion</value>
+  </data>
+  <data name="ArgumentEx_XdgUnknownSpecialFolder" xml:space="preserve">
+    <value>Unbekannter Ordnertyp</value>
+  </data>
+  <data name="InvalidOperationEx_CheckLock" xml:space="preserve">
+    <value>Kann nicht '{0}' auf Sealed Instanz setzen</value>
+  </data>
+  <data name="InvalidOperationEx_InternalGetOsVersion" xml:space="preserve">
+    <value>Intern Fehler: Zuerst müssen Informationen zur OS Version abgerufen werden</value>
+  </data>
+  <data name="InvalidOperationEx_XdgUnknownHome" xml:space="preserve">
+    <value>Pfad des Home-Verzeichnisses kann nicht ermittelt werden</value>
+  </data>
+  <data name="Net45" xml:space="preserve">
+    <value>.NET Framework 4.5</value>
+  </data>
+  <data name="Net45_Unknown" xml:space="preserve">
+    <value>Unbekannte .NET Version vor .NET 4.5 ({0})</value>
+  </data>
+  <data name="Net451_Vista" xml:space="preserve">
+    <value>.NET Framework 4.5.1 auf Windows 8, Windows 7 SP1, oder Windows Vista SP2 installiert</value>
+  </data>
+  <data name="Net451_Win81" xml:space="preserve">
+    <value>.NET Framework 4.5.1 auf Windows 8.1 or Windows Server 2012 R2 installiert</value>
+  </data>
+  <data name="Net452" xml:space="preserve">
+    <value>.NET Framework 4.5.2</value>
+  </data>
+  <data name="Net46" xml:space="preserve">
+    <value>.NET Framework 4.6</value>
+  </data>
+  <data name="Net46_Win10" xml:space="preserve">
+    <value>.NET Framework 4.6 auf Windows 10 (1507)</value>
+  </data>
+  <data name="Net461" xml:space="preserve">
+    <value>.NET Framework 4.6.1</value>
+  </data>
+  <data name="Net461_Win10" xml:space="preserve">
+    <value>.NET Framework 4.6.1 auf Windows 10, November Update (1511)</value>
+  </data>
+  <data name="Net462" xml:space="preserve">
+    <value>.NET Framework 4.6.2</value>
+  </data>
+  <data name="Net462_Win10" xml:space="preserve">
+    <value>.NET Framework 4.6.2 auf Windows 10, Anniversary Update (1607) oder Windows Server 2016</value>
+  </data>
+  <data name="Net47" xml:space="preserve">
+    <value>.NET Framework 4.7</value>
+  </data>
+  <data name="Net47_Win10" xml:space="preserve">
+    <value>.NET Framework 4.7 auf Windows 10, Creators Update (1703)</value>
+  </data>
+  <data name="Net471" xml:space="preserve">
+    <value>.NET Framework 4.7.1</value>
+  </data>
+  <data name="Net471_Win10" xml:space="preserve">
+    <value>.NET Framework 4.7.1 auf Windows 10, Fall Creators Update (1709)</value>
+  </data>
+  <data name="Net472" xml:space="preserve">
+    <value>.NET Framework 4.7.2</value>
+  </data>
+  <data name="Net472_Win10" xml:space="preserve">
+    <value>.NET Framework 4.7.2 auf Windows 10, Spring Creators Update (1803)</value>
+  </data>
+  <data name="Net48" xml:space="preserve">
+    <value>.NET Framework 4.8</value>
+  </data>
+  <data name="Net48_Win10_1903" xml:space="preserve">
+    <value>.NET Framework 4.8 auf Windows 10, May 2019 Update (1903)</value>
+  </data>
+  <data name="Net48_Win10_1909" xml:space="preserve">
+    <value>.NET Framework 4.8 auf Windows 10, October 2019 Update (1909)</value>
+  </data>
+  <data name="Net48_Win10_20H2" xml:space="preserve">
+    <value>.NET Framework 4.8 auf Windows 10, October 2020 Update (20H2, 21H1)</value>
+  </data>
+  <data name="Net48_Win11" xml:space="preserve">
+    <value>.NET Framework 4.8 auf Windows 11 / Server 2022</value>
+  </data>
+  <data name="Net481" xml:space="preserve">
+    <value>.NET Framework 4.8.1</value>
+  </data>
+  <data name="NetFx" xml:space="preserve">
+    <value>.NET {0} or später, Release {1}</value>
+  </data>
+  <data name="NetFx45Details" xml:space="preserve">
+    <value>.NET Framework Net Version {0}, Release {1}</value>
+  </data>
+  <data name="NetFxDetails" xml:space="preserve">
+    <value>.NET Framework {0} {1}</value>
+  </data>
+  <data name="NetFxLegacy" xml:space="preserve">
+    <value>.NET Framework</value>
+  </data>
+  <data name="NetFxLegacyProfile" xml:space="preserve">
+    <value>Profil</value>
+  </data>
+  <data name="NetFxLegacySp" xml:space="preserve">
+    <value>SP</value>
+  </data>
+  <data name="NetFxRuntime" xml:space="preserve">
+    <value>.NET Umgebungsruntime</value>
+  </data>
+  <data name="PlatformNotSupportedEx" xml:space="preserve">
+    <value>WinVersionQuery ist nur auf Windows unterstutzt</value>
+  </data>
+  <data name="Win32Ex_GetVersionEx" xml:space="preserve">
+    <value>GetVersionEx() fehler, mit Code = 0x{0:8x}</value>
+  </data>
+  <data name="Net481_Win11_22H2" xml:space="preserve">
+    <value>.NET Framework auf Windows 11 22H2</value>
+  </data>
+</root>

@@ -1,0 +1,213 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Avalonia.X11</name>
+    </assembly>
+    <members>
+        <member name="T:Avalonia.X11.Clipboard.ClipboardDataReader">
+            <summary>
+            An object used to read values, converted to the correct format, from the X11 clipboard.
+            </summary>
+        </member>
+        <member name="M:Avalonia.X11.Clipboard.ClipboardDataReader.#ctor(Avalonia.X11.X11Info,Avalonia.X11.AvaloniaX11Platform,System.IntPtr[],System.IntPtr,Avalonia.Input.DataFormat[])">
+            <summary>
+            An object used to read values, converted to the correct format, from the X11 clipboard.
+            </summary>
+        </member>
+        <member name="T:Avalonia.X11.Clipboard.ClipboardDataTransfer">
+            <summary>
+            Implementation of <see cref="T:Avalonia.Input.IAsyncDataTransfer"/> for the X11 clipboard.
+            </summary>
+            <param name="reader">The object used to read values.</param>
+            <param name="formats">The formats.</param>
+            <param name="items">The items.</param>
+            <remarks>
+            Formats and items are pre-populated because we don't want to do some sync-over-async calls.
+            Note that this does not pre-populate values, which are still retrieved asynchronously on demand.
+            </remarks>
+        </member>
+        <member name="M:Avalonia.X11.Clipboard.ClipboardDataTransfer.#ctor(Avalonia.X11.Clipboard.ClipboardDataReader,Avalonia.Input.DataFormat[],Avalonia.Input.IAsyncDataTransferItem[])">
+            <summary>
+            Implementation of <see cref="T:Avalonia.Input.IAsyncDataTransfer"/> for the X11 clipboard.
+            </summary>
+            <param name="reader">The object used to read values.</param>
+            <param name="formats">The formats.</param>
+            <param name="items">The items.</param>
+            <remarks>
+            Formats and items are pre-populated because we don't want to do some sync-over-async calls.
+            Note that this does not pre-populate values, which are still retrieved asynchronously on demand.
+            </remarks>
+        </member>
+        <member name="T:Avalonia.X11.Clipboard.ClipboardDataTransferItem">
+            <summary>
+            Implementation of <see cref="T:Avalonia.Input.IAsyncDataTransferItem"/> for the X11 clipboard.
+            </summary>
+            <param name="reader">The object used to read values.</param>
+            <param name="formats">The formats.</param>
+        </member>
+        <member name="M:Avalonia.X11.Clipboard.ClipboardDataTransferItem.#ctor(Avalonia.X11.Clipboard.ClipboardDataReader,Avalonia.Input.DataFormat[])">
+            <summary>
+            Implementation of <see cref="T:Avalonia.Input.IAsyncDataTransferItem"/> for the X11 clipboard.
+            </summary>
+            <param name="reader">The object used to read values.</param>
+            <param name="formats">The formats.</param>
+        </member>
+        <member name="T:Avalonia.X11.X11FocusProxy">
+            <summary>
+                An invisible X window that owns the input focus and forwards events to the owner window. 
+            </summary>
+            <remarks>
+                <para>
+                    This is a known Linux technique for an auxiliary invisible window to hold the input focus 
+                    for the main window. It is required by XEmbed protocol, but it also works for regular cases 
+                    that don't imply embedded windows.
+                </para>
+            </remarks>
+            
+            <see href="https://specifications.freedesktop.org/xembed-spec/xembed-spec-latest.html" />
+            <see href="https://gitlab.gnome.org/GNOME/gtk/-/blob/3.22.30/gdk/x11/gdkwindow-x11.c#L823" />
+        </member>
+        <member name="M:Avalonia.X11.X11FocusProxy.#ctor(Avalonia.X11.AvaloniaX11Platform,System.IntPtr,Avalonia.X11.X11EventDispatcher.EventHandler)">
+            <summary>
+                Initializes instance and creates the underlying X window.
+            </summary>
+            
+            <param name="platform">The X11 platform.</param>
+            <param name="parent">The parent window to proxy the focus for.</param>
+            <param name="eventHandler">An event handler that will handle X events that come to the proxy.</param>
+        </member>
+        <member name="M:Avalonia.X11.X11Window.AppendPid(System.IntPtr)">
+            <summary>
+            Append `_NET_WM_PID` atom to X11 window
+            </summary>
+            <param name="windowXId"></param>
+        </member>
+        <member name="M:Avalonia.X11.X11Window.GetWindowsZOrder(System.Span{Avalonia.Controls.Window},System.Span{System.Int64})">
+            <inheritdoc/>
+        </member>
+        <member name="T:Avalonia.X11RenderingMode">
+            <summary>
+            Represents the rendering mode for platform graphics.
+            </summary>
+        </member>
+        <member name="F:Avalonia.X11RenderingMode.Software">
+            <summary>
+            Avalonia is rendered into a framebuffer.
+            </summary>
+        </member>
+        <member name="F:Avalonia.X11RenderingMode.Glx">
+            <summary>
+            Enables Glx rendering.
+            </summary>
+        </member>
+        <member name="F:Avalonia.X11RenderingMode.Egl">
+            <summary>
+            Enables native Linux EGL rendering.
+            </summary>
+        </member>
+        <member name="F:Avalonia.X11RenderingMode.Vulkan">
+            <summary>
+            Enables Vulkan rendering
+            </summary>
+        </member>
+        <member name="T:Avalonia.X11PlatformOptions">
+            <summary>
+            Platform-specific options which apply to Linux.
+            </summary>
+        </member>
+        <member name="P:Avalonia.X11PlatformOptions.RenderingMode">
+            <summary>
+            Gets or sets Avalonia rendering modes with fallbacks.
+            The first element in the array has the highest priority.
+            The default value is: <see cref="F:Avalonia.X11RenderingMode.Glx"/>, <see cref="F:Avalonia.X11RenderingMode.Software"/>.
+            </summary>
+            <remarks>
+            If application should work on as wide range of devices as possible, at least add <see cref="F:Avalonia.X11RenderingMode.Software"/> as a fallback value.
+            </remarks>
+            <exception cref="T:System.InvalidOperationException">Thrown if no values were matched.</exception>
+        </member>
+        <member name="P:Avalonia.X11PlatformOptions.OverlayPopups">
+            <summary>
+            Embeds popups to the window when set to true. The default value is false.
+            </summary>
+        </member>
+        <member name="P:Avalonia.X11PlatformOptions.UseDBusMenu">
+            <summary>
+            Enables global menu support on Linux desktop environments where it's supported (e. g. XFCE and MATE with plugin, KDE, etc).
+            The default value is true.
+            </summary>
+        </member>
+        <member name="P:Avalonia.X11PlatformOptions.UseDBusFilePicker">
+            <summary>
+            Enables DBus file picker instead of GTK.
+            The default value is true.
+            </summary>
+        </member>
+        <member name="P:Avalonia.X11PlatformOptions.EnableIme">
+            <summary>
+            Determines whether to use IME.
+            IME would be enabled by default if the current user input language is one of the following: Mandarin, Japanese, Vietnamese or Korean.
+            </summary>
+            <remarks>
+            Input method editor is a component that enables users to generate characters not natively available 
+            on their input devices by using sequences of characters or mouse operations that are natively available on their input devices.
+            </remarks>
+        </member>
+        <member name="P:Avalonia.X11PlatformOptions.EnableInputFocusProxy">
+            <summary>
+            Determines whether to use Input Focus Proxy.
+            The default value is false.
+            </summary> 
+        </member>
+        <member name="P:Avalonia.X11PlatformOptions.EnableSessionManagement">
+            <summary>
+            Determines whether to enable support for the
+            X Session Management Protocol.
+            </summary>
+            <remarks>
+            X Session Management Protocol is a standard implemented on most
+            Linux systems that uses Xorg. This enables apps to control how they
+            can control and/or cancel the pending shutdown requested by the user.
+            </remarks>
+        </member>
+        <member name="P:Avalonia.X11PlatformOptions.ShouldRenderOnUIThread">
+            <summary>
+            Render directly on the UI thread instead of using a dedicated render thread.
+            This can be usable if your device don't have multiple cores to begin with.
+            This setting is false by default.
+            </summary>
+        </member>
+        <member name="P:Avalonia.X11PlatformOptions.EnableMultiTouch">
+            <summary>
+            Enables multitouch support. The default value is true.
+            </summary>
+            <remarks>
+            Multitouch allows a surface (a touchpad or touchscreen) to recognize the presence of more than one point of contact with the surface at the same time.
+            </remarks>
+        </member>
+        <member name="P:Avalonia.X11PlatformOptions.UseRetainedFramebuffer">
+            <summary>
+            Retain window framebuffer contents if using CPU rendering mode.
+            This will keep an offscreen bitmap for each window with contents of the previous frame
+            While improving performance by saving a blit, it will increase memory consumption
+            if you have many windows 
+            </summary>
+        </member>
+        <member name="P:Avalonia.X11PlatformOptions.UseGLibMainLoop">
+            <summary>
+            If this option is set to true, GMainLoop and GSource based dispatcher implementation will be used instead
+            of epoll-based one.
+            Use this if you need to use GLib-based libraries on the main thread
+            </summary>
+        </member>
+        <member name="P:Avalonia.X11PlatformOptions.ExterinalGLibMainLoopExceptionLogger">
+            <summary>
+            If Avalonia is in control of a run loop, we propagate exceptions by stopping the run loop frame
+            and rethrowing an exception. However, if there is no Avalonia-controlled run loop frame,
+            there is no way to report such exceptions, since allowing those to escape native->managed call boundary
+            will likely brick GLib machinery since it's not aware of managed Exceptions
+            This property allows to inspect such exceptions before they will be ignored
+            </summary>
+        </member>
+    </members>
+</doc>

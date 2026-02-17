@@ -1,0 +1,176 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:TrailMateCenter.ViewModels"
+        x:Class="TrailMateCenter.Views.OfflineCacheRegionsDialog"
+        x:DataType="vm:MainWindowViewModel"
+        Width="560"
+        MinWidth="520"
+        MinHeight="430"
+        SizeToContent="Height"
+        WindowStartupLocation="CenterOwner"
+        Title="{DynamicResource Ui.Dashboard.OfflineCacheRegionsDialog.Title}">
+  <Window.Styles>
+    <Style Selector="TextBlock.dialogHint">
+      <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
+      <Setter Property="Opacity" Value="0.82"/>
+      <Setter Property="FontSize" Value="11"/>
+    </Style>
+  </Window.Styles>
+
+  <Border Padding="14"
+          Background="{DynamicResource PanelBg}"
+          BorderBrush="{DynamicResource PanelBorderStrong}"
+          BorderThickness="1"
+          CornerRadius="8">
+    <Grid RowDefinitions="Auto,Auto,*,Auto">
+      <TextBlock Text="{DynamicResource Ui.Dashboard.OfflineCacheRegionsDialog.Title}"
+                 FontSize="16"
+                 FontWeight="Bold"
+                 Foreground="{DynamicResource TextPrimary}"/>
+      <TextBlock Grid.Row="1"
+                 Margin="0,8,0,10"
+                 Text="{DynamicResource Ui.Dashboard.OfflineCacheRegionsDialog.Hint}"
+                 TextWrapping="Wrap"
+                 Classes="dialogHint"/>
+
+      <Border Grid.Row="2"
+              BorderBrush="{DynamicResource PanelBorderStrong}"
+              BorderThickness="1"
+              CornerRadius="6"
+              Padding="8"
+              Background="{DynamicResource SurfaceDark}">
+        <Grid RowDefinitions="*,Auto">
+          <ListBox ItemsSource="{Binding OfflineCacheRegions}"
+                   SelectedItem="{Binding SelectedOfflineCacheRegion}"
+                   Background="{DynamicResource PanelBg2}"
+                   BorderBrush="{DynamicResource PanelBorder}"
+                   BorderThickness="1"
+                   DoubleTapped="OnRegionListDoubleTapped">
+            <ListBox.ItemTemplate>
+              <DataTemplate x:DataType="vm:MapCacheRegionViewModel">
+                <Border Margin="0,2"
+                        Padding="6"
+                        Background="{DynamicResource PanelBg}"
+                        BorderBrush="{DynamicResource PanelBorder}"
+                        BorderThickness="1"
+                        CornerRadius="4">
+                  <StackPanel Spacing="4">
+                    <TextBlock Text="{Binding Name}"
+                               FontWeight="SemiBold"
+                               Foreground="{DynamicResource TextPrimary}"/>
+                    <TextBlock Text="{Binding BoundsText}"
+                               Foreground="{DynamicResource TextPrimary}"
+                               Opacity="0.8"
+                               FontSize="11"/>
+                    <TextBlock Text="{Binding BuildTargetsText}"
+                               Foreground="{DynamicResource TextDim}"
+                               FontSize="11"/>
+                    <Grid ColumnDefinitions="Auto,*"
+                          RowDefinitions="Auto,Auto,Auto,Auto"
+                          ColumnSpacing="8"
+                          RowSpacing="1">
+                      <TextBlock Text="{DynamicResource Ui.Dashboard.BaseMap.Osm}"
+                                 Foreground="{DynamicResource TextDim}"
+                                 FontSize="10"/>
+                      <TextBlock Grid.Column="1"
+                                 Text="{Binding OsmCoverageText}"
+                                 Foreground="{Binding OsmCoverageColor}"
+                                 FontSize="10"/>
+
+                      <TextBlock Grid.Row="1"
+                                 Text="{DynamicResource Ui.Dashboard.BaseMap.Terrain}"
+                                 Foreground="{DynamicResource TextDim}"
+                                 FontSize="10"/>
+                      <TextBlock Grid.Row="1"
+                                 Grid.Column="1"
+                                 Text="{Binding TerrainCoverageText}"
+                                 Foreground="{Binding TerrainCoverageColor}"
+                                 FontSize="10"/>
+
+                      <TextBlock Grid.Row="2"
+                                 Text="{DynamicResource Ui.Dashboard.BaseMap.Satellite}"
+                                 Foreground="{DynamicResource TextDim}"
+                                 FontSize="10"/>
+                      <TextBlock Grid.Row="2"
+                                 Grid.Column="1"
+                                 Text="{Binding SatelliteCoverageText}"
+                                 Foreground="{Binding SatelliteCoverageColor}"
+                                 FontSize="10"/>
+
+                      <TextBlock Grid.Row="3"
+                                 Text="{DynamicResource Ui.Dashboard.ContoursLabel}"
+                                 Foreground="{DynamicResource TextDim}"
+                                 FontSize="10"/>
+                      <TextBlock Grid.Row="3"
+                                 Grid.Column="1"
+                                 Text="{Binding ContourCoverageText}"
+                                 Foreground="{Binding ContourCoverageColor}"
+                                 FontSize="10"/>
+                    </Grid>
+                    <TextBlock Text="{Binding CacheHealthText}"
+                               Foreground="{Binding CacheHealthColor}"
+                               FontSize="11"
+                               FontWeight="SemiBold"/>
+                    <ProgressBar Minimum="0"
+                                 Maximum="100"
+                                 Height="6"
+                                 Value="{Binding CacheHealthPercent}"/>
+                    <TextBlock Text="{Binding CacheHealthDetailText}"
+                               Foreground="{DynamicResource TextDim}"
+                               FontSize="10"
+                               TextWrapping="Wrap"/>
+                  </StackPanel>
+                </Border>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+
+          <TextBlock Grid.Row="1"
+                     Margin="0,8,0,0"
+                     Text="{DynamicResource Ui.Dashboard.OfflineCacheRegionsDialog.Tip}"
+                     Foreground="{DynamicResource TextDim}"
+                     FontSize="11"
+                     TextWrapping="Wrap"/>
+        </Grid>
+      </Border>
+
+      <Border Grid.Row="3" BorderBrush="{DynamicResource PanelBorder}" BorderThickness="0,1,0,0" Padding="0,10,0,0">
+        <Grid ColumnDefinitions="*,Auto">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <Button Content="{DynamicResource Ui.Dashboard.OfflineCacheRegionsDialog.RefreshStatus}" Click="OnRefreshStatusClicked"/>
+            <Button Content="{DynamicResource Ui.Dashboard.OfflineCacheRegionsDialog.Jump}" Click="OnJumpClicked"/>
+            <Button Content="{DynamicResource Ui.Dashboard.OfflineCacheApplyRegion}" Command="{Binding ApplyOfflineCacheRegionCommand}"/>
+            <Button Content="{DynamicResource Ui.Dashboard.OfflineCacheRegionsDialog.Continue}"
+                    Classes="primary"
+                    IsVisible="{Binding CanContinueSelectedOfflineCacheRegion}"
+                    Command="{Binding BuildOfflineCacheRegionCommand}"/>
+            <Button Content="{DynamicResource Ui.Dashboard.OfflineCacheRegionsDialog.Export}"
+                    Click="OnExportClicked"
+                    IsEnabled="{Binding CanExportSelectedOfflineCacheRegion}"/>
+            <Button Content="{DynamicResource Ui.Dashboard.OfflineCacheDeleteRegion}" Command="{Binding RemoveOfflineCacheRegionCommand}"/>
+            <TextBlock Text="{DynamicResource Ui.Dashboard.OfflineCacheRegionsDialog.Checking}"
+                       Foreground="{DynamicResource TextDim}"
+                       VerticalAlignment="Center"
+                       IsVisible="{Binding IsOfflineCacheHealthRefreshing}"/>
+            <TextBlock Text="{DynamicResource Ui.Dashboard.OfflineCacheRegionsDialog.Caching}"
+                       Foreground="#7CC5FF"
+                       VerticalAlignment="Center"
+                       IsVisible="{Binding Map.IsOfflineCacheRunning}"/>
+            <TextBlock Text="{DynamicResource Ui.Dashboard.OfflineCacheRegionsDialog.Exporting}"
+                       Foreground="#75E0A2"
+                       VerticalAlignment="Center"
+                       IsVisible="{Binding IsOfflineCacheExporting}"/>
+            <TextBlock Text="{Binding OfflineCacheExportStatusText}"
+                       Foreground="{DynamicResource TextDim}"
+                       VerticalAlignment="Center"
+                       MaxWidth="280"
+                       TextWrapping="Wrap"/>
+          </StackPanel>
+          <Button Grid.Column="1"
+                  Content="{DynamicResource Ui.Dashboard.OfflineCacheRegionsDialog.Close}"
+                  Click="OnCloseClicked"/>
+        </Grid>
+      </Border>
+    </Grid>
+  </Border>
+</Window>

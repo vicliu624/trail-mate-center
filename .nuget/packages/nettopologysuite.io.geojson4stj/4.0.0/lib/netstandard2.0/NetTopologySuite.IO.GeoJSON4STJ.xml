@@ -1,0 +1,633 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>NetTopologySuite.IO.GeoJSON4STJ</name>
+    </assembly>
+    <members>
+        <member name="T:NetTopologySuite.IO.Converters.GeoJsonConverterFactory">
+            <inheritdoc cref="T:System.Text.Json.Serialization.JsonConverterFactory"/>>
+        </member>
+        <member name="F:NetTopologySuite.IO.Converters.GeoJsonConverterFactory.DefaultIdPropertyName">
+            <summary>
+            The default name that, when seen on <see cref="T:NetTopologySuite.Features.IAttributesTable"/> or the "properties"
+            object of a feature, indicates that it should "really" be the feature's "id", not stored
+            in "properties" as-is.
+            </summary>
+        </member>
+        <member name="M:NetTopologySuite.IO.Converters.GeoJsonConverterFactory.#ctor">
+            <summary>
+            Creates an instance of this class using the defaults.
+            </summary>
+        </member>
+        <member name="M:NetTopologySuite.IO.Converters.GeoJsonConverterFactory.#ctor(NetTopologySuite.Geometries.GeometryFactory)">
+            <summary>
+            Creates an instance of this class using the provided <see cref="T:NetTopologySuite.Geometries.GeometryFactory"/> and
+            defaults for other values.
+            </summary>
+            <param name="factory"></param>
+        </member>
+        <member name="M:NetTopologySuite.IO.Converters.GeoJsonConverterFactory.#ctor(System.Boolean)">
+            <summary>
+            Creates an instance of this class using the given value for whether or not we should write out
+            a "bbox" for a plain geometry, feature and feature collection, and defaults for all other values.
+            </summary>
+            <param name="writeGeometryBBox"></param>
+        </member>
+        <member name="M:NetTopologySuite.IO.Converters.GeoJsonConverterFactory.#ctor(NetTopologySuite.Geometries.GeometryFactory,System.Boolean)">
+            <summary>
+            Creates an instance of this class using the provided <see cref="T:NetTopologySuite.Geometries.GeometryFactory"/>, the
+            given value for whether or not we should write out a "bbox" for a plain geometry,
+            feature and feature collection, and defaults for all other values.
+            </summary>
+            <param name="factory"></param>
+            <param name="writeGeometryBBox"></param>
+        </member>
+        <member name="M:NetTopologySuite.IO.Converters.GeoJsonConverterFactory.#ctor(System.Boolean,System.String)">
+            <summary>
+            Creates an instance of this class using the given value for whether or not we should write out
+            a "bbox" for a plain geometry, feature and feature collection, the given "magic" string to signal
+            when an <see cref="T:NetTopologySuite.Features.IAttributesTable"/> property is actually filling in for a Feature's "id", and
+            defaults for all other values.
+            </summary>
+            <param name="writeGeometryBBox"></param>
+            <param name="idPropertyName"></param>
+        </member>
+        <member name="M:NetTopologySuite.IO.Converters.GeoJsonConverterFactory.#ctor(NetTopologySuite.Geometries.GeometryFactory,System.Boolean,System.String)">
+            <summary>
+            Creates an instance of this class using the provided <see cref="T:NetTopologySuite.Geometries.GeometryFactory"/>, the
+            given value for whether or not we should write out a "bbox" for a plain geometry,
+            feature and feature collection, the given "magic" string to signal when an
+            <see cref="T:NetTopologySuite.Features.IAttributesTable"/> property is actually filling in for a Feature's "id", and
+            defaults for all other values.
+            </summary>
+            <param name="factory"></param>
+            <param name="writeGeometryBBox"></param>
+            <param name="idPropertyName"></param>
+        </member>
+        <member name="M:NetTopologySuite.IO.Converters.GeoJsonConverterFactory.#ctor(System.Boolean,System.String,NetTopologySuite.IO.Converters.RingOrientationOption)">
+            <summary>
+            Creates an instance of this class using the given value for whether or not we should write out
+            a "bbox" for a plain geometry, feature and feature collection, the given "magic" string to signal
+            when an <see cref="T:NetTopologySuite.Features.IAttributesTable"/> property is actually filling in for a Feature's "id", the
+            <see cref="T:NetTopologySuite.IO.Converters.RingOrientationOption"/> value that indicates how rings should be oriented
+            when writing them out, and defaults for all other values.
+            </summary>
+            <param name="writeGeometryBBox"></param>
+            <param name="idPropertyName"></param>
+            <param name="ringOrientationOption"></param>
+        </member>
+        <member name="M:NetTopologySuite.IO.Converters.GeoJsonConverterFactory.#ctor(NetTopologySuite.Geometries.GeometryFactory,System.Boolean,System.String,NetTopologySuite.IO.Converters.RingOrientationOption)">
+            <summary>
+            Creates an instance of this class using the provided <see cref="T:NetTopologySuite.Geometries.GeometryFactory"/>, the
+            given value for whether or not we should write out a "bbox" for a plain geometry,
+            feature and feature collection, the given "magic" string to signal when an
+            <see cref="T:NetTopologySuite.Features.IAttributesTable"/> property is actually filling in for a Feature's "id", the
+            <see cref="T:NetTopologySuite.IO.Converters.RingOrientationOption"/> value that indicates how rings should be oriented
+            when writing them out, and defaults for all other values.
+            </summary>
+            <param name="factory"></param>
+            <param name="writeGeometryBBox"></param>
+            <param name="idPropertyName"></param>
+            <param name="ringOrientationOption"></param>
+        </member>
+        <member name="M:NetTopologySuite.IO.Converters.GeoJsonConverterFactory.#ctor(System.Boolean,System.String,NetTopologySuite.IO.Converters.RingOrientationOption,System.Boolean)">
+            <summary>
+            Creates an instance of this class using the given value for whether or not we should write out
+            a "bbox" for a plain geometry, feature and feature collection, the given "magic" string to signal
+            when an <see cref="T:NetTopologySuite.Features.IAttributesTable"/> property is actually filling in for a Feature's "id", the
+            <see cref="T:NetTopologySuite.IO.Converters.RingOrientationOption"/> value that indicates how rings should be oriented
+            when writing them out, and a flag indicating whether or not to use a less efficient
+            implementation of <see cref="T:NetTopologySuite.Features.IAttributesTable"/> that can be modified in-place.
+            </summary>
+            <param name="writeGeometryBBox"></param>
+            <param name="idPropertyName"></param>
+            <param name="ringOrientationOption"></param>
+            <param name="allowModifyingAttributesTables"></param>
+        </member>
+        <member name="M:NetTopologySuite.IO.Converters.GeoJsonConverterFactory.#ctor(NetTopologySuite.Geometries.GeometryFactory,System.Boolean,System.String,NetTopologySuite.IO.Converters.RingOrientationOption,System.Boolean)">
+            <summary>
+            Creates an instance of this class using the provided <see cref="T:NetTopologySuite.Geometries.GeometryFactory"/>, the
+            given value for whether or not we should write out a "bbox" for a plain geometry,
+            feature and feature collection, the given "magic" string to signal when an
+            <see cref="T:NetTopologySuite.Features.IAttributesTable"/> property is actually filling in for a Feature's "id", the
+            <see cref="T:NetTopologySuite.IO.Converters.RingOrientationOption"/> value that indicates how rings should be oriented
+            when writing them out, and a flag indicating whether or not to use a less efficient
+            implementation of <see cref="T:NetTopologySuite.Features.IAttributesTable"/> that can be modified in-place.
+            </summary>
+            <param name="factory"></param>
+            <param name="writeGeometryBBox"></param>
+            <param name="idPropertyName"></param>
+            <param name="ringOrientationOption"></param>
+            <param name="allowModifyingAttributesTables"></param>
+        </member>
+        <member name="M:NetTopologySuite.IO.Converters.GeoJsonConverterFactory.CanConvert(System.Type)">
+            <inheritdoc cref="M:System.Text.Json.Serialization.JsonConverter.CanConvert(System.Type)"/>
+        </member>
+        <member name="M:NetTopologySuite.IO.Converters.GeoJsonConverterFactory.CreateConverter(System.Type,System.Text.Json.JsonSerializerOptions)">
+            <inheritdoc cref="M:System.Text.Json.Serialization.JsonConverterFactory.CreateConverter(System.Type,System.Text.Json.JsonSerializerOptions)"/>
+        </member>
+        <member name="T:NetTopologySuite.IO.Converters.GeoJsonObjectType">
+            <summary>
+            Defines the GeoJSON Objects types as defined in the <a href="https://tools.ietf.org/html/rfc7946#section-3.1">RFC7946 of the Internet Engineering Task Force (IETF)</a>.
+            </summary>
+        </member>
+        <member name="F:NetTopologySuite.IO.Converters.GeoJsonObjectType.Point">
+            <summary>
+            Defines the <a href="https://tools.ietf.org/html/rfc7946#section-3.1.2">Point</a> type.
+            </summary>
+        </member>
+        <member name="F:NetTopologySuite.IO.Converters.GeoJsonObjectType.MultiPoint">
+            <summary>
+            Defines the <a href="https://tools.ietf.org/html/rfc7946#section-3.1.3">MultiPoint</a> type.
+            </summary>
+        </member>
+        <member name="F:NetTopologySuite.IO.Converters.GeoJsonObjectType.LineString">
+            <summary>
+            Defines the <a href="https://tools.ietf.org/html/rfc7946#section-3.1.4">LineString</a> type.
+            </summary>
+        </member>
+        <member name="F:NetTopologySuite.IO.Converters.GeoJsonObjectType.MultiLineString">
+            <summary>
+            Defines the <a href="https://tools.ietf.org/html/rfc7946#section-3.1.5">MultiLineString</a> type.
+            </summary>
+        </member>
+        <member name="F:NetTopologySuite.IO.Converters.GeoJsonObjectType.Polygon">
+            <summary>
+            Defines the <a href="https://tools.ietf.org/html/rfc7946#section-3.1.6">Polygon</a> type.
+            </summary>
+        </member>
+        <member name="F:NetTopologySuite.IO.Converters.GeoJsonObjectType.MultiPolygon">
+            <summary>
+            Defines the <a href="https://tools.ietf.org/html/rfc7946#section-3.1.7">MultiPolygon</a> type.
+            </summary>
+        </member>
+        <member name="F:NetTopologySuite.IO.Converters.GeoJsonObjectType.GeometryCollection">
+            <summary>
+            Defines the <a href="https://tools.ietf.org/html/rfc7946#section-3.1.8">GeometryCollection</a> type.
+            </summary>
+        </member>
+        <member name="F:NetTopologySuite.IO.Converters.GeoJsonObjectType.Feature">
+            <summary>
+            Defines the <a href="https://tools.ietf.org/html/rfc7946#section-3.2">Feature</a> type.
+            </summary>
+        </member>
+        <member name="F:NetTopologySuite.IO.Converters.GeoJsonObjectType.FeatureCollection">
+            <summary>
+            Defines the <a href="https://tools.ietf.org/html/rfc7946#section-3.3">FeatureCollection</a> type.
+            </summary>
+        </member>
+        <member name="T:NetTopologySuite.IO.Converters.RingOrientationOption">
+            <summary>
+            An enumeration of possible ring orientation modes that can be applied when writing GeoJSON
+            </summary>
+        </member>
+        <member name="F:NetTopologySuite.IO.Converters.RingOrientationOption.DoNotModify">
+            <summary>
+            Polygon ring orientation is not altered
+            </summary>
+        </member>
+        <member name="F:NetTopologySuite.IO.Converters.RingOrientationOption.EnforceRfc9746">
+            <summary>
+            Polygon ring orientation is ensured to be how it is definded in RFC7946 §3.1.6:
+            </summary>
+            <remarks>
+            This means:
+            <list type="bullet">
+            <item><term>Exterior</term><description>Counter-Clockwise</description></item>
+            <item><term>Interior</term><description>Clockwise</description></item>
+            </list>
+            </remarks>
+        </member>
+        <member name="F:NetTopologySuite.IO.Converters.RingOrientationOption.NtsGeoJsonV2">
+            <summary>
+            Polygon ring orientation is altered according to how it was done in NetTopologySuite.IO.GeoJSON4STJ v2 due to misinterpreting right-hand-rule:
+            </summary>
+            <remarks>
+            This means:
+            <list type="bullet">
+            <item><term>Exterior</term><description>Clockwise</description></item>
+            <item><term>Interior</term><description>Counter-Clockwise</description></item>
+            </list>
+            </remarks>
+        </member>
+        <member name="T:NetTopologySuite.IO.Converters.StjAttributesTableConverter">
+            <summary>
+            Converts IAttributesTable object to its JSON representation.
+            </summary>
+        </member>
+        <member name="M:NetTopologySuite.IO.Converters.StjAttributesTableConverter.Write(System.Text.Json.Utf8JsonWriter,NetTopologySuite.Features.IAttributesTable,System.Text.Json.JsonSerializerOptions)">
+            <summary>
+            Writes the JSON representation of the object.
+            </summary>
+            <param name="writer">The <see cref="T:System.Text.Json.Utf8JsonWriter"/> to write to.</param>
+            <param name="value">The value.</param>
+            <param name="options">The calling serializer.</param>
+        </member>
+        <member name="M:NetTopologySuite.IO.Converters.StjAttributesTableConverter.Read(System.Text.Json.Utf8JsonReader@,System.Type,System.Text.Json.JsonSerializerOptions)">
+            <summary>
+            Reads the JSON representation of the object.
+            </summary>
+            <param name="reader">The <see cref="T:System.Text.Json.Utf8JsonReader"/> to read from.</param>
+            <param name="objectType">Type of the object.</param>
+            <param name="options">The calling serializer.</param>
+            <returns>
+            The object value.
+            </returns>
+        </member>
+        <member name="M:NetTopologySuite.IO.Converters.StjAttributesTableConverter.CanConvert(System.Type)">
+            <summary>
+            Determines whether this instance can convert the specified object type.
+            </summary>
+            <param name="objectType">Type of the object.</param>
+            <returns>
+              <c>true</c> if this instance can convert the specified object type; otherwise, <c>false</c>.
+            </returns>
+        </member>
+        <member name="T:NetTopologySuite.IO.Converters.StjAttributesTableExtensions">
+            <summary>
+            Adapter for code that targets older versions of this library that did not expose the
+            <see cref="T:NetTopologySuite.Features.IPartiallyDeserializedAttributesTable"/> interface publicly.
+            </summary>
+        </member>
+        <member name="M:NetTopologySuite.IO.Converters.StjAttributesTableExtensions.TryDeserializeJsonObject``1(NetTopologySuite.Features.IAttributesTable,System.Text.Json.JsonSerializerOptions,``0@)">
+            <summary>
+            Attempts to convert this table to a strongly-typed value, if the table implements
+            the <see cref="T:NetTopologySuite.Features.IPartiallyDeserializedAttributesTable"/> interface.
+            <para>
+            <c>System.Text.Json</c> intentionally omits the functionality that would let us do this
+            automatically, for security reasons, so this is the workaround for now.
+            </para>
+            <para>
+            This will always return <see langword="false"/> for tables that do not implement the
+            <see cref="T:NetTopologySuite.Features.IPartiallyDeserializedAttributesTable"/> interface.
+            </para>
+            </summary>
+            <typeparam name="T">
+            The type of object to convert to.
+            </typeparam>
+            <param name="table">
+            This table.
+            </param>
+            <param name="options">
+            The <see cref="T:System.Text.Json.JsonSerializerOptions"/> to use for the deserialization.
+            </param>
+            <param name="deserialized">
+            Receives the converted value on success, or the default value on failure.
+            </param>
+            <returns>
+            A value indicating whether or not the conversion succeeded.
+            </returns>
+        </member>
+        <member name="M:NetTopologySuite.IO.Converters.StjAttributesTableExtensions.TryGetJsonObjectPropertyValue``1(NetTopologySuite.Features.IAttributesTable,System.String,System.Text.Json.JsonSerializerOptions,``0@)">
+            <summary>
+            Attempts to get a strongly-typed value for that corresponds to a property of this table,
+            if the table implements the <see cref="T:NetTopologySuite.Features.IPartiallyDeserializedAttributesTable"/> interface.
+            <para>
+            <c>System.Text.Json</c> intentionally omits the functionality that would let us do this
+            automatically, for security reasons, so this is the workaround for now.
+            </para>
+            <para>
+            This will always return <see langword="false"/> for tables that do not implement the
+            <see cref="T:NetTopologySuite.Features.IPartiallyDeserializedAttributesTable"/> interface.
+            </para>
+            </summary>
+            <typeparam name="T">
+            The type of object to retrieve.
+            </typeparam>
+            <param name="table">
+            This table.
+            </param>
+            <param name="propertyName">
+            The name of the property in this table to get as the specified type.
+            </param>
+            <param name="options">
+            The <see cref="T:System.Text.Json.JsonSerializerOptions"/> to use for the deserialization.
+            </param>
+            <param name="deserialized">
+            Receives the converted value on success, or the default value on failure.
+            </param>
+            <returns>
+            A value indicating whether or not the conversion succeeded.
+            </returns>
+        </member>
+        <member name="T:NetTopologySuite.IO.Converters.StjFeatureCollectionConverter">
+            <summary>
+            Converts FeatureCollection objects to its JSON representation.
+            </summary>
+        </member>
+        <member name="M:NetTopologySuite.IO.Converters.StjFeatureCollectionConverter.Read(System.Text.Json.Utf8JsonReader@,System.Type,System.Text.Json.JsonSerializerOptions)">
+            <summary>
+            Reads the JSON representation of the object.
+            </summary>
+            <param name="reader">The <see cref="T:Newtonsoft.Json.JsonReader"/> to read from.</param>
+            <param name="objectType">Type of the object.</param>
+            <param name="options">The calling serializer.</param>
+            <returns>
+            The object value.
+            </returns>
+        </member>
+        <member name="T:NetTopologySuite.IO.Converters.StjFeatureConverter">
+            <summary>
+            Converts Feature object to its JSON representation.
+            </summary>
+        </member>
+        <member name="M:NetTopologySuite.IO.Converters.StjFeatureConverter.Write(System.Text.Json.Utf8JsonWriter,NetTopologySuite.Features.IFeature,System.Text.Json.JsonSerializerOptions)">
+            <summary>
+            Writes the JSON representation of the object.
+            </summary>
+            <param name="writer">The <see cref="T:Newtonsoft.Json.JsonWriter"/> to write to.</param>
+            <param name="value">The value.</param>
+            <param name="options">The calling serializer.</param>
+        </member>
+        <member name="M:NetTopologySuite.IO.Converters.StjFeatureConverter.Read(System.Text.Json.Utf8JsonReader@,System.Type,System.Text.Json.JsonSerializerOptions)">
+            <summary>
+            Reads the JSON representation of the object.
+            </summary>
+            <param name="reader">The <see cref="T:Newtonsoft.Json.JsonReader"/> to read from.</param>
+            <param name="objectType">Type of the object.</param>
+            <param name="options">The calling serializer.</param>
+            <returns>
+            The object value.
+            </returns>
+        </member>
+        <member name="M:NetTopologySuite.IO.Converters.StjFeatureConverter.CanConvert(System.Type)">
+            <summary>
+            Determines whether this instance can convert the specified object type.
+            </summary>
+            <param name="objectType">Type of the object.</param>
+            <returns>
+              <c>true</c> if this instance can convert the specified object type; otherwise, <c>false</c>.
+            </returns>
+        </member>
+        <member name="P:NetTopologySuite.IO.Converters.StjGeometryConverter.DefaultGeometryFactory">
+            <summary>
+            Gets the default geometry factory to use with this converter.
+            </summary>
+        </member>
+        <member name="M:NetTopologySuite.IO.Converters.StjGeometryConverter.#ctor(NetTopologySuite.Geometries.GeometryFactory,System.Boolean)">
+            <summary>
+            Creates an instance of this class
+            </summary>
+            <param name="geometryFactory">The geometry factory to use.</param>
+            <param name="writeGeometryBBox">Whether or not to write "bbox" with the geometry.</param>
+        </member>
+        <member name="M:NetTopologySuite.IO.Converters.StjGeometryConverter.#ctor(NetTopologySuite.Geometries.GeometryFactory,System.Boolean,NetTopologySuite.IO.Converters.RingOrientationOption)">
+            <summary>
+            Creates an instance of this class
+            </summary>
+            <param name="geometryFactory">The geometry factory to use.</param>
+            <param name="writeGeometryBBox">Whether or not to write "bbox" with the geometry.</param>
+            <param name="ringOrientationOption">Controls ring orientation for polygons when <b>writing</b>.</param>
+        </member>
+        <member name="M:NetTopologySuite.IO.Converters.StjGeometryConverter.WriteBBox(System.Text.Json.Utf8JsonWriter,NetTopologySuite.Geometries.Envelope,System.Text.Json.JsonSerializerOptions)">
+            <summary>
+            Writes the BBOX to the given <paramref name="writer"/>.
+            </summary>
+            <param name="writer">The writer.</param>
+            <param name="value">The envelope.</param>
+            <param name="options">The serialization options.</param>
+        </member>
+        <member name="T:NetTopologySuite.IO.Properties.Resources">
+            <summary>
+              A strongly-typed resource class, for looking up localized strings, etc.
+            </summary>
+        </member>
+        <member name="P:NetTopologySuite.IO.Properties.Resources.ResourceManager">
+            <summary>
+              Returns the cached ResourceManager instance used by this class.
+            </summary>
+        </member>
+        <member name="P:NetTopologySuite.IO.Properties.Resources.Culture">
+            <summary>
+              Overrides the current thread's CurrentUICulture property for all
+              resource lookups using this strongly typed resource class.
+            </summary>
+        </member>
+        <member name="P:NetTopologySuite.IO.Properties.Resources.EX_CoordinatesIncompatibleWithType">
+            <summary>
+              Looks up a localized string similar to &quot;coordinates&quot; array is not compatible with &quot;type&quot; value of &quot;{0}&quot;.
+            </summary>
+        </member>
+        <member name="P:NetTopologySuite.IO.Properties.Resources.EX_EndArrayTokenExpected">
+            <summary>
+              Looks up a localized string similar to Expected token is &apos;]&apos; but was &apos;{0}&apos;..
+            </summary>
+        </member>
+        <member name="P:NetTopologySuite.IO.Properties.Resources.EX_GCTypeWithoutGeometries">
+            <summary>
+              Looks up a localized string similar to No geometries defined to build a &apos;GeometryCollection&apos;..
+            </summary>
+        </member>
+        <member name="P:NetTopologySuite.IO.Properties.Resources.EX_NoCoordinatesDefined">
+            <summary>
+              Looks up a localized string similar to No coordinates defined for geometry of type &apos;{0}&apos;.
+            </summary>
+        </member>
+        <member name="P:NetTopologySuite.IO.Properties.Resources.EX_NoGeometryTypeDefined">
+            <summary>
+              Looks up a localized string similar to Missing &quot;type&quot; property.
+            </summary>
+        </member>
+        <member name="P:NetTopologySuite.IO.Properties.Resources.EX_StartArrayTokenExpected">
+            <summary>
+              Looks up a localized string similar to Expected token is &apos;[&apos; but was &apos;{0}&apos;..
+            </summary>
+        </member>
+        <member name="P:NetTopologySuite.IO.Properties.Resources.EX_UnexpectedEndOfStream">
+            <summary>
+              Looks up a localized string similar to Stream ended unexpectedly..
+            </summary>
+        </member>
+        <member name="P:NetTopologySuite.IO.Properties.Resources.EX_UnexpectedToken">
+            <summary>
+              Looks up a localized string similar to Expected token is &apos;{0}&apos; but was &apos;{1}&apos; (Value &apos;{2}&apos;)..
+            </summary>
+        </member>
+        <member name="T:NetTopologySuite.Features.IPartiallyDeserializedAttributesTable">
+            <summary>
+            An <see cref="T:NetTopologySuite.Features.IAttributesTable"/> that has been <b>partially</b> deserialized to a strongly-
+            typed CLR object model, but which still contains some remnants of the JSON source that
+            produced it which may require the consumer to tell us more about what types they expected.
+            <para/>
+            Due to an intentional limitation in <c>System.Text.Json</c>, there is no way to produce a
+            standalone GeoJSON object that includes enough information to produce an object graph that's
+            complete with nested members of arbitrary types.
+            <para/>
+            In that spirit, this interface allows you to pick up where this library left off and use the
+            Feature's attributes in a more strongly-typed fashion using your own knowledge of whatever
+            internal structure the GeoJSON object is expected to have.
+            </summary>
+        </member>
+        <member name="M:NetTopologySuite.Features.IPartiallyDeserializedAttributesTable.TryDeserializeJsonObject``1(System.Text.Json.JsonSerializerOptions,``0@)">
+            <summary>
+            Attempts to convert this entire table to a strongly-typed CLR object.
+            <para>
+            Modifications to the result <b>WILL NOT</b> propagate back to this table, or vice-versa.
+            </para>
+            </summary>
+            <typeparam name="T">
+            The type of object to convert to.
+            </typeparam>
+            <param name="options">
+            The <see cref="T:System.Text.Json.JsonSerializerOptions"/> to use for the deserialization.
+            </param>
+            <param name="deserialized">
+            Receives the converted value on success, or the default value on failure.
+            </param>
+            <returns>
+            A value indicating whether or not the conversion succeeded.
+            </returns>
+        </member>
+        <member name="M:NetTopologySuite.Features.IPartiallyDeserializedAttributesTable.TryGetJsonObjectPropertyValue``1(System.String,System.Text.Json.JsonSerializerOptions,``0@)">
+            <summary>
+            Attempts to get a strongly-typed CLR object that corresponds to a single property that's
+            present in this table.
+            <para>
+            Modifications to the result <b>WILL NOT</b> propagate back to this table, or vice-versa.
+            </para>
+            </summary>
+            <typeparam name="T">
+            The type of object to retrieve.
+            </typeparam>
+            <param name="propertyName">
+            The name of the property in this table to get as the specified type.
+            </param>
+            <param name="options">
+            The <see cref="T:System.Text.Json.JsonSerializerOptions"/> to use for the deserialization.
+            </param>
+            <param name="deserialized">
+            Receives the converted value on success, or the default value on failure.
+            </param>
+            <returns>
+            A value indicating whether or not the conversion succeeded.
+            </returns>
+        </member>
+        <member name="T:NetTopologySuite.Features.JsonElementAttributesTable">
+            <summary>
+            An implementation of <see cref="T:NetTopologySuite.Features.IAttributesTable"/> backed by a <see cref="T:System.Text.Json.JsonElement"/>
+            whose <see cref="P:System.Text.Json.JsonElement.ValueKind"/> is <see cref="F:System.Text.Json.JsonValueKind.Object"/>.
+            </summary>
+            <remarks>
+            JSON <see cref="F:System.Text.Json.JsonValueKind.Number"/>-valued properties are boxed as <see cref="T:System.Decimal"/>
+            values unconditionally, throwing an error if the number is not convertible.
+            <para/>
+            JSON <see cref="F:System.Text.Json.JsonValueKind.Null"/>-valued properties are considered to be of type
+            <see cref="T:System.Object"/>, for the purposes of <see cref="M:NetTopologySuite.Features.IAttributesTable.GetType(System.String)"/> only.
+            <para/>
+            JSON <see cref="F:System.Text.Json.JsonValueKind.Object"/>-valued properties are wrapped in their own
+            <see cref="T:NetTopologySuite.Features.JsonElementAttributesTable"/> objects.
+            </remarks>
+        </member>
+        <member name="M:NetTopologySuite.Features.JsonElementAttributesTable.#ctor(System.Text.Json.JsonElement)">
+            <summary>
+            Initializes a new instance of the <see cref="T:NetTopologySuite.Features.JsonElementAttributesTable"/> class.
+            </summary>
+            <param name="rootElement">
+            The value for <see cref="P:NetTopologySuite.Features.JsonElementAttributesTable.RootElement"/>.
+            </param>
+            <remarks>
+            <paramref name="rootElement"/> will be <see cref="M:System.Text.Json.JsonElement.Clone">cloned</see> to
+            ensure that it is safe for this object to outlive the <see cref="T:System.Text.Json.JsonDocument"/> that
+            the given element is attached to, if any.
+            </remarks>
+            <exception cref="T:System.ArgumentException">
+            Thrown when <paramref name="rootElement"/>'s <see cref="P:System.Text.Json.JsonElement.ValueKind"/> is not
+            <see cref="F:System.Text.Json.JsonValueKind.Object"/>.
+            </exception>
+            <exception cref="T:System.ObjectDisposedException">
+            Thrown when <paramref name="rootElement"/> is attached to a <see cref="T:System.Text.Json.JsonDocument"/>
+            parent that has already been disposed.
+            </exception>
+        </member>
+        <member name="P:NetTopologySuite.Features.JsonElementAttributesTable.RootElement">
+            <summary>
+            Gets the <see cref="T:System.Text.Json.JsonElement"/> object that this instance adapts to fit the
+            <see cref="T:NetTopologySuite.Features.IAttributesTable"/> interface.
+            </summary>
+            <remarks>
+            <see cref="P:System.Text.Json.JsonElement.ValueKind"/> will be <see cref="F:System.Text.Json.JsonValueKind.Object"/>.
+            </remarks>
+        </member>
+        <member name="P:NetTopologySuite.Features.JsonElementAttributesTable.Item(System.String)">
+            <inheritdoc />
+        </member>
+        <member name="P:NetTopologySuite.Features.JsonElementAttributesTable.Count">
+            <inheritdoc />
+        </member>
+        <member name="M:NetTopologySuite.Features.JsonElementAttributesTable.Exists(System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:NetTopologySuite.Features.JsonElementAttributesTable.GetOptionalValue(System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:NetTopologySuite.Features.JsonElementAttributesTable.GetType(System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:NetTopologySuite.Features.JsonElementAttributesTable.GetNames">
+            <inheritdoc />
+        </member>
+        <member name="M:NetTopologySuite.Features.JsonElementAttributesTable.GetValues">
+            <inheritdoc />
+        </member>
+        <member name="M:NetTopologySuite.Features.JsonElementAttributesTable.TryDeserializeJsonObject``1(System.Text.Json.JsonSerializerOptions,``0@)">
+            <inheritdoc />
+        </member>
+        <member name="M:NetTopologySuite.Features.JsonElementAttributesTable.TryGetJsonObjectPropertyValue``1(System.String,System.Text.Json.JsonSerializerOptions,``0@)">
+            <inheritdoc />
+        </member>
+        <member name="T:NetTopologySuite.Features.JsonObjectAttributesTable">
+            <summary>
+            An implementation of <see cref="T:NetTopologySuite.Features.IAttributesTable"/> backed by a <see cref="T:System.Text.Json.Nodes.JsonObject"/>.
+            </summary>
+            <remarks>
+            Modifications to this table will be observed on <see cref="P:NetTopologySuite.Features.JsonObjectAttributesTable.RootObject"/>, and vice-versa,
+            including modifications to nested objects and arrays.
+            </remarks>
+        </member>
+        <member name="P:NetTopologySuite.Features.JsonObjectAttributesTable.RootObject">
+            <summary>
+            Gets the <see cref="T:System.Text.Json.Nodes.JsonObject"/> object that this instance adapts to fit the
+            <see cref="T:NetTopologySuite.Features.IAttributesTable"/> interface.
+            </summary>
+        </member>
+        <member name="P:NetTopologySuite.Features.JsonObjectAttributesTable.SerializerOptions">
+            <summary>
+            Gets the <see cref="T:System.Text.Json.JsonSerializerOptions"/> object that will be used to save all edits
+            made to this table onto <see cref="P:NetTopologySuite.Features.JsonObjectAttributesTable.RootObject"/>.
+            </summary>
+        </member>
+        <member name="P:NetTopologySuite.Features.JsonObjectAttributesTable.Item(System.String)">
+            <inheritdoc />
+        </member>
+        <member name="P:NetTopologySuite.Features.JsonObjectAttributesTable.Count">
+            <inheritdoc />
+        </member>
+        <member name="M:NetTopologySuite.Features.JsonObjectAttributesTable.Add(System.String,System.Object)">
+            <inheritdoc />
+        </member>
+        <member name="M:NetTopologySuite.Features.JsonObjectAttributesTable.DeleteAttribute(System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:NetTopologySuite.Features.JsonObjectAttributesTable.Exists(System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:NetTopologySuite.Features.JsonObjectAttributesTable.GetOptionalValue(System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:NetTopologySuite.Features.JsonObjectAttributesTable.GetType(System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:NetTopologySuite.Features.JsonObjectAttributesTable.GetNames">
+            <inheritdoc />
+        </member>
+        <member name="M:NetTopologySuite.Features.JsonObjectAttributesTable.GetValues">
+            <inheritdoc />
+        </member>
+        <member name="M:NetTopologySuite.Features.JsonObjectAttributesTable.TryDeserializeJsonObject``1(System.Text.Json.JsonSerializerOptions,``0@)">
+            <inheritdoc />
+        </member>
+        <member name="M:NetTopologySuite.Features.JsonObjectAttributesTable.TryGetJsonObjectPropertyValue``1(System.String,System.Text.Json.JsonSerializerOptions,``0@)">
+            <inheritdoc />
+        </member>
+    </members>
+</doc>

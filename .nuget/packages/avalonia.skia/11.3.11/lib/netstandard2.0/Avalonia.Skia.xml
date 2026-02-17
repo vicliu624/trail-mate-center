@@ -1,0 +1,1007 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Avalonia.Skia</name>
+    </assembly>
+    <members>
+        <member name="T:Avalonia.Skia.CombinedGeometryImpl">
+            <summary>
+            A Skia implementation of a <see cref="T:Avalonia.Media.GeometryGroup"/>.
+            </summary>
+        </member>
+        <member name="T:Avalonia.Skia.DrawingContextImpl">
+            <summary>
+            Skia based drawing context.
+            </summary>
+        </member>
+        <member name="T:Avalonia.Skia.DrawingContextImpl.CreateInfo">
+            <summary>
+            Context create info.
+            </summary>
+        </member>
+        <member name="F:Avalonia.Skia.DrawingContextImpl.CreateInfo.Canvas">
+            <summary>
+            Canvas to draw to.
+            </summary>
+        </member>
+        <member name="F:Avalonia.Skia.DrawingContextImpl.CreateInfo.Surface">
+            <summary>
+            Surface to draw to.
+            </summary>
+        </member>
+        <member name="F:Avalonia.Skia.DrawingContextImpl.CreateInfo.ScaleDrawingToDpi">
+            <summary>
+            Makes DPI to be applied as a hidden matrix transform
+            </summary>
+        </member>
+        <member name="F:Avalonia.Skia.DrawingContextImpl.CreateInfo.Dpi">
+            <summary>
+            Dpi for intermediate surfaces
+            </summary>
+        </member>
+        <member name="F:Avalonia.Skia.DrawingContextImpl.CreateInfo.DisableSubpixelTextRendering">
+            <summary>
+            Render text without subpixel antialiasing.
+            </summary>
+        </member>
+        <member name="F:Avalonia.Skia.DrawingContextImpl.CreateInfo.GrContext">
+            <summary>
+            GPU-accelerated context (optional)
+            </summary>
+        </member>
+        <member name="F:Avalonia.Skia.DrawingContextImpl.CreateInfo.Gpu">
+            <summary>
+            Skia GPU provider context (optional)
+            </summary>
+        </member>
+        <member name="M:Avalonia.Skia.DrawingContextImpl.#ctor(Avalonia.Skia.DrawingContextImpl.CreateInfo,System.IDisposable[])">
+            <summary>
+            Create new drawing context.
+            </summary>
+            <param name="createInfo">Create info.</param>
+            <param name="disposables">Array of elements to dispose after drawing has finished.</param>
+        </member>
+        <member name="P:Avalonia.Skia.DrawingContextImpl.Canvas">
+            <summary>
+            Skia canvas.
+            </summary>
+        </member>
+        <member name="M:Avalonia.Skia.DrawingContextImpl.Clear(Avalonia.Media.Color)">
+            <inheritdoc />
+        </member>
+        <member name="M:Avalonia.Skia.DrawingContextImpl.DrawBitmap(Avalonia.Platform.IBitmapImpl,System.Double,Avalonia.Rect,Avalonia.Rect)">
+            <inheritdoc />
+        </member>
+        <member name="M:Avalonia.Skia.DrawingContextImpl.DrawBitmap(Avalonia.Platform.IBitmapImpl,Avalonia.Media.IBrush,Avalonia.Rect,Avalonia.Rect)">
+            <inheritdoc />
+        </member>
+        <member name="M:Avalonia.Skia.DrawingContextImpl.DrawLine(Avalonia.Media.IPen,Avalonia.Point,Avalonia.Point)">
+            <inheritdoc />
+        </member>
+        <member name="M:Avalonia.Skia.DrawingContextImpl.DrawGeometry(Avalonia.Media.IBrush,Avalonia.Media.IPen,Avalonia.Platform.IGeometryImpl)">
+            <inheritdoc />
+        </member>
+        <member name="M:Avalonia.Skia.DrawingContextImpl.DrawRectangle(Avalonia.Media.IExperimentalAcrylicMaterial,Avalonia.RoundedRect)">
+            <inheritdoc />
+        </member>
+        <member name="M:Avalonia.Skia.DrawingContextImpl.DrawRectangle(Avalonia.Media.IBrush,Avalonia.Media.IPen,Avalonia.RoundedRect,Avalonia.Media.BoxShadows)">
+            <inheritdoc />
+        </member>
+        <member name="M:Avalonia.Skia.DrawingContextImpl.DrawRegion(Avalonia.Media.IBrush,Avalonia.Media.IPen,Avalonia.Platform.IPlatformRenderInterfaceRegion)">
+            <inheritdoc />
+        </member>
+        <member name="M:Avalonia.Skia.DrawingContextImpl.DrawEllipse(Avalonia.Media.IBrush,Avalonia.Media.IPen,Avalonia.Rect)">
+            <inheritdoc />
+        </member>
+        <member name="M:Avalonia.Skia.DrawingContextImpl.DrawGlyphRun(Avalonia.Media.IBrush,Avalonia.Platform.IGlyphRunImpl)">
+            <inheritdoc />
+        </member>
+        <member name="M:Avalonia.Skia.DrawingContextImpl.CreateLayer(Avalonia.PixelSize)">
+            <inheritdoc />
+        </member>
+        <member name="M:Avalonia.Skia.DrawingContextImpl.PushClip(Avalonia.Rect)">
+            <inheritdoc />
+        </member>
+        <member name="M:Avalonia.Skia.DrawingContextImpl.PopClip">
+            <inheritdoc />
+        </member>
+        <member name="M:Avalonia.Skia.DrawingContextImpl.PushOpacity(System.Double,System.Nullable{Avalonia.Rect})">
+            <inheritdoc />
+        </member>
+        <member name="M:Avalonia.Skia.DrawingContextImpl.PopOpacity">
+            <inheritdoc />
+        </member>
+        <member name="M:Avalonia.Skia.DrawingContextImpl.PushRenderOptions(Avalonia.Media.RenderOptions)">
+            <inheritdoc />
+        </member>
+        <member name="M:Avalonia.Skia.DrawingContextImpl.Dispose">
+            <inheritdoc />
+        </member>
+        <member name="M:Avalonia.Skia.DrawingContextImpl.PushGeometryClip(Avalonia.Platform.IGeometryImpl)">
+            <inheritdoc />
+        </member>
+        <member name="M:Avalonia.Skia.DrawingContextImpl.PopGeometryClip">
+            <inheritdoc />
+        </member>
+        <member name="M:Avalonia.Skia.DrawingContextImpl.PushOpacityMask(Avalonia.Media.IBrush,Avalonia.Rect)">
+            <inheritdoc />
+        </member>
+        <member name="M:Avalonia.Skia.DrawingContextImpl.PopOpacityMask">
+            <inheritdoc />
+        </member>
+        <member name="P:Avalonia.Skia.DrawingContextImpl.Transform">
+            <inheritdoc />
+        </member>
+        <member name="M:Avalonia.Skia.DrawingContextImpl.ConfigureGradientBrush(Avalonia.Skia.DrawingContextImpl.PaintWrapper@,Avalonia.Rect,Avalonia.Media.IGradientBrush)">
+            <summary>
+            Configure paint wrapper for using gradient brush.
+            </summary>
+            <param name="paintWrapper">Paint wrapper.</param>
+            <param name="targetRect">Target rect.</param>
+            <param name="gradientBrush">Gradient brush.</param>
+        </member>
+        <member name="M:Avalonia.Skia.DrawingContextImpl.ConfigureTileBrush(Avalonia.Skia.DrawingContextImpl.PaintWrapper@,Avalonia.Rect,Avalonia.Media.ITileBrush,Avalonia.Skia.IDrawableBitmapImpl)">
+            <summary>
+            Configure paint wrapper for using tile brush.
+            </summary>
+            <param name="paintWrapper">Paint wrapper.</param>
+            <param name="targetBox">Target bounding box.</param>
+            <param name="tileBrush">Tile brush to use.</param>
+            <param name="tileBrushImage">Tile brush image.</param>
+        </member>
+        <member name="M:Avalonia.Skia.DrawingContextImpl.CreatePaint(SkiaSharp.SKPaint,Avalonia.Media.IBrush,Avalonia.Rect)">
+            <summary>
+            Creates paint wrapper for given brush.
+            </summary>
+            <param name="paint">The paint to wrap.</param>
+            <param name="brush">Source brush.</param>
+            <param name="targetRect">Target rect.</param>
+            <returns>Paint wrapper for given brush.</returns>
+        </member>
+        <member name="M:Avalonia.Skia.DrawingContextImpl.TryCreatePaint(SkiaSharp.SKPaint,Avalonia.Media.IPen,Avalonia.Rect)">
+            <summary>
+            Creates paint wrapper for given pen.
+            </summary>
+            <param name="paint">The paint to wrap.</param>
+            <param name="pen">Source pen.</param>
+            <param name="targetRect">Target rect.</param>
+            <returns></returns>
+        </member>
+        <member name="M:Avalonia.Skia.DrawingContextImpl.CreateRenderTarget(Avalonia.PixelSize,System.Boolean,System.Nullable{Avalonia.Platform.PixelFormat})">
+            <summary>
+            Create new render target compatible with this drawing context.
+            </summary>
+            <param name="pixelSize">The size of the render target.</param>
+            <param name="isLayer">Whether the render target is being created for a layer.</param>
+            <param name="format">Pixel format.</param>
+            <returns></returns>
+        </member>
+        <member name="T:Avalonia.Skia.DrawingContextImpl.PaintState">
+            <summary>
+            Skia cached paint state.
+            </summary>
+        </member>
+        <member name="M:Avalonia.Skia.DrawingContextImpl.PaintState.Dispose">
+            <inheritdoc />
+        </member>
+        <member name="T:Avalonia.Skia.DrawingContextImpl.PaintWrapper">
+            <summary>
+            Skia paint wrapper.
+            </summary>
+        </member>
+        <member name="M:Avalonia.Skia.DrawingContextImpl.PaintWrapper.AddDisposable(System.IDisposable)">
+            <summary>
+            Add new disposable to a wrapper.
+            </summary>
+            <param name="disposable">Disposable to add.</param>
+        </member>
+        <member name="M:Avalonia.Skia.DrawingContextImpl.PaintWrapper.Dispose">
+            <inheritdoc />
+        </member>
+        <member name="T:Avalonia.Skia.EllipseGeometryImpl">
+            <summary>
+            A Skia implementation of a <see cref="T:Avalonia.Media.EllipseGeometry"/>.
+            </summary>
+        </member>
+        <member name="T:Avalonia.Skia.FramebufferRenderTarget">
+            <summary>
+            Skia render target that renders to a framebuffer surface. No gpu acceleration available.
+            </summary>
+        </member>
+        <member name="M:Avalonia.Skia.FramebufferRenderTarget.#ctor(Avalonia.Controls.Platform.Surfaces.IFramebufferPlatformSurface)">
+            <summary>
+            Create new framebuffer render target using a target surface.
+            </summary>
+            <param name="platformSurface">Target surface.</param>
+        </member>
+        <member name="M:Avalonia.Skia.FramebufferRenderTarget.Dispose">
+            <inheritdoc />
+        </member>
+        <member name="M:Avalonia.Skia.FramebufferRenderTarget.CreateDrawingContext(System.Boolean)">
+            <inheritdoc />
+        </member>
+        <member name="M:Avalonia.Skia.FramebufferRenderTarget.CreateDrawingContext(Avalonia.PixelSize,Avalonia.Platform.RenderTargetDrawingContextProperties@)">
+            <inheritdoc />
+        </member>
+        <member name="M:Avalonia.Skia.FramebufferRenderTarget.AreImageInfosCompatible(SkiaSharp.SKImageInfo,SkiaSharp.SKImageInfo)">
+            <summary>
+            Check if two images info are compatible.
+            </summary>
+            <param name="currentImageInfo">Current.</param>
+            <param name="desiredImageInfo">Desired.</param>
+            <returns>True, if images are compatible.</returns>
+        </member>
+        <member name="M:Avalonia.Skia.FramebufferRenderTarget.CreateSurface(SkiaSharp.SKImageInfo,Avalonia.Platform.ILockedFramebuffer)">
+            <summary>
+            Create Skia surface backed by given framebuffer.
+            </summary>
+            <param name="desiredImageInfo">Desired image info.</param>
+            <param name="framebuffer">Backing framebuffer.</param>
+        </member>
+        <member name="M:Avalonia.Skia.FramebufferRenderTarget.FreeSurface">
+            <summary>
+            Free Skia surface.
+            </summary>
+        </member>
+        <member name="T:Avalonia.Skia.FramebufferRenderTarget.PixelFormatConversionShim">
+            <summary>
+            Converts non-compatible pixel formats using bitmap copies.
+            </summary>
+        </member>
+        <member name="P:Avalonia.Skia.FramebufferRenderTarget.PixelFormatConversionShim.Surface">
+            <summary>
+            Skia surface.
+            </summary>
+        </member>
+        <member name="P:Avalonia.Skia.FramebufferRenderTarget.PixelFormatConversionShim.SurfaceCopyHandler">
+            <summary>
+            Handler to start conversion via surface copy.
+            </summary>
+        </member>
+        <member name="M:Avalonia.Skia.FramebufferRenderTarget.PixelFormatConversionShim.Dispose">
+            <inheritdoc />
+        </member>
+        <member name="M:Avalonia.Skia.FramebufferRenderTarget.PixelFormatConversionShim.CopySurface">
+            <summary>
+            Convert and copy surface to a framebuffer.
+            </summary>
+        </member>
+        <member name="T:Avalonia.Skia.GeometryGroupImpl">
+            <summary>
+            A Skia implementation of a <see cref="T:Avalonia.Media.GeometryGroup"/>.
+            </summary>
+        </member>
+        <member name="T:Avalonia.Skia.GeometryImpl">
+            <summary>
+            A Skia implementation of <see cref="T:Avalonia.Platform.IGeometryImpl"/>.
+            </summary>
+        </member>
+        <member name="P:Avalonia.Skia.GeometryImpl.Bounds">
+            <inheritdoc />
+        </member>
+        <member name="P:Avalonia.Skia.GeometryImpl.ContourLength">
+            <inheritdoc />
+        </member>
+        <member name="M:Avalonia.Skia.GeometryImpl.FillContains(Avalonia.Point)">
+            <inheritdoc />
+        </member>
+        <member name="M:Avalonia.Skia.GeometryImpl.StrokeContains(Avalonia.Media.IPen,Avalonia.Point)">
+            <inheritdoc />
+        </member>
+        <member name="M:Avalonia.Skia.GeometryImpl.PathContainsCore(SkiaSharp.SKPath,Avalonia.Point)">
+            <summary>
+            Check Skia path if it contains a point.
+            </summary>
+            <param name="path">Path to check.</param>
+            <param name="point">Point.</param>
+            <returns>True, if point is contained in a path.</returns>
+        </member>
+        <member name="M:Avalonia.Skia.GeometryImpl.Intersect(Avalonia.Platform.IGeometryImpl)">
+            <inheritdoc />
+        </member>
+        <member name="M:Avalonia.Skia.GeometryImpl.GetRenderBounds(Avalonia.Media.IPen)">
+            <inheritdoc />
+        </member>
+        <member name="M:Avalonia.Skia.GeometryImpl.WithTransform(Avalonia.Matrix)">
+            <inheritdoc />
+        </member>
+        <member name="M:Avalonia.Skia.GeometryImpl.TryGetPointAtDistance(System.Double,Avalonia.Point@)">
+            <inheritdoc />
+        </member>
+        <member name="M:Avalonia.Skia.GeometryImpl.TryGetPointAndTangentAtDistance(System.Double,Avalonia.Point@,Avalonia.Point@)">
+            <inheritdoc />
+        </member>
+        <member name="M:Avalonia.Skia.GeometryImpl.InvalidateCaches">
+            <summary>
+            Invalidate all caches. Call after chaining path contents.
+            </summary>
+        </member>
+        <member name="M:Avalonia.Skia.GlyphTypefaceImpl.GetGlyph(System.UInt32)">
+            <inheritdoc cref="T:Avalonia.Media.IGlyphTypeface"/>
+        </member>
+        <member name="M:Avalonia.Skia.GlyphTypefaceImpl.GetGlyphs(System.ReadOnlySpan{System.UInt32})">
+            <inheritdoc cref="T:Avalonia.Media.IGlyphTypeface"/>
+        </member>
+        <member name="M:Avalonia.Skia.GlyphTypefaceImpl.GetGlyphAdvance(System.UInt16)">
+            <inheritdoc cref="T:Avalonia.Media.IGlyphTypeface"/>
+        </member>
+        <member name="M:Avalonia.Skia.GlyphTypefaceImpl.GetGlyphAdvances(System.ReadOnlySpan{System.UInt16})">
+            <inheritdoc cref="T:Avalonia.Media.IGlyphTypeface"/>
+        </member>
+        <member name="T:Avalonia.Skia.ISkiaGpu">
+            <summary>
+            Custom Skia gpu instance.
+            </summary>
+        </member>
+        <member name="M:Avalonia.Skia.ISkiaGpu.TryCreateRenderTarget(System.Collections.Generic.IEnumerable{System.Object})">
+            <summary>
+            Attempts to create custom render target from given surfaces.
+            </summary>
+            <param name="surfaces">Surfaces.</param>
+            <returns>Created render target or <see langword="null"/> if it fails.</returns>
+        </member>
+        <member name="M:Avalonia.Skia.ISkiaGpu.TryCreateSurface(Avalonia.PixelSize,Avalonia.Skia.ISkiaGpuRenderSession)">
+            <summary>
+            Creates an offscreen render target surface
+            </summary>
+            <param name="size">size in pixels.</param>
+            <param name="session">An optional custom render session.</param>
+        </member>
+        <member name="T:Avalonia.Skia.ISkiaGpuRenderSession">
+            <summary>
+            Custom render session for Skia render target.
+            </summary>
+        </member>
+        <member name="P:Avalonia.Skia.ISkiaGpuRenderSession.GrContext">
+            <summary>
+            GrContext used by this session.
+            </summary>
+        </member>
+        <member name="P:Avalonia.Skia.ISkiaGpuRenderSession.SkSurface">
+            <summary>
+            Canvas that will be used to render.
+            </summary>
+        </member>
+        <member name="P:Avalonia.Skia.ISkiaGpuRenderSession.ScaleFactor">
+            <summary>
+            Scaling factor.
+            </summary>
+        </member>
+        <member name="T:Avalonia.Skia.ISkiaGpuRenderTarget">
+            <summary>
+            Custom Skia render target.
+            </summary>
+        </member>
+        <member name="M:Avalonia.Skia.ISkiaGpuRenderTarget.BeginRenderingSession">
+            <summary>
+            Start rendering to this render target.
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="T:Avalonia.Skia.SkiaGpuRenderTarget">
+            <summary>
+            Adapts <see cref="T:Avalonia.Skia.ISkiaGpuRenderTarget"/> to be used within our rendering pipeline.
+            </summary>
+        </member>
+        <member name="M:Avalonia.Skia.Helpers.DrawingContextHelper.RenderAsync(SkiaSharp.SKCanvas,Avalonia.Visual)">
+            <inheritdoc cref="M:Avalonia.Skia.Helpers.DrawingContextHelper.RenderAsync(SkiaSharp.SKCanvas,Avalonia.Visual,Avalonia.Rect,Avalonia.Vector)"/>.
+        </member>
+        <member name="M:Avalonia.Skia.Helpers.DrawingContextHelper.RenderAsync(SkiaSharp.SKCanvas,Avalonia.Visual,Avalonia.Rect,Avalonia.Vector)">
+            <summary>
+            Renders Avalonia visual into a SKCanvas instance.
+            This is useful in scenarios where canvas is not controlled by application, but received from another non avalonia api
+            like: SKCanvas canvas = SKDocument.BeginPage(...);
+            </summary>
+            <param name="canvas">Skia canvas to render into.</param>
+            <param name="visual">Avalonia visual.</param>
+            <param name="clipRect">Clipping rectangle.</param>
+            <param name="dpi">Dpi of drawings.</param>
+        </member>
+        <member name="M:Avalonia.Skia.Helpers.DrawingContextHelper.WrapSkiaCanvas(SkiaSharp.SKCanvas,Avalonia.Vector)">
+            <summary>
+            Wrap Skia canvas in drawing context so we can use Avalonia api to render to external skia canvas
+            this is useful in scenarios where canvas is not controlled by application, but received from another non avalonia api
+            like: SKCanvas canvas = SKDocument.BeginPage(...);
+            </summary>
+            <param name="canvas">Skia canvas to render into.</param>
+            <param name="dpi"></param>
+            <returns>DrawingContext</returns>
+        </member>
+        <member name="T:Avalonia.Skia.Helpers.ImageSavingHelper">
+            <summary>
+            Helps with saving images to stream/file.
+            </summary>
+        </member>
+        <member name="M:Avalonia.Skia.Helpers.ImageSavingHelper.SaveImage(SkiaSharp.SKImage,System.String,System.Nullable{System.Int32})">
+            <summary>
+            Save Skia image to a file.
+            </summary>
+            <param name="image">Image to save</param>
+            <param name="fileName">Target file.</param>
+            <param name="quality">
+            The optional quality for PNG compression. 
+            The quality value is interpreted from 0 - 100. If quality is null 
+            the encoder applies the default quality value.
+            </param>
+        </member>
+        <member name="M:Avalonia.Skia.Helpers.ImageSavingHelper.SaveImage(SkiaSharp.SKImage,System.IO.Stream,System.Nullable{System.Int32})">
+            <summary>
+            Save Skia image to a stream.
+            </summary>
+            <param name="image">Image to save</param>
+            <param name="stream">The output stream to save the image.</param>
+            <param name="quality">
+            The optional quality for PNG compression. 
+            The quality value is interpreted from 0 - 100. If quality is null 
+            the encoder applies the default quality value.
+            </param>
+        </member>
+        <member name="M:Avalonia.Skia.Helpers.PenHelper.GetHashCode(Avalonia.Media.IPen,System.Boolean)">
+            <summary>
+            Gets a hash code for a pen, optionally including the brush.
+            </summary>
+            <param name="pen">The pen.</param>
+            <param name="includeBrush">Whether to include the brush in the hash code.</param>
+            <returns>The hash code.</returns>
+        </member>
+        <member name="T:Avalonia.Skia.Helpers.PixelFormatHelper">
+            <summary>
+            Helps with resolving pixel formats to Skia color types.
+            </summary>
+        </member>
+        <member name="M:Avalonia.Skia.Helpers.PixelFormatHelper.ResolveColorType(System.Nullable{Avalonia.Platform.PixelFormat})">
+            <summary>
+            Resolve given format to Skia color type.
+            </summary>
+            <param name="format">Format to resolve.</param>
+            <returns>Resolved color type.</returns>
+        </member>
+        <member name="M:Avalonia.Skia.Helpers.SKPathHelper.CreateClosedPath(SkiaSharp.SKPath)">
+            <summary>
+            Creates a new path that is a closed version of the source path.
+            </summary>
+            <param name="path">The source path.</param>
+            <returns>A closed path.</returns>
+        </member>
+        <member name="M:Avalonia.Skia.Helpers.SKPathHelper.CreateStrokedPath(SkiaSharp.SKPath,Avalonia.Media.IPen)">
+            <summary>
+            Creates a path that is the result of a pen being applied to the stroke of the given path.
+            </summary>
+            <param name="path">The path to stroke.</param>
+            <param name="pen">The pen to use to stroke the path.</param>
+            <returns>The resulting path, or null if the pen has 0 thickness.</returns>
+        </member>
+        <member name="T:Avalonia.Skia.IDrawableBitmapImpl">
+            <summary>
+            Extended bitmap implementation that allows for drawing it's contents.
+            </summary>
+        </member>
+        <member name="M:Avalonia.Skia.IDrawableBitmapImpl.Draw(Avalonia.Skia.DrawingContextImpl,SkiaSharp.SKRect,SkiaSharp.SKRect,SkiaSharp.SKPaint)">
+            <summary>
+            Draw bitmap to a drawing context.
+            </summary>
+            <param name="context">Drawing context.</param>
+            <param name="sourceRect">Source rect.</param>
+            <param name="destRect">Destination rect.</param>
+            <param name="paint">Paint to use.</param>
+        </member>
+        <member name="T:Avalonia.Skia.ImmutableBitmap">
+            <summary>
+            Immutable Skia bitmap.
+            </summary>
+        </member>
+        <member name="M:Avalonia.Skia.ImmutableBitmap.#ctor(System.IO.Stream)">
+            <summary>
+            Create immutable bitmap from given stream.
+            </summary>
+            <param name="stream">Stream containing encoded data.</param>
+        </member>
+        <member name="M:Avalonia.Skia.ImmutableBitmap.#ctor(Avalonia.PixelSize,Avalonia.Vector,System.Int32,Avalonia.Platform.PixelFormat,Avalonia.Platform.AlphaFormat,System.IntPtr)">
+            <summary>
+            Create immutable bitmap from given pixel data copy.
+            </summary>
+            <param name="size">Size of the bitmap.</param>
+            <param name="dpi">DPI of the bitmap.</param>
+            <param name="stride">Stride of data pixels.</param>
+            <param name="format">Format of data pixels.</param>
+            <param name="alphaFormat">Alpha format of data pixels.</param>
+            <param name="data">Data pixels.</param>
+        </member>
+        <member name="M:Avalonia.Skia.ImmutableBitmap.Dispose">
+            <inheritdoc />
+        </member>
+        <member name="M:Avalonia.Skia.ImmutableBitmap.Save(System.String,System.Nullable{System.Int32})">
+            <inheritdoc />
+        </member>
+        <member name="M:Avalonia.Skia.ImmutableBitmap.Save(System.IO.Stream,System.Nullable{System.Int32})">
+            <inheritdoc />
+        </member>
+        <member name="M:Avalonia.Skia.ImmutableBitmap.Draw(Avalonia.Skia.DrawingContextImpl,SkiaSharp.SKRect,SkiaSharp.SKRect,SkiaSharp.SKPaint)">
+            <inheritdoc />
+        </member>
+        <member name="T:Avalonia.Skia.LineGeometryImpl">
+            <summary>
+            A Skia implementation of a <see cref="T:Avalonia.Media.LineGeometry"/>.
+            </summary>
+        </member>
+        <member name="T:Avalonia.Skia.PlatformRenderInterface">
+            <summary>
+            Skia platform render interface.
+            </summary>
+        </member>
+        <member name="M:Avalonia.Skia.PlatformRenderInterface.CreateStreamGeometry">
+            <inheritdoc />
+        </member>
+        <member name="M:Avalonia.Skia.PlatformRenderInterface.LoadBitmap(System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:Avalonia.Skia.PlatformRenderInterface.LoadBitmap(System.IO.Stream)">
+            <inheritdoc />
+        </member>
+        <member name="M:Avalonia.Skia.PlatformRenderInterface.LoadBitmap(Avalonia.Platform.PixelFormat,Avalonia.Platform.AlphaFormat,System.IntPtr,Avalonia.PixelSize,Avalonia.Vector,System.Int32)">
+            <inheritdoc />
+        </member>
+        <member name="M:Avalonia.Skia.PlatformRenderInterface.LoadBitmapToWidth(System.IO.Stream,System.Int32,Avalonia.Media.Imaging.BitmapInterpolationMode)">
+            <inheritdoc />
+        </member>
+        <member name="M:Avalonia.Skia.PlatformRenderInterface.LoadBitmapToHeight(System.IO.Stream,System.Int32,Avalonia.Media.Imaging.BitmapInterpolationMode)">
+            <inheritdoc />
+        </member>
+        <member name="M:Avalonia.Skia.PlatformRenderInterface.ResizeBitmap(Avalonia.Platform.IBitmapImpl,Avalonia.PixelSize,Avalonia.Media.Imaging.BitmapInterpolationMode)">
+            <inheritdoc />
+        </member>
+        <member name="M:Avalonia.Skia.PlatformRenderInterface.CreateRenderTargetBitmap(Avalonia.PixelSize,Avalonia.Vector)">
+            <inheritdoc />
+        </member>
+        <member name="M:Avalonia.Skia.PlatformRenderInterface.CreateWriteableBitmap(Avalonia.PixelSize,Avalonia.Vector,Avalonia.Platform.PixelFormat,Avalonia.Platform.AlphaFormat)">
+            <inheritdoc />
+        </member>
+        <member name="T:Avalonia.Skia.RectangleGeometryImpl">
+            <summary>
+            A Skia implementation of a <see cref="T:Avalonia.Media.RectangleGeometry"/>.
+            </summary>
+        </member>
+        <member name="T:Avalonia.Skia.SKCacheBase`2">
+            <summary>
+            Cache base for Skia objects.
+            </summary>
+        </member>
+        <member name="F:Avalonia.Skia.SKCacheBase`2.Cache">
+            <summary>
+            Bag to hold the cached items.
+            </summary>
+        </member>
+        <member name="F:Avalonia.Skia.SKCacheBase`2.Shared">
+            <summary>
+            Shared cache.
+            </summary>
+        </member>
+        <member name="M:Avalonia.Skia.SKCacheBase`2.Get">
+            <summary>
+            Gets a cached item for usage.
+            </summary>
+            <remarks>
+            If there is a available item in the cache, the cached item will be returned..
+            Otherwise a new cached item will be created.
+            </remarks>
+            <returns></returns>
+        </member>
+        <member name="M:Avalonia.Skia.SKCacheBase`2.Return(`0)">
+            <summary>
+            Returns the item for reuse later.
+            </summary>
+            <remarks>
+            Do not use the item further.
+            Do not return the same item multiple times as that will break the cache.
+            </remarks>
+            <param name="item"></param>
+        </member>
+        <member name="M:Avalonia.Skia.SKCacheBase`2.Clear">
+            <summary>
+            Clears and disposes all cached items.
+            </summary>
+        </member>
+        <member name="M:Avalonia.Skia.SkiaContext.CreateRenderTarget(System.Collections.Generic.IEnumerable{System.Object})">
+            <inheritdoc />
+        </member>
+        <member name="T:Avalonia.Skia.SkiaPlatform">
+            <summary>
+            Skia platform initializer.
+            </summary>
+        </member>
+        <member name="M:Avalonia.Skia.SkiaPlatform.Initialize">
+            <summary>
+            Initialize Skia platform.
+            </summary>
+        </member>
+        <member name="P:Avalonia.Skia.SkiaPlatform.DefaultDpi">
+            <summary>
+            Default DPI.
+            </summary>
+        </member>
+        <member name="T:Avalonia.Skia.SKPaintCache">
+            <summary>
+            Cache for SKPaints.
+            </summary>
+        </member>
+        <member name="M:Avalonia.Skia.SKPaintCache.ReturnReset(SkiaSharp.SKPaint)">
+            <summary>
+            Returns a SKPaint and resets it for reuse later.
+            </summary>
+            <remarks>
+            Do not use the paint further.
+            Do not return the same paint multiple times as that will break the cache.
+            Uses SKPaint.Reset() for reuse later.
+            </remarks>
+            <param name="paint">Paint to reset.</param>
+        </member>
+        <member name="T:Avalonia.Skia.SKRoundRectCache">
+            <summary>
+            Cache for SKRoundRectCache.
+            </summary>
+        </member>
+        <member name="F:Avalonia.Skia.SKRoundRectCache._radiiCache">
+            <summary>
+            Cache for points to use for setting the radii.
+            </summary>
+        </member>
+        <member name="M:Avalonia.Skia.SKRoundRectCache.GetAndSetRadii(SkiaSharp.SKRect@,Avalonia.RoundedRect@)">
+            <summary>
+            Gets a cached SKRoundRect and sets it with the passed rectangle and Radii.
+            </summary>
+            <param name="rectangle">Rectangle size to set the cached rectangle to.</param>
+            <param name="roundedRect">Rounded rectangle to copy the radii from.</param>
+            <returns>Configured rounded rectangle</returns>
+        </member>
+        <member name="M:Avalonia.Skia.SKRoundRectCache.GetAndSetRadii(SkiaSharp.SKRect@,SkiaSharp.SKPoint[]@)">
+            <summary>
+            Gets a cached SKRoundRect and sets it with the passed rectangle and Radii.
+            </summary>
+            <param name="rectangle">Rectangle size to set the cached rectangle to.</param>
+            <param name="radii">point array of radii.</param>
+            <returns>Configured rounded rectangle</returns>
+        </member>
+        <member name="M:Avalonia.Skia.SKRoundRectCache.ReturnReset(SkiaSharp.SKRoundRect)">
+            <summary>
+            Returns a SKPaint and resets it for reuse later.
+            </summary>
+            <remarks>
+            Do not use the rect further.
+            Do not return the same rect multiple times as that will break the cache.
+            Uses SKRoundRect.SetEmpty(); for reuse later.
+            </remarks>
+            <param name="rect">Rectangle to reset</param>
+        </member>
+        <member name="M:Avalonia.Skia.SKRoundRectCache.Clear">
+            <summary>
+            Clears and disposes all cached items.
+            </summary>
+        </member>
+        <member name="T:Avalonia.Skia.SKTextBlobBuilderCache">
+            <summary>
+            Cache for SKTextBlobBuilder.
+            </summary>
+        </member>
+        <member name="T:Avalonia.Skia.StreamGeometryImpl">
+            <summary>
+            A Skia implementation of a <see cref="T:Avalonia.Platform.IStreamGeometryImpl"/>.
+            </summary>
+        </member>
+        <member name="M:Avalonia.Skia.StreamGeometryImpl.#ctor(SkiaSharp.SKPath,SkiaSharp.SKPath,System.Nullable{Avalonia.Rect})">
+            <summary>
+            Initializes a new instance of the <see cref="T:Avalonia.Skia.StreamGeometryImpl"/> class.
+            </summary>
+            <param name="stroke">An existing Skia <see cref="T:SkiaSharp.SKPath"/> for the stroke.</param>
+            <param name="fill">An existing Skia <see cref="T:SkiaSharp.SKPath"/> for the fill, can also be null or the same as the stroke</param>
+            <param name="bounds">Precomputed path bounds.</param>
+        </member>
+        <member name="M:Avalonia.Skia.StreamGeometryImpl.#ctor">
+            <summary>
+            Initializes a new instance of the <see cref="T:Avalonia.Skia.StreamGeometryImpl"/> class.
+            </summary>
+        </member>
+        <member name="P:Avalonia.Skia.StreamGeometryImpl.StrokePath">
+            <inheritdoc />
+        </member>
+        <member name="P:Avalonia.Skia.StreamGeometryImpl.FillPath">
+            <inheritdoc />
+        </member>
+        <member name="P:Avalonia.Skia.StreamGeometryImpl.Bounds">
+            <inheritdoc />
+        </member>
+        <member name="M:Avalonia.Skia.StreamGeometryImpl.Clone">
+            <inheritdoc />
+        </member>
+        <member name="M:Avalonia.Skia.StreamGeometryImpl.Open">
+            <inheritdoc />
+        </member>
+        <member name="M:Avalonia.Skia.StreamGeometryImpl.CreateEmptyPath">
+            <summary>
+            Create new empty <see cref="T:SkiaSharp.SKPath"/>.
+            </summary>
+            <returns>Empty <see cref="T:SkiaSharp.SKPath"/></returns>
+        </member>
+        <member name="T:Avalonia.Skia.StreamGeometryImpl.StreamContext">
+            <summary>
+            A Skia implementation of a <see cref="T:Avalonia.Platform.IStreamGeometryContextImpl"/>.
+            </summary>
+        </member>
+        <member name="M:Avalonia.Skia.StreamGeometryImpl.StreamContext.#ctor(Avalonia.Skia.StreamGeometryImpl)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Avalonia.Skia.StreamGeometryImpl.StreamContext"/> class.
+            <param name="geometryImpl">Geometry to operate on.</param>
+            </summary>
+        </member>
+        <member name="M:Avalonia.Skia.StreamGeometryImpl.StreamContext.Dispose">
+            <inheritdoc />
+            <remarks>Will update bounds of passed geometry.</remarks>
+        </member>
+        <member name="M:Avalonia.Skia.StreamGeometryImpl.StreamContext.ArcTo(Avalonia.Point,Avalonia.Size,System.Double,System.Boolean,Avalonia.Media.SweepDirection)">
+            <inheritdoc />
+        </member>
+        <member name="M:Avalonia.Skia.StreamGeometryImpl.StreamContext.BeginFigure(Avalonia.Point,System.Boolean)">
+            <inheritdoc />
+        </member>
+        <member name="M:Avalonia.Skia.StreamGeometryImpl.StreamContext.CubicBezierTo(Avalonia.Point,Avalonia.Point,Avalonia.Point)">
+            <inheritdoc />
+        </member>
+        <member name="M:Avalonia.Skia.StreamGeometryImpl.StreamContext.QuadraticBezierTo(Avalonia.Point,Avalonia.Point)">
+            <inheritdoc />
+        </member>
+        <member name="M:Avalonia.Skia.StreamGeometryImpl.StreamContext.LineTo(Avalonia.Point)">
+            <inheritdoc />
+        </member>
+        <member name="M:Avalonia.Skia.StreamGeometryImpl.StreamContext.EndFigure(System.Boolean)">
+            <inheritdoc />
+        </member>
+        <member name="M:Avalonia.Skia.StreamGeometryImpl.StreamContext.SetFillRule(Avalonia.Media.FillRule)">
+            <inheritdoc />
+        </member>
+        <member name="M:Avalonia.Skia.StreamGeometryImpl.StreamContext.LineTo(Avalonia.Point,System.Boolean)">
+            <inheritdoc />
+        </member>
+        <member name="M:Avalonia.Skia.StreamGeometryImpl.StreamContext.ArcTo(Avalonia.Point,Avalonia.Size,System.Double,System.Boolean,Avalonia.Media.SweepDirection,System.Boolean)">
+            <inheritdoc />
+        </member>
+        <member name="M:Avalonia.Skia.StreamGeometryImpl.StreamContext.CubicBezierTo(Avalonia.Point,Avalonia.Point,Avalonia.Point,System.Boolean)">
+            <inheritdoc />
+        </member>
+        <member name="M:Avalonia.Skia.StreamGeometryImpl.StreamContext.QuadraticBezierTo(Avalonia.Point,Avalonia.Point,System.Boolean)">
+            <inheritdoc />
+        </member>
+        <member name="T:Avalonia.Skia.SurfaceRenderTarget">
+            <summary>
+            Skia render target that writes to a surface.
+            </summary>
+        </member>
+        <member name="M:Avalonia.Skia.SurfaceRenderTarget.#ctor(Avalonia.Skia.SurfaceRenderTarget.CreateInfo)">
+            <summary>
+            Create new surface render target.
+            </summary>
+            <param name="createInfo">Create info.</param>
+        </member>
+        <member name="M:Avalonia.Skia.SurfaceRenderTarget.CreateSurface(SkiaSharp.GRContext,System.Int32,System.Int32,System.Nullable{Avalonia.Platform.PixelFormat})">
+            <summary>
+            Create backing Skia surface.
+            </summary>
+            <param name="gpu">GPU.</param>
+            <param name="width">Width.</param>
+            <param name="height">Height.</param>
+            <param name="format">Format.</param>
+            <returns></returns>
+        </member>
+        <member name="M:Avalonia.Skia.SurfaceRenderTarget.Dispose">
+            <inheritdoc />
+        </member>
+        <member name="M:Avalonia.Skia.SurfaceRenderTarget.CreateDrawingContext(System.Boolean)">
+            <inheritdoc />
+        </member>
+        <member name="P:Avalonia.Skia.SurfaceRenderTarget.Dpi">
+            <inheritdoc />
+        </member>
+        <member name="P:Avalonia.Skia.SurfaceRenderTarget.PixelSize">
+            <inheritdoc />
+        </member>
+        <member name="M:Avalonia.Skia.SurfaceRenderTarget.Save(System.String,System.Nullable{System.Int32})">
+            <inheritdoc />
+        </member>
+        <member name="M:Avalonia.Skia.SurfaceRenderTarget.Save(System.IO.Stream,System.Nullable{System.Int32})">
+            <inheritdoc />
+        </member>
+        <member name="M:Avalonia.Skia.SurfaceRenderTarget.Draw(Avalonia.Skia.DrawingContextImpl,SkiaSharp.SKRect,SkiaSharp.SKRect,SkiaSharp.SKPaint)">
+            <inheritdoc />
+        </member>
+        <member name="M:Avalonia.Skia.SurfaceRenderTarget.SnapshotImage">
+            <summary>
+            Create Skia image snapshot from a surface.
+            </summary>
+            <returns>Image snapshot.</returns>
+        </member>
+        <member name="M:Avalonia.Skia.SurfaceRenderTarget.MakeImageInfo(System.Int32,System.Int32,System.Nullable{Avalonia.Platform.PixelFormat})">
+            <summary>
+            Create image info for given parameters.
+            </summary>
+            <param name="width">Width.</param>
+            <param name="height">Height.</param>
+            <param name="format">Format.</param>
+            <returns></returns>
+        </member>
+        <member name="T:Avalonia.Skia.SurfaceRenderTarget.CreateInfo">
+            <summary>
+            Create info of a surface render target.
+            </summary>
+        </member>
+        <member name="F:Avalonia.Skia.SurfaceRenderTarget.CreateInfo.Width">
+            <summary>
+            Width of a render target.
+            </summary>
+        </member>
+        <member name="F:Avalonia.Skia.SurfaceRenderTarget.CreateInfo.Height">
+            <summary>
+            Height of a render target.
+            </summary>
+        </member>
+        <member name="F:Avalonia.Skia.SurfaceRenderTarget.CreateInfo.Dpi">
+            <summary>
+            Dpi used when rendering to a surface.
+            </summary>
+        </member>
+        <member name="F:Avalonia.Skia.SurfaceRenderTarget.CreateInfo.Format">
+            <summary>
+            Pixel format of a render target.
+            </summary>
+        </member>
+        <member name="F:Avalonia.Skia.SurfaceRenderTarget.CreateInfo.DisableTextLcdRendering">
+            <summary>
+            Render text without Lcd rendering.
+            </summary>
+        </member>
+        <member name="F:Avalonia.Skia.SurfaceRenderTarget.CreateInfo.GrContext">
+            <summary>
+            GPU-accelerated context (optional)
+            </summary>
+        </member>
+        <member name="T:Avalonia.Skia.TransformedGeometryImpl">
+            <summary>
+            A Skia implementation of a <see cref="T:Avalonia.Platform.ITransformedGeometryImpl"/>.
+            </summary>
+        </member>
+        <member name="M:Avalonia.Skia.TransformedGeometryImpl.#ctor(Avalonia.Skia.GeometryImpl,Avalonia.Matrix)">
+            <summary>
+             Initializes a new instance of the <see cref="T:Avalonia.Skia.TransformedGeometryImpl"/> class.
+            </summary>
+            <param name="source">Source geometry.</param>
+            <param name="transform">Transform of new geometry.</param>
+        </member>
+        <member name="P:Avalonia.Skia.TransformedGeometryImpl.StrokePath">
+            <inheritdoc />
+        </member>
+        <member name="P:Avalonia.Skia.TransformedGeometryImpl.FillPath">
+            <inheritdoc />
+        </member>
+        <member name="P:Avalonia.Skia.TransformedGeometryImpl.SourceGeometry">
+            <inheritdoc />
+        </member>
+        <member name="P:Avalonia.Skia.TransformedGeometryImpl.Transform">
+            <inheritdoc />
+        </member>
+        <member name="P:Avalonia.Skia.TransformedGeometryImpl.Bounds">
+            <inheritdoc />
+        </member>
+        <member name="T:Avalonia.Skia.WriteableBitmapImpl">
+            <summary>
+            Skia based writeable bitmap.
+            </summary>
+        </member>
+        <member name="M:Avalonia.Skia.WriteableBitmapImpl.#ctor(System.IO.Stream)">
+            <summary>
+            Create a WriteableBitmap from given stream.
+            </summary>
+            <param name="stream">Stream containing encoded data.</param>
+        </member>
+        <member name="M:Avalonia.Skia.WriteableBitmapImpl.#ctor(Avalonia.PixelSize,Avalonia.Vector,Avalonia.Platform.PixelFormat,Avalonia.Platform.AlphaFormat)">
+            <summary>
+            Create new writeable bitmap.
+            </summary>
+            <param name="size">The size of the bitmap in device pixels.</param>
+            <param name="dpi">The DPI of the bitmap.</param>
+            <param name="format">The pixel format.</param>
+            <param name="alphaFormat">The alpha format.</param>
+        </member>
+        <member name="P:Avalonia.Skia.WriteableBitmapImpl.PixelSize">
+            <inheritdoc />
+        </member>
+        <member name="M:Avalonia.Skia.WriteableBitmapImpl.Draw(Avalonia.Skia.DrawingContextImpl,SkiaSharp.SKRect,SkiaSharp.SKRect,SkiaSharp.SKPaint)">
+            <inheritdoc />
+        </member>
+        <member name="M:Avalonia.Skia.WriteableBitmapImpl.Dispose">
+            <inheritdoc />
+        </member>
+        <member name="M:Avalonia.Skia.WriteableBitmapImpl.Save(System.IO.Stream,System.Nullable{System.Int32})">
+            <inheritdoc />
+        </member>
+        <member name="M:Avalonia.Skia.WriteableBitmapImpl.Save(System.String,System.Nullable{System.Int32})">
+            <inheritdoc />
+        </member>
+        <member name="M:Avalonia.Skia.WriteableBitmapImpl.Lock">
+            <inheritdoc />
+        </member>
+        <member name="M:Avalonia.Skia.WriteableBitmapImpl.GetSnapshot">
+            <summary>
+            Get snapshot as image.
+            </summary>
+            <returns>Image snapshot.</returns>
+        </member>
+        <member name="M:Avalonia.Skia.WriteableBitmapImpl.ReleaseProc(System.IntPtr,System.Object)">
+            <summary>
+            Release given unmanaged blob.
+            </summary>
+            <param name="address">Blob address.</param>
+            <param name="ctx">Blob.</param>
+        </member>
+        <member name="T:Avalonia.Skia.WriteableBitmapImpl.BitmapFramebuffer">
+            <summary>
+            Framebuffer for bitmap.
+            </summary>
+        </member>
+        <member name="M:Avalonia.Skia.WriteableBitmapImpl.BitmapFramebuffer.#ctor(Avalonia.Skia.WriteableBitmapImpl,SkiaSharp.SKBitmap)">
+            <summary>
+            Create framebuffer from given bitmap.
+            </summary>
+            <param name="parent">Parent bitmap impl.</param>
+            <param name="bitmap">Bitmap.</param>
+        </member>
+        <member name="M:Avalonia.Skia.WriteableBitmapImpl.BitmapFramebuffer.Dispose">
+            <inheritdoc />
+        </member>
+        <member name="P:Avalonia.Skia.WriteableBitmapImpl.BitmapFramebuffer.Address">
+            <inheritdoc />
+        </member>
+        <member name="P:Avalonia.Skia.WriteableBitmapImpl.BitmapFramebuffer.Size">
+            <inheritdoc />
+        </member>
+        <member name="P:Avalonia.Skia.WriteableBitmapImpl.BitmapFramebuffer.RowBytes">
+            <inheritdoc />
+        </member>
+        <member name="P:Avalonia.Skia.WriteableBitmapImpl.BitmapFramebuffer.Dpi">
+            <inheritdoc />
+        </member>
+        <member name="P:Avalonia.Skia.WriteableBitmapImpl.BitmapFramebuffer.Format">
+            <inheritdoc />
+        </member>
+        <member name="T:Avalonia.SkiaApplicationExtensions">
+            <summary>
+            Skia application extensions.
+            </summary>
+        </member>
+        <member name="M:Avalonia.SkiaApplicationExtensions.UseSkia(Avalonia.AppBuilder)">
+            <summary>
+            Enable Skia renderer.
+            </summary>
+            <param name="builder">Builder.</param>
+            <returns>Configure builder.</returns>
+        </member>
+        <member name="T:Avalonia.SkiaOptions">
+            <summary>
+            Options for Skia rendering subsystem.
+            </summary>
+        </member>
+        <member name="P:Avalonia.SkiaOptions.MaxGpuResourceSizeBytes">
+            <summary>
+            The maximum number of bytes for video memory to store textures and resources.
+            </summary>
+            <remarks>
+            This is set by default to the recommended value for Avalonia.
+            Setting this to null will give you the default Skia value.
+            </remarks>
+        </member>
+        <member name="P:Avalonia.SkiaOptions.UseOpacitySaveLayer">
+            <summary>
+            Use Skia's SaveLayer API to handling opacity.
+            </summary>
+            <remarks>
+            Enabling this might have performance implications.
+            </remarks>
+        </member>
+    </members>
+</doc>

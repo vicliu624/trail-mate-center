@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Avalonia.Themes.Simple</name>
+    </assembly>
+    <members>
+        <member name="M:Avalonia.Themes.Simple.SimpleTheme.#ctor(System.IServiceProvider)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Avalonia.Themes.Simple.SimpleTheme"/> class.
+            </summary>
+            <param name="sp">The parent's service provider.</param>
+        </member>
+    </members>
+</doc>

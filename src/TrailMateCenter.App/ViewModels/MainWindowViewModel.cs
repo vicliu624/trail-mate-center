@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Globalization;
 using System.Linq;
 using TrailMateCenter.Localization;
 using TrailMateCenter.Models;
@@ -19,7 +20,21 @@ namespace TrailMateCenter.ViewModels;
 
 public sealed partial class MainWindowViewModel : ViewModelBase
 {
+    private const int DashboardTabIndex = 0;
     private const int ChatTabIndex = 1;
+    private const int LogsTabIndex = 3;
+    private const int EventsTabIndex = 4;
+    private const int ExportTabIndex = 6;
+    private static readonly string[] LocationMessageKeywords =
+    [
+        "shared their position",
+        "shared location",
+        "share location",
+        "share your location",
+        "位置",
+        "分享位置",
+        "共享位置",
+    ];
     private static readonly HashSet<string> AutoSaveProperties = new(StringComparer.Ordinal)
     {
         nameof(AutoReconnect),
@@ -33,6 +48,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         nameof(ContoursEnabled),
         nameof(ContoursUltraFine),
         nameof(EarthdataToken),
+        nameof(OfflineMode),
         nameof(MapShowLogs),
         nameof(MapShowMqtt),
         nameof(MapShowGibs),
@@ -70,6 +86,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     private AppSettings _settings = new();
     private readonly DispatcherTimer _presenceTimer;
     private readonly DispatcherTimer _portScanTimer;
+    private readonly HashSet<MapCacheRegionViewModel> _trackedOfflineCacheRegions = new();
     private bool _autoConnectBusy;
     private DateTimeOffset _lastAutoConnectAttempt = DateTimeOffset.MinValue;
     private readonly HashSet<string> _knownPortNames = new(StringComparer.OrdinalIgnoreCase);
@@ -89,6 +106,10 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     private string? _earthdataStatusDetail;
     private bool _earthdataTestBusy;
     private CancellationTokenSource? _settingsSaveDebounce;
+    private bool _eventsHistoryLoadTriggered;
+    private bool _eventsHistoryLoadInProgress;
+    private bool _logsHistoryLoadTriggered;
+    private bool _logsHistoryLoadInProgress;
 
     public MainWindowViewModel(
         HostLinkClient client,
@@ -129,6 +150,10 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         SaveSettingsCommand = new AsyncRelayCommand(SaveSettingsAsync);
         AddMqttSourceCommand = new RelayCommand(AddMqttSource);
         RemoveMqttSourceCommand = new RelayCommand(RemoveSelectedMqttSource, CanRemoveSelectedMqttSource);
+        SaveOfflineCacheRegionCommand = new RelayCommand(SaveOfflineCacheRegionFromSelection, CanSaveOfflineCacheRegionFromSelection);
+        ApplyOfflineCacheRegionCommand = new RelayCommand(ApplySelectedOfflineCacheRegion, CanApplySelectedOfflineCacheRegion);
+        BuildOfflineCacheRegionCommand = new AsyncRelayCommand(BuildSelectedOfflineCacheRegionAsync, CanBuildSelectedOfflineCacheRegion);
+        RemoveOfflineCacheRegionCommand = new RelayCommand(RemoveSelectedOfflineCacheRegion, CanRemoveSelectedOfflineCacheRegion);
         TestEarthdataCommand = new AsyncRelayCommand(TestEarthdataAsync, CanTestEarthdata);
         RallyCommand = new AsyncRelayCommand(() => SendTeamCommandAsync(TeamCommandType.RallyTo));
         MoveCommand = new AsyncRelayCommand(() => SendTeamCommandAsync(TeamCommandType.MoveTo));
@@ -147,7 +172,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         _meshtasticMqtt.MessageReceived += OnMqttMessageReceived;
         _meshtasticMqtt.PositionReceived += OnMqttPositionReceived;
         _meshtasticMqtt.NodeInfoReceived += OnMqttNodeInfoReceived;
-        _meshtasticMqtt.TacticalEventReceived += OnTacticalEventReceived;
+        _meshtasticMqtt.TacticalEventReceived += OnMqttTacticalEventReceived;
         _aprsGateway.StatsChanged += OnAprsStatsChanged;
         _aprsClient.StatusChanged += OnAprsStatusChanged;
 
@@ -180,6 +205,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         Map.FollowLatest = MapFollowLatest;
         Map.SetMqttVisibility(MapShowMqtt);
         Map.SetGibsVisibility(MapShowGibs);
+        Map.PropertyChanged += OnMapPropertyChanged;
 
         _presenceTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(5) };
         _presenceTimer.Tick += (_, _) => RefreshSubjectStatuses();
@@ -222,6 +248,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     public ObservableCollection<SubjectViewModel> UngroupedSubjects { get; } = new();
     public ObservableCollection<SeverityRuleViewModel> SeverityRules { get; } = new();
     public ObservableCollection<MqttSourceViewModel> MqttSources { get; } = new();
+    public ObservableCollection<MapCacheRegionViewModel> OfflineCacheRegions { get; } = new();
 
     public MapViewModel Map { get; } = new();
 
@@ -304,7 +331,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     private string _commandNote = string.Empty;
 
     [ObservableProperty]
-    private bool _mapFollowLatest = true;
+    private bool _mapFollowLatest;
 
     [ObservableProperty]
     private bool _mapEnableCluster = true;
@@ -317,6 +344,9 @@ public sealed partial class MainWindowViewModel : ViewModelBase
 
     [ObservableProperty]
     private string _earthdataToken = string.Empty;
+
+    [ObservableProperty]
+    private bool _offlineMode;
 
     [ObservableProperty]
     private bool _mapShowLogs;
@@ -332,6 +362,21 @@ public sealed partial class MainWindowViewModel : ViewModelBase
 
     [ObservableProperty]
     private MqttSourceViewModel? _selectedMqttSource;
+
+    [ObservableProperty]
+    private MapCacheRegionViewModel? _selectedOfflineCacheRegion;
+
+    [ObservableProperty]
+    private string _offlineCacheRegionName = string.Empty;
+
+    [ObservableProperty]
+    private bool _isOfflineCacheHealthRefreshing;
+
+    [ObservableProperty]
+    private bool _isOfflineCacheExporting;
+
+    [ObservableProperty]
+    private string _offlineCacheExportStatusText = string.Empty;
 
     [ObservableProperty]
     private bool _isMessagePanelExpanded = true;
@@ -441,6 +486,11 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     private int _unreadChatCount;
 
     public bool HasUnreadChat => UnreadChatCount > 0;
+    public bool CanUseExternalFeeds => !OfflineMode;
+    public bool CanContinueSelectedOfflineCacheRegion => CanBuildRegion(SelectedOfflineCacheRegion);
+    public bool CanExportSelectedOfflineCacheRegion => SelectedOfflineCacheRegion is not null &&
+                                                      !Map.IsOfflineCacheRunning &&
+                                                      !IsOfflineCacheExporting;
     public bool HasTeams => Teams.Count > 0;
     public bool HasNoTeams => Teams.Count == 0;
 
@@ -454,6 +504,10 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     public IAsyncRelayCommand SaveSettingsCommand { get; }
     public IRelayCommand AddMqttSourceCommand { get; }
     public IRelayCommand RemoveMqttSourceCommand { get; }
+    public IRelayCommand SaveOfflineCacheRegionCommand { get; }
+    public IRelayCommand ApplyOfflineCacheRegionCommand { get; }
+    public IAsyncRelayCommand BuildOfflineCacheRegionCommand { get; }
+    public IRelayCommand RemoveOfflineCacheRegionCommand { get; }
     public IAsyncRelayCommand TestEarthdataCommand { get; }
     public IAsyncRelayCommand RallyCommand { get; }
     public IAsyncRelayCommand MoveCommand { get; }
@@ -615,7 +669,8 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             AprsEmitMessages = _settings.Aprs.EmitMessages;
             AprsEmitWaypoints = _settings.Aprs.EmitWaypoints;
 
-            _aprsGateway.ApplySettings(_settings.Aprs);
+            OfflineMode = _settings.Ui.OfflineMode;
+            _aprsGateway.ApplySettings(BuildEffectiveAprsSettings(_settings.Aprs));
 
             ContoursEnabled = _settings.Contours.Enabled;
             ContoursUltraFine = _settings.Contours.EnableUltraFine;
@@ -650,7 +705,10 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             var mqttSettings = await LoadMqttSettingsAsync(CancellationToken.None);
             _settings = _settings with { Mqtt = mqttSettings };
             LoadMqttSources(mqttSettings.Sources);
-            _meshtasticMqtt.ApplySettings(mqttSettings);
+            _meshtasticMqtt.ApplySettings(BuildEffectiveMqttSettings(mqttSettings));
+
+            var cacheRegions = await _sqliteStore.LoadMapCacheRegionsAsync(CancellationToken.None);
+            LoadOfflineCacheRegions(cacheRegions);
         }
         catch (Exception ex)
         {
@@ -748,6 +806,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             {
                 Language = SelectedLanguage?.Culture.Name ?? string.Empty,
                 Theme = SelectedTheme?.Definition.Id ?? string.Empty,
+                OfflineMode = OfflineMode,
                 ShowMapLogs = MapShowLogs,
                 ShowMapMqtt = MapShowMqtt,
                 ShowMapGibs = MapShowGibs,
@@ -801,8 +860,8 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         _settings = newSettings with { Mqtt = mqttSettings };
         await _settingsStore.SaveAsync(newSettings, CancellationToken.None);
         await _sqliteStore.SaveMqttSourcesAsync(mqttSettings.Sources, CancellationToken.None);
-        _aprsGateway.ApplySettings(newSettings.Aprs);
-        _meshtasticMqtt.ApplySettings(mqttSettings);
+        _aprsGateway.ApplySettings(BuildEffectiveAprsSettings(newSettings.Aprs));
+        _meshtasticMqtt.ApplySettings(BuildEffectiveMqttSettings(mqttSettings));
         Map.UpdateContourSettings(newSettings.Contours);
     }
 
@@ -888,6 +947,26 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         return new MeshtasticMqttSettings
         {
             Sources = sources,
+        };
+    }
+
+    private AprsSettings BuildEffectiveAprsSettings(AprsSettings settings)
+    {
+        return OfflineMode
+            ? settings with { Enabled = false }
+            : settings;
+    }
+
+    private MeshtasticMqttSettings BuildEffectiveMqttSettings(MeshtasticMqttSettings settings)
+    {
+        if (!OfflineMode)
+            return settings;
+
+        return settings with
+        {
+            Sources = (settings.Sources ?? new List<MeshtasticMqttSourceSettings>())
+                .Select(source => source with { Enabled = false })
+                .ToList(),
         };
     }
 
@@ -987,6 +1066,903 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         if (string.IsNullOrWhiteSpace(e.PropertyName))
             return;
         ScheduleSettingsSave();
+    }
+
+    private void LoadOfflineCacheRegions(IEnumerable<MapCacheRegionSettings>? regions)
+    {
+        foreach (var tracked in _trackedOfflineCacheRegions.ToArray())
+        {
+            UntrackOfflineCacheRegion(tracked);
+        }
+
+        OfflineCacheRegions.Clear();
+        foreach (var region in (regions ?? Array.Empty<MapCacheRegionSettings>()))
+        {
+            var vm = MapCacheRegionViewModel.FromSettings(region);
+            TrackOfflineCacheRegion(vm);
+            OfflineCacheRegions.Add(vm);
+        }
+
+        SelectedOfflineCacheRegion = OfflineCacheRegions.FirstOrDefault();
+        ApplyOfflineCacheRegionCommand.NotifyCanExecuteChanged();
+        NotifyOfflineCacheBuildAvailabilityChanged();
+        RemoveOfflineCacheRegionCommand.NotifyCanExecuteChanged();
+    }
+
+    private async Task SaveOfflineCacheRegionsAsync()
+    {
+        var regions = OfflineCacheRegions
+            .Select(item => item.ToSettings())
+            .ToList();
+        await _sqliteStore.SaveMapCacheRegionsAsync(regions, CancellationToken.None);
+    }
+
+    private bool CanSaveOfflineCacheRegionFromSelection()
+    {
+        return Map.HasOfflineCacheSelection;
+    }
+
+    private void SaveOfflineCacheRegionFromSelection()
+    {
+        SaveOfflineCacheRegionFromSelectionCore(OfflineCacheRegionName);
+    }
+
+    public void SaveOfflineCacheRegionFromCurrentSelection(string? preferredName, OfflineCacheBuildOptions? options = null)
+    {
+        SaveOfflineCacheRegionFromSelectionCore(preferredName, options);
+    }
+
+    private void SaveOfflineCacheRegionFromSelectionCore(string? preferredName, OfflineCacheBuildOptions? options = null)
+    {
+        if (!Map.TryGetOfflineCacheSelectionBounds(out var bounds))
+            return;
+
+        var name = preferredName?.Trim() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            name = SelectedOfflineCacheRegion?.Name;
+        }
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            name = $"Area {OfflineCacheRegions.Count + 1}";
+        }
+
+        MapCacheRegionViewModel region;
+        if (SelectedOfflineCacheRegion is not null &&
+            string.Equals(SelectedOfflineCacheRegion.Name, name, StringComparison.OrdinalIgnoreCase))
+        {
+            region = SelectedOfflineCacheRegion;
+            region.UpdateBounds(bounds);
+            region.Name = name;
+            if (options is not null)
+            {
+                region.ApplyBuildOptions(options);
+            }
+        }
+        else
+        {
+            region = new MapCacheRegionViewModel
+            {
+                Name = name,
+            };
+            region.UpdateBounds(bounds);
+            if (options is not null)
+            {
+                region.ApplyBuildOptions(options);
+            }
+            TrackOfflineCacheRegion(region);
+            OfflineCacheRegions.Add(region);
+        }
+
+        SelectedOfflineCacheRegion = region;
+        OfflineCacheRegionName = region.Name;
+        Map.SetOfflineCacheSelectionBounds(bounds, region.Name);
+
+        _ = PersistOfflineCacheRegionsSafeAsync();
+    }
+
+    public Task RunOfflineCacheForCurrentSelectionAsync(OfflineCacheBuildOptions options)
+    {
+        return Map.RunOfflineCacheForSelectionAsync(options);
+    }
+
+    public bool FocusSelectedOfflineCacheRegionOnMap()
+    {
+        return TryApplySelectedOfflineCacheRegion(focusMap: true);
+    }
+
+    private bool CanApplySelectedOfflineCacheRegion()
+    {
+        return SelectedOfflineCacheRegion is not null && !Map.IsOfflineCacheRunning;
+    }
+
+    private void ApplySelectedOfflineCacheRegion()
+    {
+        TryApplySelectedOfflineCacheRegion(focusMap: false);
+    }
+
+    private bool CanBuildSelectedOfflineCacheRegion()
+    {
+        return CanBuildRegion(SelectedOfflineCacheRegion);
+    }
+
+    private async Task BuildSelectedOfflineCacheRegionAsync()
+    {
+        if (SelectedOfflineCacheRegion is null)
+            return;
+
+        // Preflight: always re-check local cache coverage before starting a new run.
+        await RefreshOfflineCacheRegionHealthAsync(SelectedOfflineCacheRegion, CancellationToken.None);
+        NotifyOfflineCacheBuildAvailabilityChanged();
+        if (!CanBuildRegion(SelectedOfflineCacheRegion))
+            return;
+
+        ApplySelectedOfflineCacheRegion();
+        await Map.RunOfflineCacheForSelectionAsync(SelectedOfflineCacheRegion.ToBuildOptions());
+        await RefreshOfflineCacheRegionHealthAsync(SelectedOfflineCacheRegion, CancellationToken.None);
+        NotifyOfflineCacheBuildAvailabilityChanged();
+    }
+
+    public async Task ContinueSelectedOfflineCacheRegionAsync()
+    {
+        if (SelectedOfflineCacheRegion is null || Map.IsOfflineCacheRunning || IsOfflineCacheHealthRefreshing)
+            return;
+
+        await BuildSelectedOfflineCacheRegionAsync();
+    }
+
+    public async Task<OfflineCacheRegionExportResult> ExportSelectedOfflineCacheRegionAsync(
+        string destinationRoot,
+        CancellationToken cancellationToken = default)
+    {
+        if (SelectedOfflineCacheRegion is null)
+        {
+            return OfflineCacheRegionExportResult.Fail("No cache region selected.");
+        }
+
+        var targetRoot = destinationRoot?.Trim() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(targetRoot))
+        {
+            return OfflineCacheRegionExportResult.Fail("Destination folder is empty.");
+        }
+
+        if (Map.IsOfflineCacheRunning)
+        {
+            return OfflineCacheRegionExportResult.Fail("Offline cache is running.");
+        }
+
+        if (IsOfflineCacheExporting)
+        {
+            return OfflineCacheRegionExportResult.Fail("Export is already running.");
+        }
+
+        var region = SelectedOfflineCacheRegion.ToSettings();
+        var loc = LocalizationService.Instance;
+        IsOfflineCacheExporting = true;
+        OfflineCacheExportStatusText = loc.GetString("Status.OfflineCache.ExportInProgress");
+        try
+        {
+            var result = await Task.Run(
+                () => ExportOfflineCacheRegion(region, GetOfflineCacheRoot(), targetRoot, cancellationToken),
+                cancellationToken);
+
+            if (result.Success)
+            {
+                OfflineCacheExportStatusText = loc.Format(
+                    "Status.OfflineCache.ExportDone",
+                    result.CopiedTiles,
+                    result.SourceTiles,
+                    result.SkippedTiles);
+                _logger.LogInformation(
+                    "Offline cache region '{RegionName}' exported to '{TargetRoot}'. copied={Copied}, source={Source}, skipped={Skipped}",
+                    region.Name,
+                    result.TargetMapRoot,
+                    result.CopiedTiles,
+                    result.SourceTiles,
+                    result.SkippedTiles);
+            }
+            else
+            {
+                OfflineCacheExportStatusText = loc.Format(
+                    "Status.OfflineCache.ExportFailed",
+                    result.ErrorMessage ?? "unknown");
+            }
+
+            return result;
+        }
+        catch (OperationCanceledException)
+        {
+            OfflineCacheExportStatusText = loc.GetString("Status.OfflineCache.ExportCanceled");
+            return OfflineCacheRegionExportResult.Fail("Canceled");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to export offline cache region '{RegionName}'", region.Name);
+            OfflineCacheExportStatusText = loc.Format("Status.OfflineCache.ExportFailed", ex.Message);
+            return OfflineCacheRegionExportResult.Fail(ex.Message);
+        }
+        finally
+        {
+            IsOfflineCacheExporting = false;
+        }
+    }
+
+    private bool TryApplySelectedOfflineCacheRegion(bool focusMap)
+    {
+        if (SelectedOfflineCacheRegion is null)
+            return false;
+
+        var bounds = (
+            SelectedOfflineCacheRegion.West,
+            SelectedOfflineCacheRegion.South,
+            SelectedOfflineCacheRegion.East,
+            SelectedOfflineCacheRegion.North);
+        Map.SetOfflineCacheSelectionBounds(bounds, SelectedOfflineCacheRegion.Name);
+
+        if (focusMap)
+        {
+            Map.IsOfflineCacheSelectionMode = false;
+            Map.FocusOnBounds(bounds);
+        }
+
+        return true;
+    }
+
+    private static OfflineCacheRegionExportResult ExportOfflineCacheRegion(
+        MapCacheRegionSettings region,
+        string cacheRoot,
+        string destinationRoot,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var mapsRoot = ResolveMapsExportRoot(destinationRoot);
+            var bounds = (region.West, region.South, region.East, region.North);
+            var stats = new ExportCopyStats();
+
+            if (region.IncludeOsm)
+            {
+                ExportBaseTiles(
+                    sourceRoot: Path.Combine(cacheRoot, "tilecache"),
+                    targetRoot: Path.Combine(mapsRoot, "base", "osm"),
+                    extension: "png",
+                    minZoom: 0,
+                    maxZoom: 18,
+                    bounds: bounds,
+                    stats: stats,
+                    cancellationToken: cancellationToken);
+            }
+
+            if (region.IncludeTerrain)
+            {
+                ExportBaseTiles(
+                    sourceRoot: Path.Combine(cacheRoot, "terrain-cache"),
+                    targetRoot: Path.Combine(mapsRoot, "base", "terrain"),
+                    extension: "png",
+                    minZoom: 0,
+                    maxZoom: 17,
+                    bounds: bounds,
+                    stats: stats,
+                    cancellationToken: cancellationToken);
+            }
+
+            if (region.IncludeSatellite)
+            {
+                ExportBaseTiles(
+                    sourceRoot: Path.Combine(cacheRoot, "satellite-cache"),
+                    targetRoot: Path.Combine(mapsRoot, "base", "satellite"),
+                    extension: "jpg",
+                    minZoom: 0,
+                    maxZoom: 18,
+                    bounds: bounds,
+                    stats: stats,
+                    cancellationToken: cancellationToken);
+            }
+
+            if (region.IncludeContours)
+            {
+                ExportTrailMateContours(
+                    contourRoot: Path.Combine(cacheRoot, "contours", "tiles"),
+                    targetRoot: Path.Combine(mapsRoot, "contour"),
+                    bounds: bounds,
+                    stats: stats,
+                    cancellationToken: cancellationToken);
+            }
+
+            return OfflineCacheRegionExportResult.Ok(
+                mapsRoot,
+                stats.SourceTiles,
+                stats.CopiedTiles,
+                stats.SkippedTiles);
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            return OfflineCacheRegionExportResult.Fail(ex.Message);
+        }
+    }
+
+    private static string ResolveMapsExportRoot(string destinationRoot)
+    {
+        var normalizedRoot = destinationRoot.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+        if (string.IsNullOrWhiteSpace(normalizedRoot))
+        {
+            normalizedRoot = destinationRoot;
+        }
+        if (string.IsNullOrWhiteSpace(normalizedRoot))
+        {
+            throw new InvalidOperationException("Destination folder is empty.");
+        }
+
+        if (string.Equals(Path.GetFileName(normalizedRoot), "maps", StringComparison.OrdinalIgnoreCase))
+        {
+            Directory.CreateDirectory(normalizedRoot);
+            return normalizedRoot;
+        }
+
+        var mapsRoot = Path.Combine(normalizedRoot, "maps");
+        Directory.CreateDirectory(mapsRoot);
+        return mapsRoot;
+    }
+
+    private static void ExportBaseTiles(
+        string sourceRoot,
+        string targetRoot,
+        string extension,
+        int minZoom,
+        int maxZoom,
+        (double West, double South, double East, double North) bounds,
+        ExportCopyStats stats,
+        CancellationToken cancellationToken)
+    {
+        Directory.CreateDirectory(targetRoot);
+
+        for (var zoom = minZoom; zoom <= maxZoom; zoom++)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            var range = GetOfflineRange(bounds, zoom);
+            if (range.IsEmpty)
+                continue;
+
+            CopyTilesInRange(sourceRoot, targetRoot, extension, zoom, range, stats, cancellationToken);
+        }
+    }
+
+    private static void ExportTrailMateContours(
+        string contourRoot,
+        string targetRoot,
+        (double West, double South, double East, double North) bounds,
+        ExportCopyStats stats,
+        CancellationToken cancellationToken)
+    {
+        Directory.CreateDirectory(targetRoot);
+
+        for (var zoom = 0; zoom <= 18; zoom++)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            var profile = GetTrailMateContourProfileForZoom(zoom);
+            if (profile is null)
+                continue;
+
+            var range = GetOfflineRange(bounds, zoom);
+            if (range.IsEmpty)
+                continue;
+
+            var profileSourceRoot = Path.Combine(contourRoot, profile);
+            var profileTargetRoot = Path.Combine(targetRoot, profile);
+            CopyTilesInRange(profileSourceRoot, profileTargetRoot, "png", zoom, range, stats, cancellationToken);
+        }
+    }
+
+    private static string? GetTrailMateContourProfileForZoom(int zoom)
+    {
+        if (zoom <= 7)
+            return null;
+        if (zoom is 8 or 10)
+            return "major-500";
+        if (zoom is 9 or 11)
+            return "major-200";
+        if (zoom is >= 12 and <= 14)
+            return "major-100";
+        if (zoom is 15 or 16)
+            return "major-50";
+
+        return "major-25";
+    }
+
+    private static void CopyTilesInRange(
+        string sourceRoot,
+        string targetRoot,
+        string extension,
+        int zoom,
+        TileRange range,
+        ExportCopyStats stats,
+        CancellationToken cancellationToken)
+    {
+        var zoomText = zoom.ToString(CultureInfo.InvariantCulture);
+        var sourceZoomRoot = Path.Combine(sourceRoot, zoomText);
+        if (!Directory.Exists(sourceZoomRoot))
+            return;
+
+        var searchPattern = $"*.{extension}";
+        var targetZoomRoot = Path.Combine(targetRoot, zoomText);
+        for (var x = range.MinX; x <= range.MaxX; x++)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            var xText = x.ToString(CultureInfo.InvariantCulture);
+            var sourceXRoot = Path.Combine(sourceZoomRoot, xText);
+            if (!Directory.Exists(sourceXRoot))
+                continue;
+
+            string? targetXRoot = null;
+            foreach (var sourceFile in Directory.EnumerateFiles(sourceXRoot, searchPattern, SearchOption.TopDirectoryOnly))
+            {
+                var fileName = Path.GetFileNameWithoutExtension(sourceFile);
+                if (!int.TryParse(fileName, NumberStyles.Integer, CultureInfo.InvariantCulture, out var y))
+                    continue;
+                if (y < range.MinY || y > range.MaxY)
+                    continue;
+
+                stats.SourceTiles++;
+                targetXRoot ??= Path.Combine(targetZoomRoot, xText);
+                Directory.CreateDirectory(targetXRoot);
+                var targetFile = Path.Combine(targetXRoot, $"{y}.{extension}");
+                if (File.Exists(targetFile) && IsSameSizeTile(sourceFile, targetFile))
+                {
+                    stats.SkippedTiles++;
+                    continue;
+                }
+
+                File.Copy(sourceFile, targetFile, overwrite: true);
+                stats.CopiedTiles++;
+            }
+        }
+    }
+
+    private static bool IsSameSizeTile(string sourceFile, string targetFile)
+    {
+        try
+        {
+            var sourceInfo = new FileInfo(sourceFile);
+            var targetInfo = new FileInfo(targetFile);
+            return sourceInfo.Exists && targetInfo.Exists && sourceInfo.Length == targetInfo.Length;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private bool CanRemoveSelectedOfflineCacheRegion()
+    {
+        return SelectedOfflineCacheRegion is not null;
+    }
+
+    private void RemoveSelectedOfflineCacheRegion()
+    {
+        if (SelectedOfflineCacheRegion is null)
+            return;
+
+        var removed = SelectedOfflineCacheRegion;
+        var index = OfflineCacheRegions.IndexOf(removed);
+        if (index < 0)
+            return;
+
+        OfflineCacheRegions.RemoveAt(index);
+        UntrackOfflineCacheRegion(removed);
+        SelectedOfflineCacheRegion = OfflineCacheRegions.Count == 0
+            ? null
+            : OfflineCacheRegions[Math.Min(index, OfflineCacheRegions.Count - 1)];
+
+        _ = PersistOfflineCacheRegionsSafeAsync();
+    }
+
+    private async Task PersistOfflineCacheRegionsSafeAsync()
+    {
+        try
+        {
+            await SaveOfflineCacheRegionsAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to save map cache regions");
+        }
+    }
+
+    public async Task RefreshOfflineCacheRegionsHealthAsync(bool selectedOnly = false)
+    {
+        if (IsOfflineCacheHealthRefreshing)
+            return;
+
+        IsOfflineCacheHealthRefreshing = true;
+        try
+        {
+            if (selectedOnly)
+            {
+                if (SelectedOfflineCacheRegion is not null)
+                {
+                    await RefreshOfflineCacheRegionHealthAsync(SelectedOfflineCacheRegion, CancellationToken.None);
+                }
+
+                return;
+            }
+
+            foreach (var region in OfflineCacheRegions.ToArray())
+            {
+                await RefreshOfflineCacheRegionHealthAsync(region, CancellationToken.None);
+            }
+        }
+        finally
+        {
+            IsOfflineCacheHealthRefreshing = false;
+            NotifyOfflineCacheBuildAvailabilityChanged();
+        }
+    }
+
+    private bool CanBuildRegion(MapCacheRegionViewModel? region)
+    {
+        if (region is null || Map.IsOfflineCacheRunning || IsOfflineCacheExporting)
+            return false;
+
+        var hasAnyLayer = region.IncludeOsm ||
+                          region.IncludeTerrain ||
+                          region.IncludeSatellite ||
+                          region.IncludeContours;
+        if (!hasAnyLayer)
+            return false;
+
+        var isComplete = region.CacheExpectedTiles > 0 &&
+                         region.CacheExistingTiles >= region.CacheExpectedTiles;
+        return !isComplete;
+    }
+
+    private void NotifyOfflineCacheBuildAvailabilityChanged()
+    {
+        BuildOfflineCacheRegionCommand.NotifyCanExecuteChanged();
+        OnPropertyChanged(nameof(CanContinueSelectedOfflineCacheRegion));
+        OnPropertyChanged(nameof(CanExportSelectedOfflineCacheRegion));
+    }
+
+    private void TrackOfflineCacheRegion(MapCacheRegionViewModel region)
+    {
+        if (!_trackedOfflineCacheRegions.Add(region))
+            return;
+
+        region.PropertyChanged += OnOfflineCacheRegionPropertyChanged;
+    }
+
+    private void UntrackOfflineCacheRegion(MapCacheRegionViewModel region)
+    {
+        if (!_trackedOfflineCacheRegions.Remove(region))
+            return;
+
+        region.PropertyChanged -= OnOfflineCacheRegionPropertyChanged;
+    }
+
+    private void OnOfflineCacheRegionPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (string.IsNullOrWhiteSpace(e.PropertyName))
+            return;
+
+        if (e.PropertyName is nameof(MapCacheRegionViewModel.CacheExistingTiles) or
+            nameof(MapCacheRegionViewModel.CacheExpectedTiles) or
+            nameof(MapCacheRegionViewModel.IncludeOsm) or
+            nameof(MapCacheRegionViewModel.IncludeTerrain) or
+            nameof(MapCacheRegionViewModel.IncludeSatellite) or
+            nameof(MapCacheRegionViewModel.IncludeContours))
+        {
+            NotifyOfflineCacheBuildAvailabilityChanged();
+        }
+    }
+
+    private async Task RefreshOfflineCacheRegionHealthAsync(
+        MapCacheRegionViewModel region,
+        CancellationToken cancellationToken)
+    {
+        region.SetCacheHealthChecking(true);
+        try
+        {
+            var health = await Task.Run(() => InspectRegionCache(region, cancellationToken), cancellationToken);
+            region.SetCacheHealth(
+                health.ExistingTiles,
+                health.ExpectedTiles,
+                (health.OsmExistingTiles, health.OsmExpectedTiles),
+                (health.TerrainExistingTiles, health.TerrainExpectedTiles),
+                (health.SatelliteExistingTiles, health.SatelliteExpectedTiles),
+                (health.ContourExistingTiles, health.ContourExpectedTiles));
+        }
+        catch (OperationCanceledException)
+        {
+            region.CacheHealthText = "Canceled";
+            region.CacheHealthDetailText = "Cache inspection canceled.";
+            region.CacheHealthColor = "#9AA3AE";
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to inspect cache health for region {RegionName}", region.Name);
+            region.CacheHealthText = "Inspect failed";
+            region.CacheHealthDetailText = ex.Message;
+            region.CacheHealthColor = "#FF7373";
+        }
+        finally
+        {
+            region.IsCacheHealthChecking = false;
+        }
+    }
+
+    private static CacheCoverage InspectRegionCache(MapCacheRegionViewModel region, CancellationToken cancellationToken)
+    {
+        var bounds = (
+            region.West,
+            region.South,
+            region.East,
+            region.North);
+        var options = region.ToBuildOptions();
+        var root = GetOfflineCacheRoot();
+
+        var osm = InspectBaseLayer(
+            Path.Combine(root, "tilecache"),
+            "png",
+            0,
+            18,
+            options.IncludeOsm,
+            bounds,
+            cancellationToken);
+        var terrain = InspectBaseLayer(
+            Path.Combine(root, "terrain-cache"),
+            "png",
+            0,
+            17,
+            options.IncludeTerrain,
+            bounds,
+            cancellationToken);
+        var satellite = InspectBaseLayer(
+            Path.Combine(root, "satellite-cache"),
+            "jpg",
+            0,
+            18,
+            options.IncludeSatellite,
+            bounds,
+            cancellationToken);
+        var contour = InspectContourLayer(root, bounds, options.IncludeContours, options.IncludeUltraFineContours, cancellationToken);
+
+        var existingTiles = osm.ExistingTiles + terrain.ExistingTiles + satellite.ExistingTiles + contour.ExistingTiles;
+        var expectedTiles = osm.ExpectedTiles + terrain.ExpectedTiles + satellite.ExpectedTiles + contour.ExpectedTiles;
+        return new CacheCoverage(
+            existingTiles,
+            expectedTiles,
+            osm.ExistingTiles,
+            osm.ExpectedTiles,
+            terrain.ExistingTiles,
+            terrain.ExpectedTiles,
+            satellite.ExistingTiles,
+            satellite.ExpectedTiles,
+            contour.ExistingTiles,
+            contour.ExpectedTiles);
+    }
+
+    private static CacheLayerCoverage InspectBaseLayer(
+        string cacheRoot,
+        string extension,
+        int minZoom,
+        int maxZoom,
+        bool enabled,
+        (double West, double South, double East, double North) bounds,
+        CancellationToken cancellationToken)
+    {
+        if (!enabled)
+            return new CacheLayerCoverage(0, 0);
+
+        long expectedTiles = 0;
+        long existingTiles = 0;
+        for (var zoom = minZoom; zoom <= maxZoom; zoom++)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            var range = GetOfflineRange(bounds, zoom);
+            if (range.IsEmpty)
+                continue;
+
+            expectedTiles += range.TileCount;
+            existingTiles += CountExistingTiles(cacheRoot, extension, zoom, range, cancellationToken);
+        }
+
+        return new CacheLayerCoverage(existingTiles, expectedTiles);
+    }
+
+    private static CacheLayerCoverage InspectContourLayer(
+        string root,
+        (double West, double South, double East, double North) bounds,
+        bool includeContours,
+        bool includeUltraFineContours,
+        CancellationToken cancellationToken)
+    {
+        if (!includeContours)
+            return new CacheLayerCoverage(0, 0);
+
+        var contourRoot = Path.Combine(root, "contours", "tiles");
+        long expectedTiles = 0;
+        long existingTiles = 0;
+        for (var zoom = 0; zoom <= 18; zoom++)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            var profiles = GetContourProfilesForZoom(zoom, includeUltraFineContours);
+            if (profiles.Count == 0)
+                continue;
+
+            var range = GetOfflineRange(bounds, zoom);
+            if (range.IsEmpty)
+                continue;
+
+            expectedTiles += range.TileCount * profiles.Count;
+            foreach (var profile in profiles)
+            {
+                var profileRoot = Path.Combine(contourRoot, profile);
+                existingTiles += CountExistingTiles(profileRoot, "png", zoom, range, cancellationToken);
+            }
+        }
+
+        return new CacheLayerCoverage(existingTiles, expectedTiles);
+    }
+
+    private static long CountExistingTiles(
+        string cacheRoot,
+        string extension,
+        int zoom,
+        TileRange range,
+        CancellationToken cancellationToken)
+    {
+        var count = 0L;
+        var zoomDir = Path.Combine(cacheRoot, zoom.ToString(CultureInfo.InvariantCulture));
+        if (!Directory.Exists(zoomDir))
+            return 0;
+
+        var searchPattern = $"*.{extension}";
+        for (var x = range.MinX; x <= range.MaxX; x++)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            var xDir = Path.Combine(zoomDir, x.ToString(CultureInfo.InvariantCulture));
+            if (!Directory.Exists(xDir))
+                continue;
+
+            foreach (var file in Directory.EnumerateFiles(xDir, searchPattern, SearchOption.TopDirectoryOnly))
+            {
+                var fileName = Path.GetFileNameWithoutExtension(file);
+                if (!int.TryParse(fileName, NumberStyles.Integer, CultureInfo.InvariantCulture, out var y))
+                    continue;
+                if (y < range.MinY || y > range.MaxY)
+                    continue;
+                count++;
+            }
+        }
+
+        return count;
+    }
+
+    private static TileRange GetOfflineRange(
+        (double West, double South, double East, double North) bounds,
+        int zoom)
+    {
+        var xMin = ContourTileMath.LonToTileX(bounds.West, zoom);
+        var xMax = ContourTileMath.LonToTileX(bounds.East, zoom);
+        var yMin = ContourTileMath.LatToTileY(bounds.North, zoom);
+        var yMax = ContourTileMath.LatToTileY(bounds.South, zoom);
+
+        if (xMin > xMax)
+            (xMin, xMax) = (xMax, xMin);
+        if (yMin > yMax)
+            (yMin, yMax) = (yMax, yMin);
+
+        return new TileRange(xMin, xMax, yMin, yMax);
+    }
+
+    private static IReadOnlyList<string> GetContourProfilesForZoom(int zoom, bool allowUltraFineContours)
+    {
+        if (zoom <= 7)
+            return Array.Empty<string>();
+        if (zoom == 8)
+            return ["major-500"];
+        if (zoom == 9)
+            return ["major-200"];
+        if (zoom == 10)
+            return ["major-500", "minor-100"];
+        if (zoom == 11)
+            return ["major-200", "minor-50"];
+        if (zoom == 12)
+            return ["major-100", "minor-50"];
+        if (zoom is 13 or 14)
+            return ["major-100", "minor-20"];
+        if (zoom is 15 or 16)
+            return ["major-50", "minor-10"];
+        if (zoom >= 17)
+            return allowUltraFineContours
+                ? ["major-25", "minor-5"]
+                : ["major-25"];
+
+        return Array.Empty<string>();
+    }
+
+    private static string GetOfflineCacheRoot()
+    {
+        return Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
+            "TrailMateCenter");
+    }
+
+    private readonly record struct CacheCoverage(
+        long ExistingTiles,
+        long ExpectedTiles,
+        long OsmExistingTiles,
+        long OsmExpectedTiles,
+        long TerrainExistingTiles,
+        long TerrainExpectedTiles,
+        long SatelliteExistingTiles,
+        long SatelliteExpectedTiles,
+        long ContourExistingTiles,
+        long ContourExpectedTiles);
+
+    private readonly record struct CacheLayerCoverage(
+        long ExistingTiles,
+        long ExpectedTiles);
+
+    private readonly record struct TileRange(
+        int MinX,
+        int MaxX,
+        int MinY,
+        int MaxY)
+    {
+        public bool IsEmpty => MaxX < MinX || MaxY < MinY;
+        public long TileCount => IsEmpty ? 0 : (long)(MaxX - MinX + 1) * (MaxY - MinY + 1);
+    }
+
+    public readonly record struct OfflineCacheRegionExportResult(
+        bool Success,
+        string TargetMapRoot,
+        long SourceTiles,
+        long CopiedTiles,
+        long SkippedTiles,
+        string? ErrorMessage)
+    {
+        public static OfflineCacheRegionExportResult Ok(
+            string targetMapRoot,
+            long sourceTiles,
+            long copiedTiles,
+            long skippedTiles)
+        {
+            return new OfflineCacheRegionExportResult(
+                Success: true,
+                TargetMapRoot: targetMapRoot,
+                SourceTiles: sourceTiles,
+                CopiedTiles: copiedTiles,
+                SkippedTiles: skippedTiles,
+                ErrorMessage: null);
+        }
+
+        public static OfflineCacheRegionExportResult Fail(string errorMessage)
+        {
+            return new OfflineCacheRegionExportResult(
+                Success: false,
+                TargetMapRoot: string.Empty,
+                SourceTiles: 0,
+                CopiedTiles: 0,
+                SkippedTiles: 0,
+                ErrorMessage: errorMessage);
+        }
+    }
+
+    private sealed class ExportCopyStats
+    {
+        public long SourceTiles { get; set; }
+        public long CopiedTiles { get; set; }
+        public long SkippedTiles { get; set; }
     }
 
     private async Task DisconnectAsync()
@@ -1138,6 +2114,8 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         {
             ClearConversationUnread(SelectedConversation);
         }
+
+        _ = LoadDeferredHistoryForTabAsync(value);
     }
 
     partial void OnUnreadChatCountChanged(int value)
@@ -1165,10 +2143,6 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         if (value.SubjectId.HasValue)
         {
             SelectedSubject = Subjects.FirstOrDefault(s => s.Id == value.SubjectId.Value) ?? SelectedSubject;
-        }
-        if (value.Latitude.HasValue && value.Longitude.HasValue)
-        {
-            Map.FocusOn(value.Latitude.Value, value.Longitude.Value);
         }
     }
 
@@ -1221,9 +2195,21 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         Map.SetLogVisibility(value);
     }
 
+    partial void OnOfflineModeChanged(bool value)
+    {
+        Map.SetMqttVisibility(!value && MapShowMqtt);
+        OnPropertyChanged(nameof(CanUseExternalFeeds));
+
+        if (!_settingsLoaded)
+            return;
+
+        _aprsGateway.ApplySettings(BuildEffectiveAprsSettings(_settings.Aprs));
+        _meshtasticMqtt.ApplySettings(BuildEffectiveMqttSettings(BuildMqttSettings()));
+    }
+
     partial void OnMapShowMqttChanged(bool value)
     {
-        Map.SetMqttVisibility(value);
+        Map.SetMqttVisibility(!OfflineMode && value);
     }
 
     partial void OnMapShowGibsChanged(bool value)
@@ -1242,6 +2228,27 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     partial void OnSelectedMqttSourceChanged(MqttSourceViewModel? value)
     {
         RemoveMqttSourceCommand.NotifyCanExecuteChanged();
+    }
+
+    partial void OnSelectedOfflineCacheRegionChanged(MapCacheRegionViewModel? value)
+    {
+        ApplyOfflineCacheRegionCommand.NotifyCanExecuteChanged();
+        NotifyOfflineCacheBuildAvailabilityChanged();
+        RemoveOfflineCacheRegionCommand.NotifyCanExecuteChanged();
+        if (value is null)
+            return;
+
+        OfflineCacheRegionName = value.Name;
+    }
+
+    partial void OnIsOfflineCacheExportingChanged(bool value)
+    {
+        NotifyOfflineCacheBuildAvailabilityChanged();
+    }
+
+    partial void OnOfflineCacheRegionNameChanged(string value)
+    {
+        SaveOfflineCacheRegionCommand.NotifyCanExecuteChanged();
     }
 
     private void OnConnectionStateChanged(object? sender, (ConnectionState OldState, ConnectionState NewState, string? Reason) args)
@@ -1276,12 +2283,16 @@ public sealed partial class MainWindowViewModel : ViewModelBase
 
     private void OnMqttMessageReceived(object? sender, MessageEntry entry)
     {
+        if (OfflineMode)
+            return;
+
         Dispatcher.UIThread.Post(() => ApplyMessageAdded(entry, MapSampleSource.Mqtt));
     }
 
     private void ApplyMessageAdded(MessageEntry entry, MapSampleSource source)
     {
-        var vm = new MessageItemViewModel(entry);
+        var displayEntry = EnrichMessageForPreview(entry);
+        var vm = new MessageItemViewModel(displayEntry, JumpToMessageLocation);
         if (entry.FromId.HasValue)
         {
             vm.From = ResolvePeerLabel(entry.FromId.Value);
@@ -1320,11 +2331,89 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         {
             var vm = Messages.FirstOrDefault(m => m.Seq == entry.Seq);
             if (vm != null)
-                vm.UpdateFrom(entry);
+                vm.UpdateFrom(EnrichMessageForPreview(entry));
             UpsertConversation(entry);
             RefreshConversationMessages();
             RetryCommand.NotifyCanExecuteChanged();
         });
+    }
+
+    private void JumpToMessageLocation(MessageItemViewModel message)
+    {
+        if (!message.HasLocation || !message.Latitude.HasValue || !message.Longitude.HasValue)
+            return;
+
+        SelectedTabIndex = DashboardTabIndex;
+        Map.FocusOn(message.Latitude.Value, message.Longitude.Value);
+    }
+
+    private MessageEntry EnrichMessageForPreview(MessageEntry entry)
+    {
+        if (entry.Latitude.HasValue && entry.Longitude.HasValue)
+            return entry;
+        if (!LooksLikeLocationShareMessage(entry.Text))
+            return entry;
+
+        var candidateId = entry.Direction == MessageDirection.Outgoing
+            ? entry.ToId ?? entry.FromId
+            : entry.FromId ?? entry.ToId;
+        if (!candidateId.HasValue)
+            return entry;
+
+        var subject = Subjects.FirstOrDefault(s => s.Id == candidateId.Value);
+        if (subject?.Latitude is not double lat || subject.Longitude is not double lon)
+            return entry;
+
+        return entry with
+        {
+            Latitude = lat,
+            Longitude = lon,
+        };
+    }
+
+    private static uint? ResolveLocationPreviewCandidateNode(MessageItemViewModel message)
+    {
+        return message.Direction == MessageDirection.Outgoing
+            ? message.ToId ?? message.FromId
+            : message.FromId ?? message.ToId;
+    }
+
+    private void BackfillLocationPreviewForNode(uint nodeId, double latitude, double longitude)
+    {
+        foreach (var message in Messages)
+        {
+            if (message.HasLocation || !message.ShowLocationPreview)
+                continue;
+
+            var candidate = ResolveLocationPreviewCandidateNode(message);
+            if (!candidate.HasValue || candidate.Value != nodeId)
+                continue;
+
+            message.ApplyLocation(latitude, longitude);
+        }
+    }
+
+    private static bool LooksLikeLocationShareMessage(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+            return false;
+
+        var trimmed = text.Trim();
+        var lower = trimmed.ToLowerInvariant();
+        foreach (var keyword in LocationMessageKeywords)
+        {
+            if (keyword.Any(ch => ch > 127))
+            {
+                if (trimmed.Contains(keyword, StringComparison.Ordinal))
+                    return true;
+                continue;
+            }
+
+            if (lower.Contains(keyword, StringComparison.Ordinal))
+                return true;
+        }
+
+        return false;
     }
 
     private void OnDeviceInfo(object? sender, DeviceInfo info)
@@ -1486,6 +2575,9 @@ public sealed partial class MainWindowViewModel : ViewModelBase
 
     private void OnMqttPositionReceived(object? sender, PositionUpdate update)
     {
+        if (OfflineMode)
+            return;
+
         Dispatcher.UIThread.Post(() => ApplyPositionUpdate(update, MapSampleSource.Mqtt));
     }
 
@@ -1517,6 +2609,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         subject.Latitude = update.Latitude;
         subject.Longitude = update.Longitude;
         subject.UpdateStatus(ComputeStatus(update.Timestamp));
+        BackfillLocationPreviewForNode(sourceId, update.Latitude, update.Longitude);
         if (created)
         {
             RebuildTeamLists();
@@ -1530,7 +2623,18 @@ public sealed partial class MainWindowViewModel : ViewModelBase
 
     private void OnMqttNodeInfoReceived(object? sender, NodeInfoUpdate info)
     {
+        if (OfflineMode)
+            return;
+
         Dispatcher.UIThread.Post(() => ApplyNodeInfoUpdate(info, MapSampleSource.Mqtt));
+    }
+
+    private void OnMqttTacticalEventReceived(object? sender, TacticalEvent ev)
+    {
+        if (OfflineMode)
+            return;
+
+        OnTacticalEventReceived(sender, ev);
     }
 
     private void ApplyNodeInfoUpdate(NodeInfoUpdate info, MapSampleSource source)
@@ -1563,6 +2667,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             subject.Latitude = info.Latitude;
             subject.Longitude = info.Longitude;
             Map.AddPoint(info.NodeId, info.Latitude.Value, info.Longitude.Value, source);
+            BackfillLocationPreviewForNode(info.NodeId, info.Latitude.Value, info.Longitude.Value);
         }
 
         var label = ResolvePeerLabel(info.NodeId);
@@ -1679,6 +2784,48 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         UnreadChatCount = Conversations.Sum(c => c.UnreadCount);
     }
 
+    private async Task LoadDeferredHistoryForTabAsync(int tabIndex)
+    {
+        try
+        {
+            if ((tabIndex == EventsTabIndex || tabIndex == ExportTabIndex) &&
+                !_eventsHistoryLoadTriggered &&
+                !_eventsHistoryLoadInProgress)
+            {
+                _eventsHistoryLoadInProgress = true;
+                try
+                {
+                    await Events.EnsureOlderHistoryLoadedAsync(_sqliteStore, CancellationToken.None);
+                    _eventsHistoryLoadTriggered = true;
+                }
+                finally
+                {
+                    _eventsHistoryLoadInProgress = false;
+                }
+            }
+
+            if ((tabIndex == LogsTabIndex || tabIndex == ExportTabIndex) &&
+                !_logsHistoryLoadTriggered &&
+                !_logsHistoryLoadInProgress)
+            {
+                _logsHistoryLoadInProgress = true;
+                try
+                {
+                    await Logs.EnsureOlderHistoryLoadedAsync(_sqliteStore, CancellationToken.None);
+                    _logsHistoryLoadTriggered = true;
+                }
+                finally
+                {
+                    _logsHistoryLoadInProgress = false;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to load deferred history for tab {TabIndex}", tabIndex);
+        }
+    }
+
     private void RefreshConversationMessages()
     {
         FilteredMessages.Clear();
@@ -1700,6 +2847,8 @@ public sealed partial class MainWindowViewModel : ViewModelBase
 
     private void LoadHistoryFromSession()
     {
+        using var _ = Map.BeginBulkUpdate();
+
         var nodeInfos = _sessionStore.SnapshotNodeInfos()
             .OrderBy(n => n.LastHeard)
             .ToList();
@@ -1733,7 +2882,8 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             .ToList();
         foreach (var entry in messages)
         {
-            var vm = new MessageItemViewModel(entry);
+            var displayEntry = EnrichMessageForPreview(entry);
+            var vm = new MessageItemViewModel(displayEntry, JumpToMessageLocation);
             if (entry.FromId.HasValue)
             {
                 vm.From = ResolvePeerLabel(entry.FromId.Value);
@@ -1802,6 +2952,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             subject.Latitude = update.Latitude;
             subject.Longitude = update.Longitude;
             subject.UpdateStatus(ComputeStatus(update.Timestamp));
+            BackfillLocationPreviewForNode(sourceId, update.Latitude, update.Longitude);
         }
 
         RefreshConversationMessages();
@@ -2156,6 +3307,20 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         if (AutoSaveProperties.Contains(e.PropertyName))
         {
             ScheduleSettingsSave();
+        }
+    }
+
+    private void OnMapPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (string.IsNullOrWhiteSpace(e.PropertyName))
+            return;
+
+        if (string.Equals(e.PropertyName, nameof(MapViewModel.HasOfflineCacheSelection), StringComparison.Ordinal) ||
+            string.Equals(e.PropertyName, nameof(MapViewModel.IsOfflineCacheRunning), StringComparison.Ordinal))
+        {
+            SaveOfflineCacheRegionCommand.NotifyCanExecuteChanged();
+            ApplyOfflineCacheRegionCommand.NotifyCanExecuteChanged();
+            NotifyOfflineCacheBuildAvailabilityChanged();
         }
     }
 

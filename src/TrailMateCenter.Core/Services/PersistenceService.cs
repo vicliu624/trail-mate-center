@@ -6,6 +6,9 @@ namespace TrailMateCenter.Services;
 
 public sealed class PersistenceService
 {
+    private const int StartupEventHistoryLimit = 1200;
+    private const int StartupLogHistoryLimit = 300;
+
     private readonly SqliteStore _store;
     private readonly SessionStore _sessionStore;
     private readonly LogStore _logStore;
@@ -36,7 +39,7 @@ public sealed class PersistenceService
             foreach (var message in messages)
                 _sessionStore.AddMessage(message);
 
-            var events = await _store.LoadEventsAsync(cancellationToken);
+            var events = await _store.LoadEventsAsync(cancellationToken, takeLatest: StartupEventHistoryLimit);
             foreach (var ev in events)
                 _sessionStore.AddEvent(ev);
 
@@ -48,7 +51,7 @@ public sealed class PersistenceService
             foreach (var position in positions)
                 _sessionStore.AddPositionUpdate(position);
 
-            var logs = await _store.LoadLogsAsync(cancellationToken);
+            var logs = await _store.LoadLogsAsync(cancellationToken, takeLatest: StartupLogHistoryLimit);
             foreach (var log in logs)
                 _logStore.Add(log);
 

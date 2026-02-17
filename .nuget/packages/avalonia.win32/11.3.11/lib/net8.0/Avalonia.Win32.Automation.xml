@@ -1,0 +1,69 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Avalonia.Win32.Automation</name>
+    </assembly>
+    <members>
+        <member name="T:Avalonia.Win32.Automation.InteropAutomationNode">
+            <summary>
+            An automation node which serves as the root of an embedded native control automation tree.
+            </summary>
+        </member>
+        <member name="M:Avalonia.Win32.Automation.Marshalling.ComVariant.Dispose">
+            <summary>
+            Release resources owned by this <see cref="T:Avalonia.Win32.Automation.Marshalling.ComVariant"/> instance.
+            </summary>
+        </member>
+        <member name="M:Avalonia.Win32.Automation.Marshalling.ComVariant.Create(System.Object)">
+            <summary>
+            Create an <see cref="T:Avalonia.Win32.Automation.Marshalling.ComVariant"/> instance from the specified value.
+            </summary>
+            <param name="value">The value to wrap in an <see cref="T:Avalonia.Win32.Automation.Marshalling.ComVariant"/>.</param>
+            <returns>An <see cref="T:Avalonia.Win32.Automation.Marshalling.ComVariant"/> that contains the provided value.</returns>
+        </member>
+        <member name="P:Avalonia.Win32.Automation.Marshalling.ComVariant.Null">
+            <summary>
+            A <see cref="T:Avalonia.Win32.Automation.Marshalling.ComVariant"/> instance that represents a null value with <see cref="F:System.Runtime.InteropServices.VarEnum.VT_NULL"/> type.
+            </summary>
+        </member>
+        <member name="M:Avalonia.Win32.Automation.Marshalling.ComVariant.AsObject">
+            <summary>
+            Create a managed value based on the value in the <see cref="T:Avalonia.Win32.Automation.Marshalling.ComVariant"/> instance.
+            </summary>
+            <returns>The managed value contained in this variant.</returns>
+        </member>
+        <member name="P:Avalonia.Win32.Automation.Marshalling.ComVariant.VarType">
+            <summary>
+            The type of the data stored in this <see cref="T:Avalonia.Win32.Automation.Marshalling.ComVariant"/>.
+            </summary>
+        </member>
+        <member name="F:Avalonia.Win32.Automation.Marshalling.SafeArrayRef.SAFEARRAY.cDims">
+            <summary>The number of dimensions.</summary>
+        </member>
+        <member name="F:Avalonia.Win32.Automation.Marshalling.SafeArrayRef.SAFEARRAY.fFeatures">
+            <summary>
+            <para>Flags. </para>
+            <para>This doc was truncated.</para>
+            <para><see href="https://learn.microsoft.com/windows/win32/api/oaidl/ns-oaidl-safearray#members">Read more on docs.microsoft.com</see>.</para>
+            </summary>
+        </member>
+        <member name="F:Avalonia.Win32.Automation.Marshalling.SafeArrayRef.SAFEARRAY.cbElements">
+            <summary>The size of an array element.</summary>
+        </member>
+        <member name="F:Avalonia.Win32.Automation.Marshalling.SafeArrayRef.SAFEARRAY.cLocks">
+            <summary>The number of times the array has been locked without a corresponding unlock.</summary>
+        </member>
+        <member name="F:Avalonia.Win32.Automation.Marshalling.SafeArrayRef.SAFEARRAY.pvData">
+            <summary>The data.</summary>
+        </member>
+        <member name="F:Avalonia.Win32.Automation.Marshalling.SafeArrayRef.SAFEARRAY.rgsabound">
+            <summary>One bound for each dimension.</summary>
+        </member>
+        <member name="F:Avalonia.Win32.Automation.Marshalling.SafeArrayRef.SAFEARRAYBOUND.cElements">
+            <summary>The number of elements in the dimension.</summary>
+        </member>
+        <member name="F:Avalonia.Win32.Automation.Marshalling.SafeArrayRef.SAFEARRAYBOUND.lLbound">
+            <summary>The lower bound of the dimension.</summary>
+        </member>
+    </members>
+</doc>

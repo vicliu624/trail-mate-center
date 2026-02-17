@@ -22,6 +22,7 @@ public sealed record UiSettings
 {
     public string Language { get; init; } = string.Empty;
     public string Theme { get; init; } = string.Empty;
+    public bool OfflineMode { get; init; }
     public bool ShowMapLogs { get; init; }
     public bool ShowMapMqtt { get; init; } = true;
     public bool ShowMapGibs { get; init; }

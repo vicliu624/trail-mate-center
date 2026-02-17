@@ -5,12 +5,14 @@ using System.Collections.ObjectModel;
 using Avalonia.Threading;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using TrailMateCenter.Localization;
 using TrailMateCenter.Models;
 using TrailMateCenter.Services;
+using TrailMateCenter.Storage;
 
 namespace TrailMateCenter.ViewModels;
 
@@ -18,6 +20,8 @@ public sealed partial class LogsViewModel : ObservableObject, ILocalizationAware
 {
     private readonly LogStore _logStore;
     private readonly List<HostLinkLogEntry> _all = new();
+    private readonly SemaphoreSlim _historyLoadGate = new(1, 1);
+    private bool _historyFullyLoaded;
     private string? _statusKey;
     private object[] _statusArgs = Array.Empty<object>();
 
@@ -83,6 +87,37 @@ public sealed partial class LogsViewModel : ObservableObject, ILocalizationAware
             LogLevel.Error or LogLevel.Critical => ShowError,
             _ => true,
         };
+    }
+
+    public async Task EnsureOlderHistoryLoadedAsync(SqliteStore sqliteStore, CancellationToken cancellationToken)
+    {
+        if (_historyFullyLoaded || _all.Count == 0)
+            return;
+
+        await _historyLoadGate.WaitAsync(cancellationToken);
+        try
+        {
+            if (_historyFullyLoaded || _all.Count == 0)
+                return;
+
+            var oldest = _all.Min(entry => entry.Timestamp);
+            var older = await sqliteStore.LoadLogsAsync(cancellationToken, beforeExclusive: oldest);
+            if (older.Count == 0)
+            {
+                _historyFullyLoaded = true;
+                return;
+            }
+
+            await Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                _all.AddRange(older);
+                Rebuild();
+            });
+        }
+        finally
+        {
+            _historyLoadGate.Release();
+        }
     }
 
     private string BuildLogText()

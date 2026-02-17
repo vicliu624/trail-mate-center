@@ -119,6 +119,13 @@ public sealed class AprsIsClient : IAsyncDisposable
 
                 while (!linked.Token.IsCancellationRequested)
                 {
+                    // Settings can be toggled at runtime (for example offline mode);
+                    // exit the active connection loop so we disconnect immediately.
+                    if (!_settings.Enabled || string.IsNullOrWhiteSpace(_settings.IgateCallsign) || string.IsNullOrWhiteSpace(_settings.Passcode))
+                    {
+                        break;
+                    }
+
                     if (!_queue.TryDequeue(out var item))
                     {
                         await _signal.WaitAsync(TimeSpan.FromSeconds(2), linked.Token);

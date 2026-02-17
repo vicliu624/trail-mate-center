@@ -1,0 +1,23 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
+  <metadata>
+    <id>NetTopologySuite</id>
+    <version>2.6.0</version>
+    <title>NTS - Topology Suite</title>
+    <authors>NetTopologySuite - Team</authors>
+    <requireLicenseAcceptance>true</requireLicenseAcceptance>
+    <license type="expression">BSD-3-Clause</license>
+    <licenseUrl>https://licenses.nuget.org/BSD-3-Clause</licenseUrl>
+    <icon>icon.png</icon>
+    <description>The NTS Topology Suite is an API for modelling and manipulating 2-dimensional linear geometry. It provides numerous geometric predicates and functions. NTS conforms to the Simple Features Specification.</description>
+    <copyright>Copyright © 2006 - 2025 NetTopologySuite - Team, Diego Guidi, John Diss (www.newgrove.com), Felix Obermaier (www.ivv-aachen.de), Todd Jackson, Joe Amenta</copyright>
+    <tags>NTS Topology OGC SFS</tags>
+    <repository type="git" url="https://github.com/NetTopologySuite/NetTopologySuite" branch="refs/heads/main" commit="97d26b92586448b52d5a4f0c060217f94f882c75" />
+    <dependencies>
+      <group targetFramework=".NETStandard2.0">
+        <dependency id="System.Memory" version="4.6.0" exclude="Build,Analyzers" />
+      </group>
+      <group targetFramework=".NETStandard2.1" />
+    </dependencies>
+  </metadata>
+</package>

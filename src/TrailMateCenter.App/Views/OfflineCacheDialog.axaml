@@ -1,0 +1,100 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:TrailMateCenter.ViewModels"
+        x:Class="TrailMateCenter.Views.OfflineCacheDialog"
+        x:DataType="vm:OfflineCacheDialogViewModel"
+        Width="430"
+        MinWidth="430"
+        MinHeight="420"
+        SizeToContent="Height"
+        CanResize="False"
+        WindowStartupLocation="CenterOwner"
+        Title="{DynamicResource Ui.Dashboard.OfflineCacheDialog.Title}">
+  <Window.Styles>
+    <Style Selector="CheckBox">
+      <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
+      <Setter Property="FontSize" Value="13"/>
+    </Style>
+    <Style Selector="CheckBox:disabled">
+      <Setter Property="Foreground" Value="{DynamicResource TextDim}"/>
+      <Setter Property="Opacity" Value="0.85"/>
+    </Style>
+    <Style Selector="TextBlock.sectionHeader">
+      <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
+      <Setter Property="FontWeight" Value="SemiBold"/>
+      <Setter Property="FontSize" Value="13"/>
+    </Style>
+    <Style Selector="TextBlock.dialogHint">
+      <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
+      <Setter Property="Opacity" Value="0.82"/>
+      <Setter Property="FontSize" Value="11"/>
+    </Style>
+  </Window.Styles>
+
+  <Border Padding="14"
+          Background="{DynamicResource PanelBg}"
+          BorderBrush="{DynamicResource PanelBorderStrong}"
+          BorderThickness="1"
+          CornerRadius="8">
+    <StackPanel Spacing="10">
+      <TextBlock Text="{DynamicResource Ui.Dashboard.OfflineCacheDialog.Title}"
+                 FontSize="16"
+                 FontWeight="Bold"
+                 Foreground="{DynamicResource TextPrimary}"/>
+      <TextBlock Text="{DynamicResource Ui.Dashboard.OfflineCacheDialog.Hint}"
+                 Classes="dialogHint"
+                 TextWrapping="Wrap"/>
+
+      <StackPanel Spacing="4">
+        <TextBlock Text="{DynamicResource Ui.Dashboard.OfflineCacheDialog.Name}" Foreground="{DynamicResource TextPrimary}"/>
+        <TextBox Text="{Binding RegionName, UpdateSourceTrigger=PropertyChanged}"
+                 Watermark="{DynamicResource Ui.Dashboard.OfflineCacheRegionName}"/>
+      </StackPanel>
+
+      <Border BorderBrush="{DynamicResource PanelBorderStrong}"
+              BorderThickness="1"
+              CornerRadius="6"
+              Padding="8"
+              Background="{DynamicResource SurfaceDark}">
+        <StackPanel Spacing="6">
+          <TextBlock Text="{DynamicResource Ui.Dashboard.OfflineCacheDialog.BaseMaps}"
+                     Classes="sectionHeader"/>
+          <WrapPanel>
+            <CheckBox Content="{DynamicResource Ui.Dashboard.BaseMap.Osm}" IsChecked="{Binding IncludeOsm}" Margin="0,0,12,6"/>
+            <CheckBox Content="{DynamicResource Ui.Dashboard.BaseMap.Terrain}" IsChecked="{Binding IncludeTerrain}" Margin="0,0,12,6"/>
+            <CheckBox Content="{DynamicResource Ui.Dashboard.BaseMap.Satellite}" IsChecked="{Binding IncludeSatellite}" Margin="0,0,12,6"/>
+          </WrapPanel>
+        </StackPanel>
+      </Border>
+
+      <Border BorderBrush="{DynamicResource PanelBorderStrong}"
+              BorderThickness="1"
+              CornerRadius="6"
+              Padding="8"
+              Background="{DynamicResource SurfaceDark}">
+        <StackPanel Spacing="6">
+          <TextBlock Text="{DynamicResource Ui.Dashboard.OfflineCacheDialog.Contours}"
+                     Classes="sectionHeader"/>
+          <CheckBox Content="{DynamicResource Ui.Dashboard.ContoursLabel}" IsChecked="{Binding IncludeContours}"/>
+          <CheckBox Content="{DynamicResource Ui.Config.ContoursFine5m}"
+                    IsChecked="{Binding IncludeUltraFineContours}"
+                    IsEnabled="{Binding IncludeContours}"/>
+        </StackPanel>
+      </Border>
+
+      <CheckBox Content="{DynamicResource Ui.Dashboard.OfflineCacheDialog.SaveRegion}"
+                IsChecked="{Binding SaveRegion}"/>
+
+      <Border BorderBrush="{DynamicResource PanelBorder}" BorderThickness="0,1,0,0" Padding="0,10,0,0">
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+          <Button Content="{DynamicResource Ui.Dashboard.OfflineCacheDialog.Cancel}" Click="OnCancelClicked"/>
+          <Button Content="{DynamicResource Ui.Dashboard.OfflineCacheDialog.SaveOnly}" Click="OnSaveOnlyClicked"/>
+          <Button Content="{DynamicResource Ui.Dashboard.OfflineCacheDialog.Build}"
+                  Classes="primary"
+                  IsEnabled="{Binding CanBuild}"
+                  Click="OnBuildClicked"/>
+        </StackPanel>
+      </Border>
+    </StackPanel>
+  </Border>
+</Window>

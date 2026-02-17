@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net40;net45;netstandard2.1</TargetFrameworks>
+    <OutputType>Library</OutputType>
+    <Configurations>Debug;Release</Configurations>
+    <NeutralLanguage>en-US</NeutralLanguage>
+
+    <AssemblyName>RJCP.IO.Buffer</AssemblyName>
+    <AssemblyTitle>RJCP.IO.Buffer</AssemblyTitle>
+    <Product>RJCP.IO.Buffer</Product>
+    <RootNamespace>RJCP.IO</RootNamespace>
+
+    <Authors>Jason Curl</Authors>
+    <Copyright>(C) 2011-2021, Jason Curl</Copyright>
+    <Company></Company>
+    <PackageId>RJCP.IO.Buffer</PackageId>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
+    <PackageProjectUrl>https://github.com/jcurl/RJCP.DLL.BufferIO</PackageProjectUrl>
+    <Description>Provides functionality for buffered I/O.</Description>
+    <Version>0.2.0</Version>
+
+    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
+
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <AnalysisMode>Default</AnalysisMode>
+    <AnalysisLevel>latest</AnalysisLevel>
+
+    <EnableDefaultItems>false</EnableDefaultItems>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+
+    <RevisionControl>git</RevisionControl>
+    <RevisionControlLabel>release/v$(Version)</RevisionControlLabel>
+  </PropertyGroup>
+
+  <PropertyGroup Condition=" '$(Configuration)' == 'Debug'">
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+  </PropertyGroup>
+
+  <PropertyGroup Condition=" '$(Configuration)' == 'Release'">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <RevisionControlStrict>true</RevisionControlStrict>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="RJCP.MSBuildTasks" Version="0.2.3">
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="AsyncResult.cs" />
+    <Compile Include="AsyncResultT.cs" />
+    <Compile Include="Buffer\CircularBuffer.cs" />
+    <Compile Include="Buffer\CircularBufferExtensions.cs" />
+    <Compile Include="Buffer\Memory\IReadBuffer.cs" />
+    <Compile Include="Buffer\Memory\IReadBufferStream.cs" />
+    <Compile Include="Buffer\Memory\IWriteBufferStream.cs" />
+    <Compile Include="Buffer\Memory\IWriteBuffer.cs" />
+    <Compile Include="Buffer\MemoryReadBuffer.cs" />
+    <Compile Include="Buffer\MemoryWriteBuffer.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Resources.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
+    <Compile Include="Timer\TimerExpiry.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\LICENSE.md" Pack="true" PackagePath="\" />
+    <None Include="..\README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+</Project>

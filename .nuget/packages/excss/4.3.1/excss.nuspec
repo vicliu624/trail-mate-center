@@ -1,0 +1,25 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd">
+  <metadata>
+    <id>ExCSS</id>
+    <version>4.3.1</version>
+    <title>ExCSS .NET Stylesheet Parser</title>
+    <authors>Tyler Brinks</authors>
+    <license type="expression">MIT</license>
+    <licenseUrl>https://licenses.nuget.org/MIT</licenseUrl>
+    <readme>readme.md</readme>
+    <projectUrl>https://github.com/TylerBrinks/ExCSS</projectUrl>
+    <description>ExCSS is a CSS 2.1 and CSS 3 parser for .NET. 
+			ExCSS makes it easy to read and parse stylesheets into a friendly object model with full LINQ support.</description>
+    <repository type="git" url="https://github.com/TylerBrinks/ExCSS" commit="c97e84d6126bb2e42658cf5af627d52e697c8779" />
+    <dependencies>
+      <group targetFramework=".NETFramework4.8" />
+      <group targetFramework=".NETCoreApp3.1" />
+      <group targetFramework="net6.0" />
+      <group targetFramework="net7.0" />
+      <group targetFramework="net8.0" />
+      <group targetFramework=".NETStandard2.0" />
+      <group targetFramework=".NETStandard2.1" />
+    </dependencies>
+  </metadata>
+</package>

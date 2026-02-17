@@ -1,0 +1,23 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
+  <metadata>
+    <id>NetTopologySuite.IO.GeoJSON4STJ</id>
+    <version>4.0.0</version>
+    <title>NTS - Topology Suite - IO Library for GeoJSON (System.Text.Json)</title>
+    <authors>NetTopologySuite - Team</authors>
+    <license type="expression">BSD-3-Clause</license>
+    <licenseUrl>https://licenses.nuget.org/BSD-3-Clause</licenseUrl>
+    <icon>icon.png</icon>
+    <description>This package contains the System.Text.Json version of the GeoJSON IO library.</description>
+    <copyright>Copyright © 2023 NetTopologySuite - Team</copyright>
+    <tags>NTS GeoJSON</tags>
+    <repository type="git" url="https://github.com/NetTopologySuite/NetTopologySuite.IO.GeoJSON" commit="0721747abf0cca9106684e039bbc846951eecc8e" />
+    <dependencies>
+      <group targetFramework=".NETStandard2.0">
+        <dependency id="NetTopologySuite" version="[2.0.0, 3.0.0-A)" exclude="Build,Analyzers" />
+        <dependency id="NetTopologySuite.Features" version="[2.1.0, 3.0.0-A)" exclude="Build,Analyzers" />
+        <dependency id="System.Text.Json" version="6.0.3" exclude="Build,Analyzers" />
+      </group>
+    </dependencies>
+  </metadata>
+</package>

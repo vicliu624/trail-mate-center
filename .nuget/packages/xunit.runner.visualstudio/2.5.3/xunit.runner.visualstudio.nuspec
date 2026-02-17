@@ -1,0 +1,28 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
+  <metadata>
+    <id>xunit.runner.visualstudio</id>
+    <version>2.5.3</version>
+    <title>xUnit.net [Runner: Visual Studio]</title>
+    <authors>jnewkirk,bradwilson</authors>
+    <developmentDependency>true</developmentDependency>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <license type="expression">Apache-2.0</license>
+    <licenseUrl>https://licenses.nuget.org/Apache-2.0</licenseUrl>
+    <icon>_content/logo-128-transparent.png</icon>
+    <readme>_content/README.md</readme>
+    <description>Visual Studio 2022+ Test Explorer runner for the xUnit.net framework. Capable of running xUnit.net v1.9.2 and v2.0+ tests. Supports .NET 4.6.2 or later, and .NET 6 or later.</description>
+    <releaseNotes>https://xunit.net/releases/visualstudio/2.5.3</releaseNotes>
+    <copyright>Copyright (C) .NET Foundation</copyright>
+    <repository type="git" url="https://github.com/xunit/visualstudio.xunit" commit="6b60a9e56a82a4010e2c65481cfa40c227f97fd5" />
+    <dependencies>
+      <group targetFramework=".NETFramework4.6.2">
+        <dependency id="Microsoft.TestPlatform.ObjectModel" version="17.7.2" />
+      </group>
+      <group targetFramework="net6.0" />
+    </dependencies>
+    <frameworkAssemblies>
+      <frameworkAssembly assemblyName="mscorlib" targetFramework=".NETFramework4.6.2" />
+    </frameworkAssemblies>
+  </metadata>
+</package>

@@ -1,0 +1,38 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
+  <metadata>
+    <id>Topten.RichTextKit</id>
+    <version>0.4.167</version>
+    <authors>Topten Software</authors>
+    <license type="expression">Apache-2.0</license>
+    <licenseUrl>https://licenses.nuget.org/Apache-2.0</licenseUrl>
+    <icon>nuget-icon.png</icon>
+    <projectUrl>https://github.com/toptensoftware/richtextkit</projectUrl>
+    <description>Easy to use rich text rendering for SkiaSharp, including font-fallback, bi-directional text support and more...</description>
+    <tags>rich text, rich, text, Skia, SkiaSharp, Font</tags>
+    <repository type="git" url="https://github.com/toptensoftware/richtextkit" commit="ae434c82d8a197e3d259761879fb3f862f12efd8" />
+    <dependencies>
+      <group targetFramework=".NETFramework4.6.2">
+        <dependency id="HarfBuzzSharp.NativeAssets.Linux" version="2.8.2.3" exclude="Build,Analyzers" />
+        <dependency id="SkiaSharp" version="2.88.7" exclude="Build,Analyzers" />
+        <dependency id="SkiaSharp.HarfBuzz" version="2.88.7" exclude="Build,Analyzers" />
+        <dependency id="SkiaSharp.NativeAssets.Linux" version="2.88.7" exclude="Build,Analyzers" />
+        <dependency id="System.ValueTuple" version="4.5.0" exclude="Build,Analyzers" />
+      </group>
+      <group targetFramework="net5.0">
+        <dependency id="HarfBuzzSharp.NativeAssets.Linux" version="2.8.2.3" exclude="Build,Analyzers" />
+        <dependency id="SkiaSharp" version="2.88.7" exclude="Build,Analyzers" />
+        <dependency id="SkiaSharp.HarfBuzz" version="2.88.7" exclude="Build,Analyzers" />
+        <dependency id="SkiaSharp.NativeAssets.Linux" version="2.88.7" exclude="Build,Analyzers" />
+        <dependency id="System.ValueTuple" version="4.5.0" exclude="Build,Analyzers" />
+      </group>
+      <group targetFramework=".NETStandard2.0">
+        <dependency id="HarfBuzzSharp.NativeAssets.Linux" version="2.8.2.3" exclude="Build,Analyzers" />
+        <dependency id="SkiaSharp" version="2.88.7" exclude="Build,Analyzers" />
+        <dependency id="SkiaSharp.HarfBuzz" version="2.88.7" exclude="Build,Analyzers" />
+        <dependency id="SkiaSharp.NativeAssets.Linux" version="2.88.7" exclude="Build,Analyzers" />
+        <dependency id="System.ValueTuple" version="4.5.0" exclude="Build,Analyzers" />
+      </group>
+    </dependencies>
+  </metadata>
+</package>

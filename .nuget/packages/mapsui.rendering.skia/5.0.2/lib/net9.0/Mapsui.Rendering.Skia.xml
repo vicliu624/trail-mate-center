@@ -1,0 +1,165 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Mapsui.Rendering.Skia</name>
+    </assembly>
+    <members>
+        <member name="M:Mapsui.Rendering.Skia.Extensions.ByteExtensions.LoadSvg(System.Byte[])">
+            <summary> Load Svg from byte array</summary>
+            <param name="bytes">svg data</param>
+            <returns>loaded svg image</returns>
+        </member>
+        <member name="M:Mapsui.Rendering.Skia.Extensions.CalloutBalloonDefinitionExtensions.CalcSize(Mapsui.Styles.CalloutBalloonDefinition,Mapsui.Styles.Size)">
+            <summary>
+            Calc the size which is needed for the canvas
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:Mapsui.Rendering.Skia.Extensions.CalloutBalloonDefinitionExtensions.CreateCalloutOutline(Mapsui.Styles.CalloutBalloonDefinition,Mapsui.Styles.Size)">
+            <summary>
+            Update path
+            </summary>
+        </member>
+        <member name="M:Mapsui.Rendering.Skia.Extensions.CalloutBalloonDefinitionExtensions.DrawTrail(SkiaSharp.SKPath,SkiaSharp.SKPoint,SkiaSharp.SKPoint,SkiaSharp.SKPoint)">
+            <summary>
+            Draw tail to path
+            </summary>
+            <param name="path">The tail path</param>
+            <param name="start">Start of tail at bubble</param>
+            <param name="center">Center of tail</param>
+            <param name="end">End of tail at bubble</param>
+        </member>
+        <member name="M:Mapsui.Rendering.Skia.Extensions.LineStringExtensions.ToSkiaPath(NetTopologySuite.Geometries.LineString,Mapsui.Viewport,SkiaSharp.SKRect,System.Single)">
+            <summary>
+            Converts a LineString in world coordinates to a Skia path
+            </summary>
+            <param name="lineString">List of points in Mapsui world coordinates.</param>
+            <param name="viewport">The Viewport that is used for the conversions.</param>
+            <param name="clipRect">Rectangle to clip to. All lines outside aren't drawn.</param>
+            <param name="strokeWidth">stroke Width</param>
+            <returns></returns>
+        </member>
+        <member name="M:Mapsui.Rendering.Skia.Extensions.PointExtensions.ToSkiaPath(NetTopologySuite.Geometries.Point,Mapsui.Viewport,SkiaSharp.SKRect,System.Single)">
+            <summary>
+            Converts a LineString in world coordinates to a Skia path
+            </summary>
+            <param name="point">List of points in Mapsui world coordinates.</param>
+            <param name="viewport">The Viewport that is used for the conversions.</param>
+            <param name="clipRect">Rectangle to clip to. All lines outside aren't drawn.</param>
+            <param name="strokeWidth">stroke Width</param>
+            <returns></returns>
+        </member>
+        <member name="M:Mapsui.Rendering.Skia.Extensions.PolygonExtensions.ToSkiaPath(NetTopologySuite.Geometries.Polygon,Mapsui.Viewport,SkiaSharp.SKRect,System.Single)">
+            <summary>
+            Converts a Polygon into a SKPath, that is clipped to clipRect, where exterior is bigger than interior
+            </summary>
+            <param name="polygon">Polygon to convert</param>
+            <param name="viewport">The Viewport that is used for the conversions.</param>
+            <param name="clipRect">Rectangle to clip to. All lines outside aren't drawn.</param>
+            <param name="strokeWidth">StrokeWidth for inflating clipRect</param>
+            <returns></returns>
+        </member>
+        <member name="M:Mapsui.Rendering.Skia.Extensions.StreamExtensions.LoadSvg(System.IO.Stream)">
+            <summary> Load Svg from String </summary>
+            <param name="str">string</param>
+            <returns>loaded svg image</returns>
+        </member>
+        <member name="M:Mapsui.Rendering.Skia.Extensions.ViewportExtensions.ToSkiaRect(Mapsui.Viewport)">
+            <summary> Converts the Extent of the Viewport to a SKRect </summary>
+            <param name="viewport">viewport</param>
+            <returns>SkRect</returns>
+        </member>
+        <member name="M:Mapsui.Rendering.Skia.Functions.ClippingFunctions.ReducePointsToClipRect(System.Collections.Generic.IEnumerable{NetTopologySuite.Geometries.Coordinate},Mapsui.Viewport,SkiaSharp.SKRect)">
+            <summary>
+            Reduce list of points, so that all are inside of cliptRect
+            See https://en.wikipedia.org/wiki/Sutherland%E2%80%93Hodgman_algorithm
+            </summary>
+            <param name="points">List of points to reduce.</param>
+            <param name="viewport">The Viewport that is used for the conversions.</param>
+            <param name="clipRect">Rectangle to clip to. All points outside aren't drawn.</param>
+            <returns></returns>
+        </member>
+        <member name="F:Mapsui.Rendering.Skia.Functions.ClippingFunctions.Intersecter">
+            <summary>
+            Calculates the intersection point of line between pointStart and pointEnd 
+            and the edge.
+            There are 4 edges (left, top, right, bottom).
+            </summary>
+        </member>
+        <member name="M:Mapsui.Rendering.Skia.Functions.ClippingFunctions.WorldToScreen(Mapsui.Viewport,System.Collections.Generic.IEnumerable{NetTopologySuite.Geometries.Coordinate})">
+            <summary>
+            Convert a list of Mapsui points in world coordinates to SKPoint in screen coordinates
+            </summary>
+            <param name="viewport">The Viewport that is used for the conversions.</param>
+            <param name="points">List of points in Mapsui world coordinates</param>
+            <returns>List of screen coordinates in SKPoint</returns>
+        </member>
+        <member name="M:Mapsui.Rendering.Skia.Functions.ClippingFunctions.LiangBarskyClip(SkiaSharp.SKPoint,SkiaSharp.SKPoint,SkiaSharp.SKRect,SkiaSharp.SKPoint@,SkiaSharp.SKPoint@)">
+            <summary>
+            A Liang-Barsky implementation to detect the intersection between a line and a rect.
+            With this, all lines, that aren't visible on screen could be sorted out.
+            Found at https://gist.github.com/ChickenProp/3194723
+            </summary>
+            <param name="point1">First point of line</param>
+            <param name="point2">Second point of line</param>
+            <param name="clipRect"></param>
+            <param name="intersectionPoint1">First intersection point </param>
+            <param name="intersectionPoint2">Second intersection point</param>
+            <returns></returns>
+        </member>
+        <member name="T:Mapsui.Rendering.Skia.Functions.ClippingFunctions.Intersection">
+            <summary>
+            Type of intersection
+            </summary>
+        </member>
+        <member name="F:Mapsui.Rendering.Skia.Functions.ClippingFunctions.Comparer">
+            <summary>
+            Comparer for each side of the clipping rectangle to check, if a point 
+            is inside or outside of this edge.
+            There are 4 edges (left, top, right, bottom).
+            </summary>
+        </member>
+        <member name="M:Mapsui.Rendering.Skia.Images.SvgDrawableImage.#ctor(SkiaSharp.SKPicture)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Mapsui.Rendering.Skia.Images.SvgDrawableImage"/> class with the specified SKPicture.
+            </summary>
+            <param name="picture">The SKPicture to be used for the image. SvgDrawableImage will dispose it.</param>
+        </member>
+        <member name="M:Mapsui.Rendering.Skia.Images.SvgDrawableImage.#ctor(Svg.Skia.SKSvg)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Mapsui.Rendering.Skia.Images.SvgDrawableImage"/> class with the specified SKPicture.
+            </summary>
+            <param name="skSvg">The SKSvg to be used for the image. SvgDrawableImage will dispose it. </param>
+        </member>
+        <member name="M:Mapsui.Rendering.Skia.SkiaStyles.ISkiaStyleRenderer.Draw(SkiaSharp.SKCanvas,Mapsui.Viewport,Mapsui.Layers.ILayer,Mapsui.IFeature,Mapsui.Styles.IStyle,Mapsui.Rendering.RenderService,System.Int64)">
+            <summary>
+            Drawing function for special styles
+            </summary>
+            <param name="canvas">SKCanvas for drawing.</param>
+            <param name="viewport">Active viewport for this drawing operation.</param>
+            <param name="layer">Layer that contains feature.</param>
+            <param name="feature">Feature to draw.</param>
+            <param name="style">Style to draw.</param>
+            <param name="renderService">RenderService to provide caches and such.</param>
+            <returns></returns>
+        </member>
+        <member name="M:Mapsui.Rendering.Skia.CalloutStyleRenderer.CreateCalloutContent(Mapsui.Styles.CalloutStyle,Mapsui.Rendering.RenderService)">
+            <summary>
+            Update content for single and detail
+            </summary>
+        </member>
+        <member name="F:Mapsui.Rendering.Skia.PolygonRenderer._scale">
+            <summary>
+            fill paint scale
+            </summary>
+        </member>
+        <member name="M:Mapsui.Rendering.Skia.SymbolStyleRenderer.TrianglePath(SkiaSharp.SKPath,System.Single,System.Single,System.Single)">
+            Triangle of side 'sideLength', centered on the same point as if a circle of diameter 'sideLength' was there
+        </member>
+        <member name="M:Mapsui.Rendering.Skia.SkiaWidgets.LoggingWidgetRenderer.#ctor">
+            <summary>
+            Renderer for LoggingWidget
+            </summary>
+        </member>
+    </members>
+</doc>

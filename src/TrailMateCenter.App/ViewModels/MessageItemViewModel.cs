@@ -1,6 +1,9 @@
 using Avalonia;
 using Avalonia.Layout;
+using Avalonia.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using TrailMateCenter.Services;
 using TrailMateCenter.Localization;
 using TrailMateCenter.Models;
 
@@ -8,8 +11,24 @@ namespace TrailMateCenter.ViewModels;
 
 public sealed partial class MessageItemViewModel : ObservableObject, ILocalizationAware
 {
-    public MessageItemViewModel(MessageEntry entry)
+    private readonly Action<MessageItemViewModel>? _jumpToMapAction;
+    private static readonly int[] PreviewZoomCandidates = [18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8];
+    private static readonly string[] PreviewCacheLayers = ["tilecache", "terrain-cache", "satellite-cache"];
+    private static readonly string[] LocationKeywords =
+    [
+        "shared their position",
+        "shared location",
+        "share location",
+        "share your location",
+        "位置",
+        "分享位置",
+        "共享位置",
+    ];
+
+    public MessageItemViewModel(MessageEntry entry, Action<MessageItemViewModel>? jumpToMapAction = null)
     {
+        _jumpToMapAction = jumpToMapAction;
+        JumpToMapCommand = new RelayCommand(ExecuteJumpToMap, CanJumpToMap);
         UpdateFrom(entry);
     }
 
@@ -187,6 +206,50 @@ public sealed partial class MessageItemViewModel : ObservableObject, ILocalizati
     [ObservableProperty]
     private bool _hasAirtime;
 
+    [ObservableProperty]
+    private double? _latitude;
+
+    [ObservableProperty]
+    private double? _longitude;
+
+    [ObservableProperty]
+    private double? _altitude;
+
+    [ObservableProperty]
+    private bool _hasLocation;
+
+    [ObservableProperty]
+    private bool _showLocationPreview;
+
+    [ObservableProperty]
+    private string _locationPreviewTitle = string.Empty;
+
+    [ObservableProperty]
+    private string _locationPreviewText = string.Empty;
+
+    [ObservableProperty]
+    private string _locationContextHint = string.Empty;
+
+    [ObservableProperty]
+    private Bitmap? _mapPreviewBitmap;
+
+    [ObservableProperty]
+    private bool _hasMapPreview;
+
+    [ObservableProperty]
+    private bool _hasNoMapPreview;
+
+    [ObservableProperty]
+    private string _mapPreviewMissingText = string.Empty;
+
+    [ObservableProperty]
+    private string _mediaTypeText = string.Empty;
+
+    [ObservableProperty]
+    private string _mediaTypeColor = "#9AA3AE";
+
+    public IRelayCommand JumpToMapCommand { get; }
+
     partial void OnFromChanged(string value)
     {
         TitleText = BuildTitle();
@@ -195,6 +258,11 @@ public sealed partial class MessageItemViewModel : ObservableObject, ILocalizati
     partial void OnToChanged(string value)
     {
         TitleText = BuildTitle();
+    }
+
+    partial void OnHasLocationChanged(bool value)
+    {
+        JumpToMapCommand.NotifyCanExecuteChanged();
     }
 
     public void UpdateFrom(MessageEntry entry)
@@ -223,6 +291,9 @@ public sealed partial class MessageItemViewModel : ObservableObject, ILocalizati
         AirtimeMs = entry.AirtimeMs;
         Seq = entry.Seq;
         MessageId = entry.MessageId;
+        Latitude = entry.Latitude;
+        Longitude = entry.Longitude;
+        Altitude = entry.Altitude;
         Metadata = BuildMetadata();
         TitleText = BuildTitle();
         TimeText = Timestamp.ToLocalTime().ToString("HH:mm:ss");
@@ -294,6 +365,15 @@ public sealed partial class MessageItemViewModel : ObservableObject, ILocalizati
         RetryText = HasRetry ? loc.Format("Status.Message.RetryTag", Retry) : string.Empty;
         HasAirtime = AirtimeMs.HasValue;
         AirtimeText = HasAirtime ? loc.Format("Status.Message.AirtimeTag", AirtimeMs) : string.Empty;
+        HasLocation = Latitude.HasValue && Longitude.HasValue;
+        ShowLocationPreview = HasLocation || LooksLikeLocationMessage(Text);
+        LocationPreviewTitle = ShowLocationPreview ? loc.GetString("Status.Message.LocationPreview") : string.Empty;
+        LocationPreviewText = HasLocation
+            ? loc.Format("Status.Location.Format", Latitude!.Value, Longitude!.Value)
+            : loc.GetString("Status.Location.Unknown");
+        LocationContextHint = HasLocation ? loc.GetString("Status.Message.LocationContextHint") : string.Empty;
+        (MediaTypeText, MediaTypeColor) = BuildMediaType(loc);
+        UpdateMapPreview(loc);
     }
 
     private static bool IsBroadcastDestination(uint? toId)
@@ -364,5 +444,172 @@ public sealed partial class MessageItemViewModel : ObservableObject, ILocalizati
             : string.Empty;
         RetryText = HasRetry ? loc.Format("Status.Message.RetryTag", Retry) : string.Empty;
         AirtimeText = HasAirtime ? loc.Format("Status.Message.AirtimeTag", AirtimeMs) : string.Empty;
+        HasLocation = Latitude.HasValue && Longitude.HasValue;
+        ShowLocationPreview = HasLocation || LooksLikeLocationMessage(Text);
+        LocationPreviewTitle = ShowLocationPreview ? loc.GetString("Status.Message.LocationPreview") : string.Empty;
+        LocationPreviewText = HasLocation
+            ? loc.Format("Status.Location.Format", Latitude!.Value, Longitude!.Value)
+            : loc.GetString("Status.Location.Unknown");
+        LocationContextHint = HasLocation ? loc.GetString("Status.Message.LocationContextHint") : string.Empty;
+        (MediaTypeText, MediaTypeColor) = BuildMediaType(loc);
+        UpdateMapPreview(loc);
+    }
+
+    private (string Text, string Color) BuildMediaType(LocalizationService loc)
+    {
+        if (Direction == MessageDirection.System)
+            return (loc.GetString("Status.Message.MediaTypeSystem"), "#F59E0B");
+
+        var hasText = !string.IsNullOrWhiteSpace(Text);
+        var locationSemantic = HasLocation || LooksLikeLocationMessage(Text);
+
+        if (locationSemantic && hasText)
+            return (loc.GetString("Status.Message.MediaTypeLocationText"), "#22D3EE");
+
+        if (locationSemantic)
+            return (loc.GetString("Status.Message.MediaTypeLocation"), "#38BDF8");
+
+        if (hasText)
+            return (loc.GetString("Status.Message.MediaTypeText"), "#A3E635");
+
+        return (loc.GetString("Status.Message.MediaTypeUnknown"), "#9AA3AE");
+    }
+
+    private void UpdateMapPreview(LocalizationService loc)
+    {
+        if (!ShowLocationPreview)
+        {
+            ReplaceMapPreviewBitmap(null);
+            HasMapPreview = false;
+            HasNoMapPreview = false;
+            MapPreviewMissingText = string.Empty;
+            return;
+        }
+
+        if (!HasLocation || !Latitude.HasValue || !Longitude.HasValue)
+        {
+            ReplaceMapPreviewBitmap(null);
+            HasMapPreview = false;
+            HasNoMapPreview = true;
+            MapPreviewMissingText = loc.GetString("Status.Message.LocationPreviewNoCoordinates");
+            return;
+        }
+
+        if (TryResolveMapPreviewPath(Latitude.Value, Longitude.Value, out var sourcePath))
+        {
+            try
+            {
+                ReplaceMapPreviewBitmap(new Bitmap(sourcePath));
+                HasMapPreview = true;
+                HasNoMapPreview = false;
+                MapPreviewMissingText = string.Empty;
+                return;
+            }
+            catch
+            {
+                ReplaceMapPreviewBitmap(null);
+            }
+        }
+
+        ReplaceMapPreviewBitmap(null);
+        HasMapPreview = false;
+        HasNoMapPreview = true;
+        MapPreviewMissingText = loc.GetString("Status.Message.LocationPreviewNoTile");
+    }
+
+    public void ApplyLocation(double latitude, double longitude)
+    {
+        Latitude = latitude;
+        Longitude = longitude;
+        HasLocation = true;
+        ShowLocationPreview = true;
+
+        var loc = LocalizationService.Instance;
+        LocationPreviewTitle = loc.GetString("Status.Message.LocationPreview");
+        LocationPreviewText = loc.Format("Status.Location.Format", latitude, longitude);
+        LocationContextHint = loc.GetString("Status.Message.LocationContextHint");
+        (MediaTypeText, MediaTypeColor) = BuildMediaType(loc);
+        UpdateMapPreview(loc);
+    }
+
+    private void ReplaceMapPreviewBitmap(Bitmap? bitmap)
+    {
+        if (ReferenceEquals(MapPreviewBitmap, bitmap))
+            return;
+
+        var previous = MapPreviewBitmap;
+        MapPreviewBitmap = bitmap;
+        previous?.Dispose();
+    }
+
+    private static bool TryResolveMapPreviewPath(double latitude, double longitude, out string source)
+    {
+        source = string.Empty;
+        if (!double.IsFinite(latitude) || !double.IsFinite(longitude))
+            return false;
+
+        var lat = Math.Clamp(latitude, -85.05112878, 85.05112878);
+        var lon = Math.Clamp(longitude, -180.0, 180.0);
+        var root = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
+            "TrailMateCenter");
+
+        foreach (var zoom in PreviewZoomCandidates)
+        {
+            var x = ContourTileMath.LonToTileX(lon, zoom);
+            var y = ContourTileMath.LatToTileY(lat, zoom);
+
+            foreach (var layer in PreviewCacheLayers)
+            {
+                var extension = layer == "satellite-cache" ? "jpg" : "png";
+                var filePath = Path.Combine(
+                    root,
+                    layer,
+                    zoom.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                    x.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                    $"{y}.{extension}");
+
+                if (!File.Exists(filePath))
+                    continue;
+
+                source = filePath;
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool LooksLikeLocationMessage(string? text)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+            return false;
+
+        var value = text.Trim();
+        var lower = value.ToLowerInvariant();
+        foreach (var keyword in LocationKeywords)
+        {
+            if (keyword.Any(ch => ch > 127))
+            {
+                if (value.Contains(keyword, StringComparison.Ordinal))
+                    return true;
+                continue;
+            }
+
+            if (lower.Contains(keyword, StringComparison.Ordinal))
+                return true;
+        }
+
+        return false;
+    }
+
+    private void ExecuteJumpToMap()
+    {
+        _jumpToMapAction?.Invoke(this);
+    }
+
+    private bool CanJumpToMap()
+    {
+        return HasLocation && _jumpToMapAction is not null;
     }
 }

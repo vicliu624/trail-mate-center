@@ -1,0 +1,124 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Mapsui.Tiling</name>
+    </assembly>
+    <members>
+        <member name="M:Mapsui.Tiling.Extensions.MapBuilderExtensions.WithScaleBarWidget(Mapsui.MapBuilder,Mapsui.Tiling.Extensions.MapBuilderExtensions.ConfigureScaleBarWidget)">
+            <summary>
+            This method is here to test extended methods for widgets. It should be in 
+            the MapBuilder instead (because it can be, unlike those for the TileLayer)
+            </summary>
+            <param name="mapBuilder"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Mapsui.Tiling.Extensions.MapBuilderExtensions.WithScaleBarWidget(Mapsui.MapBuilder)">
+            <summary>
+            This method is here to test extended methods for widgets. It should be in 
+            the MapBuilder instead (because it can be, unlike those for the TileLayer)
+            </summary>
+            <param name="mapBuilder"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Mapsui.Tiling.Fetcher.IDataFetchStrategy.Get(BruTile.ITileSchema,BruTile.Extent,System.Int32)">
+            <summary>
+            Fetches the tiles from the data source to put them into the cache. A strategy could  pre-fetch
+            certain tiles to anticipate future use.
+            </summary>
+        </member>
+        <member name="T:Mapsui.Tiling.Layers.RasterizingTileLayer">
+            <summary>
+            Rasterizing Tile Layer. A Layer that Rasterizes and Tiles the Layer. For Faster Performance.
+            It recreates the Tiles if Data is changed.
+            </summary>
+        </member>
+        <member name="M:Mapsui.Tiling.Layers.RasterizingTileLayer.#ctor(Mapsui.Layers.ILayer,System.Single,System.Int32,System.Int32,Mapsui.Tiling.Fetcher.IDataFetchStrategy,Mapsui.Tiling.Rendering.IRenderFetchStrategy,System.Int32,System.Int32,BruTile.Cache.IPersistentCache{System.Byte[]},Mapsui.Projections.IProjection,Mapsui.Rendering.RenderFormat)">
+            <summary>
+                Creates a RasterizingTileLayer which rasterizes a layer for performance
+            </summary>
+            <param name="layer">The Layer to be rasterized</param>
+            <param name="pixelDensity"></param>
+            <param name="minTiles">Minimum number of tiles to cache</param>
+            <param name="maxTiles">Maximum number of tiles to cache</param>
+            <param name="dataFetchStrategy">Strategy to get list of tiles for given extent</param>
+            <param name="renderFetchStrategy"></param>
+            <param name="minExtraTiles">Number of minimum extra tiles for memory cache</param>
+            <param name="maxExtraTiles">Number of maximum extra tiles for memory cache</param>
+            <param name="persistentCache">Persistent Cache</param>
+            <param name="projection">Projection</param>
+            <param name="renderFormat">Format to Render To</param>
+        </member>
+        <member name="T:Mapsui.Tiling.Layers.TileLayer">
+            <summary>
+            Layer, which displays a map consisting of individual tiles
+            </summary>
+        </member>
+        <member name="M:Mapsui.Tiling.Layers.TileLayer.#ctor(BruTile.ITileSource,System.Int32,System.Int32,Mapsui.Tiling.Fetcher.IDataFetchStrategy,Mapsui.Tiling.Rendering.IRenderFetchStrategy,System.Int32,System.Int32,System.Func{BruTile.TileInfo,System.Threading.Tasks.Task{Mapsui.IFeature}},System.Net.Http.HttpClient)">
+            <summary>
+            Create tile layer for given tile source
+            </summary>
+            <param name="tileSource">Tile source to use for this layer</param>
+            <param name="minTiles">Minimum number of tiles to cache</param>
+            <param name="maxTiles">Maximum number of tiles to cache</param>
+            <param name="dataFetchStrategy">Strategy to get list of tiles for given extent</param>
+            <param name="renderFetchStrategy"></param>
+            <param name="minExtraTiles">Number of minimum extra tiles for memory cache</param>
+            <param name="maxExtraTiles">Number of maximum extra tiles for memory cache</param>
+            <param name="fetchTileAsFeature">Fetch tile as feature</param>
+            <param name="httpClient">A custom HttpClient (may include custom header parameters etc)</param>
+        </member>
+        <member name="P:Mapsui.Tiling.Layers.TileLayer.TileSource">
+            <summary>
+            TileSource</summary>
+        </member>
+        <member name="P:Mapsui.Tiling.Layers.TileLayer.MemoryCache">
+            <summary>
+            Memory cache for this layer
+            </summary>
+        </member>
+        <member name="P:Mapsui.Tiling.Layers.TileLayer.Resolutions">
+            <inheritdoc />
+        </member>
+        <member name="P:Mapsui.Tiling.Layers.TileLayer.Extent">
+            <inheritdoc />
+        </member>
+        <member name="M:Mapsui.Tiling.Layers.TileLayer.GetFeatures(Mapsui.MRect,System.Double)">
+            <inheritdoc />
+        </member>
+        <member name="M:Mapsui.Tiling.Layers.TileLayer.ClearCache">
+            <inheritdoc />
+        </member>
+        <member name="T:Mapsui.Tiling.Provider.RasterizingTileSource">
+            <summary> The rasterizing tile provider. Tiles the Layer for faster Rasterizing on Zoom and Move. </summary>
+        </member>
+        <member name="M:Mapsui.Tiling.Rendering.IRenderFetchStrategy.Get(Mapsui.MRect,System.Double,BruTile.ITileSchema,BruTile.Cache.ITileCache{Mapsui.IFeature})">
+            <summary>
+            Given the current extent and resolution it determines which tiles should
+            be returned from the memory cache
+            </summary>
+            <param name="extent">The extent of the target area</param>
+            <param name="resolution">The resolution of the target area</param>
+            <param name="schema">The tile schema of the tile source</param>
+            <param name="memoryCache">The cached features from which to select</param>
+            <returns></returns>
+        </member>
+        <member name="T:Mapsui.Tiling.Rendering.RenderException">
+            <summary>
+            Exception thrown when a layer rendering fails
+            </summary>
+        </member>
+        <member name="M:Mapsui.Tiling.Rendering.RenderException.#ctor(System.String)">
+            <summary>
+            Exception thrown when layer rendering has failed
+            </summary>
+            <param name="message"></param>
+        </member>
+        <member name="M:Mapsui.Tiling.Rendering.RenderException.#ctor(System.String,System.Exception)">
+            <summary>
+            Exception thrown when layer rendering has failed
+            </summary>
+            <param name="message"></param>
+            <param name="inner"></param>
+        </member>
+    </members>
+</doc>

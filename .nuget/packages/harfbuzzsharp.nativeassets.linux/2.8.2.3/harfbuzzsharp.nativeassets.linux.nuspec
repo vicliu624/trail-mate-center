@@ -1,0 +1,34 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
+  <metadata>
+    <id>HarfBuzzSharp.NativeAssets.Linux</id>
+    <version>2.8.2.3</version>
+    <title>HarfBuzzSharp - Native Assets for Linux</title>
+    <authors>Microsoft</authors>
+    <owners>Microsoft</owners>
+    <requireLicenseAcceptance>true</requireLicenseAcceptance>
+    <licenseUrl>https://go.microsoft.com/fwlink/?linkid=868514</licenseUrl>
+    <projectUrl>https://go.microsoft.com/fwlink/?linkid=868515</projectUrl>
+    <iconUrl>https://go.microsoft.com/fwlink/?linkid=2130524</iconUrl>
+    <description>HarfBuzzSharp is a cross-platform OpenType text shaping engine for .NET platforms.</description>
+    <summary>HarfBuzzSharp is a cross-platform OpenType text shaping engine for .NET platforms.</summary>
+    <releaseNotes>Please visit https://go.microsoft.com/fwlink/?linkid=868517 to view the release notes.</releaseNotes>
+    <copyright>© Microsoft Corporation. All rights reserved.</copyright>
+    <tags>xamarin text harfbuzz ios android linux windows uwp tvos macos tizen cross-platform harfbuzzsharp</tags>
+    <repository type="git" url="https://github.com/mono/SkiaSharp" branch="main" commit="655cff084fa9365efde6e989004eb818294c9b0f" />
+    <dependencies>
+      <group targetFramework=".NETFramework4.6.2">
+        <dependency id="HarfBuzzSharp" version="2.8.2.3" />
+      </group>
+      <group targetFramework=".NETStandard1.3">
+        <dependency id="HarfBuzzSharp" version="2.8.2.3" />
+      </group>
+      <group targetFramework=".NETCoreApp3.1">
+        <dependency id="HarfBuzzSharp" version="2.8.2.3" />
+      </group>
+      <group targetFramework="net5.0">
+        <dependency id="HarfBuzzSharp" version="2.8.2.3" />
+      </group>
+    </dependencies>
+  </metadata>
+</package>

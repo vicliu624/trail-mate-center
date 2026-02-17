@@ -49,6 +49,13 @@
       <Border Background="{DynamicResource SurfaceDark}" BorderBrush="{DynamicResource PanelBorder}" BorderThickness="0,0,1,0" Classes="panel">
         <Grid>
           <mapsui:MapControl x:Name="MainMapControl" Map="{Binding Map.Map}" />
+          <Canvas IsHitTestVisible="False">
+            <Polyline x:Name="OfflineSelectionPolygon"
+                      IsVisible="False"
+                      Stroke="#FF53C7FF"
+                      StrokeThickness="2"
+                      Fill="Transparent"/>
+          </Canvas>
           <Border IsHitTestVisible="False" Background="{StaticResource MapGridBrush}" Opacity="0.08"/>
           <Border IsHitTestVisible="False" Background="{StaticResource MapNoiseBrush}" Opacity="0.04"/>
           <Border IsHitTestVisible="False" Background="{StaticResource MapVignette}" Opacity="0.2"/>
@@ -59,11 +66,19 @@
               <StackPanel Orientation="Horizontal" Spacing="10">
                 <CheckBox Content="{DynamicResource Ui.Dashboard.Cluster}" IsChecked="{Binding MapEnableCluster}" Foreground="{DynamicResource TextPrimary}"/>
                 <CheckBox Content="{DynamicResource Ui.Dashboard.Follow}" IsChecked="{Binding MapFollowLatest}" Foreground="{DynamicResource TextPrimary}"/>
+                <CheckBox Content="{DynamicResource Ui.Dashboard.OfflineMode}" IsChecked="{Binding OfflineMode}" Foreground="{DynamicResource TextPrimary}"/>
                 <CheckBox Content="{DynamicResource Ui.Dashboard.Logs}" IsChecked="{Binding MapShowLogs}" Foreground="{DynamicResource TextPrimary}"/>
-                <CheckBox Content="{DynamicResource Ui.Dashboard.Mqtt}" IsChecked="{Binding MapShowMqtt}" Foreground="{DynamicResource TextPrimary}"/>
+                <CheckBox Content="{DynamicResource Ui.Dashboard.Mqtt}"
+                          IsChecked="{Binding MapShowMqtt}"
+                          IsEnabled="{Binding CanUseExternalFeeds}"
+                          Foreground="{DynamicResource TextPrimary}"/>
                 <CheckBox Content="{DynamicResource Ui.Dashboard.ContoursLabel}" IsChecked="{Binding ContoursEnabled}" Foreground="{DynamicResource TextPrimary}"/>
                 <CheckBox Content="{DynamicResource Ui.Dashboard.Gibs}" IsChecked="{Binding MapShowGibs}" Foreground="{DynamicResource TextPrimary}"/>
               </StackPanel>
+              <TextBlock Text="{DynamicResource Ui.Dashboard.OfflineModeHint}"
+                         Foreground="{DynamicResource AccentWarn}"
+                         FontSize="10"
+                         IsVisible="{Binding OfflineMode}"/>
               <StackPanel Orientation="Horizontal" Spacing="8">
                 <TextBlock Text="{DynamicResource Ui.Dashboard.BaseMap}" VerticalAlignment="Center" Foreground="{DynamicResource TextPrimary}"/>
                 <ComboBox Width="140"
@@ -72,13 +87,69 @@
               </StackPanel>
               <TextBlock Text="{Binding Map.CurrentZoomText}" Foreground="{DynamicResource TextPrimary}" FontSize="10"/>
               <TextBlock Text="{Binding Map.CurrentContourText}" Foreground="{DynamicResource TextDim}" FontSize="10"/>
+              <TextBlock Text="{Binding Map.OfflineCacheStatusText}" Foreground="{DynamicResource TextDim}" FontSize="10" TextWrapping="Wrap" MaxWidth="520"/>
+            </StackPanel>
+          </Border>
+          <Border HorizontalAlignment="Right" VerticalAlignment="Top" Margin="12"
+                  Background="#0F1C2C"
+                  BorderBrush="#6F8FB5"
+                  BorderThickness="1"
+                  CornerRadius="6"
+                  Padding="4"
+                  Opacity="1">
+            <StackPanel Spacing="4">
+              <ToggleButton x:Name="OfflineCacheSelectToggle"
+                            Width="36"
+                            Height="36"
+                            Padding="6"
+                            Background="#EAF2FC"
+                            BorderBrush="#8DA8C7"
+                            BorderThickness="1"
+                            IsChecked="{Binding Map.IsOfflineCacheSelectionMode}"
+                            ToolTip.Tip="{DynamicResource Ui.Dashboard.OfflineCacheSelect}">
+                <Image Source="/Assets/kuangxuan.png"
+                       Width="20"
+                       Height="20"
+                       Stretch="Uniform"/>
+              </ToggleButton>
+              <Button Width="36"
+                      Height="36"
+                      Padding="6"
+                      Background="#EAF2FC"
+                      BorderBrush="#8DA8C7"
+                      BorderThickness="1"
+                      Click="OnOfflineCacheRegionsClicked"
+                      ToolTip.Tip="{DynamicResource Ui.Dashboard.OfflineCacheRegionsOpen}">
+                <Image Source="/Assets/liebiao.png"
+                       Width="20"
+                       Height="20"
+                       Stretch="Uniform"/>
+              </Button>
+              <Button Width="36"
+                      Height="36"
+                      Padding="6"
+                      Background="#EAF2FC"
+                      BorderBrush="#8DA8C7"
+                      BorderThickness="1"
+                      Click="OnImportTrackClicked"
+                      ToolTip.Tip="{DynamicResource Ui.Dashboard.ImportTrack}">
+                <Image Source="/Assets/locus-full.png"
+                       Width="20"
+                       Height="20"
+                       Stretch="Uniform"/>
+              </Button>
             </StackPanel>
           </Border>
           <Border HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="12"
                   Background="{DynamicResource SurfaceDark}" BorderBrush="{DynamicResource PanelBorder}"
                   BorderThickness="1" CornerRadius="6" Padding="8" Opacity="0.92"
-                  IsVisible="{Binding MapShowLogs}" IsHitTestVisible="False">
-            <ScrollViewer MaxHeight="160" Width="360">
+                  IsVisible="{Binding MapShowLogs}"
+                  PointerWheelChanged="OnMapLogPanelPointerWheelChanged">
+            <ScrollViewer MaxHeight="160"
+                          Width="360"
+                          VerticalScrollBarVisibility="Auto"
+                          HorizontalScrollBarVisibility="Disabled"
+                          IsScrollChainingEnabled="False">
               <ItemsControl ItemsSource="{Binding Map.MapLogEntries}">
                 <ItemsControl.ItemTemplate>
                   <DataTemplate>

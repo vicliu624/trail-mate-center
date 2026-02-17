@@ -167,6 +167,23 @@ public sealed class SqliteStore
 
             CREATE INDEX IF NOT EXISTS idx_mqtt_packets_timestamp ON mqtt_packets(timestamp);
             CREATE INDEX IF NOT EXISTS idx_mqtt_packets_source_topic ON mqtt_packets(source_id, topic);
+
+            CREATE TABLE IF NOT EXISTS map_cache_regions (
+                id TEXT PRIMARY KEY,
+                name TEXT NOT NULL,
+                west REAL NOT NULL,
+                south REAL NOT NULL,
+                east REAL NOT NULL,
+                north REAL NOT NULL,
+                include_osm INTEGER NOT NULL DEFAULT 1,
+                include_terrain INTEGER NOT NULL DEFAULT 1,
+                include_satellite INTEGER NOT NULL DEFAULT 1,
+                include_contours INTEGER NOT NULL DEFAULT 1,
+                include_ultra_fine_contours INTEGER NOT NULL DEFAULT 0,
+                sort_order INTEGER NOT NULL
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_map_cache_regions_sort ON map_cache_regions(sort_order);
             """;
         await cmd.ExecuteNonQueryAsync(cancellationToken);
 
@@ -174,6 +191,11 @@ public sealed class SqliteStore
         await EnsureColumnAsync(connection, "mqtt_sources", "client_id", "TEXT", cancellationToken);
         await EnsureColumnAsync(connection, "mqtt_sources", "clean_session", "INTEGER NOT NULL DEFAULT 0", cancellationToken);
         await EnsureColumnAsync(connection, "mqtt_sources", "subscribe_qos", "INTEGER NOT NULL DEFAULT 1", cancellationToken);
+        await EnsureColumnAsync(connection, "map_cache_regions", "include_osm", "INTEGER NOT NULL DEFAULT 1", cancellationToken);
+        await EnsureColumnAsync(connection, "map_cache_regions", "include_terrain", "INTEGER NOT NULL DEFAULT 1", cancellationToken);
+        await EnsureColumnAsync(connection, "map_cache_regions", "include_satellite", "INTEGER NOT NULL DEFAULT 1", cancellationToken);
+        await EnsureColumnAsync(connection, "map_cache_regions", "include_contours", "INTEGER NOT NULL DEFAULT 1", cancellationToken);
+        await EnsureColumnAsync(connection, "map_cache_regions", "include_ultra_fine_contours", "INTEGER NOT NULL DEFAULT 0", cancellationToken);
     }
 
     public async Task UpsertMessageAsync(MessageEntry message, CancellationToken cancellationToken)
@@ -513,7 +535,10 @@ public sealed class SqliteStore
         return results;
     }
 
-    public async Task<IReadOnlyList<HostLinkEvent>> LoadEventsAsync(CancellationToken cancellationToken)
+    public async Task<IReadOnlyList<HostLinkEvent>> LoadEventsAsync(
+        CancellationToken cancellationToken,
+        int? takeLatest = null,
+        DateTimeOffset? beforeExclusive = null)
     {
         var results = new List<HostLinkEvent>();
         await _mutex.WaitAsync(cancellationToken);
@@ -522,7 +547,27 @@ public sealed class SqliteStore
             await using var connection = new SqliteConnection(_connectionString);
             await connection.OpenAsync(cancellationToken);
             await using var cmd = connection.CreateCommand();
-            cmd.CommandText = "SELECT event_type, payload FROM events ORDER BY timestamp ASC;";
+            var hasBefore = beforeExclusive.HasValue;
+            var hasTake = takeLatest.HasValue && takeLatest.Value > 0;
+            if (hasTake)
+            {
+                cmd.CommandText = hasBefore
+                    ? "SELECT event_type, payload FROM events WHERE timestamp < $before ORDER BY timestamp DESC LIMIT $limit;"
+                    : "SELECT event_type, payload FROM events ORDER BY timestamp DESC LIMIT $limit;";
+                cmd.Parameters.AddWithValue("$limit", takeLatest!.Value);
+            }
+            else
+            {
+                cmd.CommandText = hasBefore
+                    ? "SELECT event_type, payload FROM events WHERE timestamp < $before ORDER BY timestamp ASC;"
+                    : "SELECT event_type, payload FROM events ORDER BY timestamp ASC;";
+            }
+
+            if (hasBefore)
+            {
+                cmd.Parameters.AddWithValue("$before", beforeExclusive!.Value.ToUnixTimeMilliseconds());
+            }
+
             await using var reader = await cmd.ExecuteReaderAsync(cancellationToken);
             while (await reader.ReadAsync(cancellationToken))
             {
@@ -531,6 +576,11 @@ public sealed class SqliteStore
                 var ev = DeserializeEvent(eventType, payload);
                 if (ev is not null)
                     results.Add(ev);
+            }
+
+            if (hasTake)
+            {
+                results.Reverse();
             }
         }
         finally
@@ -608,7 +658,10 @@ public sealed class SqliteStore
         return results;
     }
 
-    public async Task<IReadOnlyList<HostLinkLogEntry>> LoadLogsAsync(CancellationToken cancellationToken)
+    public async Task<IReadOnlyList<HostLinkLogEntry>> LoadLogsAsync(
+        CancellationToken cancellationToken,
+        int? takeLatest = null,
+        DateTimeOffset? beforeExclusive = null)
     {
         var results = new List<HostLinkLogEntry>();
         await _mutex.WaitAsync(cancellationToken);
@@ -617,7 +670,27 @@ public sealed class SqliteStore
             await using var connection = new SqliteConnection(_connectionString);
             await connection.OpenAsync(cancellationToken);
             await using var cmd = connection.CreateCommand();
-            cmd.CommandText = "SELECT * FROM logs ORDER BY timestamp ASC;";
+            var hasBefore = beforeExclusive.HasValue;
+            var hasTake = takeLatest.HasValue && takeLatest.Value > 0;
+            if (hasTake)
+            {
+                cmd.CommandText = hasBefore
+                    ? "SELECT * FROM logs WHERE timestamp < $before ORDER BY timestamp DESC LIMIT $limit;"
+                    : "SELECT * FROM logs ORDER BY timestamp DESC LIMIT $limit;";
+                cmd.Parameters.AddWithValue("$limit", takeLatest!.Value);
+            }
+            else
+            {
+                cmd.CommandText = hasBefore
+                    ? "SELECT * FROM logs WHERE timestamp < $before ORDER BY timestamp ASC;"
+                    : "SELECT * FROM logs ORDER BY timestamp ASC;";
+            }
+
+            if (hasBefore)
+            {
+                cmd.Parameters.AddWithValue("$before", beforeExclusive!.Value.ToUnixTimeMilliseconds());
+            }
+
             await using var reader = await cmd.ExecuteReaderAsync(cancellationToken);
             while (await reader.ReadAsync(cancellationToken))
             {
@@ -628,6 +701,11 @@ public sealed class SqliteStore
                     Message = reader.GetString(reader.GetOrdinal("message")),
                     RawCode = ReadNullableString(reader, "raw_code"),
                 });
+            }
+
+            if (hasTake)
+            {
+                results.Reverse();
             }
         }
         finally
@@ -730,6 +808,99 @@ public sealed class SqliteStore
         }
     }
 
+    public async Task<IReadOnlyList<MapCacheRegionSettings>> LoadMapCacheRegionsAsync(CancellationToken cancellationToken)
+    {
+        var results = new List<MapCacheRegionSettings>();
+        await _mutex.WaitAsync(cancellationToken);
+        try
+        {
+            await using var connection = new SqliteConnection(_connectionString);
+            await connection.OpenAsync(cancellationToken);
+            await using var cmd = connection.CreateCommand();
+            cmd.CommandText = "SELECT * FROM map_cache_regions ORDER BY sort_order ASC;";
+            await using var reader = await cmd.ExecuteReaderAsync(cancellationToken);
+            while (await reader.ReadAsync(cancellationToken))
+            {
+                results.Add(new MapCacheRegionSettings
+                {
+                    Id = reader.GetString(reader.GetOrdinal("id")),
+                    Name = reader.GetString(reader.GetOrdinal("name")),
+                    West = reader.GetDouble(reader.GetOrdinal("west")),
+                    South = reader.GetDouble(reader.GetOrdinal("south")),
+                    East = reader.GetDouble(reader.GetOrdinal("east")),
+                    North = reader.GetDouble(reader.GetOrdinal("north")),
+                    IncludeOsm = ReadBool(reader, "include_osm", defaultValue: true),
+                    IncludeTerrain = ReadBool(reader, "include_terrain", defaultValue: true),
+                    IncludeSatellite = ReadBool(reader, "include_satellite", defaultValue: true),
+                    IncludeContours = ReadBool(reader, "include_contours", defaultValue: true),
+                    IncludeUltraFineContours = ReadBool(reader, "include_ultra_fine_contours", defaultValue: false),
+                });
+            }
+        }
+        finally
+        {
+            _mutex.Release();
+        }
+
+        return results;
+    }
+
+    public async Task SaveMapCacheRegionsAsync(IEnumerable<MapCacheRegionSettings> regions, CancellationToken cancellationToken)
+    {
+        await _mutex.WaitAsync(cancellationToken);
+        try
+        {
+            await using var connection = new SqliteConnection(_connectionString);
+            await connection.OpenAsync(cancellationToken);
+            await using var transaction = (SqliteTransaction)await connection.BeginTransactionAsync(cancellationToken);
+
+            await using (var clear = connection.CreateCommand())
+            {
+                clear.Transaction = transaction;
+                clear.CommandText = "DELETE FROM map_cache_regions;";
+                await clear.ExecuteNonQueryAsync(cancellationToken);
+            }
+
+            var sortOrder = 0;
+            foreach (var region in regions)
+            {
+                await using var insert = connection.CreateCommand();
+                insert.Transaction = transaction;
+                insert.CommandText = """
+                    INSERT INTO map_cache_regions (
+                        id, name, west, south, east, north,
+                        include_osm, include_terrain, include_satellite, include_contours, include_ultra_fine_contours,
+                        sort_order
+                    ) VALUES (
+                        $id, $name, $west, $south, $east, $north,
+                        $include_osm, $include_terrain, $include_satellite, $include_contours, $include_ultra_fine_contours,
+                        $sort_order
+                    );
+                    """;
+                insert.Parameters.AddWithValue("$id", string.IsNullOrWhiteSpace(region.Id) ? Guid.NewGuid().ToString("N") : region.Id.Trim());
+                insert.Parameters.AddWithValue("$name", string.IsNullOrWhiteSpace(region.Name) ? "Area" : region.Name.Trim());
+                insert.Parameters.AddWithValue("$west", region.West);
+                insert.Parameters.AddWithValue("$south", region.South);
+                insert.Parameters.AddWithValue("$east", region.East);
+                insert.Parameters.AddWithValue("$north", region.North);
+                insert.Parameters.AddWithValue("$include_osm", region.IncludeOsm ? 1 : 0);
+                insert.Parameters.AddWithValue("$include_terrain", region.IncludeTerrain ? 1 : 0);
+                insert.Parameters.AddWithValue("$include_satellite", region.IncludeSatellite ? 1 : 0);
+                insert.Parameters.AddWithValue("$include_contours", region.IncludeContours ? 1 : 0);
+                insert.Parameters.AddWithValue("$include_ultra_fine_contours", region.IncludeUltraFineContours ? 1 : 0);
+                insert.Parameters.AddWithValue("$sort_order", sortOrder);
+                await insert.ExecuteNonQueryAsync(cancellationToken);
+                sortOrder++;
+            }
+
+            await transaction.CommitAsync(cancellationToken);
+        }
+        finally
+        {
+            _mutex.Release();
+        }
+    }
+
     private static object DbValue<T>(T? value)
     {
         return value is null ? DBNull.Value : value;
@@ -757,6 +928,15 @@ public sealed class SqliteStore
         await using var alter = connection.CreateCommand();
         alter.CommandText = $"ALTER TABLE {table} ADD COLUMN {column} {definition};";
         await alter.ExecuteNonQueryAsync(cancellationToken);
+    }
+
+    private static bool ReadBool(SqliteDataReader reader, string column, bool defaultValue)
+    {
+        var ordinal = reader.GetOrdinal(column);
+        if (reader.IsDBNull(ordinal))
+            return defaultValue;
+
+        return reader.GetInt64(ordinal) != 0;
     }
 
     private static long? ReadNullableLong(SqliteDataReader reader, string column)

@@ -1,0 +1,112 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Mapsui.UI.Avalonia</name>
+    </assembly>
+    <members>
+        <member name="P:Mapsui.UI.Avalonia.MapControl.UseContinuousMouseWheelZoom">
+            <summary>
+            This enables an alternative mouse wheel method where the step size on each mouse wheel event can be configured
+            by setting the ContinuousMouseWheelZoomStepSize.
+            </summary>
+        </member>
+        <member name="P:Mapsui.UI.Avalonia.MapControl.ContinuousMouseWheelZoomStepSize">
+            <summary>
+            The size of the mouse wheel steps used when UseContinuousMouseWheelZoom = true. The default is 0.1. A step 
+            size of 1 would doubling or halving the scale of the map on each event.    
+            </summary>
+        </member>
+        <member name="M:Mapsui.UI.Avalonia.MapControl.ClearTouchState">
+            <summary> Clears the Touch State. Should only be called if the touch state seems out of sync 
+            in a certain situation.</summary>
+        </member>
+        <member name="P:Mapsui.UI.Avalonia.MapControl.MaxTapGestureMovement">
+            <summary>
+            The movement allowed between a touch down and touch up in a touch gestures in device independent pixels.
+            </summary>
+        </member>
+        <member name="P:Mapsui.UI.Avalonia.MapControl.UseFling">
+            <summary>
+            Use fling gesture to move the map. Default is true. Fling means that the map will continue to move for a 
+            short time after the user has lifted the finger.
+            </summary>
+        </member>
+        <member name="E:Mapsui.UI.Avalonia.MapControl.Info">
+            <summary>
+            Called whenever the map is clicked. The MapInfoEventArgs contain the features that were hit in
+            the layers that have IsMapInfoLayer set to true. 
+            </summary>
+            <remarks>
+            The Map.Tapped event is preferred over the Info event. This event is kept for backwards compatibility.
+            </remarks>
+        </member>
+        <member name="E:Mapsui.UI.Avalonia.MapControl.MapTapped">
+            <summary>
+            Event that is triggered when the map is tapped. Can be a single tap, double tap or long press.
+            </summary>
+        </member>
+        <member name="E:Mapsui.UI.Avalonia.MapControl.MapPointerPressed">
+            <summary>
+            Event that is triggered when on pointer down.
+            </summary>
+        </member>
+        <member name="E:Mapsui.UI.Avalonia.MapControl.MapPointerMoved">
+            <summary>
+            Event that is triggered when on pointer move. Can be a drag or hover.
+            </summary>
+        </member>
+        <member name="E:Mapsui.UI.Avalonia.MapControl.MapPointerReleased">
+            <summary>
+            Event that is triggered when on pointer up.
+            </summary>
+        </member>
+        <member name="M:Mapsui.UI.Avalonia.MapControl.ForceUpdate">
+            <summary>
+            Force a update of control
+            </summary>
+            <remarks>
+            When this function is called, the control draws itself once 
+            </remarks>
+        </member>
+        <member name="E:Mapsui.UI.Avalonia.MapControl.PropertyChanged">
+            <summary>
+            Called whenever a property is changed
+            </summary>
+        </member>
+        <member name="M:Mapsui.UI.Avalonia.MapControl.Unsubscribe">
+            <summary>
+            Unsubscribe from map events 
+            </summary>
+        </member>
+        <member name="M:Mapsui.UI.Avalonia.MapControl.SubscribeToMapEvents(Mapsui.Map)">
+            <summary>
+            Subscribe to map events
+            </summary>
+            <param name="map">Map, to which events to subscribe</param>
+        </member>
+        <member name="M:Mapsui.UI.Avalonia.MapControl.UnsubscribeFromMapEvents(Mapsui.Map)">
+            <summary>
+            Unsubscribe from map events
+            </summary>
+            <param name="map">Map, to which events to unsubscribe</param>
+        </member>
+        <member name="P:Mapsui.UI.Avalonia.MapControl.Map">
+            <summary>
+            Map holding data for which is shown in this MapControl
+            </summary>
+        </member>
+        <member name="M:Mapsui.UI.Avalonia.MapControl.RefreshData(Mapsui.ChangeType)">
+            <summary>
+            Refresh data of Map, but don't paint it
+            </summary>
+        </member>
+        <member name="M:Mapsui.UI.Avalonia.MapControl.GetSnapshot(System.Collections.Generic.IEnumerable{Mapsui.Layers.ILayer},Mapsui.Rendering.RenderFormat,System.Int32)">
+            <inheritdoc />
+        </member>
+        <member name="M:Mapsui.UI.Avalonia.MapControl.TryUpdateViewportSize">
+            <summary>
+            Tries to set the size of the MapControl.Map.Viewport.
+            </summary>
+        </member>
+    </members>
+</doc>

@@ -1,0 +1,2603 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Mapsui.Nts</name>
+    </assembly>
+    <members>
+        <member name="M:Mapsui.Nts.Editing.EditHelper.ShouldInsert(Mapsui.MPoint,System.Double,System.Collections.Generic.List{NetTopologySuite.Geometries.Coordinate},System.Double,System.Int32@)">
+            <summary>
+            Determines if a coordinate should be inserted into list of coordinates.
+            It fails if the distance of the location to the line is larger than the screenDistance.
+            </summary>
+            <param name="worldPosition">The position that should perhaps be inserted.</param>
+            <param name="resolution">The map resolution that is needed to calculate the distance.</param>
+            <param name="coordinates">The coordinates to insert into.</param>
+            <param name="screenDistance">The allowed screen distance. This value is determined by the
+            size of a symbol or the line width.</param>
+            <param name="segment">The segment to insert it at.</param>
+            <returns></returns>
+        </member>
+        <member name="M:Mapsui.Nts.Extensions.GeometryExtensions.GetVertexLists(NetTopologySuite.Geometries.Geometry)">
+            <summary>
+            For editing features it is simpler if we can treat al
+            geometries as a list of lists of points.
+            </summary>
+            <param name="geometry"></param>
+            <returns></returns>
+        </member>
+        <member name="T:Mapsui.Nts.GeometryFeature">
+            <summary>
+            Feature representing a NTS geometry on the map./>
+            </summary>
+        </member>
+        <member name="P:Mapsui.Nts.GeometryFeature.Geometry">
+            <summary>
+            Geometry for this feature
+            </summary>
+        </member>
+        <member name="P:Mapsui.Nts.GeometryFeature.Extent">
+            <summary>
+            Extent of feature
+            </summary>
+        </member>
+        <member name="M:Mapsui.Nts.GeometryFeature.CoordinateVisitor(System.Action{System.Double,System.Double,Mapsui.CoordinateSetter})">
+            <summary>
+            Implementation of visitor pattern for coordinates
+            </summary>
+            <param name="visit"></param>
+        </member>
+        <member name="M:Mapsui.Nts.Providers.GeoJsonProvider.IsGeoJsonContent">
+            <summary> Is Geo Json Content </summary>
+            <returns>true if it contains geoJson {} or []</returns>
+        </member>
+        <member name="P:Mapsui.Nts.Providers.GeoJsonProvider.CRS">
+            <inheritdoc/>
+        </member>
+        <member name="M:Mapsui.Nts.Providers.GeoJsonProvider.GetExtent">
+            <inheritdoc/>
+        </member>
+        <member name="M:Mapsui.Nts.Providers.GeoJsonProvider.GetFeaturesAsync(Mapsui.Layers.FetchInfo)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Mapsui.Nts.Providers.IndexedMemoryProvider.#ctor">
+            <summary>
+            Gets or sets the geometries this data source contains
+            </summary>
+        </member>
+        <member name="M:Mapsui.Nts.Providers.IndexedMemoryProvider.#ctor(Mapsui.IFeature)">
+            <summary>
+            Initializes a new instance of the IndxedMemoryProvider
+            </summary>
+            <param name="feature">Feature to be in this dataSource</param>
+        </member>
+        <member name="P:Mapsui.Nts.Providers.IndexedMemoryProvider.CRS">
+            <summary>
+            The spatial reference ID (CRS)
+            </summary>
+        </member>
+        <member name="M:Mapsui.Nts.Providers.IndexedMemoryProvider.#ctor(System.Collections.Generic.IEnumerable{Mapsui.IFeature})">
+            <summary>
+            Initializes a new instance of the IndxedMemoryProvider
+            </summary>
+            <param name="features">Features to be included in this dataSource</param>
+        </member>
+        <member name="M:Mapsui.Nts.Providers.IndexedMemoryProvider.Find(System.Object,System.String)">
+            <summary>
+            Search for a feature
+            </summary>
+            <param name="value">Value to search for</param>
+            <param name="fieldName">Name of the field to search in. This is the key of the T dictionary</param>
+            <returns></returns>
+        </member>
+        <member name="M:Mapsui.Nts.Providers.IndexedMemoryProvider.GetExtent">
+            <summary>
+            BoundingBox of data set
+            </summary>
+            <returns>BoundingBox</returns>
+        </member>
+        <member name="M:Mapsui.Nts.Providers.Shapefile.DbaseReader.CreateDbfIndex``1(System.Int32)">
+            <summary>
+            Indexes a DBF column in a binary tree [NOT COMPLETE]
+            </summary>
+            <typeparam name="T">datatype to be indexed</typeparam>
+            <param name="columnId">Column to index</param>
+            <returns></returns>
+        </member>
+        <member name="P:Mapsui.Nts.Providers.Shapefile.DbaseReader.LastUpdate">
+            <summary>
+            Gets the date this file was last updated.
+            </summary>
+        </member>
+        <member name="M:Mapsui.Nts.Providers.Shapefile.DbaseReader.GetSchemaTable">
+            <summary>
+            Returns a DataTable that describes the column metadata of the DBase file.
+            </summary>
+            <returns>A DataTable that describes the column metadata.</returns>
+        </member>
+        <member name="P:Mapsui.Nts.Providers.Shapefile.DbaseReader.Encoding">
+            <summary>
+            Gets or sets the <see cref="T:System.Text.Encoding"/> used for parsing strings from the DBase DBF file.
+            </summary>
+            <remarks>
+            If the encoding type isn't set, the dbase driver will try to determine the correct <see cref="T:System.Text.Encoding"/>.
+            </remarks>
+        </member>
+        <member name="M:Mapsui.Nts.Providers.Shapefile.DbaseReader.GetFeature(System.UInt32)">
+            <summary>
+            Gets the feature at the specified Object ID
+            </summary>
+            <param name="oid"></param>
+            <returns></returns>
+        </member>
+        <member name="T:Mapsui.Nts.Providers.Shapefile.Indexing.BinaryTree`2">
+            <summary>
+            The BinaryTree class are used for indexing values to enhance the speed of queries
+            </summary>
+            <typeparam name="T">Value type to be indexed</typeparam>
+            <typeparam name="TU">Value ID type</typeparam>
+        </member>
+        <member name="M:Mapsui.Nts.Providers.Shapefile.Indexing.BinaryTree`2.#ctor">
+            <summary>
+            Initializes a new instance of the generic binary tree.
+            </summary>
+        </member>
+        <member name="M:Mapsui.Nts.Providers.Shapefile.Indexing.BinaryTree`2.Add(Mapsui.Nts.Providers.Shapefile.Indexing.BinaryTree{`0,`1}.ItemValue[])">
+            <summary>
+            Inserts a value into the tree
+            </summary>
+            <param name="items"></param>
+        </member>
+        <member name="M:Mapsui.Nts.Providers.Shapefile.Indexing.BinaryTree`2.Add(Mapsui.Nts.Providers.Shapefile.Indexing.BinaryTree{`0,`1}.ItemValue)">
+            <summary>
+            Inserts a value into the tree
+            </summary>
+            <param name="item"></param>
+        </member>
+        <member name="M:Mapsui.Nts.Providers.Shapefile.Indexing.BinaryTree`2.Add(Mapsui.Nts.Providers.Shapefile.Indexing.Node{`0,`1},Mapsui.Nts.Providers.Shapefile.Indexing.Node{`0,`1})">
+            <summary>
+            Inserts a node into the tree
+            </summary>
+            <param name="newNode"></param>
+            <param name="root"></param>
+        </member>
+        <member name="M:Mapsui.Nts.Providers.Shapefile.Indexing.BinaryTree`2.TraceTree">
+            <summary>
+            This is the classic computer science binary tree iteration 
+            </summary>
+        </member>
+        <member name="P:Mapsui.Nts.Providers.Shapefile.Indexing.BinaryTree`2.InOrder">
+            <summary>
+            Gets an enumerator for all the values in the tree in ascending order
+            </summary>
+        </member>
+        <member name="M:Mapsui.Nts.Providers.Shapefile.Indexing.BinaryTree`2.Between(`0,`0)">
+            <summary>
+            Gets and enumerator for the values between min and max in ascending order
+            </summary>
+            <param name="min"></param>
+            <param name="max"></param>
+            <returns>Enumerator</returns>
+        </member>
+        <member name="M:Mapsui.Nts.Providers.Shapefile.Indexing.BinaryTree`2.StartsWith(System.String)">
+            <summary>
+            Enumerates the objects whose string-representation starts with 'str'
+            </summary>
+            <param name="str"></param>
+            <returns>Enumerator</returns>
+        </member>
+        <member name="M:Mapsui.Nts.Providers.Shapefile.Indexing.BinaryTree`2.Find(`0)">
+            <summary>
+            Enumerates all objects with the specified value
+            </summary>
+            <param name="value">Value to search for</param>
+            <returns>Enumerator</returns>
+        </member>
+        <member name="T:Mapsui.Nts.Providers.Shapefile.Indexing.BinaryTree`2.ItemValue">
+            <summary>
+            A value in a <see cref="T:Mapsui.Nts.Providers.Shapefile.Indexing.BinaryTree`2"/>.
+            </summary>
+            <remarks>
+            Creates an instance of an item in a <see cref="T:Mapsui.Nts.Providers.Shapefile.Indexing.BinaryTree`2"/>.
+            </remarks>
+            <param name="value">Value</param>
+            <param name="id">Identifier for the value</param>
+        </member>
+        <member name="M:Mapsui.Nts.Providers.Shapefile.Indexing.BinaryTree`2.ItemValue.#ctor(`0,`1)">
+            <summary>
+            A value in a <see cref="T:Mapsui.Nts.Providers.Shapefile.Indexing.BinaryTree`2"/>.
+            </summary>
+            <remarks>
+            Creates an instance of an item in a <see cref="T:Mapsui.Nts.Providers.Shapefile.Indexing.BinaryTree`2"/>.
+            </remarks>
+            <param name="value">Value</param>
+            <param name="id">Identifier for the value</param>
+        </member>
+        <member name="F:Mapsui.Nts.Providers.Shapefile.Indexing.BinaryTree`2.ItemValue.Id">
+            <summary>
+            Identifier for the value
+            </summary>
+        </member>
+        <member name="F:Mapsui.Nts.Providers.Shapefile.Indexing.BinaryTree`2.ItemValue.Value">
+            <summary>
+            Value
+            </summary>
+        </member>
+        <member name="T:Mapsui.Nts.Providers.Shapefile.Indexing.Heuristic">
+            <summary>
+            Heuristics used for tree generation
+            </summary>
+        </member>
+        <member name="F:Mapsui.Nts.Providers.Shapefile.Indexing.Heuristic.Maxdepth">
+            <summary>
+            Maximum tree depth
+            </summary>
+        </member>
+        <member name="F:Mapsui.Nts.Providers.Shapefile.Indexing.Heuristic.Minerror">
+            <summary>
+            Minimum Error metric – the volume of a box + a unit cube.
+            The unit cube in the metric prevents big boxes that happen to be flat having a zero result and muddling things up.
+            </summary>
+        </member>
+        <member name="F:Mapsui.Nts.Providers.Shapefile.Indexing.Heuristic.Mintricnt">
+            <summary>
+            Minimum object count at node
+            </summary>
+        </member>
+        <member name="F:Mapsui.Nts.Providers.Shapefile.Indexing.Heuristic.Tartricnt">
+            <summary>
+            Target object count at node
+            </summary>
+        </member>
+        <member name="T:Mapsui.Nts.Providers.Shapefile.Indexing.QuadTree">
+            <summary>
+            Constructs a Quad-tree node from a object list and creates its children recursively
+            </summary>
+        </member>
+        <member name="F:Mapsui.Nts.Providers.Shapefile.Indexing.QuadTree._depth">
+            <summary>
+            Nodes depth in a tree
+            </summary>
+        </member>
+        <member name="M:Mapsui.Nts.Providers.Shapefile.Indexing.QuadTree.#ctor(System.Collections.Generic.List{Mapsui.Nts.Providers.Shapefile.Indexing.QuadTree.BoxObjects},System.UInt32,Mapsui.Nts.Providers.Shapefile.Indexing.Heuristic)">
+            <summary>
+            Creates a node and either splits the objects recursively into sub-nodes, or stores them at the node depending on the heuristics.
+            Tree is built top->down
+            </summary>
+            <param name="objList">Geometries to index</param>
+            <param name="depth">Current depth of tree</param>
+            <param name="heurdata">Heuristics data</param>
+        </member>
+        <member name="M:Mapsui.Nts.Providers.Shapefile.Indexing.QuadTree.#ctor">
+            <summary>
+            This constructor is used internally for loading a tree from a file
+            </summary>
+        </member>
+        <member name="M:Mapsui.Nts.Providers.Shapefile.Indexing.QuadTree.FromFile(System.String)">
+            <summary>
+            Loads a quadtree from a file
+            </summary>
+            <param name="filename"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Mapsui.Nts.Providers.Shapefile.Indexing.QuadTree.ReadNode(System.UInt32,System.IO.BinaryReader@)">
+            <summary>
+            Reads a node from a stream recursively
+            </summary>
+            <param name="depth">Current depth</param>
+            <param name="br">Binary reader reference</param>
+            <returns></returns>
+        </member>
+        <member name="M:Mapsui.Nts.Providers.Shapefile.Indexing.QuadTree.SaveIndex(System.String)">
+            <summary>
+            Saves the Quadtree to a file
+            </summary>
+            <param name="filename"></param>
+        </member>
+        <member name="M:Mapsui.Nts.Providers.Shapefile.Indexing.QuadTree.SaveNode(Mapsui.Nts.Providers.Shapefile.Indexing.QuadTree,System.IO.BinaryWriter@)">
+            <summary>
+            Saves a node to a stream recursively
+            </summary>
+            <param name="node">Node to save</param>
+            <param name="sw">Reference to BinaryWriter</param>
+        </member>
+        <member name="M:Mapsui.Nts.Providers.Shapefile.Indexing.QuadTree.ObsoleteFileFormatException.#ctor(System.String)">
+            <summary>
+            Exception thrown when layer rendering has failed
+            </summary>
+            <param name="message"></param>
+        </member>
+        <member name="P:Mapsui.Nts.Providers.Shapefile.Indexing.QuadTree.IsLeaf">
+            <summary>
+            Determines whether the node is a leaf (if data is stored at the node, we assume the node is a leaf)
+            </summary>
+        </member>
+        <member name="P:Mapsui.Nts.Providers.Shapefile.Indexing.QuadTree.Box">
+            <summary>
+            Gets/sets the Axis Aligned Bounding Box
+            </summary>
+        </member>
+        <member name="P:Mapsui.Nts.Providers.Shapefile.Indexing.QuadTree.Child0">
+            <summary>
+            Gets/sets the left child node
+            </summary>
+        </member>
+        <member name="P:Mapsui.Nts.Providers.Shapefile.Indexing.QuadTree.Child1">
+            <summary>
+            Gets/sets the right child node
+            </summary>
+        </member>
+        <member name="P:Mapsui.Nts.Providers.Shapefile.Indexing.QuadTree.Depth">
+            <summary>
+            Gets the depth of the current node in the tree
+            </summary>
+        </member>
+        <member name="M:Mapsui.Nts.Providers.Shapefile.Indexing.QuadTree.Dispose">
+            <summary>
+            Disposes the node
+            </summary>
+        </member>
+        <member name="M:Mapsui.Nts.Providers.Shapefile.Indexing.QuadTree.ErrorMetric(Mapsui.MRect)">
+            <summary>
+            Calculate the floating point error metric 
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:Mapsui.Nts.Providers.Shapefile.Indexing.QuadTree.Search(Mapsui.MRect)">
+            <summary>
+            Searches the tree and looks for intersections with the BoundingBox 'bbox'
+            </summary>
+            <param name="box">BoundingBox to intersect with</param>
+        </member>
+        <member name="M:Mapsui.Nts.Providers.Shapefile.Indexing.QuadTree.IntersectTreeRecursive(Mapsui.MRect,Mapsui.Nts.Providers.Shapefile.Indexing.QuadTree,System.Collections.ObjectModel.Collection{System.UInt32}@)">
+            <summary>
+            Recursive function that traverses the tree and looks for intersections with a BoundingBox
+            </summary>
+            <param name="box">BoundingBox to intersect with</param>
+            <param name="node">Node to search from</param>
+            <param name="list">List of found intersections</param>
+        </member>
+        <member name="T:Mapsui.Nts.Providers.Shapefile.Indexing.QuadTree.BoxObjects">
+            <summary>
+            BoundingBox and Feature ID structure used for storing in the quadtree 
+            </summary>
+        </member>
+        <member name="F:Mapsui.Nts.Providers.Shapefile.Indexing.QuadTree.BoxObjects.Box">
+            <summary>
+            BoundingBox
+            </summary>
+        </member>
+        <member name="F:Mapsui.Nts.Providers.Shapefile.Indexing.QuadTree.BoxObjects.Id">
+            <summary>
+            Feature ID
+            </summary>
+        </member>
+        <member name="T:Mapsui.Nts.Providers.Shapefile.ShapeType">
+            <summary>
+            Shapefile geometry type.
+            </summary>
+        </member>
+        <member name="F:Mapsui.Nts.Providers.Shapefile.ShapeType.Null">
+            <summary>
+            Null shape with no geometric data
+            </summary>
+        </member>
+        <member name="F:Mapsui.Nts.Providers.Shapefile.ShapeType.Point">
+            <summary>
+            A point consists of a pair of double-precision coordinates.
+            Mapsui interprets this as <see cref="F:Mapsui.Nts.Providers.Shapefile.ShapeType.Point"/>
+            </summary>
+        </member>
+        <member name="F:Mapsui.Nts.Providers.Shapefile.ShapeType.PolyLine">
+            <summary>
+            PolyLine is an ordered set of coordinates that consists of one or more parts. A part is a
+            connected sequence of two or more points. Parts may or may not be connected to one
+            another. Parts may or may not intersect one another.
+            Mapsui interprets this as either <see cref="T:NetTopologySuite.Geometries.LineString"/> or <see cref="T:NetTopologySuite.Geometries.MultiLineString"/>
+            </summary>
+        </member>
+        <member name="F:Mapsui.Nts.Providers.Shapefile.ShapeType.Polygon">
+            <summary>
+            A polygon consists of one or more rings. A ring is a connected sequence of four or more
+            points that form a closed, non-self-intersecting loop. A polygon may contain multiple
+            outer rings. The order of coordinates or orientation for a ring indicates which side of the ring
+            is the interior of the polygon. The neighborhood to the right of an observer walking along
+            the ring in vertex order is the neighborhood inside the polygon. Coordinates of rings defining
+            holes in polygons are in a counterclockwise direction. Vertices for a single, ringed
+            polygon are, therefore, always in clockwise order. The rings of a polygon are referred to
+            as its parts.
+            Mapsui interprets this as either <see cref="F:Mapsui.Nts.Providers.Shapefile.ShapeType.Polygon"/> or <see cref="T:NetTopologySuite.Geometries.MultiPolygon"/>
+            </summary>
+        </member>
+        <member name="F:Mapsui.Nts.Providers.Shapefile.ShapeType.Multipoint">
+            <summary>
+            A MultiPoint represents a set of points.
+            Mapsui interprets this as <see cref="T:NetTopologySuite.Geometries.MultiPoint"/>
+            </summary>
+        </member>
+        <member name="F:Mapsui.Nts.Providers.Shapefile.ShapeType.PointZ">
+            <summary>
+            A PointZ consists of a triplet of double-precision coordinates plus a measure.
+            Mapsui interprets this as <see cref="F:Mapsui.Nts.Providers.Shapefile.ShapeType.Point"/>
+            </summary>
+        </member>
+        <member name="F:Mapsui.Nts.Providers.Shapefile.ShapeType.PolyLineZ">
+            <summary>
+            A PolyLineZ consists of one or more parts. A part is a connected sequence of two or
+            more points. Parts may or may not be connected to one another. Parts may or may not
+            intersect one another.
+            Mapsui interprets this as <see cref="T:NetTopologySuite.Geometries.LineString"/> or <see cref="T:NetTopologySuite.Geometries.MultiLineString"/>
+            </summary>
+        </member>
+        <member name="F:Mapsui.Nts.Providers.Shapefile.ShapeType.PolygonZ">
+            <summary>
+            A PolygonZ consists of a number of rings. A ring is a closed, non-self-intersecting loop.
+            A PolygonZ may contain multiple outer rings. The rings of a PolygonZ are referred to as
+            its parts.
+            Mapsui interprets this as either <see cref="F:Mapsui.Nts.Providers.Shapefile.ShapeType.Polygon"/> or <see cref="T:NetTopologySuite.Geometries.MultiPolygon"/>
+            </summary>
+        </member>
+        <member name="F:Mapsui.Nts.Providers.Shapefile.ShapeType.MultiPointZ">
+            <summary>
+            A MultiPointZ represents a set of <see cref="F:Mapsui.Nts.Providers.Shapefile.ShapeType.PointZ"/>s.
+            Mapsui interprets this as <see cref="T:NetTopologySuite.Geometries.MultiPoint"/>
+            </summary>
+        </member>
+        <member name="F:Mapsui.Nts.Providers.Shapefile.ShapeType.PointM">
+            <summary>
+            A PointM consists of a pair of double-precision coordinates in the order X, Y, plus a measure M.
+            Mapsui interprets this as <see cref="F:Mapsui.Nts.Providers.Shapefile.ShapeType.Point"/>
+            </summary>
+        </member>
+        <member name="F:Mapsui.Nts.Providers.Shapefile.ShapeType.PolyLineM">
+            <summary>
+            A shapefile PolyLineM consists of one or more parts. A part is a connected sequence of
+            two or more points. Parts may or may not be connected to one another. Parts may or may
+            not intersect one another.
+            Mapsui interprets this as <see cref="T:NetTopologySuite.Geometries.LineString"/> or <see cref="T:NetTopologySuite.Geometries.MultiLineString"/>
+            </summary>
+        </member>
+        <member name="F:Mapsui.Nts.Providers.Shapefile.ShapeType.PolygonM">
+            <summary>
+            A PolygonM consists of a number of rings. A ring is a closed, non-self-intersecting loop.
+            Mapsui interprets this as either <see cref="F:Mapsui.Nts.Providers.Shapefile.ShapeType.Polygon"/> or <see cref="T:NetTopologySuite.Geometries.MultiPolygon"/>
+            </summary>
+        </member>
+        <member name="F:Mapsui.Nts.Providers.Shapefile.ShapeType.MultiPointM">
+            <summary>
+            A MultiPointM represents a set of <see cref="F:Mapsui.Nts.Providers.Shapefile.ShapeType.PointM"/>s.
+            Mapsui interprets this as <see cref="T:NetTopologySuite.Geometries.MultiPoint"/>
+            </summary>
+        </member>
+        <member name="F:Mapsui.Nts.Providers.Shapefile.ShapeType.MultiPatch">
+            <summary>
+            A MultiPatch consists of a number of surface patches. Each surface patch describes a
+            surface. The surface patches of a MultiPatch are referred to as its parts, and the type of
+            part controls how the order of coordinates of an MultiPatch part is interpreted.
+            Mapsui doesn't support this feature type.
+            </summary>
+        </member>
+        <member name="T:Mapsui.Nts.Providers.Shapefile.ShapeFile">
+            <summary>
+            Shapefile data provider
+            </summary>
+            <remarks>
+            <para>The ShapeFile provider is used for accessing ESRI ShapeFiles. The ShapeFile should at least contain the
+            [filename].shp, [filename].idx, and if feature-data is to be used, also [filename].dbf file.</para>
+            <para>The first time the ShapeFile is accessed, Mapsui will automatically create a spatial index
+            of the shp-file, and save it as [filename].shp.sidx. If you change or update the contents of the .shp file,
+            delete the .sidx file to force Mapsui to rebuilt it. In web applications, the index will automatically
+            be cached to memory for faster access, so to reload the index, you will need to restart the web application
+            as well.</para>
+            <para>
+            M and Z values in a shapefile is ignored by Mapsui.
+            </para>
+            </remarks>
+        </member>
+        <member name="T:Mapsui.Nts.Providers.Shapefile.ShapeFile.FilterMethod">
+            <summary>
+            Filter Delegate Method
+            </summary>
+            <remarks>
+            The FilterMethod delegate is used for applying a method that filters data from the data set.
+            The method should return 'true' if the feature should be included and false if not.
+            </remarks>
+            <returns>true if this feature should be included, false if it should be filtered</returns>
+        </member>
+        <member name="F:Mapsui.Nts.Providers.Shapefile.ShapeFile._tree">
+            <summary>
+            Tree used for fast query of data
+            </summary>
+        </member>
+        <member name="M:Mapsui.Nts.Providers.Shapefile.ShapeFile.#ctor(System.String,System.Boolean,System.Boolean,Mapsui.Projections.IProjectionCrs,System.Boolean)">
+            <summary>
+            Initializes a ShapeFile DataProvider.
+            </summary>
+            <remarks>
+            <para>If FileBasedIndex is true, the spatial index will be read from a local copy. If it doesn't exist,
+            it will be generated and saved to [filename] + '.sidx'.</para>
+            <para>Using a file-based index is especially recommended for ASP.NET applications which will speed up
+            start-up time when the cache has been emptied.
+            </para>
+            </remarks>
+            <param name="filename">Path to shape file</param>
+            <param name="fileBasedIndex">Use file-based spatial index</param>
+            <param name="readPrjFile">Read the proj File and set the correct CRS</param>
+            <param name="projectionCrs">Projection Crs</param>
+            <param name="calculateBoundingBoxes">if true the Bounding Box of Features is calculated instead of being read solves problems in Zooming when the written Bounding Boxes are not correct.</param>
+        </member>
+        <member name="P:Mapsui.Nts.Providers.Shapefile.ShapeFile.ShapeType">
+            <summary>
+            Gets the <see cref="T:Mapsui.Nts.Providers.Shapefile.ShapeType">shape geometry type</see> in this shapefile.
+            </summary>
+            <remarks>
+            The property isn't set until the first time the data source has been opened,
+            and will throw an exception if this property has been called since initialization. 
+            <para>All the non-Null shapes in a shapefile are required to be of the same shape
+            type.</para>
+            </remarks>
+        </member>
+        <member name="P:Mapsui.Nts.Providers.Shapefile.ShapeFile.Filename">
+            <summary>
+            Gets or sets the filename of the shapefile
+            </summary>
+            <remarks>If the filename changes, indexes will be rebuilt</remarks>
+        </member>
+        <member name="P:Mapsui.Nts.Providers.Shapefile.ShapeFile.Encoding">
+            <summary>
+            Gets or sets the encoding used for parsing strings from the DBase DBF file.
+            </summary>
+            <remarks>
+            The DBase default encoding is UTF7"/>.
+            </remarks>
+        </member>
+        <member name="P:Mapsui.Nts.Providers.Shapefile.ShapeFile.FilterDelegate">
+            <summary>
+            Filter Delegate Method for limiting the data source
+            </summary>
+        </member>
+        <member name="M:Mapsui.Nts.Providers.Shapefile.ShapeFile.Dispose">
+            <summary>
+            Disposes the object
+            </summary>
+        </member>
+        <member name="M:Mapsui.Nts.Providers.Shapefile.ShapeFile.Finalize">
+            <summary>
+            Finalizes the object
+            </summary>
+        </member>
+        <member name="M:Mapsui.Nts.Providers.Shapefile.ShapeFile.Open">
+            <summary>
+            Opens the data source
+            </summary>
+        </member>
+        <member name="M:Mapsui.Nts.Providers.Shapefile.ShapeFile.Close">
+            <summary>
+            Closes the data source
+            </summary>
+        </member>
+        <member name="M:Mapsui.Nts.Providers.Shapefile.ShapeFile.GetGeometriesInView(Mapsui.MRect)">
+            <summary>
+            Returns geometries whose bounding box intersects 'bbox'
+            </summary>
+            <remarks>
+            <para>Please note that this method doesn't guarantee that the geometries returned actually intersect 'bbox', but only
+            that their BoundingBox intersects 'bbox'.</para>
+            <para>This method is much faster than the QueryFeatures method, because intersection tests
+            are performed on objects simplified by their BoundingBox, and using the Spatial Index.</para>
+            </remarks>
+            <param name="bbox"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Mapsui.Nts.Providers.Shapefile.ShapeFile.GetObjectIDsInView(Mapsui.MRect)">
+            <summary>
+            Returns geometry Object IDs whose bounding box intersects 'bbox'
+            </summary>
+            <param name="bbox"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Mapsui.Nts.Providers.Shapefile.ShapeFile.GetGeometry(System.UInt32)">
+            <summary>
+            Returns the geometry corresponding to the Object ID
+            </summary>
+            <param name="oid">Object ID</param>
+            <returns>geometry</returns>
+        </member>
+        <member name="M:Mapsui.Nts.Providers.Shapefile.ShapeFile.GetFeatureCount">
+            <summary>
+            Returns the total number of features in the data source (without any filter applied)
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:Mapsui.Nts.Providers.Shapefile.ShapeFile.GetExtent">
+            <summary>
+            Returns the extent of the data source
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="P:Mapsui.Nts.Providers.Shapefile.ShapeFile.CRS">
+            <summary>
+            Gets or sets the spatial reference ID (CRS)
+            </summary>
+        </member>
+        <member name="M:Mapsui.Nts.Providers.Shapefile.ShapeFile.ParseHeader">
+            <summary>
+            Reads and parses the header of the .shx index file
+            </summary>
+        </member>
+        <member name="M:Mapsui.Nts.Providers.Shapefile.ShapeFile.ParseProjection">
+            <summary>
+            Reads and parses the projection if a projection file exists
+            </summary>
+        </member>
+        <member name="M:Mapsui.Nts.Providers.Shapefile.ShapeFile.ReadIndex">
+            <summary>
+            Reads the record offsets from the .shx index file and returns the information in an array
+            </summary>
+        </member>
+        <member name="M:Mapsui.Nts.Providers.Shapefile.ShapeFile.GetShapeIndex(System.UInt32)">
+            <summary>
+            Gets the file position of the n'th shape
+            </summary>
+            <param name="n">Shape ID</param>
+            <returns></returns>
+        </member>
+        <member name="M:Mapsui.Nts.Providers.Shapefile.ShapeFile.SwapByteOrder(System.Int32)">
+            <summary>
+            Swaps the byte order of an int32
+            </summary>
+             <param name="i">Integer to swap</param>
+             <returns>Byte Order swapped int32</returns>
+        </member>
+        <member name="M:Mapsui.Nts.Providers.Shapefile.ShapeFile.CreateSpatialIndexFromFile(System.String)">
+            <summary>
+            Loads a spatial index from a file. If it doesn't exist, one is created and saved
+            </summary>
+            <param name="filename"></param>
+            <returns>QuadTree index</returns>
+        </member>
+        <member name="M:Mapsui.Nts.Providers.Shapefile.ShapeFile.CreateSpatialIndex">
+            <summary>
+            Generates a spatial index for a specified shape file.
+            </summary>
+        </member>
+        <member name="M:Mapsui.Nts.Providers.Shapefile.ShapeFile.RebuildSpatialIndex">
+            <summary>
+            Forces a rebuild of the spatial index. If the instance of the ShapeFile provider
+            uses a file-based index the file is rewritten to disk.
+            </summary>
+        </member>
+        <member name="M:Mapsui.Nts.Providers.Shapefile.ShapeFile.GetAllFeatureBoundingBoxes">
+            <summary>
+            Reads all BoundingBoxes of features in the shapefile. This is used for spatial indexing.
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:Mapsui.Nts.Providers.Shapefile.ShapeFile.ReadGeometry(System.UInt32)">
+            <summary>
+            Reads and parses the geometry with ID 'oid' from the ShapeFile
+            </summary>
+            <remarks><see cref="P:Mapsui.Nts.Providers.Shapefile.ShapeFile.FilterDelegate">Filtering</see> is not applied to this method</remarks>
+            <param name="oid">Object ID</param>
+            <returns>geometry</returns>
+        </member>
+        <member name="M:Mapsui.Nts.Providers.Shapefile.ShapeFile.GetFeature(System.UInt32)">
+            <summary>
+            Gets a data row from the data source at the specified index belonging to the specified data table
+            </summary>
+            <param name="rowId"></param>
+            <returns></returns>
+        </member>
+        <member name="P:Mapsui.Providers.Wfs.Utilities.WfsFeatureTypeInfo.Elements">
+            <summary>
+            Gets the elements associated to the feature.
+            </summary>
+        </member>
+        <member name="P:Mapsui.Providers.Wfs.Utilities.WfsFeatureTypeInfo.Name">
+            <summary>
+            Gets or sets the name of the featuretype.
+            This argument is obligatory for data retrieving.
+            </summary>
+            <value>The name.</value>
+        </member>
+        <member name="P:Mapsui.Providers.Wfs.Utilities.WfsFeatureTypeInfo.Prefix">
+            <summary>
+            Gets or sets the prefix of the featuretype and it's nested elements.
+            This argument is obligatory for data retrieving, if the featuretype is declared with a 
+            prefix in 'GetCapabilities'.
+            </summary>
+            <value>The prefix.</value>
+        </member>
+        <member name="P:Mapsui.Providers.Wfs.Utilities.WfsFeatureTypeInfo.FeatureTypeNamespace">
+            <summary>
+            Gets or sets the featuretype namespace.
+            This argument is obligatory for data retrieving, except when using the quick geometries option.
+            </summary>
+        </member>
+        <member name="P:Mapsui.Providers.Wfs.Utilities.WfsFeatureTypeInfo.QualifiedName">
+            <summary>
+            Gets the qualified name of the featuretype (with namespace URI).
+            </summary>
+        </member>
+        <member name="P:Mapsui.Providers.Wfs.Utilities.WfsFeatureTypeInfo.ServiceUri">
+            <summary>
+            Gets or sets the service URI for WFS 'GetFeature' request.
+            This argument is obligatory for data retrieving.
+            </summary>
+        </member>
+        <member name="P:Mapsui.Providers.Wfs.Utilities.WfsFeatureTypeInfo.Geometry">
+            <summary>
+            Gets or sets information about the geometry of the featuretype.
+            Setting at least the geometry name is obligatory for data retrieving.
+            </summary>
+        </member>
+        <member name="P:Mapsui.Providers.Wfs.Utilities.WfsFeatureTypeInfo.BBox">
+            <summary>
+            Gets or sets the spatial extent of the featuretype - defined as minimum bounding rectangle. 
+            </summary>
+        </member>
+        <member name="P:Mapsui.Providers.Wfs.Utilities.WfsFeatureTypeInfo.SRID">
+            <summary>
+            Gets or sets the spatial reference ID
+            </summary>
+        </member>
+        <member name="P:Mapsui.Providers.Wfs.Utilities.WfsFeatureTypeInfo.DecimalDel">
+            <summary>
+            Decimal separator (for gml:coordinates)
+            </summary>
+        </member>
+        <member name="P:Mapsui.Providers.Wfs.Utilities.WfsFeatureTypeInfo.Cs">
+            <summary>
+            Separator for coordinate values (for gml:coordinates)
+            </summary>
+        </member>
+        <member name="P:Mapsui.Providers.Wfs.Utilities.WfsFeatureTypeInfo.Ts">
+            <summary>
+            Tuple separator (for gml:coordinates)
+            </summary>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Utilities.WfsFeatureTypeInfo.#ctor(System.String,System.String,System.String,System.String,System.String,Mapsui.Providers.Wfs.Utilities.GeometryTypeEnum,System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Mapsui.Providers.Wfs.Utilities.WfsFeatureTypeInfo"/> class.
+            </summary>
+            <param name="serviceUri"></param>
+            <param name="nsPrefix">
+                Use an empty string or 'null', if there is no prefix for the featuretype.
+            </param>
+            <param name="featureTypeNamespace">
+                Use an empty string or 'null', if there is no namespace for the featuretype.
+                You don't need to know the namespace of the feature type, if you use the quick geometries option.
+            </param>
+            <param name="featureType"></param>
+            <param name="geometryName">
+                The geometry name is the property of the featuretype from which geometry information can be obtained from.
+                Usually this property is called something like 'Shape' or 'geom'. It is absolutely necessary to give this parameter. 
+            </param>
+            <param name="geometryType">
+                Specifying the geometry type helps to accelerate the rendering process.   
+            </param>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Utilities.WfsFeatureTypeInfo.#ctor(System.String,System.String,System.String,System.String,System.String,System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Mapsui.Providers.Wfs.Utilities.WfsFeatureTypeInfo"/> class.
+            </summary>
+            <param name="serviceUri"></param>
+            <param name="nsPrefix">
+            Use an empty string or 'null', if there is no prefix for the featuretype.
+            </param>
+            <param name="featureTypeNamespace">
+            Use an empty string or 'null', if there is no namespace for the featuretype.
+            You don't need to know the namespace of the feature type, if you use the quick geometries option.
+            </param>
+            <param name="featureType"></param>
+            <param name="geometryName">
+            The geometry name is the property of the featuretype from which geometry information can be obtained from.
+            Usually this property is called something like 'Shape' or 'geom'. It is absolutely necessary to give this parameter. 
+            </param>
+            <param name="gmlNs">Gml Namespace for WFS 1.1 and lower it is "http://www.opengis.net/gml for WFS 2.0 it is "http://www.opengis.net/gml/3.2""</param>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Utilities.WfsFeatureTypeInfo.#ctor">
+            <summary>
+            Initializes a new instance of the <see cref="T:Mapsui.Providers.Wfs.Utilities.WfsFeatureTypeInfo"/> class.
+            </summary>
+        </member>
+        <member name="T:Mapsui.Providers.Wfs.Utilities.WfsFeatureTypeInfo.BoundingBox">
+            <summary>
+            The bounding box defines the spatial extent of a featuretype.
+            </summary>
+        </member>
+        <member name="T:Mapsui.Providers.Wfs.Utilities.WfsFeatureTypeInfo.GeometryInfo">
+            <summary>
+            The geometry info comprises the name of the geometry attribute (e.g. 'Shape" or 'geom')
+            and the type of the featuretype's geometry.
+            </summary>
+        </member>
+        <member name="T:Mapsui.Providers.Wfs.Utilities.WfsFeatureTypeInfo.ElementInfo">
+            <summary>
+            The element info associated to the feature.
+            </summary>
+        </member>
+        <member name="P:Mapsui.Providers.Wfs.Utilities.WfsFeatureTypeInfo.ElementInfo.Name">
+            <summary>
+            Gets the name of the element
+            </summary>
+        </member>
+        <member name="P:Mapsui.Providers.Wfs.Utilities.WfsFeatureTypeInfo.ElementInfo.DataType">
+            <summary>
+            Gets the type of the element
+            </summary>
+        </member>
+        <member name="T:Mapsui.Providers.Wfs.Utilities.GeometryFactory">
+            <summary>
+            This class is the base class for geometry production.
+            It provides some parsing routines for XML compliant to GML2/GML3.
+            </summary>
+        </member>
+        <member name="P:Mapsui.Providers.Wfs.Utilities.GeometryFactory.AxisOrder">
+            <summary>
+            Gets or sets the axis order
+            </summary>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Utilities.GeometryFactory.#ctor(Mapsui.Providers.Wfs.Utilities.HttpClientUtil,Mapsui.Providers.Wfs.Utilities.WfsFeatureTypeInfo)">
+            <summary>
+            Protected constructor for the abstract class.
+            </summary>
+            <param name="httpClientUtil">A configured <see cref="T:Mapsui.Providers.Wfs.Utilities.HttpClientUtil"/> instance for performing web requests</param>
+            <param name="featureTypeInfo">A <see cref="T:Mapsui.Providers.Wfs.Utilities.WfsFeatureTypeInfo"/> instance providing metadata of the featuretype to query</param>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Utilities.GeometryFactory.InitAsync">
+            <summary>Init Async </summary>
+            <returns></returns>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Utilities.GeometryFactory.#ctor(System.Xml.XmlReader,Mapsui.Providers.Wfs.Utilities.WfsFeatureTypeInfo)">
+            <summary>
+            Protected constructor for the abstract class.
+            </summary>
+            <param name="xmlReader">An XmlReader instance</param>
+            <param name="featureTypeInfo">A <see cref="T:Mapsui.Providers.Wfs.Utilities.WfsFeatureTypeInfo"/> instance providing metadata of the featuretype to query</param>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Utilities.GeometryFactory.CreateGeometriesAsync(System.Collections.Generic.List{Mapsui.IFeature})">
+            <summary>
+            Abstract method - overwritten by derived classes for producing instances
+            derived from <see cref="T:NetTopologySuite.Geometries.Geometry"/>.
+            </summary>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Utilities.GeometryFactory.ParseCoordinates(System.Xml.XmlReader)">
+            <summary>
+            This method parses a coordinates or posList(from 'GetFeature' response). 
+            </summary>
+            <param name="reader">An XmlReader instance at the position of the coordinates to read</param>
+            <returns>A point collection (the collected coordinates)</returns>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Utilities.GeometryFactory.GetSubReaderOf(System.Xml.XmlReader,System.Collections.Generic.Dictionary{System.String,System.String},Mapsui.Providers.Wfs.Utilities.IPathNode[])">
+            <summary>
+            This method retrieves an XmlReader within a specified context.
+            </summary>
+            <param name="reader">An XmlReader instance that is the origin of a created sub-reader</param>
+            <param name="labels">A dictionary for recording label values. Pass 'null' to ignore searching for label values</param>
+            <param name="pathNodes">A list of <see cref="T:Mapsui.Providers.Wfs.Utilities.IPathNode"/> instances defining the context of the retrieved reader</param>
+            <returns>A sub-reader of the XmlReader given as argument</returns>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Utilities.GeometryFactory.GetSubReaderOf(System.Xml.XmlReader,System.Collections.Generic.Dictionary{System.String,System.String},System.Collections.Generic.List{Mapsui.Providers.Wfs.Utilities.IPathNode})">
+            <summary>
+            This method retrieves an XmlReader within a specified context.
+            Moreover it collects label values before or after a geometry could be found.
+            </summary>
+            <param name="reader">An XmlReader instance that is the origin of a created sub-reader</param>
+            <param name="labels">A dictionary for recording label values. Pass 'null' to ignore searching for label values</param>
+            <param name="pathNodes">A list of <see cref="T:Mapsui.Providers.Wfs.Utilities.IPathNode"/> instances defining the context of the retrieved reader</param>
+            <returns>A sub-reader of the XmlReader given as argument</returns>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Utilities.GeometryFactory.AddLabel(System.Collections.Generic.Dictionary{System.String,System.String},NetTopologySuite.Geometries.Geometry)">
+            <summary>
+            This method adds labels to the collection.
+            </summary>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Utilities.GeometryFactory.CreateReaderAsync(Mapsui.Providers.Wfs.Utilities.HttpClientUtil)">
+            <summary>
+            This method initializes the XmlReader member.
+            </summary>
+            <param name="httpClientUtil">A configured <see cref="T:Mapsui.Providers.Wfs.Utilities.HttpClientUtil"/> instance for performing web requests</param>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Utilities.GeometryFactory.InitializePathNodes">
+            <summary>
+            This method initializes path nodes needed by the derived classes.
+            </summary>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Utilities.GeometryFactory.InitializeSeparators">
+            <summary>
+            This method initializes separator variables for parsing coordinates.
+            From GML specification: Coordinates can be included in a single string, but there is no 
+            facility for validating string content. The value of the 'cs' attribute 
+            is the separator for coordinate values, and the value of the 'ts' 
+            attribute gives the tuple separator (a single space by default); the 
+            default values may be changed to reflect local usage.
+            </summary>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Utilities.GeometryFactory.Dispose">
+            <summary>
+            This method closes the XmlReader member and the used <see cref="T:Mapsui.Providers.Wfs.Utilities.HttpClientUtil"/> instance.
+            </summary>
+        </member>
+        <member name="T:Mapsui.Providers.Wfs.Utilities.PointFactory">
+            <summary>
+            This class produces instances of type <see cref="T:NetTopologySuite.Geometries.Point"/>.
+            The base class is <see cref="T:Mapsui.Providers.Wfs.Utilities.GeometryFactory"/>.
+            </summary>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Utilities.PointFactory.#ctor(Mapsui.Providers.Wfs.Utilities.HttpClientUtil,Mapsui.Providers.Wfs.Utilities.WfsFeatureTypeInfo)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Mapsui.Providers.Wfs.Utilities.PointFactory"/> class.
+            </summary>
+            <param name="httpClientUtil">A configured <see cref="T:Mapsui.Providers.Wfs.Utilities.HttpClientUtil"/> instance for performing web requests</param>
+            <param name="featureTypeInfo">A <see cref="T:Mapsui.Providers.Wfs.Utilities.WfsFeatureTypeInfo"/> instance providing metadata of the featuretype to query</param>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Utilities.PointFactory.#ctor(System.Xml.XmlReader,Mapsui.Providers.Wfs.Utilities.WfsFeatureTypeInfo)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Mapsui.Providers.Wfs.Utilities.PointFactory"/> class.
+            This constructor shall just be called from the MultiPoint factory. The feature node therefore is deactivated.
+            </summary>
+            <param name="xmlReader">An XmlReader instance</param>
+            <param name="featureTypeInfo">A <see cref="T:Mapsui.Providers.Wfs.Utilities.WfsFeatureTypeInfo"/> instance providing metadata of the featuretype to query</param>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Utilities.PointFactory.CreateGeometriesAsync(System.Collections.Generic.List{Mapsui.IFeature})">
+            <summary>
+            This method produces instances of type <see cref="T:NetTopologySuite.Geometries.Point"/>.
+            </summary>
+            <returns>The created geometries</returns>
+        </member>
+        <member name="T:Mapsui.Providers.Wfs.Utilities.LineStringFactory">
+            <summary>
+            This class produces instances of type <see cref="T:NetTopologySuite.Geometries.LineString"/>.
+            The base class is <see cref="T:Mapsui.Providers.Wfs.Utilities.GeometryFactory"/>.
+            </summary>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Utilities.LineStringFactory.#ctor(Mapsui.Providers.Wfs.Utilities.HttpClientUtil,Mapsui.Providers.Wfs.Utilities.WfsFeatureTypeInfo)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Mapsui.Providers.Wfs.Utilities.LineStringFactory"/> class.
+            </summary>
+            <param name="httpClientUtil">A configured <see cref="T:Mapsui.Providers.Wfs.Utilities.HttpClientUtil"/> instance for performing web requests</param>
+            <param name="featureTypeInfo">A <see cref="T:Mapsui.Providers.Wfs.Utilities.WfsFeatureTypeInfo"/> instance providing metadata of the featuretype to query</param>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Utilities.LineStringFactory.#ctor(System.Xml.XmlReader,Mapsui.Providers.Wfs.Utilities.WfsFeatureTypeInfo)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Mapsui.Providers.Wfs.Utilities.LineStringFactory"/> class.
+            This constructor shall just be called from the MultiLineString factory. The feature node therefore is deactivated.
+            </summary>
+            <param name="xmlReader">An XmlReader instance</param>
+            <param name="featureTypeInfo">A <see cref="T:Mapsui.Providers.Wfs.Utilities.WfsFeatureTypeInfo"/> instance providing metadata of the featuretype to query</param>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Utilities.LineStringFactory.CreateGeometriesAsync(System.Collections.Generic.List{Mapsui.IFeature})">
+            <summary>
+            This method produces instances of type <see cref="T:NetTopologySuite.Geometries.LineString"/>.
+            </summary>
+            <returns>The created geometries</returns>
+        </member>
+        <member name="T:Mapsui.Providers.Wfs.Utilities.PolygonFactory">
+            <summary>
+            This class produces instances of type <see cref="T:NetTopologySuite.Geometries.Polygon"/>.
+            The base class is <see cref="T:Mapsui.Providers.Wfs.Utilities.GeometryFactory"/>.
+            </summary>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Utilities.PolygonFactory.#ctor(Mapsui.Providers.Wfs.Utilities.HttpClientUtil,Mapsui.Providers.Wfs.Utilities.WfsFeatureTypeInfo)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Mapsui.Providers.Wfs.Utilities.PolygonFactory"/> class.
+            </summary>
+            <param name="httpClientUtil">A configured <see cref="T:Mapsui.Providers.Wfs.Utilities.HttpClientUtil"/> instance for performing web requests</param>
+            <param name="featureTypeInfo">A <see cref="T:Mapsui.Providers.Wfs.Utilities.WfsFeatureTypeInfo"/> instance providing metadata of the featuretype to query</param>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Utilities.PolygonFactory.#ctor(System.Xml.XmlReader,Mapsui.Providers.Wfs.Utilities.WfsFeatureTypeInfo)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Mapsui.Providers.Wfs.Utilities.PolygonFactory"/> class.
+            This constructor shall just be called from the MultiPolygon factory. The feature node therefore is deactivated.
+            </summary>
+            <param name="xmlReader">An XmlReader instance</param>
+            <param name="featureTypeInfo">A <see cref="T:Mapsui.Providers.Wfs.Utilities.WfsFeatureTypeInfo"/> instance providing metadata of the featuretype to query</param>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Utilities.PolygonFactory.CreateGeometriesAsync(System.Collections.Generic.List{Mapsui.IFeature})">
+            <summary>
+            This method produces instances of type <see cref="T:NetTopologySuite.Geometries.Polygon"/>.
+            </summary>
+            <returns>The created geometries</returns>
+        </member>
+        <member name="T:Mapsui.Providers.Wfs.Utilities.MultiPointFactory">
+            <summary>
+            This class produces instances of type <see cref="T:NetTopologySuite.Geometries.MultiPoint"/>.
+            The base class is <see cref="T:Mapsui.Providers.Wfs.Utilities.GeometryFactory"/>.
+            </summary>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Utilities.MultiPointFactory.#ctor(Mapsui.Providers.Wfs.Utilities.HttpClientUtil,Mapsui.Providers.Wfs.Utilities.WfsFeatureTypeInfo)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Mapsui.Providers.Wfs.Utilities.MultiPointFactory"/> class.
+            </summary>
+            <param name="httpClientUtil">A configured <see cref="T:Mapsui.Providers.Wfs.Utilities.HttpClientUtil"/> instance for performing web requests</param>
+            <param name="featureTypeInfo">A <see cref="T:Mapsui.Providers.Wfs.Utilities.WfsFeatureTypeInfo"/> instance providing metadata of the feature type to query</param>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Utilities.MultiPointFactory.#ctor(System.Xml.XmlReader,Mapsui.Providers.Wfs.Utilities.WfsFeatureTypeInfo)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Mapsui.Providers.Wfs.Utilities.MultiPointFactory"/> class.
+            </summary>
+            <param name="xmlReader">An XmlReader instance</param>
+            <param name="featureTypeInfo">A <see cref="T:Mapsui.Providers.Wfs.Utilities.WfsFeatureTypeInfo"/> instance providing metadata of the feature type to query</param>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Utilities.MultiPointFactory.CreateGeometriesAsync(System.Collections.Generic.List{Mapsui.IFeature})">
+            <summary>
+            This method produces instances of type <see cref="T:NetTopologySuite.Geometries.MultiPoint"/>.
+            </summary>
+            <returns>The created geometries</returns>
+        </member>
+        <member name="T:Mapsui.Providers.Wfs.Utilities.MultiLineStringFactory">
+            <summary>
+            This class produces objects of type <see cref="T:NetTopologySuite.Geometries.MultiLineString"/>.
+            The base class is <see cref="T:Mapsui.Providers.Wfs.Utilities.GeometryFactory"/>.
+            </summary>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Utilities.MultiLineStringFactory.#ctor(Mapsui.Providers.Wfs.Utilities.HttpClientUtil,Mapsui.Providers.Wfs.Utilities.WfsFeatureTypeInfo)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Mapsui.Providers.Wfs.Utilities.MultiLineStringFactory"/> class.
+            </summary>
+            <param name="httpClientUtil">A configured <see cref="T:Mapsui.Providers.Wfs.Utilities.HttpClientUtil"/> instance for performing web requests</param>
+            <param name="featureTypeInfo">A <see cref="T:Mapsui.Providers.Wfs.Utilities.WfsFeatureTypeInfo"/> instance providing metadata of the featuretype to query</param>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Utilities.MultiLineStringFactory.#ctor(System.Xml.XmlReader,Mapsui.Providers.Wfs.Utilities.WfsFeatureTypeInfo)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Mapsui.Providers.Wfs.Utilities.MultiLineStringFactory"/> class.
+            </summary>
+            <param name="xmlReader">An XmlReader instance</param>
+            <param name="featureTypeInfo">A <see cref="T:Mapsui.Providers.Wfs.Utilities.WfsFeatureTypeInfo"/> instance providing metadata of the featuretype to query</param>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Utilities.MultiLineStringFactory.CreateGeometriesAsync(System.Collections.Generic.List{Mapsui.IFeature})">
+            <summary>
+            This method produces instances of type <see cref="T:NetTopologySuite.Geometries.MultiLineString"/>.
+            </summary>
+            <returns>The created geometries</returns>
+        </member>
+        <member name="T:Mapsui.Providers.Wfs.Utilities.MultiPolygonFactory">
+            <summary>
+            This class produces instances of type <see cref="T:NetTopologySuite.Geometries.MultiPolygon"/>.
+            The base class is <see cref="T:Mapsui.Providers.Wfs.Utilities.GeometryFactory"/>.
+            </summary>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Utilities.MultiPolygonFactory.#ctor(Mapsui.Providers.Wfs.Utilities.HttpClientUtil,Mapsui.Providers.Wfs.Utilities.WfsFeatureTypeInfo)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Mapsui.Providers.Wfs.Utilities.MultiPolygonFactory"/> class.
+            </summary>
+            <param name="httpClientUtil">A configured <see cref="T:Mapsui.Providers.Wfs.Utilities.HttpClientUtil"/> instance for performing web requests</param>
+            <param name="featureTypeInfo">A <see cref="T:Mapsui.Providers.Wfs.Utilities.WfsFeatureTypeInfo"/> instance providing metadata of the featuretype to query</param>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Utilities.MultiPolygonFactory.#ctor(System.Xml.XmlReader,Mapsui.Providers.Wfs.Utilities.WfsFeatureTypeInfo)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Mapsui.Providers.Wfs.Utilities.MultiPolygonFactory"/> class.
+            </summary>
+            <param name="xmlReader">An XmlReader instance</param>
+            <param name="featureTypeInfo">A <see cref="T:Mapsui.Providers.Wfs.Utilities.WfsFeatureTypeInfo"/> instance providing metadata of the featuretype to query</param>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Utilities.MultiPolygonFactory.CreateGeometriesAsync(System.Collections.Generic.List{Mapsui.IFeature})">
+            <summary>
+            This method produces instances of type <see cref="T:NetTopologySuite.Geometries.MultiPolygon"/>.
+            </summary>
+            <returns>The created geometries</returns>
+        </member>
+        <member name="T:Mapsui.Providers.Wfs.Utilities.UnspecifiedGeometryFactoryWfs100Gml2">
+            <summary>
+            This class must detect the geometry type of the queried layer.
+            Therefore it works a bit slower than the other factories. Specify the geometry type manually,
+            if it isn't specified in 'DescribeFeatureType'.
+            </summary>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Utilities.UnspecifiedGeometryFactoryWfs100Gml2.#ctor(Mapsui.Providers.Wfs.Utilities.HttpClientUtil,Mapsui.Providers.Wfs.Utilities.WfsFeatureTypeInfo,System.Boolean,System.Boolean)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Mapsui.Providers.Wfs.Utilities.UnspecifiedGeometryFactoryWfs100Gml2"/> class.
+            </summary>
+            <param name="httpClientUtil">A configured <see cref="T:Mapsui.Providers.Wfs.Utilities.HttpClientUtil"/> instance for performing web requests</param>
+            <param name="featureTypeInfo">A <see cref="T:Mapsui.Providers.Wfs.Utilities.WfsFeatureTypeInfo"/> instance providing metadata of the featuretype to query</param>
+            <param name="multiGeometries">A boolean value specifying whether multi-geometries should be created</param>
+            <param name="quickGeometries">A boolean value specifying whether the factory should create geometries quickly, but without validation</param>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Utilities.UnspecifiedGeometryFactoryWfs100Gml2.CreateGeometriesAsync(System.Collections.Generic.List{Mapsui.IFeature})">
+            <summary>
+            This method detects the geometry type from 'GetFeature' response and uses a geometry factory to create the 
+            appropriate geometries.
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="T:Mapsui.Providers.Wfs.Utilities.HttpClientUtil">
+            <summary>
+            This class provides an easy to use interface for HTTP-GET and HTTP-POST requests.
+            </summary>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Utilities.HttpClientUtil.#ctor(Mapsui.Cache.IUrlPersistentCache)">
+            <summary>
+            This class provides an easy to use interface for HTTP-GET and HTTP-POST requests.
+            </summary>
+        </member>
+        <member name="P:Mapsui.Providers.Wfs.Utilities.HttpClientUtil.Url">
+            <summary>
+            Gets ans sets the Url of the request.
+            </summary>
+        </member>
+        <member name="P:Mapsui.Providers.Wfs.Utilities.HttpClientUtil.ProxyUrl">
+            <summary>
+            Gets and sets the proxy Url of the request. 
+            </summary>
+        </member>
+        <member name="P:Mapsui.Providers.Wfs.Utilities.HttpClientUtil.PostData">
+            <summary>
+            Sets the data of a HTTP POST request as byte array.
+            </summary>
+        </member>
+        <member name="P:Mapsui.Providers.Wfs.Utilities.HttpClientUtil.Credentials">
+            <summary>
+            Gets or sets the network credentials used for authenticating the request with the Internet resource
+            </summary>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Utilities.HttpClientUtil.AddHeader(System.String,System.String)">
+            <summary>
+            Adds a HTTP header.
+            </summary>
+            <param name="name">The name of the header</param>
+            <param name="value">The value of the header</param>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Utilities.HttpClientUtil.GetDataStreamAsync">
+            <summary>
+            Performs a HTTP-GET or HTTP-POST request and returns a data stream for reading.
+            </summary>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Utilities.HttpClientUtil.Reset">
+            <summary>
+            This method resets all configurations.
+            </summary>
+        </member>
+        <member name="T:Mapsui.Providers.Wfs.Utilities.IWFS_TextResources">
+            <summary>
+            Text resources interface
+            </summary>
+        </member>
+        <member name="T:Mapsui.Providers.Wfs.Utilities.IFilter">
+            <summary>
+            Filter interface
+            </summary>
+        </member>
+        <member name="T:Mapsui.Providers.Wfs.Utilities.OGCFilterCollection">
+            <summary>
+            This class hosts a collection of instances implementing <see cref="T:Mapsui.Providers.Wfs.Utilities.IFilter"/>.
+            </summary>
+        </member>
+        <member name="T:Mapsui.Providers.Wfs.Utilities.OGCFilterCollection.JunctorEnum">
+            <summary>
+            This enumeration consists of expressions denoting FE logical operators.
+            </summary>
+        </member>
+        <member name="P:Mapsui.Providers.Wfs.Utilities.OGCFilterCollection.Filters">
+            <summary>
+            Gets and sets a collection of instances implementing <see cref="T:Mapsui.Providers.Wfs.Utilities.IFilter"/>.
+            </summary>
+        </member>
+        <member name="P:Mapsui.Providers.Wfs.Utilities.OGCFilterCollection.Junctor">
+            <summary>
+            Gets and sets the operator for combining the filters.
+            </summary>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Utilities.OGCFilterCollection.#ctor">
+            <summary>
+            Initializes a new instance of the <see cref="T:Mapsui.Providers.Wfs.Utilities.OGCFilterCollection"/> class.
+            </summary>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Utilities.OGCFilterCollection.AddFilter(Mapsui.Providers.Wfs.Utilities.IFilter)">
+            <summary>
+            This method adds an instance implementing <see cref="T:Mapsui.Providers.Wfs.Utilities.IFilter"/>.
+            </summary>
+            <param name="filter"></param>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Utilities.OGCFilterCollection.AddFilterCollection(Mapsui.Providers.Wfs.Utilities.OGCFilterCollection)">
+            <summary>
+            This method adds an instance of <see cref="T:Mapsui.Providers.Wfs.Utilities.OGCFilterCollection"/>.
+            </summary>
+            <param name="filterCollection"></param>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Utilities.OGCFilterCollection.Encode">
+            <summary>
+            This method encodes the filter in XML.
+            </summary>
+            <returns>An XML string</returns>
+        </member>
+        <member name="T:Mapsui.Providers.Wfs.Utilities.OgcFilterBase">
+            <summary>
+            This class is the base class of all filters.
+            It stores the filter arguments.
+            </summary>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Utilities.OgcFilterBase.#ctor(System.String[])">
+            <summary>
+            Protected constructor for the abstract class.
+            </summary>
+            <param name="args">An array of arguments for the filter</param>
+        </member>
+        <member name="T:Mapsui.Providers.Wfs.Utilities.PropertyIsEqualToFilter_FE1_1_0">
+            <summary>
+            This class provides an interface for creating an OGC PropertyIsEqualToFilter Version 1.1.0.
+            </summary>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Utilities.PropertyIsEqualToFilter_FE1_1_0.#ctor(System.String,System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Mapsui.Providers.Wfs.Utilities.PropertyIsEqualToFilter_FE1_1_0"/> class.
+            </summary>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Utilities.PropertyIsEqualToFilter_FE1_1_0.Encode">
+            <summary>
+            This method encodes the filter in XML.
+            </summary>
+            <returns>An XML string</returns>
+        </member>
+        <member name="T:Mapsui.Providers.Wfs.Utilities.PropertyIsNotEqualToFilter_FE1_1_0">
+            <summary>
+            This class provides an interface for creating an OGC PropertyIsNotEqualToFilter Version 1.1.0.
+            </summary>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Utilities.PropertyIsNotEqualToFilter_FE1_1_0.#ctor(System.String,System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Mapsui.Providers.Wfs.Utilities.PropertyIsNotEqualToFilter_FE1_1_0"/> class.
+            </summary>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Utilities.PropertyIsNotEqualToFilter_FE1_1_0.Encode">
+            <summary>
+            This method encodes the filter in XML.
+            </summary>
+            <returns>An XML string</returns>
+        </member>
+        <member name="T:Mapsui.Providers.Wfs.Utilities.PropertyIsLessThanFilter_FE1_1_0">
+            <summary>
+            This class provides an interface for creating an OGC PropertyIsLessThanFilter Version 1.1.0.
+            </summary>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Utilities.PropertyIsLessThanFilter_FE1_1_0.#ctor(System.String,System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Mapsui.Providers.Wfs.Utilities.PropertyIsLessThanFilter_FE1_1_0"/> class.
+            </summary>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Utilities.PropertyIsLessThanFilter_FE1_1_0.Encode">
+            <summary>
+            This method encodes the filter in XML.
+            </summary>
+            <returns>An XML string</returns>
+        </member>
+        <member name="T:Mapsui.Providers.Wfs.Utilities.PropertyIsGreaterThanFilter_FE1_1_0">
+            <summary>
+            This class provides an interface for creating an OGC PropertyIsGreaterThanFilter Version 1.1.0.
+            </summary>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Utilities.PropertyIsGreaterThanFilter_FE1_1_0.#ctor(System.String,System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Mapsui.Providers.Wfs.Utilities.PropertyIsGreaterThanFilter_FE1_1_0"/> class.
+            </summary>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Utilities.PropertyIsGreaterThanFilter_FE1_1_0.Encode">
+            <summary>
+            This method encodes the filter in XML.
+            </summary>
+            <returns>An XML string</returns>
+        </member>
+        <member name="T:Mapsui.Providers.Wfs.Utilities.PropertyIsLessThanOrEqualToFilter_FE1_1_0">
+            <summary>
+            This class provides an interface for creating an OGC PropertyIsLessThanOrEqualToFilter Version 1.1.0.
+            </summary>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Utilities.PropertyIsLessThanOrEqualToFilter_FE1_1_0.#ctor(System.String,System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Mapsui.Providers.Wfs.Utilities.PropertyIsLessThanOrEqualToFilter_FE1_1_0"/> class.
+            </summary>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Utilities.PropertyIsLessThanOrEqualToFilter_FE1_1_0.Encode">
+            <summary>
+            This method encodes the filter in XML.
+            </summary>
+            <returns>An XML string</returns>
+        </member>
+        <member name="T:Mapsui.Providers.Wfs.Utilities.PropertyIsGreaterThanOrEqualToFilter_FE1_1_0">
+            <summary>
+            This class provides an interface for creating an OGC PropertyIsGreaterThanOrEqualToFilter Version 1.1.0.
+            </summary>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Utilities.PropertyIsGreaterThanOrEqualToFilter_FE1_1_0.#ctor(System.String,System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Mapsui.Providers.Wfs.Utilities.PropertyIsGreaterThanOrEqualToFilter_FE1_1_0"/> class.
+            </summary>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Utilities.PropertyIsGreaterThanOrEqualToFilter_FE1_1_0.Encode">
+            <summary>
+            This method encodes the filter in XML.
+            </summary>
+            <returns>An XML string</returns>
+        </member>
+        <member name="T:Mapsui.Providers.Wfs.Utilities.PropertyIsBetweenFilter_FE1_1_0">
+            <summary>
+            This class provides an interface for creating an OGC PropertyIsBetweenFilter Version 1.1.0.
+            </summary>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Utilities.PropertyIsBetweenFilter_FE1_1_0.#ctor(System.String,System.String,System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Mapsui.Providers.Wfs.Utilities.PropertyIsBetweenFilter_FE1_1_0"/> class.
+            </summary>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Utilities.PropertyIsBetweenFilter_FE1_1_0.Encode">
+            <summary>
+            This method encodes the filter in XML.
+            </summary>
+            <returns>An XML string</returns>
+        </member>
+        <member name="T:Mapsui.Providers.Wfs.Utilities.PropertyIsLikeFilter_FE1_1_0">
+            <summary>
+            This class provides an interface for creating an OGC PropertyIsLikeFilter Version 1.1.0.
+            </summary>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Utilities.PropertyIsLikeFilter_FE1_1_0.#ctor(System.String,System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Mapsui.Providers.Wfs.Utilities.PropertyIsLikeFilter_FE1_1_0"/> class.
+            </summary>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Utilities.PropertyIsLikeFilter_FE1_1_0.Encode">
+            <summary>
+            This method encodes the filter in XML.
+            </summary>
+            <returns>An XML string</returns>
+        </member>
+        <member name="T:Mapsui.Providers.Wfs.Utilities.FeatureIdFilter_FE1_1_0">
+            <summary>
+            This class provides an interface for creating an OGC FeatureIdFilter Version 1.1.0.
+            </summary>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Utilities.FeatureIdFilter_FE1_1_0.#ctor(System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Mapsui.Providers.Wfs.Utilities.FeatureIdFilter_FE1_1_0"/> class.
+            </summary>
+        </member>
+        <member name="T:Mapsui.Providers.Wfs.Utilities.PathNode">
+            <summary>
+            This class represents an element-node in an XML document 
+            </summary>
+        </member>
+        <member name="P:Mapsui.Providers.Wfs.Utilities.PathNode.XmlElementNsUri">
+            <summary>
+            Gets the namespace URI of the element-node
+            </summary>
+        </member>
+        <member name="P:Mapsui.Providers.Wfs.Utilities.PathNode.XmlElementNodeName">
+            <summary>
+            Gets the local name of the element-node
+            </summary>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Utilities.PathNode.#ctor(System.String,System.String,System.Xml.NameTable)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Mapsui.Providers.Wfs.Utilities.PathNode"/> class.
+            </summary>
+            <param name="elementNsUri">The namespace URI of the element-node</param>
+            <param name="elementNodeName">The local name of the element-node</param>
+            <param name="nameTable">A NameTable for storing namespace URI and local name</param>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Utilities.PathNode.Matches(System.Xml.XmlReader)">
+            <summary>
+            This method evaluates, if the position of an XmlReader is at the element-node represented by the instance of this class.
+            It compares pointers instead of literal values due to performance reasons.
+            Therefore the name table of the XmlReader given as argument must be the one handed over to the constructor.
+            </summary>
+            <param name="xmlReader">An XmlReader instance</param>
+        </member>
+        <member name="P:Mapsui.Providers.Wfs.Utilities.PathNode.IsActive">
+            <summary>
+            Determines whether this PathNode shall be active.
+            If it is not active, all match operations return true.
+            </summary>
+        </member>
+        <member name="T:Mapsui.Providers.Wfs.Utilities.AlternativePathNodesCollection">
+            <summary>
+            This class represents a collection of path nodes that can be used alternatively.
+            </summary>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Utilities.AlternativePathNodesCollection.#ctor(Mapsui.Providers.Wfs.Utilities.IPathNode[])">
+            <summary>
+            Initializes a new instance of the <see cref="T:Mapsui.Providers.Wfs.Utilities.AlternativePathNodesCollection"/> class.
+            </summary>
+            <param name="pathNodes">A collection of instances implementing <see cref="T:Mapsui.Providers.Wfs.Utilities.IPathNode"/></param>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Utilities.AlternativePathNodesCollection.Matches(System.Xml.XmlReader)">
+            <summary>
+            This method evaluates all inherent instances of <see cref="T:Mapsui.Providers.Wfs.Utilities.IPathNode"/>.
+            </summary>
+            <param name="reader">An XmlReader instance</param>
+        </member>
+        <member name="P:Mapsui.Providers.Wfs.Utilities.AlternativePathNodesCollection.IsActive">
+            <summary>
+            Determines whether the inherent PathNodes shall be active.
+            If a PathNode is not active, all match operations return true.
+            </summary>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Utilities.UrlQueryHelper.AppendQuery(System.String,System.String)">
+            <summary> Append Query  </summary>
+            <param name="url">url</param>
+            <param name="query">query</param>
+            <returns>uri with query</returns>
+        </member>
+        <member name="T:Mapsui.Providers.Wfs.Utilities.WFS_1_0_0_XPathTextResources">
+            <summary>
+            This class provides text resources specific for WFS 1.0.0 XML schema (for precompiling).
+            </summary>
+        </member>
+        <member name="P:Mapsui.Providers.Wfs.Utilities.WFS_1_0_0_XPathTextResources.XPATH_SRS">
+            <summary>
+            Gets an XPath string addressing the SRID of a FeatureType in 'GetCapabilities'.
+            </summary>
+        </member>
+        <member name="P:Mapsui.Providers.Wfs.Utilities.WFS_1_0_0_XPathTextResources.XPATH_BBOX">
+            <summary>
+            Gets an XPath string addressing the bounding box of a featuretype in 'GetCapabilities'.
+            </summary>
+        </member>
+        <member name="P:Mapsui.Providers.Wfs.Utilities.WFS_1_0_0_XPathTextResources.XPATH_GETFEATURERESOURCE">
+            <summary>
+            Gets an XPath string addressing the URI of 'GetFeature'in 'GetCapabilities'.
+            </summary>
+        </member>
+        <member name="P:Mapsui.Providers.Wfs.Utilities.WFS_1_0_0_XPathTextResources.XPATH_DESCRIBEFEATURETYPERESOURCE">
+            <summary>
+            Gets an XPath string addressing the URI of 'DescribeFeatureType'in 'GetCapabilities'.
+            </summary>
+        </member>
+        <member name="P:Mapsui.Providers.Wfs.Utilities.WFS_1_0_0_XPathTextResources.XPATH_BOUNDINGBOXMINX">
+            <summary>
+            Gets an XPath string addressing the 'minx'-attribute of a featuretype's bounding box in 'GetCapabilities'.
+            </summary>
+        </member>
+        <member name="P:Mapsui.Providers.Wfs.Utilities.WFS_1_0_0_XPathTextResources.XPATH_BOUNDINGBOXMAXX">
+            <summary>
+            Gets an XPath string addressing the 'maxx'-attribute of a featuretype's bounding box in 'GetCapabilities'.
+            </summary>
+        </member>
+        <member name="P:Mapsui.Providers.Wfs.Utilities.WFS_1_0_0_XPathTextResources.XPATH_BOUNDINGBOXMINY">
+            <summary>
+            Gets an XPath string addressing the 'miny'-attribute of a featuretype's bounding box in 'GetCapabilities'.
+            </summary>
+        </member>
+        <member name="P:Mapsui.Providers.Wfs.Utilities.WFS_1_0_0_XPathTextResources.XPATH_BOUNDINGBOXMAXY">
+            <summary>
+            Gets an XPath string addressing the 'maxy'-attribute of a featuretype's bounding box in 'GetCapabilities'.
+            </summary>
+        </member>
+        <member name="T:Mapsui.Providers.Wfs.Utilities.WFS_1_1_0_XPathTextResources">
+            <summary>
+            This class provides text resources specific for WFS 1.1.0.
+            </summary>
+        </member>
+        <member name="P:Mapsui.Providers.Wfs.Utilities.WFS_1_1_0_XPathTextResources.XPATH_SRS">
+            <summary>
+            Gets an XPath string addressing the SRID of a featuretype in 'GetCapabilities'.
+            </summary>
+        </member>
+        <member name="P:Mapsui.Providers.Wfs.Utilities.WFS_1_1_0_XPathTextResources.XPATH_BBOX">
+            <summary>
+            Gets an XPath string addressing the bounding box of a featuretype in 'GetCapabilities'.
+            </summary>
+        </member>
+        <member name="P:Mapsui.Providers.Wfs.Utilities.WFS_1_1_0_XPathTextResources.XPATH_GETFEATURERESOURCE">
+            <summary>
+            Gets an XPath string addressing the URI of 'GetFeature'in 'GetCapabilities'.
+            </summary>
+        </member>
+        <member name="P:Mapsui.Providers.Wfs.Utilities.WFS_1_1_0_XPathTextResources.XPATH_DESCRIBEFEATURETYPERESOURCE">
+            <summary>
+            Gets an XPath string addressing the URI of 'DescribeFeatureType'in 'GetCapabilities'.
+            </summary>
+        </member>
+        <member name="P:Mapsui.Providers.Wfs.Utilities.WFS_1_1_0_XPathTextResources.XPATH_BOUNDINGBOXMINX">
+            <summary>
+            Gets an XPath string addressing the lower corner of a featuretype's bounding box in 'GetCapabilities'
+            for extracting 'minx'.
+            </summary>
+        </member>
+        <member name="P:Mapsui.Providers.Wfs.Utilities.WFS_1_1_0_XPathTextResources.XPATH_BOUNDINGBOXMINY">
+            <summary>
+            Gets an XPath string addressing the lower corner of a featuretype's bounding box in 'GetCapabilities'
+            for extracting 'miny'.
+            </summary>
+        </member>
+        <member name="P:Mapsui.Providers.Wfs.Utilities.WFS_1_1_0_XPathTextResources.XPATH_BOUNDINGBOXMAXX">
+            <summary>
+            Gets an XPath string addressing the upper corner of a featuretype's bounding box in 'GetCapabilities'
+            for extracting 'maxx'.
+            </summary>
+        </member>
+        <member name="P:Mapsui.Providers.Wfs.Utilities.WFS_1_1_0_XPathTextResources.XPATH_BOUNDINGBOXMAXY">
+            <summary>
+            Gets an XPath string addressing the upper corner of a featuretype's bounding box in 'GetCapabilities'
+            for extracting 'maxy'.
+            </summary>
+        </member>
+        <member name="T:Mapsui.Providers.Wfs.Utilities.WFS_2_0_0_XPathTextResources">
+            <summary>
+            This class provides text resources specific for WFS 2.0.0.
+            </summary>
+        </member>
+        <member name="P:Mapsui.Providers.Wfs.Utilities.WFS_2_0_0_XPathTextResources.XPATH_SRS">
+            <summary>
+            Gets an XPath string addressing the SRID of a featuretype in 'GetCapabilities'.
+            </summary>
+        </member>
+        <member name="P:Mapsui.Providers.Wfs.Utilities.WFS_2_0_0_XPathTextResources.XPATH_BBOX">
+            <summary>
+            Gets an XPath string addressing the bounding box of a featuretype in 'GetCapabilities'.
+            </summary>
+        </member>
+        <member name="P:Mapsui.Providers.Wfs.Utilities.WFS_2_0_0_XPathTextResources.XPATH_GETFEATURERESOURCE">
+            <summary>
+            Gets an XPath string addressing the URI of 'GetFeature'in 'GetCapabilities'.
+            </summary>
+        </member>
+        <member name="P:Mapsui.Providers.Wfs.Utilities.WFS_2_0_0_XPathTextResources.XPATH_DESCRIBEFEATURETYPERESOURCE">
+            <summary>
+            Gets an XPath string addressing the URI of 'DescribeFeatureType'in 'GetCapabilities'.
+            </summary>
+        </member>
+        <member name="P:Mapsui.Providers.Wfs.Utilities.WFS_2_0_0_XPathTextResources.XPATH_BOUNDINGBOXMINX">
+            <summary>
+            Gets an XPath string addressing the lower corner of a featuretype's bounding box in 'GetCapabilities'
+            for extracting 'minx'.
+            </summary>
+        </member>
+        <member name="P:Mapsui.Providers.Wfs.Utilities.WFS_2_0_0_XPathTextResources.XPATH_BOUNDINGBOXMINY">
+            <summary>
+            Gets an XPath string addressing the lower corner of a featuretype's bounding box in 'GetCapabilities'
+            for extracting 'miny'.
+            </summary>
+        </member>
+        <member name="P:Mapsui.Providers.Wfs.Utilities.WFS_2_0_0_XPathTextResources.XPATH_BOUNDINGBOXMAXX">
+            <summary>
+            Gets an XPath string addressing the upper corner of a featuretype's bounding box in 'GetCapabilities'
+            for extracting 'maxx'.
+            </summary>
+        </member>
+        <member name="P:Mapsui.Providers.Wfs.Utilities.WFS_2_0_0_XPathTextResources.XPATH_BOUNDINGBOXMAXY">
+            <summary>
+            Gets an XPath string addressing the upper corner of a featuretype's bounding box in 'GetCapabilities'
+            for extracting 'maxy'.
+            </summary>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Utilities.WFS_1_0_0_TextResources.GetCapabilitiesRequest">
+            <summary>
+            This method returns the query string for 'GetCapabilities'.
+            </summary>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Utilities.WFS_1_0_0_TextResources.DescribeFeatureTypeRequest(System.String)">
+            <summary>
+            This method returns the query string for 'DescribeFeatureType'.
+            </summary>
+            <param name="featureTypeName">The name of the featuretype to query</param>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Utilities.WFS_1_0_0_TextResources.GetFeatureGETRequest(Mapsui.Providers.Wfs.Utilities.WfsFeatureTypeInfo,System.Collections.Generic.List{System.String},Mapsui.MRect,Mapsui.Providers.Wfs.Utilities.IFilter)">
+            <summary>
+            This method returns the query string for 'GetFeature'.
+            </summary>
+            <param name="featureTypeInfo">A <see cref="T:Mapsui.Providers.Wfs.Utilities.WfsFeatureTypeInfo"/> instance providing metadata of the featuretype to query</param>
+            <param name="labelProperties">A list of properties necessary for label rendering</param>
+            <param name="boundingBox">The bounding box of the query</param>
+            <param name="filter">An instance implementing <see cref="T:Mapsui.Providers.Wfs.Utilities.IFilter"/></param>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Utilities.WFS_1_0_0_TextResources.GetFeaturePOSTRequest(Mapsui.Providers.Wfs.Utilities.WfsFeatureTypeInfo,System.Collections.Generic.List{System.String},Mapsui.MRect,Mapsui.Providers.Wfs.Utilities.IFilter)">
+            <summary>
+            This method returns the POST request for 'GetFeature'.
+            </summary>
+            <param name="featureTypeInfo">A <see cref="T:Mapsui.Providers.Wfs.Utilities.WfsFeatureTypeInfo"/> instance providing metadata of the featuretype to query</param>
+            <param name="labelProperties">A list of properties necessary for label rendering</param>
+            <param name="boundingBox">The bounding box of the query</param>
+            <param name="filter">An instance implementing <see cref="T:Mapsui.Providers.Wfs.Utilities.IFilter"/></param>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Utilities.WFS_1_1_0_TextResources.GetCapabilitiesRequest">
+            <summary>
+            This method returns the query string for 'GetCapabilities'.
+            </summary>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Utilities.WFS_1_1_0_TextResources.DescribeFeatureTypeRequest(System.String)">
+            <summary>
+            This method returns the query string for 'DescribeFeatureType'.
+            </summary>
+            <param name="featureTypeName">The name of the featuretype to query</param>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Utilities.WFS_1_1_0_TextResources.GetFeatureGETRequest(Mapsui.Providers.Wfs.Utilities.WfsFeatureTypeInfo,System.Collections.Generic.List{System.String},Mapsui.MRect,Mapsui.Providers.Wfs.Utilities.IFilter)">
+            <summary>
+            This method returns the query string for 'GetFeature'.
+            </summary>
+            <param name="featureTypeInfo">A <see cref="T:Mapsui.Providers.Wfs.Utilities.WfsFeatureTypeInfo"/> instance providing metadata of the featuretype to query</param>
+            <param name="labelProperties"></param>
+            <param name="boundingBox">The bounding box of the query</param>
+            <param name="filter">An instance implementing <see cref="T:Mapsui.Providers.Wfs.Utilities.IFilter"/></param>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Utilities.WFS_1_1_0_TextResources.GetFeaturePOSTRequest(Mapsui.Providers.Wfs.Utilities.WfsFeatureTypeInfo,System.Collections.Generic.List{System.String},Mapsui.MRect,Mapsui.Providers.Wfs.Utilities.IFilter)">
+            <summary>
+            This method returns the POST request for 'GetFeature'.
+            </summary>
+            <param name="featureTypeInfo">A <see cref="T:Mapsui.Providers.Wfs.Utilities.WfsFeatureTypeInfo"/> instance providing metadata of the featuretype to query</param>
+            <param name="labelProperties">A list of properties necessary for label rendering</param>
+            <param name="boundingBox">The bounding box of the query</param>
+            <param name="filter">An instance implementing <see cref="T:Mapsui.Providers.Wfs.Utilities.IFilter"/></param>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Utilities.WFS_2_0_0_TextResources.GetCapabilitiesRequest">
+            <summary>
+            This method returns the query string for 'GetCapabilities'.
+            </summary>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Utilities.WFS_2_0_0_TextResources.DescribeFeatureTypeRequest(System.String)">
+            <summary>
+            This method returns the query string for 'DescribeFeatureType'.
+            </summary>
+            <param name="featureTypeName">The name of the featuretype to query</param>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Utilities.WFS_2_0_0_TextResources.GetFeatureGETRequest(Mapsui.Providers.Wfs.Utilities.WfsFeatureTypeInfo,System.Collections.Generic.List{System.String},Mapsui.MRect,Mapsui.Providers.Wfs.Utilities.IFilter)">
+            <summary>
+            This method returns the query string for 'GetFeature'.
+            </summary>
+            <param name="featureTypeInfo">A <see cref="T:Mapsui.Providers.Wfs.Utilities.WfsFeatureTypeInfo"/> instance providing metadata of the featuretype to query</param>
+            <param name="labelProperties"></param>
+            <param name="boundingBox">The bounding box of the query</param>
+            <param name="filter">An instance implementing <see cref="T:Mapsui.Providers.Wfs.Utilities.IFilter"/></param>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Utilities.WFS_2_0_0_TextResources.GetFeaturePOSTRequest(Mapsui.Providers.Wfs.Utilities.WfsFeatureTypeInfo,System.Collections.Generic.List{System.String},Mapsui.MRect,Mapsui.Providers.Wfs.Utilities.IFilter)">
+            <summary>
+            This method returns the POST request for 'GetFeature'.
+            </summary>
+            <param name="featureTypeInfo">A <see cref="T:Mapsui.Providers.Wfs.Utilities.WfsFeatureTypeInfo"/> instance providing metadata of the featuretype to query</param>
+            <param name="labelProperties">A list of properties necessary for label rendering</param>
+            <param name="boundingBox">The bounding box of the query</param>
+            <param name="filter">An instance implementing <see cref="T:Mapsui.Providers.Wfs.Utilities.IFilter"/></param>
+        </member>
+        <member name="P:Mapsui.Providers.Wfs.Utilities.WFS_XPathTextResourcesBase.NSOGCPREFIX">
+            <summary>
+            Prefix used for OGC namespace
+            </summary>
+        </member>
+        <member name="P:Mapsui.Providers.Wfs.Utilities.WFS_XPathTextResourcesBase.NSOGC">
+            <summary>
+            OGC namespace URI 
+            </summary>
+        </member>
+        <member name="P:Mapsui.Providers.Wfs.Utilities.WFS_XPathTextResourcesBase.NSXLINKPREFIX">
+            <summary>
+            Prefix used for XLink namespace
+            </summary>
+        </member>
+        <member name="P:Mapsui.Providers.Wfs.Utilities.WFS_XPathTextResourcesBase.NSXLINK">
+            <summary>
+            XLink namespace URI 
+            </summary>
+        </member>
+        <member name="P:Mapsui.Providers.Wfs.Utilities.WFS_XPathTextResourcesBase.NSFEATURETYPEPREFIX">
+            <summary>
+            Prefix used for feature namespace
+            </summary>
+        </member>
+        <member name="P:Mapsui.Providers.Wfs.Utilities.WFS_XPathTextResourcesBase.NSWFSPREFIX">
+            <summary>
+            Prefix used for WFS namespace
+            </summary>
+        </member>
+        <member name="P:Mapsui.Providers.Wfs.Utilities.WFS_XPathTextResourcesBase.NSWFS">
+            <summary>
+            WFS namespace URI 
+            </summary>
+        </member>
+        <member name="P:Mapsui.Providers.Wfs.Utilities.WFS_XPathTextResourcesBase.NSGMLPREFIX">
+            <summary>
+            Prefix used for GML namespace
+            </summary>
+        </member>
+        <member name="P:Mapsui.Providers.Wfs.Utilities.WFS_XPathTextResourcesBase.NSGML">
+            <summary>
+            GML namespace URI 
+            </summary>
+        </member>
+        <member name="P:Mapsui.Providers.Wfs.Utilities.WFS_XPathTextResourcesBase.NSOWSPREFIX">
+            <summary>
+            Prefix used for OWS namespace
+            </summary>
+        </member>
+        <member name="P:Mapsui.Providers.Wfs.Utilities.WFS_XPathTextResourcesBase.NSOWS">
+            <summary>
+            OWS namespace URI 
+            </summary>
+        </member>
+        <member name="P:Mapsui.Providers.Wfs.Utilities.WFS_XPathTextResourcesBase.NSSCHEMAPREFIX">
+            <summary>
+            Prefix used for XML schema namespace
+            </summary>
+        </member>
+        <member name="P:Mapsui.Providers.Wfs.Utilities.WFS_XPathTextResourcesBase.NSSCHEMA">
+            <summary>
+            XML schema namespace URI 
+            </summary>
+        </member>
+        <member name="P:Mapsui.Providers.Wfs.Utilities.WFS_XPathTextResourcesBase.XPATH_TARGETNS">
+            <summary>
+            Gets an XPath string addressing the target namespace in 'DescribeFeatureType'.
+            </summary>
+        </member>
+        <member name="P:Mapsui.Providers.Wfs.Utilities.WFS_XPathTextResourcesBase.XPATH_GEOMETRYELEMENT_BYTYPEATTRIBUTEQUERY">
+            <summary>
+            Gets an XPath string addressing an element with a 'gml'-prefixed type-attribute in 'DescribeFeatureType'.
+            This for querying the geometry element of a featuretype in the most simple manner.
+            </summary>
+        </member>
+        <member name="P:Mapsui.Providers.Wfs.Utilities.WFS_XPathTextResourcesBase.XPATH_NAMEATTRIBUTEQUERY">
+            <summary>
+            Gets an XPath string addressing a name-attribute.
+            </summary>
+        </member>
+        <member name="P:Mapsui.Providers.Wfs.Utilities.WFS_XPathTextResourcesBase.XPATH_TYPEATTRIBUTEQUERY">
+            <summary>
+             Gets an XPath string addressing a type-attribute.
+            </summary>
+        </member>
+        <member name="P:Mapsui.Providers.Wfs.Utilities.WFS_XPathTextResourcesBase.XPATH_GEOMETRYELEMENTCOMPLEXTYPE_BYELEMREFQUERY">
+            <summary>
+            Gets an XPath string addressing a complex type hosting an element with a 'gml'-prefixed ref-attribute in 'DescribeFeatureType'.
+            This for querying the geometry element of a featuretype. 
+            Step1: Finding the complex type with a geometry element from GML specification. 
+            </summary>
+        </member>
+        <member name="P:Mapsui.Providers.Wfs.Utilities.WFS_XPathTextResourcesBase.XPATH_GEOMETRY_ELEMREF_GEOMNAMEQUERY">
+            <summary>
+            Gets an XPath string addressing the name of an element having a type-attribute referencing 
+            a complex type hosting an element with a 'gml'-prefixed ref-attribute in 'DescribeFeatureType'.
+            Step2: Finding the name of the featuretype's element with a named complex type hosting the GML geometry.
+            </summary>
+        </member>
+        <member name="P:Mapsui.Providers.Wfs.Utilities.WFS_XPathTextResourcesBase.XPATH_GEOMETRY_ELEMREF_GEOMNAMEQUERY_ANONYMOUSTYPE">
+            <summary>
+            Gets an XPath string addressing the name of an element described by an anonymous complex type 
+            hosting an element with a 'gml'-prefixed ref-attribute in 'DescribeFeatureType'.
+            Step2Alt: Finding the name of the featuretype's element with an anonymous complex type hosting the GML geometry.
+            </summary>
+        </member>
+        <member name="P:Mapsui.Providers.Wfs.Utilities.WFS_XPathTextResourcesBase.XPATH_GEOMETRY_ELEMREF_GMLELEMENTQUERY">
+            <summary>
+            Gets an XPath string addressing the 'gml'-prefixed  ref-attribute of an element.
+            This is for querying the name of the GML geometry element.
+            </summary>
+        </member>
+        <member name="T:Mapsui.Providers.Wfs.WFSProvider">
+            <summary>
+            WFS dataprovider
+            This provider can be used to obtain data from an OGC Web Feature Service.
+            It performs the following requests: 'GetCapabilities', 'DescribeFeatureType' and 'GetFeature'.
+            This class is optimized for performing requests to GeoServer (http://geoserver.org).
+            Supported geometries are:
+            - PointPropertyType
+            - LineStringPropertyType
+            - PolygonPropertyType
+            - CurvePropertyType
+            - SurfacePropertyType
+            - MultiPointPropertyType
+            - MultiLineStringPropertyType
+            - MultiPolygonPropertyType
+            - MultiCurvePropertyType
+            - MultiSurfacePropertyType
+            </summary>
+        </member>
+        <member name="T:Mapsui.Providers.Wfs.WFSProvider.WFSVersionEnum">
+            <summary>
+            This enumeration consists of expressions denoting WFS versions.
+            </summary>
+        </member>
+        <member name="F:Mapsui.Providers.Wfs.WFSProvider.WFSVersionEnum.WFS_1_0_0">
+            <summary>
+            Version 1.0.0
+            </summary>
+        </member>
+        <member name="F:Mapsui.Providers.Wfs.WFSProvider.WFSVersionEnum.WFS_1_1_0">
+            <summary>
+            Version 1.1.0
+            </summary>
+        </member>
+        <member name="F:Mapsui.Providers.Wfs.WFSProvider.WFSVersionEnum.WFS_2_0_0">
+            <summary>
+            Version 2.0.0
+            </summary>
+        </member>
+        <member name="P:Mapsui.Providers.Wfs.WFSProvider.DefaultCache">
+            <summary> Default Cache </summary>
+        </member>
+        <member name="P:Mapsui.Providers.Wfs.WFSProvider.GetCapabilitiesCache">
+            <summary>
+            This cache (obtained from an already instantiated dataprovider that retrieves a featuretype hosted by the same service) 
+            helps to speed up gathering metadata. It caches the 'GetCapabilities' response. 
+            </summary>
+        </member>
+        <member name="P:Mapsui.Providers.Wfs.WFSProvider.FeatureTypeInfo">
+            <summary>
+            Gets feature metadata 
+            </summary>
+        </member>
+        <member name="P:Mapsui.Providers.Wfs.WFSProvider.AxisOrder">
+            <summary>
+            Gets or sets a value indicating the axis order
+            </summary>
+            <remarks>
+            The axis order is an array of array offsets. It can be either {0, 1} or {1, 0}.
+            <para/>If not set explicitly, <see cref="T:Mapsui.Projections.CrsAxisOrderRegistry"/> is asked for a value based on <see cref="P:Mapsui.Providers.Wfs.WFSProvider.CRS"/>.</remarks>
+        </member>
+        <member name="P:Mapsui.Providers.Wfs.WFSProvider.QuickGeometries">
+            <summary>
+            Gets or sets a value indicating whether extracting geometry information 
+            from 'GetFeature' response shall be done quickly without paying attention to
+            context validation, polygon boundaries and multi-geometries.
+            This option accelerates the geometry parsing process, 
+            but in scarce cases can lead to errors. 
+            </summary>
+        </member>
+        <member name="P:Mapsui.Providers.Wfs.WFSProvider.MultiGeometries">
+            <summary>
+            Gets or sets a value indicating whether the 'GetFeature' parser
+            should ignore multi-geometries (MultiPoint, MultiLineString, MultiCurve, MultiPolygon, MultiSurface). 
+            By default it does not. Ignoring multi-geometries can lead to a better performance.
+            </summary>
+        </member>
+        <member name="P:Mapsui.Providers.Wfs.WFSProvider.GetFeatureGetRequest">
+            <summary>
+            Gets or sets a value indicating whether the 'GetFeature' request
+            should be done with HTTP GET. This option can be important when obtaining
+            data from a WFS provided by an UMN MapServer.
+            </summary>
+        </member>
+        <member name="P:Mapsui.Providers.Wfs.WFSProvider.OgcFilter">
+            <summary>
+            Gets or sets an OGC Filter.
+            </summary>
+        </member>
+        <member name="P:Mapsui.Providers.Wfs.WFSProvider.Labels">
+            <summary>
+            Gets or sets the property of the featuretype responsible for labels
+            </summary>
+        </member>
+        <member name="P:Mapsui.Providers.Wfs.WFSProvider.Credentials">
+            <summary>
+            Gets or sets the network credentials used for authenticating the request with the Internet resource
+            </summary>
+        </member>
+        <member name="P:Mapsui.Providers.Wfs.WFSProvider.ProxyUrl">
+            <summary>
+            Gets and sets the proxy Url of the request. 
+            </summary>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.WFSProvider.CreateAsync(System.String,System.String,System.String,Mapsui.Providers.Wfs.Utilities.GeometryTypeEnum,Mapsui.Providers.Wfs.WFSProvider.WFSVersionEnum,Mapsui.Cache.IUrlPersistentCache,System.String,System.Net.ICredentials)">
+            <summary>
+            Initializes a new layer, and downloads and parses the service description
+            </summary>
+            <param name="getCapabilitiesUri">Url of WMS server</param>
+            <param name="geometryType">geometry Type</param>
+            <param name="wfsVersion">Version number of wms leave null to get the default service version</param>
+            <param name="nsPrefix">ns Prefix</param>
+            <param name="featureType">feature Type</param>
+            <param name="persistentCache">persistent Cache</param>
+            <param name="proxyUrl">proxy url</param>
+            <param name="credentials">credentials</param>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.WFSProvider.CreateAsync(System.String,System.String,System.String,Mapsui.Providers.Wfs.WFSProvider.WFSVersionEnum,Mapsui.Cache.IUrlPersistentCache,System.String,System.Net.ICredentials)">
+            <summary>
+            Use this Method for initializing this dataprovider with all necessary
+            parameters to gather metadata from 'GetCapabilities' contract.
+            </summary>
+            <param name="getCapabilitiesUri">The URL for the 'GetCapabilities' request.</param>
+            <param name="nsPrefix">
+            Use an empty string or 'null', if there is no prefix for the featuretype.
+            </param>
+            <param name="featureType">The name of the feature type</param>
+            <param name="wfsVersion">The desired WFS Server version.</param>
+            <param name="persistentCache">persistent Cache Interface</param>
+            <param name="proxyUrl">proxy url</param>
+            <param name="credentials">credentials</param>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.WFSProvider.#ctor(System.String,System.String,System.String,Mapsui.Providers.Wfs.Utilities.GeometryTypeEnum,Mapsui.Providers.Wfs.WFSProvider.WFSVersionEnum,Mapsui.Cache.IUrlPersistentCache)">
+            <summary>
+            Use this constructor for initializing this dataprovider with all necessary
+            parameters to gather metadata from 'GetCapabilities' contract.
+            </summary>
+            <param name="getCapabilitiesUri">The URL for the 'GetCapabilities' request.</param>
+            <param name="nsPrefix">
+            Use an empty string or 'null', if there is no prefix for the featuretype.
+            </param>
+            <param name="featureType">The name of the feature type</param>
+            <param name="geometryType">
+            Specifying the geometry type helps to accelerate the rendering process, 
+            if the geometry type in 'DescribeFeatureType is unprecise.   
+            </param>
+            <param name="wfsVersion">The desired WFS Server version.</param>
+            <param name="persistentCache">persistent Cache</param>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.WFSProvider.InitAsync">
+            <summary>Init Async</summary>
+            <returns></returns>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.WFSProvider.#ctor(Mapsui.Providers.Wfs.Utilities.WfsFeatureTypeInfo,Mapsui.Providers.Wfs.WFSProvider.WFSVersionEnum,Mapsui.Cache.IUrlPersistentCache)">
+            <summary>
+            Use this constructor for initializing this dataprovider with a 
+            <see cref="T:Mapsui.Providers.Wfs.Utilities.WfsFeatureTypeInfo"/> object, 
+            so that 'GetCapabilities' and 'DescribeFeatureType' can be bypassed.
+            </summary>
+            <param name="featureTypeInfo">The featureTypeInfo Instance</param>
+            <param name="wfsVersion">The desired WFS Server version.</param>
+            <param name="persistentCache">Persistent Cache</param>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.WFSProvider.#ctor(System.String,System.String,System.String,System.String,System.String,Mapsui.Providers.Wfs.Utilities.GeometryTypeEnum,Mapsui.Providers.Wfs.WFSProvider.WFSVersionEnum,Mapsui.Cache.IUrlPersistentCache)">
+            <summary>
+            Use this constructor for initializing this dataprovider with all mandatory
+            metadata for retrieving a featuretype, so that 'GetCapabilities' and 'DescribeFeatureType' can be bypassed.
+            </summary>
+            <param name="serviceUri">The service URL</param>
+            <param name="nsPrefix">
+            Use an empty string or 'null', if there is no prefix for the featuretype.
+            </param>
+            <param name="featureTypeNamespace">
+            Use an empty string or 'null', if there is no namespace for the featuretype.
+            You don't need to know the namespace of the feature type, if you use the quick geometries option.
+            </param>
+            <param name="geometryName">
+            The name of the geometry.   
+            </param>
+            <param name="geometryType">
+            Specifying the geometry type helps to accelerate the rendering process.   
+            </param>
+            <param name="featureType">The name of the feature type</param>
+            <param name="wfsVersion">The desired WFS Server version.</param>
+            <param name="persistentCache">Persistent Cache</param>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.WFSProvider.#ctor(System.String,System.String,System.String,System.String,System.String,Mapsui.Providers.Wfs.WFSProvider.WFSVersionEnum,Mapsui.Cache.IUrlPersistentCache)">
+            <summary>
+            Use this constructor for initializing this dataprovider with all mandatory
+            metadata for retrieving a featuretype, so that 'GetCapabilities' and 'DescribeFeatureType' can be bypassed.
+            </summary>
+            <param name="serviceUri">The service URL</param>
+            <param name="nsPrefix">
+            Use an empty string or 'null', if there is no prefix for the featuretype.
+            </param>
+            <param name="featureTypeNamespace">
+            Use an empty string or 'null', if there is no namespace for the featuretype.
+            You don't need to know the namespace of the feature type, if you use the quick geometries option.
+            </param>
+            <param name="geometryName">The name of the geometry</param>
+            <param name="featureType">The name of the feature type</param>
+            <param name="wfsVersion">The desired WFS Server version.</param>
+            <param name="persistentCache">Persistent Cache</param>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.WFSProvider.#ctor(Mapsui.Providers.Wfs.Xml.IXPathQueryManager,System.String,System.String,Mapsui.Providers.Wfs.Utilities.GeometryTypeEnum,Mapsui.Providers.Wfs.WFSProvider.WFSVersionEnum,Mapsui.Cache.IUrlPersistentCache)">
+            <summary>
+            Use this constructor for initializing this dataprovider with all necessary
+            parameters to gather metadata from 'GetCapabilities' contract.
+            </summary>
+            <param name="getCapabilitiesCache">
+            This cache (obtained from an already instantiated dataprovider that retrieves a featuretype hosted by the same service) 
+            helps to speed up gathering metadata. It caches the 'GetCapabilities' response. 
+            </param>
+            <param name="nsPrefix">
+            Use an empty string or 'null', if there is no prefix for the featuretype.
+            </param>
+            <param name="geometryType">
+            Specifying the geometry type helps to accelerate the rendering process, 
+            if the geometry type in 'DescribeFeatureType is unprecise.   
+            </param>
+            <param name="featureType">The name of the feature type</param>
+            <param name="wfsVersion">The desired WFS Server version.</param>
+            <param name="persistentCache">persistent Cache</param>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.WFSProvider.#ctor(Mapsui.Providers.Wfs.Xml.IXPathQueryManager,System.String,System.String,Mapsui.Providers.Wfs.WFSProvider.WFSVersionEnum,Mapsui.Cache.IUrlPersistentCache)">
+            <summary>
+            Use this constructor for initializing this dataprovider with all necessary
+            parameters to gather metadata from 'GetCapabilities' contract.
+            </summary>
+            <param name="getCapabilitiesCache">
+            This cache (obtained from an already instantiated dataprovider that retrieves a featuretype hosted by the same service) 
+            helps to speed up gathering metadata. It caches the 'GetCapabilities' response. 
+            </param>
+            <param name="nsPrefix">
+            Use an empty string or 'null', if there is no prefix for the featuretype.
+            </param>
+            <param name="featureType">The name of the feature type</param>
+            <param name="wfsVersion">The desired WFS Server version.</param>
+            <param name="persistentCache">persistent Cache</param>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.WFSProvider.ExecuteIntersectionQueryAsync(Mapsui.MRect)">
+            <summary>
+            Returns all features whose <see cref="T:Mapsui.Providers.Wfs.Utilities.WfsFeatureTypeInfo.BoundingBox"/> intersects 'bbox'.
+            </summary>
+            <param name="bbox"></param>
+            <returns>Features within the specified <see cref="T:Mapsui.Providers.Wfs.Utilities.WfsFeatureTypeInfo.BoundingBox"/></returns>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.WFSProvider.GetFeatureTypeInfoAsync">
+            <summary>
+            This method gets metadata about the featuretype to query from 'GetCapabilities' and 'DescribeFeatureType'.
+            </summary>
+        </member>
+        <member name="T:Mapsui.Providers.Wfs.WFSProvider.WFSClientHttpConfigurator">
+            <summary>
+            This class configures a <see cref="T:Mapsui.Providers.Wfs.Utilities.HttpClientUtil"/> class 
+            for requests to a Web Feature Service.
+            </summary>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.WFSProvider.WFSClientHttpConfigurator.#ctor(Mapsui.Providers.Wfs.Utilities.IWFS_TextResources)">
+             <summary>
+             Initializes a new instance of the <see cref="T:Mapsui.Providers.Wfs.WFSProvider.WFSClientHttpConfigurator"/> class.
+             An instance of this class can be used to configure a <see cref="T:Mapsui.Providers.Wfs.Utilities.HttpClientUtil"/> object.
+             </summary>
+             <param name="wfsTextResources">
+             An instance implementing <see cref="T:Mapsui.Providers.Wfs.Utilities.IWFS_TextResources" /> 
+             for getting version-specific text resources for WFS request configuration.
+            </param>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.WFSProvider.WFSClientHttpConfigurator.ConfigureForWfsGetCapabilitiesRequest(Mapsui.Providers.Wfs.Utilities.HttpClientUtil,System.String)">
+            <summary>
+            Configures for WFS 'GetCapabilities' request using an instance implementing <see cref="T:Mapsui.Providers.Wfs.Utilities.IWFS_TextResources"/>.
+            The <see cref="T:Mapsui.Providers.Wfs.Utilities.HttpClientUtil"/> instance is returned for immediate usage. 
+            </summary>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.WFSProvider.WFSClientHttpConfigurator.ConfigureForWfsDescribeFeatureTypeRequest(Mapsui.Providers.Wfs.Utilities.HttpClientUtil,System.String,System.String)">
+            <summary>
+            Configures for WFS 'DescribeFeatureType' request using an instance implementing <see cref="T:Mapsui.Providers.Wfs.Utilities.IWFS_TextResources"/>.
+            The <see cref="T:Mapsui.Providers.Wfs.Utilities.HttpClientUtil"/> instance is returned for immediate usage. 
+            </summary>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.WFSProvider.WFSClientHttpConfigurator.ConfigureForWfsGetFeatureRequest(Mapsui.Providers.Wfs.Utilities.HttpClientUtil,Mapsui.Providers.Wfs.Utilities.WfsFeatureTypeInfo,System.Collections.Generic.List{System.String},Mapsui.MRect,Mapsui.Providers.Wfs.Utilities.IFilter,System.Boolean)">
+            <summary>
+            Configures for WFS 'GetFeature' request using an instance implementing <see cref="T:Mapsui.Providers.Wfs.Utilities.IWFS_TextResources"/>.
+            The <see cref="T:Mapsui.Providers.Wfs.Utilities.HttpClientUtil"/> instance is returned for immediate usage. 
+            </summary>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.WFSProvider.GetFeaturesAsync(Mapsui.Layers.FetchInfo)">
+            <summary>
+            Gets the features within the specified <see cref="T:Mapsui.Layers.FetchInfo"/>."/>
+            </summary>
+        </member>
+        <member name="T:Mapsui.Providers.Wfs.Xml.IXPathQueryManager">
+            <summary>
+            XPathQueryManager interface
+            </summary>
+        </member>
+        <member name="T:Mapsui.Providers.Wfs.Xml.XPathQueryManager">
+            <summary>
+            This class provides an easy-to-use interface for complex (parameterized) XPath queries.  
+            </summary>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Xml.XPathQueryManager.#ctor">
+            <summary>
+            Initializes a new instance of the <see cref="T:Mapsui.Providers.Wfs.Xml.XPathQueryManager"/> class.
+            </summary>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Xml.XPathQueryManager.#ctor(System.IO.Stream)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Mapsui.Providers.Wfs.Xml.XPathQueryManager"/> class.
+            </summary>
+            <param name="documentStream">A Stream with XML data</param>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Xml.XPathQueryManager.#ctor(System.Byte[])">
+            <summary>
+            Initializes a new instance of the <see cref="T:Mapsui.Providers.Wfs.Xml.XPathQueryManager"/> class.
+            </summary>
+            <param name="document">A byte array with XML data</param>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Xml.XPathQueryManager.#ctor(System.Xml.XPath.XPathDocument)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Mapsui.Providers.Wfs.Xml.XPathQueryManager"/> class.
+            </summary>
+            <param name="xPathDoc">An XmlDocument instance</param>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Xml.XPathQueryManager.#ctor(Mapsui.Providers.Wfs.Utilities.HttpClientUtil)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Mapsui.Providers.Wfs.Xml.XPathQueryManager"/> class. 
+            </summary>
+            <param name="httpClientUtil">A configured <see cref="T:Mapsui.Providers.Wfs.Utilities.HttpClientUtil"/> instance for performing web requests</param>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Xml.XPathQueryManager.InitAsync">
+            <summary>Init Async</summary>
+            <returns>Task</returns>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Xml.XPathQueryManager.#ctor(System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Mapsui.Providers.Wfs.Xml.XPathQueryManager"/> class. 
+            </summary>
+            <param name="fileName"></param>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Xml.XPathQueryManager.#ctor(System.Xml.XPath.XPathDocument,System.Xml.XPath.XPathNavigator,Mapsui.Providers.Wfs.Xml.XPathQueryManager.CustomQueryContext)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Mapsui.Providers.Wfs.Xml.XPathQueryManager"/> class.
+            </summary>
+            <param name="xPathDoc">An XmlDocument instance</param>
+            <param name="xNav"></param>
+            <param name="paramContext">A <see cref="T:Mapsui.Providers.Wfs.Xml.XPathQueryManager.CustomQueryContext"/> instance for parameterized XPath expressions</param>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Xml.XPathQueryManager.#ctor(System.Xml.XPath.XPathDocument,System.Xml.XPath.XPathNodeIterator,Mapsui.Providers.Wfs.Xml.XPathQueryManager.CustomQueryContext)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Mapsui.Providers.Wfs.Xml.XPathQueryManager"/> class.
+            </summary>
+            <param name="xPathDoc">An XmlDocument instance</param>
+            <param name="xIter">An XPathNodeIterator instance</param>
+            <param name="paramContext">A <see cref="T:Mapsui.Providers.Wfs.Xml.XPathQueryManager.CustomQueryContext"/> instance for parameterized XPath expressions</param>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Xml.XPathQueryManager.AddNamespace(System.String,System.String)">
+            <summary>
+            This method adds a namespace for XPath queries.
+            </summary>
+            <param name="prefix">The namespace prefix</param>
+            <param name="ns">The namespace URI</param>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Xml.XPathQueryManager.Compile(System.String)">
+            <summary>
+            This method compiles an XPath string.
+            </summary>
+            <param name="xPath">The XPath string</param>
+            <returns>A compiled XPath expression</returns>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Xml.XPathQueryManager.Clone">
+            <summary>
+            This method returns a clone of the current instance.
+            The cloned instance operates on the same (read-only) XmlDocument instance.
+            </summary>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Xml.XPathQueryManager.GetIterator(System.Xml.XPath.XPathExpression)">
+            <summary>
+            This method returns an XPathNodeIterator instance positioned at the nodes 
+            the XPath expression addresses.
+            </summary>
+            <param name="xPath">The compiled XPath expression</param>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Xml.XPathQueryManager.GetIterator(System.Xml.XPath.XPathExpression,System.Collections.DictionaryEntry[])">
+            <summary>
+            This method returns an XPathNodeIterator instance positioned at the nodes 
+            the XPath expression addresses.
+            </summary>
+            <param name="xPath">The compiled XPath expression</param>
+            <param name="queryParameters">Parameters for the compiled XPath expression</param>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Xml.XPathQueryManager.GetValueFromNode(System.Xml.XPath.XPathExpression,System.Collections.DictionaryEntry[])">
+            <summary>
+            This method returns the value of the first node the XPath expression addresses.
+            </summary>
+            <param name="xPath">The compiled XPath expression</param>
+            <param name="queryParameters">Parameters for the compiled XPath expression</param>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Xml.XPathQueryManager.GetValuesFromNodes(System.Xml.XPath.XPathExpression)">
+            <summary>
+            This method returns a collection of the values of all nodes the XPath expression addresses.
+            </summary>
+            <param name="xPath">The compiled XPath expression</param>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Xml.XPathQueryManager.GetValuesFromNodes(System.Xml.XPath.XPathExpression,System.Collections.DictionaryEntry[])">
+            <summary>
+            This method returns a collection of the values of all nodes the XPath expression addresses.
+            </summary>
+            <param name="xPath">The compiled XPath expression</param>
+            <param name="queryParameters">Parameters for the compiled XPath expression</param>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Xml.XPathQueryManager.GetXPathQueryManagerInContext(System.Xml.XPath.XPathExpression,System.Collections.DictionaryEntry[])">
+            <summary>
+            This method returns an instance of <see cref="T:Mapsui.Providers.Wfs.Xml.XPathQueryManager"/> 
+            in the context of the first node the XPath expression addresses.
+            </summary>
+            <param name="xPath">The compiled XPath expression</param>
+            <param name="queryParameters">Parameters for the compiled XPath expression</param>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Xml.XPathQueryManager.ResetNamespaces">
+            <summary>
+            This method deletes the current namespace context.
+            </summary>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Xml.XPathQueryManager.SetDocumentToParse(System.IO.Stream)">
+            <summary>
+            Sets a new XML document. 
+            </summary>
+            <param name="documentStream">A Stream with XML data</param>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Xml.XPathQueryManager.SetDocumentToParse(System.Byte[])">
+            <summary>
+            Sets a new XML document. 
+            </summary>
+            <param name="document">A byte array with XML data</param>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Xml.XPathQueryManager.SetDocumentToParseAsync(Mapsui.Providers.Wfs.Utilities.HttpClientUtil)">
+            <summary>
+            Sets a new XML document. 
+            </summary>
+            <param name="httpClientUtil">A configured <see cref="T:Mapsui.Providers.Wfs.Utilities.HttpClientUtil"/> instance for performing web requests</param>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Xml.XPathQueryManager.SetDocumentToParse(System.String)">
+            <summary>
+            Sets a new XmlDocument
+            </summary>
+            <param name="fileName"></param>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Xml.XPathQueryManager.SetDocumentToParse(System.Xml.XPath.XPathDocument)">
+            <summary>
+            Sets a new XML document.
+            </summary>
+            <param name="xPathDoc">An XPathDocument instance</param>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Xml.XPathQueryManager.InitializeXPathObjects(System.IO.Stream)">
+            <summary>
+            This method does some XPath specific initializations.
+            </summary>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Xml.XPathQueryManager.FindXPath(System.Xml.XPath.XPathExpression)">
+            <summary>
+            This method sets the inherent XPathNodeIterator instance.
+            </summary>
+            <param name="xPath">A compiled XPath expression</param>
+        </member>
+        <member name="T:Mapsui.Providers.Wfs.Xml.XPathQueryManager.CustomQueryContext">
+            <summary>
+            This class represents a custom context for XPath queries.
+            It is derived from XsltContext.
+            </summary>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Xml.XPathQueryManager.CustomQueryContext.#ctor">
+            <summary>
+            Initializes a new instance of the <see cref="T:Mapsui.Providers.Wfs.Xml.XPathQueryManager.CustomQueryContext"/> class.
+            </summary>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Xml.XPathQueryManager.CustomQueryContext.#ctor(System.Xml.NameTable)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Mapsui.Providers.Wfs.Xml.XPathQueryManager.CustomQueryContext"/> class.
+            </summary>
+            <param name="table">A NameTable instance</param>
+        </member>
+        <member name="P:Mapsui.Providers.Wfs.Xml.XPathQueryManager.CustomQueryContext.Whitespace">
+            <summary>
+            Method from XsltContext.
+            </summary>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Xml.XPathQueryManager.CustomQueryContext.AddNamespace(System.Collections.Generic.IDictionary{System.String,System.String})">
+            <summary>
+            This method adds a list of namespaces to use in the custom context.
+            </summary>
+            <param name="namespaces">A list of namespaces</param>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Xml.XPathQueryManager.CustomQueryContext.CompareDocument(System.String,System.String)">
+            <summary>
+            Method from XsltContext.
+            </summary>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Xml.XPathQueryManager.CustomQueryContext.PreserveWhitespace(System.Xml.XPath.XPathNavigator)">
+            <summary>
+            Method from XsltContext.
+            </summary>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Xml.XPathQueryManager.CustomQueryContext.ResolveFunction(System.String,System.String,System.Xml.XPath.XPathResultType[])">
+            <summary>
+            This method resolves a function appearing in an XPath expression.
+            </summary>
+            <param name="prefix">The prefix of the function</param>
+            <param name="name">The name of the function</param>
+            <param name="argTypes">A list of argument types of the function</param>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Xml.XPathQueryManager.CustomQueryContext.ResolveVariable(System.String,System.String)">
+            <summary>
+            This method resolves a variable appearing in an XPath expression.
+            </summary>
+            <param name="prefix">The prefix of the variable</param>
+            <param name="name">The name of the variable</param>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Xml.XPathQueryManager.CustomQueryContext.AddParam(System.String,System.Object)">
+            <summary>
+            This method adds a parameter to the custom context.
+            </summary>
+            <param name="name">The name of the parameter</param>
+            <param name="parameter">The value of the parameter</param>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Xml.XPathQueryManager.CustomQueryContext.AddParam(System.Collections.DictionaryEntry[])">
+            <summary>
+            This method adds a list of parameters to the custom context.
+            </summary>
+            <param name="parameters">A list of parameters</param>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Xml.XPathQueryManager.CustomQueryContext.GetParam(System.String)">
+            <summary>
+            This method gets a parameter by name.
+            </summary>
+            <param name="name">The name of the parameter</param>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Xml.XPathQueryManager.CustomQueryContext.RemoveParam(System.String)">
+            <summary>
+            This method removes a parameter from the inherent parameter list.
+            </summary>
+            <param name="name">The name of the parameter</param>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Xml.XPathQueryManager.CustomQueryContext.ResetParams">
+            <summary>
+            This methods clears the inherent parameter list.
+            </summary>
+        </member>
+        <member name="T:Mapsui.Providers.Wfs.Xml.XPathQueryManager.ParamBase">
+            <summary>
+            This class is the base class of <see cref="T:Mapsui.Providers.Wfs.Xml.XPathQueryManager.ParamCompare"/> and <see cref="T:Mapsui.Providers.Wfs.Xml.XPathQueryManager.ParamCompareWithTargetNs"/>.
+            </summary>
+            <remarks>
+            Protected constructor for the abstract class.
+            </remarks>
+            <param name="argTypes">The argument types of the function</param>
+            <param name="returnType">The return type of the function</param>
+            <param name="minArgs">The minimum number of arguments allowed</param>
+            <param name="maxArgs">The maximum number of arguments allowed</param>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Xml.XPathQueryManager.ParamBase.#ctor(System.Xml.XPath.XPathResultType[],System.Xml.XPath.XPathResultType,System.Int32,System.Int32)">
+            <summary>
+            This class is the base class of <see cref="T:Mapsui.Providers.Wfs.Xml.XPathQueryManager.ParamCompare"/> and <see cref="T:Mapsui.Providers.Wfs.Xml.XPathQueryManager.ParamCompareWithTargetNs"/>.
+            </summary>
+            <remarks>
+            Protected constructor for the abstract class.
+            </remarks>
+            <param name="argTypes">The argument types of the function</param>
+            <param name="returnType">The return type of the function</param>
+            <param name="minArgs">The minimum number of arguments allowed</param>
+            <param name="maxArgs">The maximum number of arguments allowed</param>
+        </member>
+        <member name="P:Mapsui.Providers.Wfs.Xml.XPathQueryManager.ParamBase.ArgTypes">
+            <summary>
+            Gets the argument types.
+            </summary>
+        </member>
+        <member name="P:Mapsui.Providers.Wfs.Xml.XPathQueryManager.ParamBase.ReturnType">
+            <summary>
+            Gets the return type.
+            </summary>
+        </member>
+        <member name="P:Mapsui.Providers.Wfs.Xml.XPathQueryManager.ParamBase.Minargs">
+            <summary>
+            Gets the minimum number of arguments allowed.
+            </summary>
+        </member>
+        <member name="P:Mapsui.Providers.Wfs.Xml.XPathQueryManager.ParamBase.Maxargs">
+            <summary>
+            Gets the maximum number of arguments allowed.
+            </summary>
+        </member>
+        <member name="T:Mapsui.Providers.Wfs.Xml.XPathQueryManager.ParamCompare">
+            <summary>
+            This class performs a string comparison in an XPath expression.
+            </summary>
+            <remarks>
+            Initializes a new instance of the <see cref="T:Mapsui.Providers.Wfs.Xml.XPathQueryManager.ParamCompare"/> class.
+            </remarks>
+            <param name="argTypes">The argument types of the function</param>
+            <param name="minArgs">The minimum number of arguments allowed</param>
+            <param name="maxArgs">The maximum number of arguments allowed</param>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Xml.XPathQueryManager.ParamCompare.#ctor(System.Xml.XPath.XPathResultType[],System.Int32,System.Int32)">
+            <summary>
+            This class performs a string comparison in an XPath expression.
+            </summary>
+            <remarks>
+            Initializes a new instance of the <see cref="T:Mapsui.Providers.Wfs.Xml.XPathQueryManager.ParamCompare"/> class.
+            </remarks>
+            <param name="argTypes">The argument types of the function</param>
+            <param name="minArgs">The minimum number of arguments allowed</param>
+            <param name="maxArgs">The maximum number of arguments allowed</param>
+        </member>
+        <member name="F:Mapsui.Providers.Wfs.Xml.XPathQueryManager.ParamCompare.FunctionName">
+            <summary>
+            The name to use when embedding the function in an XPath expression.
+            </summary>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Xml.XPathQueryManager.ParamCompare.Invoke(System.Xml.Xsl.XsltContext,System.Object[],System.Xml.XPath.XPathNavigator)">
+            <summary>
+            This method performs a string comparison.
+            </summary>
+            <param name="xsltContext">The Xslt context</param>
+            <param name="args">The arguments of the function</param>
+            <param name="docContext">The document context</param>
+            <returns>A boolean value indicating whether the argument strings are identical</returns>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Xml.XPathQueryManager.ParamCompare.ResolveArgument(System.Object)">
+            <summary>
+            This method creates a string from an object argument.
+            In many cases the argument is an XPathNodeIterator that must be resolved.
+            </summary>
+            <param name="arg">An argument of the function to be resolved</param>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Xml.XPathQueryManager.ParamCompare.ResolveNsPrefix(System.String,System.Xml.Xsl.XsltContext)">
+            <summary>
+            This method resolves the prefix of an argument.
+            If a prefix is found, the corresponding namespace URI is looked up 
+            and substituted.
+            </summary>
+            <param name="args">An argument of the function to be resolved</param>
+            <param name="xsltContext">The Xslt context for namespace resolving</param>
+        </member>
+        <member name="T:Mapsui.Providers.Wfs.Xml.XPathQueryManager.ParamCompareWithTargetNs">
+            <summary>
+            This class performs a string comparison in an XPath expression.
+            It is specifically created for using in XML schema documents.
+            </summary>
+            <remarks>
+            Initializes a new instance of the <see cref="T:Mapsui.Providers.Wfs.Xml.XPathQueryManager.ParamCompareWithTargetNs"/> class.
+            </remarks>
+            <param name="argTypes">The argument types of the function</param>
+            <param name="minArgs">The minimum number of arguments allowed</param>
+            <param name="maxArgs">The maximum number of arguments allowed</param>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Xml.XPathQueryManager.ParamCompareWithTargetNs.#ctor(System.Xml.XPath.XPathResultType[],System.Int32,System.Int32)">
+            <summary>
+            This class performs a string comparison in an XPath expression.
+            It is specifically created for using in XML schema documents.
+            </summary>
+            <remarks>
+            Initializes a new instance of the <see cref="T:Mapsui.Providers.Wfs.Xml.XPathQueryManager.ParamCompareWithTargetNs"/> class.
+            </remarks>
+            <param name="argTypes">The argument types of the function</param>
+            <param name="minArgs">The minimum number of arguments allowed</param>
+            <param name="maxArgs">The maximum number of arguments allowed</param>
+        </member>
+        <member name="F:Mapsui.Providers.Wfs.Xml.XPathQueryManager.ParamCompareWithTargetNs.FunctionName">
+            <summary>
+            The name to use when embedding the function in an XPath expression.
+            </summary>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Xml.XPathQueryManager.ParamCompareWithTargetNs.Invoke(System.Xml.Xsl.XsltContext,System.Object[],System.Xml.XPath.XPathNavigator)">
+            <summary>
+            This method performs a string comparison.
+            </summary>
+            <param name="xsltContext">The Xslt context</param>
+            <param name="args">The arguments of the function</param>
+            <param name="docContext">The document context</param>
+            <returns>A boolean value indicating whether the argument strings are identical</returns>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Xml.XPathQueryManager.ParamCompareWithTargetNs.ResolveNsPrefix(System.String,System.String,System.Xml.XPath.XPathNavigator)">
+            <summary>
+            This method resolves the prefix of an argument.
+            If a prefix is found, the corresponding namespace URI (if existing) is looked up 
+            and substituted. Otherwise the target namespace is placed first.
+            </summary>
+            <param name="args">An argument of the function to be resolved</param>
+            <param name="targetNs"></param>
+            <param name="docContext"></param>
+        </member>
+        <member name="T:Mapsui.Providers.Wfs.Xml.XPathQueryManager.ParamFunctionVar">
+            <summary>
+            This class represents a variable in an XPath expression.
+            </summary>
+            <remarks>
+            Initializes a new instance of the <see cref="T:Mapsui.Providers.Wfs.Xml.XPathQueryManager.ParamFunctionVar"/> class.
+            </remarks>
+            <param name="param">The parameter</param>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Xml.XPathQueryManager.ParamFunctionVar.#ctor(System.Object)">
+            <summary>
+            This class represents a variable in an XPath expression.
+            </summary>
+            <remarks>
+            Initializes a new instance of the <see cref="T:Mapsui.Providers.Wfs.Xml.XPathQueryManager.ParamFunctionVar"/> class.
+            </remarks>
+            <param name="param">The parameter</param>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Xml.XPathQueryManager.ParamFunctionVar.Evaluate(System.Xml.Xsl.XsltContext)">
+            <summary>
+            Method implementing IXsltContextVariable
+            </summary>
+        </member>
+        <member name="P:Mapsui.Providers.Wfs.Xml.XPathQueryManager.ParamFunctionVar.IsLocal">
+            <summary>
+            Method implementing IXsltContextVariable
+            </summary>
+        </member>
+        <member name="P:Mapsui.Providers.Wfs.Xml.XPathQueryManager.ParamFunctionVar.IsParam">
+            <summary>
+            Method implementing IXsltContextVariable
+            </summary>
+        </member>
+        <member name="P:Mapsui.Providers.Wfs.Xml.XPathQueryManager.ParamFunctionVar.VariableType">
+            <summary>
+            Method implementing IXsltContextVariable
+            </summary>
+        </member>
+        <member name="T:Mapsui.Providers.Wfs.Xml.XPathQueryManagerCompiledExpressionsDecorator">
+            <summary>
+            This class is a decorator for classes implementing <see cref="T:Mapsui.Providers.Wfs.Xml.IXPathQueryManager"/>.
+            It stores compiled XPath expressions for re-use.
+            </summary>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Xml.XPathQueryManagerCompiledExpressionsDecorator.#ctor(Mapsui.Providers.Wfs.Xml.IXPathQueryManager)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Mapsui.Providers.Wfs.Xml.XPathQueryManagerCompiledExpressionsDecorator"/> class.
+            </summary>
+            <param name="xPathQueryManager">An instance implementing <see cref="T:Mapsui.Providers.Wfs.Xml.IXPathQueryManager"/> to operate on</param>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Xml.XPathQueryManagerCompiledExpressionsDecorator.Compile(System.String)">
+            <summary>
+            This method compiles an XPath string, if not already saved.  
+            Otherwise it returns the available XPath compilation. 
+            </summary>
+            <param name="xPath">The XPath string</param>
+            <returns>A compiled XPath expression</returns>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Xml.XPathQueryManagerCompiledExpressionsDecorator.Clone">
+            <summary>
+            This method returns a clone of the current instance.
+            The cloned instance operates on the same (read-only) XPathDocument instance.
+            </summary>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Xml.XPathQueryManagerCompiledExpressionsDecorator.GetXPathQueryManagerInContext(System.Xml.XPath.XPathExpression,System.Collections.DictionaryEntry[])">
+            <summary>
+            This method returns an instance of <see cref="T:Mapsui.Providers.Wfs.Xml.XPathQueryManagerCompiledExpressionsDecorator"/> 
+            in the context of the first node the XPath expression addresses.
+            </summary>
+            <param name="xPath">The compiled XPath expression</param>
+            <param name="queryParameters">Parameters for the compiled XPath expression</param>
+        </member>
+        <member name="T:Mapsui.Providers.Wfs.Xml.XPathQueryManagerDecoratorBase">
+            <summary>
+            This class should be the base class of all decorators for classes
+            implementing <see cref="T:Mapsui.Providers.Wfs.Xml.IXPathQueryManager"/>.
+            </summary>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Xml.XPathQueryManagerDecoratorBase.#ctor(Mapsui.Providers.Wfs.Xml.IXPathQueryManager)">
+            <summary>
+            Protected constructor for the abstract class.
+            </summary>
+            <param name="xPathQueryManager">An instance implementing <see cref="T:Mapsui.Providers.Wfs.Xml.IXPathQueryManager"/> to operate on</param>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Xml.XPathQueryManagerDecoratorBase.AddNamespace(System.String,System.String)">
+            <summary>
+            This method invokes the corresponding method of the inherent <see cref="T:Mapsui.Providers.Wfs.Xml.IXPathQueryManager"/> instance.
+            </summary>
+            <param name="prefix">A namespace prefix</param>
+            <param name="ns">A namespace URI</param>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Xml.XPathQueryManagerDecoratorBase.Compile(System.String)">
+            <summary>
+            This method invokes the corresponding method of the inherent <see cref="T:Mapsui.Providers.Wfs.Xml.IXPathQueryManager"/> instance.
+            </summary>
+            <param name="xPath">An XPath string</param>
+            <returns>A compiled XPath expression</returns>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Xml.XPathQueryManagerDecoratorBase.Clone">
+            <summary>
+            This method must be implemented specifically in each decorator.
+            </summary>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Xml.XPathQueryManagerDecoratorBase.GetIterator(System.Xml.XPath.XPathExpression)">
+            <summary>
+            This method invokes the corresponding method of the inherent <see cref="T:Mapsui.Providers.Wfs.Xml.IXPathQueryManager"/> instance.
+            </summary>
+            <param name="xPath">A compiled XPath expression</param>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Xml.XPathQueryManagerDecoratorBase.GetIterator(System.Xml.XPath.XPathExpression,System.Collections.DictionaryEntry[])">
+            <summary>
+            This method invokes the corresponding method of the inherent <see cref="T:Mapsui.Providers.Wfs.Xml.IXPathQueryManager"/> instance.
+            </summary>
+            <param name="xPath">A compiled XPath expression</param>
+            <param name="queryParameters">Parameters for the compiled XPath expression</param>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Xml.XPathQueryManagerDecoratorBase.GetValueFromNode(System.Xml.XPath.XPathExpression,System.Collections.DictionaryEntry[])">
+            <summary>
+            This method invokes the corresponding method of the inherent <see cref="T:Mapsui.Providers.Wfs.Xml.IXPathQueryManager"/> instance.
+            </summary>
+            <param name="xPath">A compiled XPath expression</param>
+            <param name="queryParameters">Parameters for the compiled XPath expression</param>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Xml.XPathQueryManagerDecoratorBase.GetXPathQueryManagerInContext(System.Xml.XPath.XPathExpression,System.Collections.DictionaryEntry[])">
+            <summary>
+            This method must be implemented specifically in each decorator.
+            </summary>
+            <param name="xPath">A compiled XPath expression</param>
+            <param name="queryParameters">Parameters for the compiled XPath expression</param>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Xml.XPathQueryManagerDecoratorBase.ResetNamespaces">
+            <summary>
+            This method invokes the corresponding method of the inherent <see cref="T:Mapsui.Providers.Wfs.Xml.IXPathQueryManager"/> instance.
+            </summary>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Xml.XPathQueryManagerDecoratorBase.SetDocumentToParse(System.IO.Stream)">
+            <summary>
+            This method invokes the corresponding method of the inherent <see cref="T:Mapsui.Providers.Wfs.Xml.IXPathQueryManager"/> instance.
+            </summary>
+            <param name="documentStream">A Stream with XML data</param>
+        </member>
+        <member name="M:Mapsui.Providers.Wfs.Xml.XPathQueryManagerDecoratorBase.SetDocumentToParseAsync(Mapsui.Providers.Wfs.Utilities.HttpClientUtil)">
+            <summary>
+            This method invokes the corresponding method of the inherent <see cref="T:Mapsui.Providers.Wfs.Xml.IXPathQueryManager"/> instance.
+            </summary>
+            <param name="httpClientUtil">A configured <see cref="T:Mapsui.Providers.Wfs.Utilities.HttpClientUtil"/> instance for performing web requests</param>
+            <returns>Task</returns>
+        </member>
+    </members>
+</doc>

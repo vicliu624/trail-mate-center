@@ -1,0 +1,2315 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>RJCP.IO.Buffer</name>
+    </assembly>
+    <members>
+        <member name="T:RJCP.IO.AsyncResult">
+             <summary>
+             Class for implementing an AsyncResult method.
+             </summary>
+             <remarks>
+             The code here is almost identical to that provided by the MSDN blog at:
+             http://blogs.msdn.com/b/nikos/archive/2011/03/14/how-to-implement-iasyncresult-in-another-way.aspx
+             <para>
+             While the code on the blog is sparse, this class can make it considerably easier for you to implement your
+             (a)synchronous classes.
+             </para>
+             <para>
+             You would create your own class, derived from this class, which at a minimum implements the
+             <see cref="M:RJCP.IO.AsyncResult.Process"/> method. The <see cref="M:RJCP.IO.AsyncResult.Process"/> method is what starts the asynchronous method, by
+             talking to hardware, starting another asynchronous method, or creating a thread to start the asynchronous
+             method.
+             </para>
+             <para>
+             Implement your class that you can set all the properties before calling <see cref="M:RJCP.IO.AsyncResult.Process"/>, as that method
+             itself doesn't allow for any parameters.
+             </para>
+             <para>
+             In your main class that provides the <c>BeginXXX</c> and <c>EndXXX</c> methods, you would then instantiate and
+             use your AsyncResult class.
+             </para>
+             <para>For <c>BeginXXX</c> your code would look like:</para>
+             <code>
+             <![CDATA[
+             public IAsyncResult BeginXXX(object par1, object par2, AsyncCallback asyncCallback, object state)
+             {
+                 XXXAsyncResult result = new XXXAsyncResult(par1, par2, asyncCallback, state, this, "XXX");
+                 result.Process();
+                 return result;
+             }
+             ]]>
+             </code>
+             <para>
+             That creates a new IAsyncResult object, based on your own class <c>XXXAsyncResult</c> which derives from
+             <see cref="T:RJCP.IO.AsyncResult"/>. It begins processing and you return the <see cref="T:System.IAsyncResult"/> object which may
+             or may not be finished. The last four parameters in your AsyncResult's constructor are used to instantiate the
+             AsyncResult base constructor.
+             </para>
+             <para>The <c>EndXXX</c> method then looks like</para>
+             <code>
+             <![CDATA[
+             public void EndXXX(IAsyncResult result)
+             {
+                 AsyncResult.End(result, this, "XXX");
+             }
+             ]]>
+             </code>
+             <para>
+             The <see cref="M:RJCP.IO.AsyncResult.End(System.IAsyncResult,System.Object,System.String)"/> method checks for you that the user
+             called your <c>EndXXX</c> method in the correct context, else it raises an exception.
+             </para>
+             <para>
+             The implementation of your own AsyncResult class is derived from the <see cref="T:RJCP.IO.AsyncResult"/> class.
+             </para>
+             <code>
+             <![CDATA[
+             internal class XXXAsyncResult : AsyncResult
+             {
+                 private object m_Par1;
+                 private object m_Par2;
+            
+                 public XXXAsyncResult(object par1, object par2,
+                     AsyncCallback asyncCallback, object state,
+                     object owner, string operationId)
+                     : base(asyncCallback, state, owner, operationId)
+                 {
+                     m_Par1 = par1; m_Par2 = par2;
+                 }
+            
+                 public override void Process()
+                 {
+                     Exception exception = null;
+                     bool synchronous = false;
+                     try {
+                         // Do something with m_Par1 and m_Par2. This may be
+                         // creating a new thread
+                         ...
+            
+                         // Indicates that the work is finished without running
+                         // in the background.
+                         synchronous = true;
+                     } catch (System.Exception e) {
+                         exception = e;
+                     }
+                     Complete(exception, synchronous);
+                 }
+             }
+             ]]>
+             </code>
+             </remarks>
+        </member>
+        <member name="F:RJCP.IO.AsyncResult.m_Owner">
+            <summary>
+            The object which started the operation.
+            </summary>
+        </member>
+        <member name="F:RJCP.IO.AsyncResult.m_OperationId">
+            <summary>
+            Used to verify BeginXXX and EndXXX calls match.
+            </summary>
+        </member>
+        <member name="M:RJCP.IO.AsyncResult.#ctor(System.AsyncCallback,System.Object,System.Object,System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:RJCP.IO.AsyncResult"/> class.
+            </summary>
+            <param name="asyncCallback">
+            The method to be called when the asynchronous write operation is completed. This is a part of your
+            <c>BeginXXX</c> method.
+            </param>
+            <param name="state">
+            A user-provided object that distinguishes this particular asynchronous write request from other requests.
+            This is a part of your <c>BeginXXX</c> method.
+            </param>
+            <param name="owner">
+            The owner of the AsyncResult object, normally <c>this</c>. This is used to guard against the user providing
+            the <see cref="T:System.IAsyncResult"/> object to the <c>EndXXX</c> method of a different object.
+            </param>
+            <param name="operationId">
+            The operation identifier to distinguish this AsyncResult with others from this class. This is used to guard
+            against the user providing the IAsyncResult to a non-matching <c>EndYYY</c> method (e.g. BeginRead to
+            EndWrite).
+            </param>
+            <remarks>
+            You should have implemented your own <c>BeginXXX</c> method of the form:
+            <para>
+            <code>public BeginXXX(param1, param2, param3, ..., AsyncCallback asyncCallback, Object state) { ... }</code>
+            </para>
+            <para>passing the parameters asyncCallback and state to this constructor.</para>
+            <para>
+            The <paramref name="owner"/> is used to detect giving the <see cref="T:System.IAsyncResult"/> object back to the
+            wrong object instance.
+            </para>
+            </remarks>
+        </member>
+        <member name="M:RJCP.IO.AsyncResult.Process">
+            <summary>
+            This is the method called by your class to start the (a)synchronous operation.
+            </summary>
+            <remarks>
+            Starts the (a)synchronous operation. When the operation is finished, it should call the
+            <see cref="M:RJCP.IO.AsyncResult.Complete(System.Exception,System.Boolean)"/> method. That method is handled by this class and calls the user
+            callback and sets the semaphore when the operation is finished.
+            </remarks>
+        </member>
+        <member name="M:RJCP.IO.AsyncResult.Complete(System.Exception)">
+            <summary>
+            Called by the derived object to indicate the asynchronous operation is complete.
+            </summary>
+            <param name="exception">
+            The exception that occurred during the operation. If no exception occurred, this value should be
+            <see langword="null"/>.
+            </param>
+            <returns>
+            <see langword="true"/> if the operation completed, <see langword="false"/> otherwise. The value of
+            <see langword="false"/> indicates that the operation had previously completed and no operation was done.
+            </returns>
+            <remarks>
+            This method should be called when the asynchronous operation is finished. If an exception is provided, this
+            exception will be raised when <see cref="M:RJCP.IO.AsyncResult.End(System.IAsyncResult,System.Object,System.String)"/> is called.
+            </remarks>
+        </member>
+        <member name="M:RJCP.IO.AsyncResult.Complete(System.Exception,System.Boolean)">
+            <summary>
+            Called by the derived object to indicate the asynchronous operation is complete.
+            </summary>
+            <param name="exception">
+            The exception that occurred during the operation. If no exception occurred, this value should be
+            <see langword="null"/>.
+            </param>
+            <param name="completedSynchronously">
+            if set to <see langword="true"/> then specifies the operation completed synchronously. Else the operation
+            completed asynchronously (on a different thread).
+            </param>
+            <returns>
+            <see langword="true"/> if the operation completed, <see langword="false"/> otherwise. The value of
+            <see langword="false"/> indicates that the operation had previously completed and no operation was done.
+            </returns>
+        </member>
+        <member name="P:RJCP.IO.AsyncResult.HasExceptionOccurred">
+            <summary>
+            Indicates if this object has been completed with an exception.
+            </summary>
+            <remarks>
+            This allows you to optimize your code (not for external public code) to check if an exception has occurred,
+            especially useful if this needs to be checked before calling <see cref="M:RJCP.IO.AsyncResult.End(System.IAsyncResult,System.Object,System.String)"/> as part of your <c>EndXXX</c>
+            method.
+            </remarks>
+        </member>
+        <member name="M:RJCP.IO.AsyncResult.End(System.IAsyncResult,System.Object,System.String)">
+            <summary>
+            Called by your own <c>EndXXX</c> method, to clean up resources and wait for a result if not already
+            finished.
+            </summary>
+            <param name="result">The IAsyncResult object, your own object derived from <see cref="T:RJCP.IO.AsyncResult"/>.</param>
+            <param name="owner">
+            The object calling this method. This should be the same owner as when the object was instantiated.
+            </param>
+            <param name="operationId">
+            The operation identifier. This should be the same string identifier as when the object was instantiated.
+            </param>
+            <exception cref="T:System.ArgumentException">
+            Result passed represents an operation not supported by this framework. Occurs as an
+            <see cref="T:System.IAsyncResult"/> object not derived from this class was provided.
+            </exception>
+            <exception cref="T:System.InvalidOperationException">
+            End was called on a different object than begin.
+            </exception>
+            <exception cref="T:System.InvalidOperationException">
+            End was called multiple times for this operation.
+            </exception>
+            <exception cref="T:System.ArgumentException">End operation type was different than Begin.</exception>
+            <remarks>
+            Note that by calling this method, the semaphore is disposed, so that it can't be used again.
+            </remarks>
+        </member>
+        <member name="P:RJCP.IO.AsyncResult.AsyncState">
+            <summary>
+            Gets a user-defined object that qualifies or contains information about an asynchronous operation.
+            </summary>
+            <value>The state of the asynchronous.</value>
+            <returns>
+            A user-defined object that qualifies or contains information about an asynchronous operation.
+            </returns>
+        </member>
+        <member name="P:RJCP.IO.AsyncResult.CompletedSynchronously">
+            <summary>
+            Gets a value that indicates whether the asynchronous operation completed synchronously.
+            </summary>
+            <value><see langword="true"/> if completed synchronously; otherwise, <see langword="false"/>.</value>
+            <returns>
+            <see langword="true"/> if the asynchronous operation completed synchronously; otherwise,
+            <see langword="false"/>.
+            </returns>
+        </member>
+        <member name="P:RJCP.IO.AsyncResult.AsyncWaitHandle">
+            <summary>
+            Gets a <see cref="T:System.Threading.WaitHandle"/> that is used to wait for an asynchronous operation to complete.
+            </summary>
+            <value>The asynchronous wait handle.</value>
+            <returns>A <see cref="T:System.Threading.WaitHandle"/> that is used to wait for an asynchronous operation to complete.</returns>
+            <remarks>
+            You should not use this property to get a <see cref="T:System.Threading.WaitHandle"/> after the <see cref="M:RJCP.IO.AsyncResult.End(System.IAsyncResult,System.Object,System.String)"/> method is
+            called. It will result in lost resources, as that wait handle won't be disposed. This appears conform to the
+            notes in MSDN for <see cref="P:System.IAsyncResult.AsyncWaitHandle"/> which states
+            <para><b>Notes to Implementers</b></para>
+            <para>
+            Once created, <see cref="P:System.IAsyncResult.AsyncWaitHandle"/> should be kept alive until the user calls the
+            method that concludes the asynchronous operation. At that time the object behind
+            <see cref="P:System.IAsyncResult.AsyncWaitHandle"/> can be discarded.
+            </para>
+            <para>
+            So it's expected that once the <see cref="M:RJCP.IO.AsyncResult.End(System.IAsyncResult,System.Object,System.String)"/> method is called, the
+            <see cref="P:System.IAsyncResult.AsyncWaitHandle"/> won't be used.
+            </para>
+            </remarks>
+        </member>
+        <member name="P:RJCP.IO.AsyncResult.IsCompleted">
+            <summary>
+            Gets a value that indicates whether the asynchronous operation has completed.
+            </summary>
+            <value><see langword="true"/> if this instance is completed; otherwise, <see langword="false"/>.</value>
+            <returns><see langword="true"/> if the operation is complete; otherwise, <see langword="false"/>.</returns>
+        </member>
+        <member name="M:RJCP.IO.AsyncResult.Completing(System.Exception,System.Boolean)">
+            <summary>
+            Called by the method <see cref="M:RJCP.IO.AsyncResult.Complete(System.Exception,System.Boolean)"/> before the user callback is made.
+            </summary>
+            <param name="exception">
+            The exception if one occurred. Set to <see langword="null"/> if no exception occurred.
+            </param>
+            <param name="completedSynchronously">
+            Indicates if the callback completed synchronously or not. If set to <see langword="true"/> the callback
+            completed synchronously.
+            </param>
+        </member>
+        <member name="M:RJCP.IO.AsyncResult.MakeCallback(System.AsyncCallback,RJCP.IO.AsyncResult)">
+            <summary>
+            Executes the user callback if defined, during the <see cref="M:RJCP.IO.AsyncResult.Complete(System.Exception,System.Boolean)"/> method call
+            </summary>
+            <param name="callback">The user callback.</param>
+            <param name="result">The <see cref="T:System.IAsyncResult"/> object, which is <c>this</c> object.</param>
+        </member>
+        <member name="M:RJCP.IO.AsyncResult.Completed(System.Exception,System.Boolean)">
+            <summary>
+            Called by the method <see cref="M:RJCP.IO.AsyncResult.Complete(System.Exception,System.Boolean)"/> after the user callback is made.
+            </summary>
+            <param name="exception">
+            The exception if one occurred. Set to <see langword="null"/> if no exception occurred. The exception is from
+            the asynchronous method call, not the callback.
+            </param>
+            <param name="completedSynchronously">
+            Indicates if the callback completed synchronously or not. If set to <see langword="true"/> the callback
+            completed synchronously.
+            </param>
+        </member>
+        <member name="T:RJCP.IO.AsyncResult`1">
+            <summary>
+            Class AsyncResult based on <see cref="T:RJCP.IO.AsyncResult"/> to also provide a result of the asynchronous operation.
+            </summary>
+            <typeparam name="TResult">The type of the result.</typeparam>
+        </member>
+        <member name="M:RJCP.IO.AsyncResult`1.#ctor(System.AsyncCallback,System.Object,System.Object,System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:RJCP.IO.AsyncResult`1"/> class.
+            </summary>
+            <param name="asyncCallback">
+            The method to be called when the asynchronous write operation is completed. This is a part of your
+            <c>BeginXXX</c> method.
+            </param>
+            <param name="state">
+            A user-provided object that distinguishes this particular asynchronous write request from other requests.
+            This is a part of your <c>BeginXXX</c> method.
+            </param>
+            <param name="owner">
+            The owner of the <see cref="T:RJCP.IO.AsyncResult`1"/> object, normally <c>this</c>. This is used to guard
+            against the user providing the <see cref="T:System.IAsyncResult"/> object to the <c>EndXXX</c> method of a different
+            object.
+            </param>
+            <param name="operationId">
+            The operation identifier to distinguish this AsyncResult with others from this class. This is used to guard
+            against the user providing the IAsyncResult to a non-matching <c>EndYYY</c> method (e.g. BeginRead -&gt;
+            EndWrite)
+            </param>
+            <remarks>
+            You should have implemented your own <c>BeginXXX</c> method of the form:
+            <para>
+            <c>public BeginXXX(param1, param2, param3, ..., AsyncCallback asyncCallback, Object state) { ... }</c>
+            </para>
+            <para>passing the parameters asyncCallback and state to this constructor.</para>
+            <para>
+            The <paramref name="owner"/> is used to detect giving the IAsyncResult object back to the wrong object
+            instance.
+            </para>
+            </remarks>
+        </member>
+        <member name="M:RJCP.IO.AsyncResult`1.SetResult(`0)">
+            <summary>
+            Sets the result on completion of the background task.
+            </summary>
+            <param name="result">The result.</param>
+            <remarks>
+            Your derived class should call this method, setting the result of the operation before it calls the
+            AsyncResult.Complete method.
+            </remarks>
+        </member>
+        <member name="M:RJCP.IO.AsyncResult`1.End(System.IAsyncResult,System.Object,System.String)">
+            <summary>
+            Called by your own <c>EndXXX</c> method, to clean up resources and wait for a result if not already
+            finished.
+            </summary>
+            <param name="result">The IAsyncResult object, your own object derived from <see cref="T:RJCP.IO.AsyncResult"/>.</param>
+            <param name="owner">
+            The object calling this method. This should be the same owner as when the object was instantiated.
+            </param>
+            <param name="operationId">
+            The operation identifier. This should be the same string identifier as when the object was instantiated
+            </param>
+            <returns>The result of the operation, previously set by the method <seealso cref="M:RJCP.IO.AsyncResult`1.SetResult(`0)"/>.</returns>
+            <exception cref="T:System.ArgumentException">
+            Result passed represents an operation not supported by this framework. Occurs as an IAsyncResult object not
+            derived from this class was provided.
+            </exception>
+            <exception cref="T:System.InvalidOperationException">
+            End was called on a different object than begin.
+            </exception>
+            <exception cref="T:System.InvalidOperationException">
+            End was called multiple times for this operation.
+            </exception>
+            <exception cref="T:System.ArgumentException">End operation type was different than Begin.</exception>
+        </member>
+        <member name="T:RJCP.IO.Buffer.CircularBuffer`1">
+            <summary>
+            A simple data structure to manage an array as a circular buffer.
+            </summary>
+            <remarks>
+            This class provides simple methods for abstracting a circular buffer. A circular buffer allows for faster access
+            of data by avoiding potential copy operations for data that is at the beginning.
+            <para>
+            Stream data structures can benefit from this data structure by allocating a single block on the heap of an
+            arbitrary size. If the stream is long-lived the benefits are larger. In the .NET framework (4.0 and earlier),
+            all allocations of data structures that are 80kb and larger are automatically allocated on the heap. The heap is
+            not garbage collected like smaller objects. Instead, new elements are added to the heap in an incremental
+            fashion. It is theoretically possible to exhaust all memory in an application by allocating and deallocating
+            regularly on a heap if such a new heap element requires space and there is not a single block large enough. By
+            using the <see cref="T:RJCP.IO.Buffer.CircularBuffer`1"/> with the type <c>T</c> as <c>byte</c>, you can preallocate a buffer
+            for a stream of any reasonable size (as a simple example 5MB). That block is allocated once and remains for the
+            lifetime of the stream. No time will be allocated for compacting or garbage collection.
+            </para>
+            </remarks>
+            <typeparam name="T">Type to use for the array.</typeparam>
+        </member>
+        <member name="M:RJCP.IO.Buffer.CircularBuffer`1.#ctor(System.Int32)">
+            <summary>
+            Allocate an Array of type T[] of particular capacity.
+            </summary>
+            <param name="capacity">Size of array to allocate.</param>
+            <exception cref="T:System.ArgumentOutOfRangeException"><paramref name="capacity"/> must be positive.</exception>
+        </member>
+        <member name="M:RJCP.IO.Buffer.CircularBuffer`1.#ctor(`0[])">
+            <summary>
+            Circular buffer based on an already allocated array.
+            </summary>
+            <param name="array">Array (zero indexed) to allocate.</param>
+            <exception cref="T:System.ArgumentNullException">
+            <paramref name="array"/> may not be <see langword="null"/>.
+            </exception>
+            <exception cref="T:System.ArgumentException"><paramref name="array"/> must have at least one element;</exception>
+            <remarks>
+            The array is used as the storage for the circular buffer. No copy of the array is made. The initial index in
+            the circular buffer is index 0 in the array. The array is assumed to be completely used (i.e. it is
+            initialized with zero bytes Free).
+            </remarks>
+        </member>
+        <member name="M:RJCP.IO.Buffer.CircularBuffer`1.#ctor(`0[],System.Int32)">
+            <summary>
+            Circular buffer based on an already allocated array.
+            </summary>
+            <param name="array">Array (zero indexed) to allocate.</param>
+            <param name="count">Length of data in array, beginning from offset 0.</param>
+            <exception cref="T:System.ArgumentOutOfRangeException">
+            Initial <paramref name="count"/> must be within range of <paramref name="array"/>
+            </exception>
+            <exception cref="T:System.ArgumentException"><paramref name="array"/> must have at least one element;</exception>
+            <exception cref="T:System.ArgumentNullException">
+            <paramref name="array"/> may not be <see langword="null"/>.
+            </exception>
+            <remarks>
+            The array is used as the storage for the circular buffer. No copy of the array is made, only a reference.
+            The initial index in the array is 0. The value <paramref name="count"/> sets the initial length of the
+            array. So an initial <paramref name="count"/> of zero would imply an empty circular buffer.
+            </remarks>
+        </member>
+        <member name="M:RJCP.IO.Buffer.CircularBuffer`1.#ctor(`0[],System.Int32,System.Int32)">
+            <summary>
+            Circular buffer based on an already allocated array.
+            </summary>
+            <param name="array">Array (zero indexed) to allocate.</param>
+            <param name="offset">Offset of first byte in the array.</param>
+            <param name="count">
+            Length of data in <paramref name="array"/>, wrapping to the start of the <paramref name="array"/>.
+            </param>
+            <exception cref="T:System.ArgumentException"><paramref name="array"/> must have at least one element;</exception>
+            <exception cref="T:System.ArgumentNullException">
+            <paramref name="array"/> may not be <see langword="null"/>.
+            </exception>
+            <exception cref="T:System.ArgumentOutOfRangeException">
+            <paramref name="count"/> must be within range of <paramref name="array"/>;
+            <para>- or -</para>
+            <paramref name="offset"/> exceeds the <paramref name="array"/> boundaries.
+            </exception>
+            <remarks>
+            The array is used as the storage for the circular buffer. No copy of the array is made, only a reference.
+            The <paramref name="offset"/> is defined to be the first entry in the circular buffer. This may be any value
+            from zero to the last index (<c>Array.Length - 1</c>). The value <paramref name="count"/> is the amount of
+            data in the array, and it may cause wrapping (so that by setting offset near the end, a value of count may
+            be set so that data can be considered at the end and beginning of the array given).
+            </remarks>
+        </member>
+        <member name="P:RJCP.IO.Buffer.CircularBuffer`1.Start">
+            <summary>
+            Get start index into array where data begins.
+            </summary>
+        </member>
+        <member name="P:RJCP.IO.Buffer.CircularBuffer`1.End">
+            <summary>
+            Get end index into array where data ends.
+            </summary>
+            <remarks>
+            This property is useful to know from what element in the underlying array that data can be written to.
+            </remarks>
+        </member>
+        <member name="P:RJCP.IO.Buffer.CircularBuffer`1.Length">
+            <summary>
+            Get total length of data in array.
+            </summary>
+            <remarks>
+            Returns the amount of allocated data in the circular buffer. The following rule applies:
+            <see cref="P:RJCP.IO.Buffer.CircularBuffer`1.Length"/> + <see cref="P:RJCP.IO.Buffer.CircularBuffer`1.Free"/> = <see cref="P:RJCP.IO.Buffer.CircularBuffer`1.Capacity"/>.
+            </remarks>
+        </member>
+        <member name="P:RJCP.IO.Buffer.CircularBuffer`1.Free">
+            <summary>
+            Get total free data in array.
+            </summary>
+            <remarks>
+            Returns the total amount of free elements in the circular buffer. The following rule applies:
+            <see cref="P:RJCP.IO.Buffer.CircularBuffer`1.Length"/> + <see cref="P:RJCP.IO.Buffer.CircularBuffer`1.Free"/> = <see cref="P:RJCP.IO.Buffer.CircularBuffer`1.Capacity"/>.
+            </remarks>
+        </member>
+        <member name="P:RJCP.IO.Buffer.CircularBuffer`1.Capacity">
+            <summary>
+            Get the total capacity of the array.
+            </summary>
+            <remarks>
+            Get the total number of elements allocated for the underlying array of the circular buffer. The following
+            rule applies: <see cref="P:RJCP.IO.Buffer.CircularBuffer`1.Length"/> + <see cref="P:RJCP.IO.Buffer.CircularBuffer`1.Free"/> = <see cref="P:RJCP.IO.Buffer.CircularBuffer`1.Capacity"/>.
+            </remarks>
+        </member>
+        <member name="M:RJCP.IO.Buffer.CircularBuffer`1.ToArrayIndex(System.Int32)">
+            <summary>
+            Convert an index from the start of the data to read to an array index.
+            </summary>
+            <param name="index">
+            Index in circular buffer, where an index of 0 is equivalent to the <see cref="P:RJCP.IO.Buffer.CircularBuffer`1.Start"/> property.
+            </param>
+            <returns>Index in array that can be used in array based operations.</returns>
+        </member>
+        <member name="P:RJCP.IO.Buffer.CircularBuffer`1.WriteLength">
+            <summary>
+            Get length of continuous available space from the current position to the end of the array or until the
+            buffer is full.
+            </summary>
+            <remarks>
+            This function is useful if you need to pass the array to another function that will then fill the contents
+            of the buffer. You would pass <see cref="P:RJCP.IO.Buffer.CircularBuffer`1.End"/> as the offset for where writing the data should start, and
+            <b>WriteLength</b> as the length of buffer space available until the end of the array buffer. After the read
+            operation that writes in to your buffer, the array is completely full, or until the end of the array.
+            <para>
+            Such a property is necessary in case that the free space wraps around the buffer. Where below <c>X</c> is
+            your stream you wish to read from, <c>b</c> is the circular buffer instantiated as the type
+            <c>CircularBuffer{T}</c>.
+            <code language="csharp">
+            <![CDATA[
+            c = X.Read(b.Array, b.End, b.WriteLength);
+            b.Produce(c);
+            ]]>
+            </code>
+            If the property <b>WriteLength</b> is not zero, then there is space in the buffer to read data.
+            </para>
+            </remarks>
+        </member>
+        <member name="P:RJCP.IO.Buffer.CircularBuffer`1.ReadLength">
+            <summary>
+            Get the length of the continuous amount of data that can be read in a single copy operation from the start
+            of the buffer data.
+            </summary>
+            <remarks>
+            This function is useful if you need to pass the array to another function that will use the contents of the
+            array. You would pass <see cref="P:RJCP.IO.Buffer.CircularBuffer`1.Start"/> as the offset for reading data and <see cref="P:RJCP.IO.Buffer.CircularBuffer`1.ReadLength"/> as the
+            count. Then based on the amount of data operated on, you would free space with
+            <c><see cref="M:RJCP.IO.Buffer.CircularBuffer`1.Consume(System.Int32)"/>(ReadLength).</c>
+            </remarks>
+        </member>
+        <member name="M:RJCP.IO.Buffer.CircularBuffer`1.GetReadBlock(System.Int32)">
+            <summary>
+            Given an offset, calculate the length of data that can be read until the end of the block.
+            </summary>
+            <param name="offset">The offset into the circular buffer to test for the read length.</param>
+            <returns>Length of the block that can be read from <paramref name="offset"/>.</returns>
+            <exception cref="T:System.ArgumentOutOfRangeException">The <paramref name="offset"/> may not be negative.</exception>
+            <remarks>
+            Similar to the property <c>ReadLength</c>, this function takes an argument <c>offset</c> which is used to
+            determine the length of data that can be read from that offset, until either the end of the block, or the
+            end of the buffer.
+            <para>
+            This function is useful if you want to read a block of data, not starting from the offset 0 (and you don't
+            want to consume the data before hand to reach an offset of zero).
+            </para>
+            <para>
+            The example below, will calculate a checksum from the third byte in the block for the length of data. If the
+            block to read from offset 3 can be done in one operation, it will do so. Else it must be done in two
+            operations, first from offset 3 to the end, then from offset 0 for the remaining data.
+            </para>
+            </remarks>
+            <example>
+            <code language="csharp">
+            <![CDATA[
+            short crc;
+            if (buffer.GetReadBlock(3) >= length - 3) {
+              crc = crc16.Compute(buffer.Array, buffer.ToArrayIndex(3), length - 3);
+            } else {
+              crc = crc16.Compute(buffer.Array, buffer.ToArrayIndex(3), buffer.ReadLength - 3);
+              crc = crc16.Compute(crc, buffer.Array, 0, length - buffer.ReadLength);
+            }
+            ]]>
+            </code>
+            </example>
+        </member>
+        <member name="M:RJCP.IO.Buffer.CircularBuffer`1.Consume(System.Int32)">
+            <summary>
+            Consume array elements (freeing space from the beginning) updating pointers in the circular buffer.
+            </summary>
+            <param name="length">Amount of data to consume.</param>
+            <exception cref="T:System.ArgumentOutOfRangeException">
+            <paramref name="length"/> is negative, or cannot consume more data than exists.
+            </exception>
+            <remarks>
+            This method advances the internal pointers for <i>Start</i> based on the <i>length</i> that should be
+            consumed. The pointer <i>End</i> does not change. It is important that this method does not <i>Reset()</i>
+            the buffer in case that all data is consumed. A common scenario with Streams is to write into the buffer
+            using asynchronous I/O. If a <i>Reset()</i> occurs during an asynchronous I/O <i>ReadFile()</i>, the
+            <i>End</i> pointer is also changed, so that when a <i>Produce()</i> occurs on completion of the
+            <i>ReadFile()</i> operation, the pointers are updated, but not using the pointers before the <i>Reset()</i>.
+            No crash would occur (so long as the underlying array is pinned), but data corruption would occur if this
+            method were not used in this particular scenario.
+            </remarks>
+        </member>
+        <member name="M:RJCP.IO.Buffer.CircularBuffer`1.Produce(System.Int32)">
+            <summary>
+            Produce bytes (allocating space at the end) updating pointers in the circular buffer.
+            </summary>
+            <param name="length">
+            The number of bytes to indicate that have been added from the index <see cref="P:RJCP.IO.Buffer.CircularBuffer`1.End"/> to the end of the
+            array and possibly again from the start of the array if overlapped.
+            </param>
+            <exception cref="T:System.ArgumentOutOfRangeException">
+            Cannot produce negative <paramref name="length"/>, or producing <paramref name="length"/> exceeds
+            <see cref="P:RJCP.IO.Buffer.CircularBuffer`1.Free"/>.
+            </exception>
+        </member>
+        <member name="M:RJCP.IO.Buffer.CircularBuffer`1.Revert(System.Int32)">
+            <summary>
+            Revert elements produced to the end of the circular buffer.
+            </summary>
+            <param name="length">
+            The number of bytes to remove from the end of the array, moving the <see cref="P:RJCP.IO.Buffer.CircularBuffer`1.End"/> property to the left,
+            leaving the <see cref="P:RJCP.IO.Buffer.CircularBuffer`1.Start"/> property untouched.
+            </param>
+            <exception cref="T:System.ArgumentOutOfRangeException">
+            The <paramref name="length"/> must be positive and not exceed the number of elements in the circular buffer.
+            </exception>
+            <remarks>
+            This method can be used to remove data that has been added to the end of the circular buffer. When using
+            this data structure for streams, you would not use this property to ensure consistency of your stream (your
+            <c>Read</c> operation would consume from your circular buffer and <c>Write</c> would produce data to your
+            circular buffer.
+            </remarks>
+        </member>
+        <member name="M:RJCP.IO.Buffer.CircularBuffer`1.Reset">
+            <summary>
+            Reset the pointers in the circular buffer, effectively noting the circular buffer as empty.
+            </summary>
+        </member>
+        <member name="P:RJCP.IO.Buffer.CircularBuffer`1.Array">
+            <summary>
+            Get the reference to the array that's allocated.
+            </summary>
+            <remarks>
+            This property allows you to access the content of the data in the circular buffer in an efficient manner.
+            You can then use this property along with <see cref="P:RJCP.IO.Buffer.CircularBuffer`1.Start"/>, <see cref="P:RJCP.IO.Buffer.CircularBuffer`1.ReadLength"/>, <see cref="P:RJCP.IO.Buffer.CircularBuffer`1.End"/>
+            and <see cref="P:RJCP.IO.Buffer.CircularBuffer`1.WriteLength"/> for knowing where in the buffer to read and write.
+            </remarks>
+        </member>
+        <member name="P:RJCP.IO.Buffer.CircularBuffer`1.Item(System.Int32)">
+            <summary>
+            Access an element in the array using the Start as index 0.
+            </summary>
+            <param name="index">Index into the array referenced from <see cref="P:RJCP.IO.Buffer.CircularBuffer`1.Start"/>.</param>
+            <returns>Contents of the array.</returns>
+        </member>
+        <member name="M:RJCP.IO.Buffer.CircularBuffer`1.Append(`0[])">
+            <summary>
+            Copy data from array to the end of this circular buffer and update the length.
+            </summary>
+            <param name="array">Array to copy from.</param>
+            <returns>Number of bytes copied.</returns>
+            <exception cref="T:System.ArgumentNullException">
+            <paramref name="array"/> may not be <see langword="null"/>.
+            </exception>
+            <remarks>
+            Data is copied to the end of the Circular Buffer. The amount of data that could be copied is dependent on
+            the amount of free space. The result is the number of elements from the <c>buffer</c> array that is copied
+            into the Circular Buffer. Pointers in the circular buffer are updated appropriately.
+            </remarks>
+        </member>
+        <member name="M:RJCP.IO.Buffer.CircularBuffer`1.Append(`0[],System.Int32,System.Int32)">
+            <summary>
+            Copy data from array to the end of this circular buffer and update the length.
+            </summary>
+            <param name="array">Array to copy from.</param>
+            <param name="offset">Offset to copy data from.</param>
+            <param name="count">Length of data to copy.</param>
+            <returns>Number of bytes copied.</returns>
+            <exception cref="T:System.ArgumentNullException">
+            <paramref name="array"/> may not be <see langword="null"/>.
+            </exception>
+            <exception cref="T:System.ArgumentOutOfRangeException">
+            <paramref name="offset"/> or <paramref name="count"/> may not be negative.
+            </exception>
+            <exception cref="T:System.ArgumentException">
+            <paramref name="offset"/> and <paramref name="count"/> exceed <paramref name="array"/> boundaries.
+            </exception>
+            <remarks>
+            Data is copied to the end of the Circular Buffer. The amount of data that could be copied is dependent on
+            the amount of free space. The result is the number of elements from <paramref name="array"/> that is copied
+            into the Circular Buffer. Pointers in the circular buffer are updated appropriately.
+            </remarks>
+        </member>
+        <member name="M:RJCP.IO.Buffer.CircularBuffer`1.Append(RJCP.IO.Buffer.CircularBuffer{`0})">
+            <summary>
+            Copy data from the circular buffer to the end of this circular buffer.
+            </summary>
+            <param name="buffer">Buffer to append.</param>
+            <returns>Amount of data appended.</returns>
+            <exception cref="T:System.ArgumentNullException">
+            <paramref name="buffer"/> may not be <see langword="null"/>.
+            </exception>
+            <remarks>
+            Data is copied to the end of the Circular Buffer. The amount of data that could be copied is dependent on
+            the amount of free space. The result is the number of elements from the <c>buffer</c> array that is copied
+            into the Circular Buffer. Pointers in the circular buffer are updated appropriately.
+            </remarks>
+        </member>
+        <member name="M:RJCP.IO.Buffer.CircularBuffer`1.Append(RJCP.IO.Buffer.CircularBuffer{`0},System.Int32)">
+            <summary>
+            Copy data from the circular buffer to the end of this circular buffer.
+            </summary>
+            <param name="buffer">Buffer to append.</param>
+            <param name="count">Number of bytes to append.</param>
+            <returns>Amount of data appended.</returns>
+            <exception cref="T:System.ArgumentNullException">
+            <paramref name="buffer"/> may not be <see langword="null"/>.
+            </exception>
+            <exception cref="T:System.ArgumentException">
+            <paramref name="count"/> would exceed boundaries of <paramref name="buffer"/>.
+            </exception>
+            <exception cref="T:System.ArgumentOutOfRangeException"><paramref name="count"/> may not be negative.</exception>
+            <remarks>
+            Data is copied to the end of the Circular Buffer. The amount of data that could be copied is dependent on
+            the amount of free space. The result is the number of elements from the <c>buffer</c> array that is copied
+            into the Circular Buffer. Pointers in the circular buffer are updated appropriately.
+            </remarks>
+        </member>
+        <member name="M:RJCP.IO.Buffer.CircularBuffer`1.Append(RJCP.IO.Buffer.CircularBuffer{`0},System.Int32,System.Int32)">
+            <summary>
+            Copy data from the circular buffer to the end of this circular buffer.
+            </summary>
+            <param name="buffer">Buffer to append.</param>
+            <param name="count">Number of bytes to append.</param>
+            <param name="offset">Offset into the buffer to start appending.</param>
+            <returns>Amount of data appended.</returns>
+            <exception cref="T:System.ArgumentNullException">
+            <paramref name="buffer"/> may not be <see langword="null"/>.
+            </exception>
+            <exception cref="T:System.ArgumentOutOfRangeException">
+            <paramref name="offset"/> may not be negative;
+            <para>- or -</para>
+            <paramref name="count"/> may not be negative.
+            </exception>
+            <exception cref="T:System.ArgumentException">
+            <paramref name="offset"/> and <paramref name="count"/> would exceed boundaries of <paramref name="buffer"/>.
+            </exception>
+            <remarks>
+            Data is copied to the end of the Circular Buffer. The amount of data that could be copied is dependent on
+            the amount of free space. The result is the number of elements from the <c>buffer</c> array that is copied
+            into the Circular Buffer. Pointers in the circular buffer are updated appropriately.
+            </remarks>
+        </member>
+        <member name="M:RJCP.IO.Buffer.CircularBuffer`1.Append(`0)">
+            <summary>
+            Append a single element to the end of the Circular Buffer.
+            </summary>
+            <param name="element">The element to add at the end of the buffer.</param>
+            <returns>Amount of data appended. 1 if successful, 0 if no space available.</returns>
+        </member>
+        <member name="M:RJCP.IO.Buffer.CircularBuffer`1.Pop">
+            <summary>
+            Retrieve a single element from the Circular buffer and consume it.
+            </summary>
+            <returns>The value at index 0.</returns>
+            <exception cref="T:System.InvalidOperationException">Circular buffer is empty.</exception>
+        </member>
+        <member name="M:RJCP.IO.Buffer.CircularBuffer`1.MoveTo(`0[])">
+            <summary>
+            Copy data from the circular buffer to the array and then consume the data from the circular buffer.
+            </summary>
+            <param name="array">The array to copy the data to.</param>
+            <returns>The number of bytes that were moved.</returns>
+            <exception cref="T:System.ArgumentNullException">
+            <paramref name="array"/> may not be <see langword="null"/>.
+            </exception>
+            <remarks>Data is copied to the first element in the array, up to the length of the array.</remarks>
+        </member>
+        <member name="M:RJCP.IO.Buffer.CircularBuffer`1.MoveTo(`0[],System.Int32,System.Int32)">
+            <summary>
+            Copy data from the circular buffer to the array and then consume the data from the circular buffer.
+            </summary>
+            <param name="array">The array to copy the data to.</param>
+            <param name="offset">Offset into the array to copy to.</param>
+            <param name="count">Amount of data to copy to.</param>
+            <returns>The number of bytes that were moved.</returns>
+            <exception cref="T:System.ArgumentNullException">
+            <paramref name="array"/> may not be <see langword="null"/>.
+            </exception>
+            <exception cref="T:System.ArgumentOutOfRangeException">
+            <paramref name="count"/> may not be negative;
+            <para>- or -</para>
+            <paramref name="offset"/> may not be negative.
+            </exception>
+            <exception cref="T:System.ArgumentException">
+            <paramref name="offset"/> and <paramref name="count"/> would exceed <paramref name="array"/> length.
+            </exception>
+            <remarks>
+            This method is very similar to the <see cref="M:RJCP.IO.Buffer.CircularBuffer`1.CopyTo(`0[],System.Int32,System.Int32)"/> method, but it will also consume the
+            data that was copied.
+            </remarks>
+        </member>
+        <member name="M:RJCP.IO.Buffer.CircularBuffer`1.CopyTo(`0[])">
+            <summary>
+            Copy data from the circular buffer to the array.
+            </summary>
+            <param name="array">The array to copy the data to.</param>
+            <returns>The number of bytes that were copied.</returns>
+            <exception cref="T:System.ArgumentNullException">
+            <paramref name="array"/> may not be <see langword="null"/>.
+            </exception>
+            <remarks>
+            Data is copied from the first element in the array, up to the length of the array. The data from the
+            Circular Buffer is <i>not</i> consumed. You must do this yourself. Else use the MoveTo() method.
+            </remarks>
+        </member>
+        <member name="M:RJCP.IO.Buffer.CircularBuffer`1.CopyTo(`0[],System.Int32,System.Int32)">
+            <summary>
+            Copy data from the circular buffer to the array.
+            </summary>
+            <param name="array">The array to copy the data to.</param>
+            <param name="offset">Offset into the array to copy to.</param>
+            <param name="count">Amount of data to copy to.</param>
+            <returns>The number of bytes that were copied.</returns>
+            <exception cref="T:System.ArgumentNullException"><paramref name="array"/> is <see langword="null"/>.</exception>
+            <exception cref="T:System.ArgumentOutOfRangeException">
+            <paramref name="count"/> is negative;
+            <para>- or -</para>
+            <paramref name="offset"/> is negative.
+            </exception>
+            <exception cref="T:System.ArgumentException">
+            <paramref name="offset"/> and <paramref name="count"/> would exceed <paramref name="array"/> length.
+            </exception>
+            <remarks>
+            Data is copied from the circular buffer into the array specified, at the offset given. The data from the
+            Circular Buffer is <i>not</i> consumed. You must do this yourself. Else use the MoveTo() method.
+            </remarks>
+        </member>
+        <member name="M:RJCP.IO.Buffer.CircularBuffer`1.Substring(`0)">
+            <summary>
+            Searches for a specific element in the array.
+            </summary>
+            <param name="element">The element to search for.</param>
+            <returns>The location in the buffer where the first element is found.
+            If the element could not be found, -1 is returned.</returns>
+        </member>
+        <member name="M:RJCP.IO.Buffer.CircularBuffer`1.Substring(`0,System.Int32)">
+            <summary>
+            Searches for a specific element in the array from the offset provided.
+            </summary>
+            <param name="element">The element to search for.</param>
+            <param name="offset">The offset into the buffer.</param>
+            <returns>The location in the buffer where the first element is found from <paramref name="offset"/>.
+            If the element could not be found, -1 is returned.</returns>
+            <exception cref="T:System.ArgumentOutOfRangeException">
+            <paramref name="offset"/> must be in buffer range of <see cref="P:RJCP.IO.Buffer.CircularBuffer`1.Length"/>.
+            </exception>
+        </member>
+        <member name="M:RJCP.IO.Buffer.CircularBuffer`1.Substring(`0[])">
+            <summary>
+            Searches for specific elements in the array.
+            </summary>
+            <param name="elements">The elements to search for.</param>
+            <returns>The location in the buffer where the first element is found.
+            If the element could not be found, -1 is returned.</returns>
+            <exception cref="T:System.ArgumentNullException">
+            <paramref name="elements"/> may not be <see langword="null"/>.
+            </exception>
+        </member>
+        <member name="M:RJCP.IO.Buffer.CircularBuffer`1.Substring(`0[],System.Int32)">
+            <summary>
+            Searches for a specific element in the array from the offset provided.
+            </summary>
+            <param name="elements">The elements to search for.</param>
+            <param name="offset">The offset into the buffer.</param>
+            <returns>The location in the buffer where the first element is found.
+            If the element could not be found, -1 is returned.</returns>
+            <exception cref="T:System.ArgumentOutOfRangeException">
+            <paramref name="offset"/> must be in buffer range <see cref="P:RJCP.IO.Buffer.CircularBuffer`1.Length"/>.
+            </exception>
+            <exception cref="T:System.ArgumentNullException">
+            <paramref name="elements"/> may not be <see langword="null"/>.
+            </exception>
+        </member>
+        <member name="T:RJCP.IO.Buffer.CircularBufferExtensions">
+            <summary>
+            A set of useful extensions to the CircularBuffer for specific data types.
+            </summary>
+        </member>
+        <member name="M:RJCP.IO.Buffer.CircularBufferExtensions.GetString(RJCP.IO.Buffer.CircularBuffer{System.Char})">
+            <summary>
+            Convert the contents of the circular buffer into a string.
+            </summary>
+            <param name="buff">The circular buffer based on char.</param>
+            <returns>A string containing the contents of the circular buffer.</returns>
+            <remarks>This method will not consume the data in the CircularBuffer{char}.</remarks>
+        </member>
+        <member name="M:RJCP.IO.Buffer.CircularBufferExtensions.GetString(RJCP.IO.Buffer.CircularBuffer{System.Char},System.Int32)">
+            <summary>
+            Convert the contents of the circular buffer into a string.
+            </summary>
+            <param name="buff">The circular buffer based on char.</param>
+            <param name="length">Number of characters to convert to a string.</param>
+            <returns>A string of up to length characters.</returns>
+            <remarks>This method will not consume the data in the CircularBuffer{char}.</remarks>
+        </member>
+        <member name="M:RJCP.IO.Buffer.CircularBufferExtensions.GetString(RJCP.IO.Buffer.CircularBuffer{System.Char},System.Int32,System.Int32)">
+            <summary>
+            Convert the contents of the circular buffer into a string.
+            </summary>
+            <param name="buff">The circular buffer based on char.</param>
+            <param name="offset">The offset into the circular buffer.</param>
+            <param name="length">Number of characters to convert to a string.</param>
+            <returns>
+            A string of up to length characters, from the circular buffer starting at the offset specified..
+            </returns>
+            <remarks>This method will not consume the data in the CircularBuffer{char}.</remarks>
+        </member>
+        <member name="M:RJCP.IO.Buffer.CircularBufferExtensions.Convert(System.Text.Decoder,RJCP.IO.Buffer.CircularBuffer{System.Byte},System.Char[],System.Int32,System.Int32,System.Boolean,System.Int32@,System.Int32@,System.Boolean@)">
+            <summary>
+            Use a decoder to convert from a Circular Buffer of bytes into a char array.
+            </summary>
+            <param name="decoder">The decoder to do the conversion.</param>
+            <param name="bytes">The circular buffer of bytes to convert from.</param>
+            <param name="chars">An array to store the converted characters.</param>
+            <param name="charIndex">The first element of <i>chars</i> in which data is stored.</param>
+            <param name="charCount">Maximum number of characters to write.</param>
+            <param name="flush">
+            <see langword="true"/> to indicate that no further data is to be converted; otherwise,
+            <see langword="false"/>.
+            </param>
+            <param name="bytesUsed">
+            When this method returns, contains the number of bytes that were used in the conversion. This parameter is
+            passed uninitialized.
+            </param>
+            <param name="charsUsed">
+            When this method returns, contains the number of characters from chars that were produced by the conversion.
+            This parameter is passed uninitialized.
+            </param>
+            <param name="completed">
+            When this method returns, contains <see langword="true"/> if all the characters specified by byteCount were
+            converted; otherwise, <see langword="false"/>. This parameter is passed uninitialized.
+            </param>
+            <exception cref="T:System.ArgumentException">
+            The output buffer <paramref name="chars"/> is too small to contain any of the converted input.
+            </exception>
+            <exception cref="T:System.ArgumentNullException">
+            <paramref name="bytes"/> or <paramref name="chars"/> may not be <see langword="null"/>.
+            </exception>
+            <exception cref="T:System.ArgumentOutOfRangeException">
+            <paramref name="charIndex"/> may not be negative;
+            <para>- or -</para>
+            <paramref name="charCount"/> may not be negative.
+            </exception>
+            <remarks>
+            This method should behave the same as the decoder for an array of bytes of equal size.
+            <para>
+            The <i>completed</i> output parameter indicates whether all the data in the input buffer was converted and
+            stored in the output buffer. This parameter is set to <see langword="false"/> if the number of bytes
+            specified by the <i>bytes.Length</i> parameter cannot be converted without exceeding the number of
+            characters specified by the charCount parameter.
+            </para>
+            <para>
+            The completed parameter can also be set to <see langword="false"/>, even though the all bytes were consumed.
+            This situation occurs if there is still data in the Decoder object that has not been stored in the bytes
+            buffer.
+            </para>
+            <para>
+            There are a few noted deviations from using the Decoder on an array of bytes, instead of a Circular Buffer.
+            </para>
+            <list type="bullet">
+            <item>
+            When converting a sequence of bytes to multiple chars, if those sequences result in the minimum number of
+            characters being written as 2 or more characters, slight discrepancies occur. A UTF8 decoder would convert
+            the sequence F3 A0 82 84 to the two characters DB40 DC84. The UTF8 decoder would not consume any of the 4
+            bytes if all 4 bytes are immediately available to a single call to the Decoder.Convert() function and
+            instead raise an exception. This Convert() function may consume some of these bytes and indicate success, if
+            the byte sequence wraps over from the end of the array to the beginning of the array. The number of bytes
+            consumed (bytesUsed) is correct and characters produced (charsUsed) is also correct. There is no error found
+            according to the MS documentation. The next call will result in an exception instead. So this function may:
+            consume more bytes than expected (but with the correct results); and may not raise an exception immediately
+            if those bytes were consumed.
+            </item>
+            </list>
+            </remarks>
+        </member>
+        <member name="M:RJCP.IO.Buffer.CircularBufferExtensions.Convert(System.Text.Decoder,RJCP.IO.Buffer.CircularBuffer{System.Byte},RJCP.IO.Buffer.CircularBuffer{System.Char},System.Int32,System.Boolean,System.Int32@,System.Int32@,System.Boolean@)">
+            <summary>
+            Use a decoder to convert from a Circular Buffer of bytes into a Circular Buffer of chars.
+            </summary>
+            <param name="decoder">The decoder to do the conversion.</param>
+            <param name="bytes">The circular buffer of bytes to convert from.</param>
+            <param name="chars">The circular buffer of chars to convert to.</param>
+            <param name="charCount">Maximum number of characters to write.</param>
+            <param name="flush">
+            <see langword="true"/> to indicate that no further data is to be converted; otherwise,
+            <see langword="false"/>.
+            </param>
+            <param name="bytesUsed">
+            When this method returns, contains the number of bytes that were used in the conversion. This parameter is
+            passed uninitialized.
+            </param>
+            <param name="charsUsed">
+            When this method returns, contains the number of characters from chars that were produced by the conversion.
+            This parameter is passed uninitialized.
+            </param>
+            <param name="completed">
+            When this method returns, contains <see langword="true"/> if all the characters specified by byteCount were
+            converted; otherwise, <see langword="false"/>. This parameter is passed uninitialized.
+            </param>
+            <exception cref="T:System.ArgumentException">
+            The output buffer <paramref name="chars"/> is too small to contain any of the converted input.
+            </exception>
+            <exception cref="T:System.ArgumentNullException">
+            <paramref name="bytes"/> or <paramref name="chars"/> may not be <see langword="null"/>.
+            </exception>
+            <exception cref="T:System.ArgumentOutOfRangeException"><paramref name="charCount"/> may not be negative.</exception>
+        </member>
+        <member name="M:RJCP.IO.Buffer.CircularBufferExtensions.Convert(System.Text.Decoder,RJCP.IO.Buffer.CircularBuffer{System.Byte},RJCP.IO.Buffer.CircularBuffer{System.Char},System.Boolean,System.Int32@,System.Int32@,System.Boolean@)">
+            <summary>
+            Use a decoder to convert from a Circular Buffer of bytes into a Circular Buffer of chars.
+            </summary>
+            <param name="decoder">The decoder to do the conversion.</param>
+            <param name="bytes">The circular buffer of bytes to convert from.</param>
+            <param name="chars">The circular buffer of chars to convert to.</param>
+            <param name="flush">
+            <see langword="true"/> to indicate that no further data is to be converted; otherwise,
+            <see langword="false"/>.
+            </param>
+            <param name="bytesUsed">
+            When this method returns, contains the number of bytes that were used in the conversion. This parameter is
+            passed uninitialized.
+            </param>
+            <param name="charsUsed">
+            When this method returns, contains the number of characters from chars that were produced by the conversion.
+            This parameter is passed uninitialized.
+            </param>
+            <param name="completed">
+            When this method returns, contains <see langword="true"/> if all the characters specified by byteCount were
+            converted; otherwise, <see langword="false"/>. This parameter is passed uninitialized.
+            </param>
+            <exception cref="T:System.ArgumentException">
+            The output buffer <paramref name="chars"/> is too small to contain any of the converted input.
+            </exception>
+            <exception cref="T:System.ArgumentNullException">
+            <paramref name="bytes"/> or <paramref name="chars"/> may not be <see langword="null"/>.
+            </exception>
+        </member>
+        <member name="M:RJCP.IO.Buffer.CircularBufferExtensions.Convert(System.Text.Decoder,System.Byte[],System.Int32,System.Int32,RJCP.IO.Buffer.CircularBuffer{System.Char},System.Boolean,System.Int32@,System.Int32@,System.Boolean@)">
+            <summary>
+            Use a decoder to convert from an array of bytes into a char CircularBuffer.
+            </summary>
+            <param name="decoder">The decoder to do the conversion.</param>
+            <param name="bytes">The array of bytes to convert.</param>
+            <param name="byteIndex">Start index in bytes array.</param>
+            <param name="byteCount">Number of bytes to convert in the byte array.</param>
+            <param name="chars">The circular buffer of chars to convert to.</param>
+            <param name="flush">
+            <see langword="true"/> to indicate that no further data is to be converted; otherwise,
+            <see langword="false"/>.
+            </param>
+            <param name="bytesUsed">
+            When this method returns, contains the number of bytes that were used in the conversion. This parameter is
+            passed uninitialized.
+            </param>
+            <param name="charsUsed">
+            When this method returns, contains the number of characters from chars that were produced by the conversion.
+            This parameter is passed uninitialized.
+            </param>
+            <param name="completed">
+            When this method returns, contains <see langword="true"/> if all the characters specified by byteCount were
+            converted; otherwise, <see langword="false"/>. This parameter is passed uninitialized.
+            </param>
+            <exception cref="T:System.ArgumentException">
+            The output buffer <paramref name="bytes"/> is too small to contain any of the converted input.
+            </exception>
+            <exception cref="T:System.ArgumentNullException">
+            <paramref name="bytes"/> or <paramref name="chars"/> may not be <see langword="null"/>.
+            </exception>
+            <exception cref="T:System.ArgumentOutOfRangeException">
+            <paramref name="byteIndex"/> may not be negative;
+            <para>- or -</para>
+            <paramref name="byteCount"/> may not be negative.
+            </exception>
+        </member>
+        <member name="M:RJCP.IO.Buffer.CircularBufferExtensions.Convert(System.Text.Encoder,System.Char[],System.Int32,System.Int32,RJCP.IO.Buffer.CircularBuffer{System.Byte},System.Boolean,System.Int32@,System.Int32@,System.Boolean@)">
+            <summary>
+            Converts an array of Unicode characters to a byte sequence storing the result in a circular buffer.
+            </summary>
+            <param name="encoder">The encoder to use for the conversion.</param>
+            <param name="chars">An array of characters to convert.</param>
+            <param name="charIndex">The first element of <i>chars</i> to convert.</param>
+            <param name="charCount">The number of elements of <i>chars</i> to convert.</param>
+            <param name="bytes">Circular buffer where converted bytes are stored.</param>
+            <param name="flush">
+            <see langword="true"/> to indicate no further data is to be converted; otherwise, <see langword="false"/>
+            </param>
+            <param name="charsUsed">
+            When this method returns, contains the number of characters from chars that were produced by the conversion.
+            This parameter is passed uninitialized.
+            </param>
+            <param name="bytesUsed">
+            When this method returns, contains the number of bytes that were used in the conversion. This parameter is
+            passed uninitialized.
+            </param>
+            <param name="completed">
+            When this method returns, contains <see langword="true"/> if all the characters specified by byteCount were
+            converted; otherwise, <see langword="false"/>. This parameter is passed uninitialized.
+            </param>
+            <exception cref="T:System.ArgumentException">
+            The output buffer <paramref name="chars"/> is too small to contain any of the converted input.
+            </exception>
+            <exception cref="T:System.ArgumentNullException">
+            <paramref name="bytes"/> or <paramref name="chars"/> may not be <see langword="null"/>.
+            </exception>
+            <exception cref="T:System.ArgumentOutOfRangeException">
+            <paramref name="charIndex"/> may not be negative;
+            <para>- or -</para>
+            <paramref name="charCount"/> may not be negative.
+            </exception>
+        </member>
+        <member name="T:RJCP.IO.Buffer.Memory.IReadBuffer">
+            <summary>
+            The <see cref="T:RJCP.IO.Buffer.Memory.IReadBuffer"/> allows writing to the memory region that the user reads from
+            <see cref="T:RJCP.IO.Buffer.Memory.IReadBufferStream"/>.
+            </summary>
+            <remarks>
+            The Read Buffer is an object that the user will want to read from, so the operations in this interface are set
+            so that a low level component can write to the buffer.
+            </remarks>
+        </member>
+        <member name="P:RJCP.IO.Buffer.Memory.IReadBuffer.BufferEnd">
+            <summary>
+            The offset into <see cref="P:RJCP.IO.Buffer.Memory.IReadBuffer.Buffer"/> where data can be written to.
+            </summary>
+            <value>The offset into <see cref="P:RJCP.IO.Buffer.Memory.IReadBuffer.Buffer"/> that data can be written to.</value>
+        </member>
+        <member name="P:RJCP.IO.Buffer.Memory.IReadBuffer.BufferWriteLength">
+            <summary>
+            Gets the length of contiguous data that can be written to <see cref="P:RJCP.IO.Buffer.Memory.IReadBuffer.Buffer"/>.
+            </summary>
+            <value>The length of contiguous data that can be written to <see cref="P:RJCP.IO.Buffer.Memory.IReadBuffer.Buffer"/>.</value>
+        </member>
+        <member name="P:RJCP.IO.Buffer.Memory.IReadBuffer.BufferPtr">
+            <summary>
+            Gets a pointer to the memory that data can be written to, useful for low level API to write directly.
+            </summary>
+            <value>The pointer to the memory that data can be written to.</value>
+        </member>
+        <member name="P:RJCP.IO.Buffer.Memory.IReadBuffer.Buffer">
+            <summary>
+            Gets the write buffer.
+            </summary>
+            <value>The write buffer.</value>
+        </member>
+        <member name="P:RJCP.IO.Buffer.Memory.IReadBuffer.IsBufferNotFull">
+            <summary>
+            Gets a value indicating whether the write buffer is empty.
+            </summary>
+            <value>Is <see langword="true"/> if the write buffer is not full; <see langword="false"/> otherwise.</value>
+            <remarks>
+            This property can be used to quickly test if there is space to write data to the write buffer. If there is
+            free space in the write buffer, then there is no reason to wait for it and low level API can be called to
+            fill data in the write buffer.
+            </remarks>
+        </member>
+        <member name="P:RJCP.IO.Buffer.Memory.IReadBuffer.BufferNotFull">
+            <summary>
+            Gets a wait handle that indicates that data can be written to the buffer.
+            </summary>
+            <value>A wait handle that low level code can wait on when the buffer is no longer full.</value>
+        </member>
+        <member name="M:RJCP.IO.Buffer.Memory.IReadBuffer.Produce(System.Int32)">
+            <summary>
+            Indicates that data has been written to the array.
+            </summary>
+            <param name="length">The amount of data that was written to the array.</param>
+            <remarks>
+            Data is written to the array <see cref="P:RJCP.IO.Buffer.Memory.IReadBuffer.Buffer"/>, starting at <see cref="P:RJCP.IO.Buffer.Memory.IReadBuffer.BufferEnd"/>, and not
+            more than <see cref="P:RJCP.IO.Buffer.Memory.IReadBuffer.BufferWriteLength"/>.
+            </remarks>
+        </member>
+        <member name="P:RJCP.IO.Buffer.Memory.IReadBuffer.Lock">
+            <summary>
+            Gets the lock object for driver modifications.
+            </summary>
+            <value>The lock object for low level API.</value>
+            <remarks>
+            When low level code needs to access the read buffer via <see cref="T:RJCP.IO.Buffer.Memory.IReadBuffer"/>, it should first take this
+            lock, so that user code is synchronized. The implementations intended for user code (such as
+            <see cref="T:RJCP.IO.Buffer.Memory.IReadBufferStream"/>) automatically takes this lock as needed.
+            </remarks>
+        </member>
+        <member name="M:RJCP.IO.Buffer.Memory.IReadBuffer.DeviceDead">
+            <summary>
+            Indicates the underlying driver has a problem, so that there are no wait timeouts.
+            </summary>
+        </member>
+        <member name="P:RJCP.IO.Buffer.Memory.IReadBuffer.IsDeviceDead">
+            <summary>
+            Gets a value indicating if the buffer has been told that the device is dead.
+            </summary>
+            <value><see langword="true"/> if this instance device is dead; otherwise, <see langword="false"/>.</value>
+        </member>
+        <member name="T:RJCP.IO.Buffer.Memory.IReadBufferStream">
+            <summary>
+            The interface for <see cref="T:RJCP.IO.Buffer.MemoryReadBuffer" /> for stream implementations.
+            </summary>
+        </member>
+        <member name="M:RJCP.IO.Buffer.Memory.IReadBufferStream.WaitForRead(System.Int32)">
+            <summary>
+            Waits up to <paramref name="timeout"/> milliseconds for data to be available to read.
+            </summary>
+            <param name="timeout">The timeout to wait for, in milliseconds.</param>
+            <returns>
+            <see langword="true"/> if at least one byte is now available for read, <see langword="false"/> if there was
+            a timeout and no data is available to read.
+            </returns>
+        </member>
+        <member name="M:RJCP.IO.Buffer.Memory.IReadBufferStream.WaitForRead(System.Int32,System.Threading.CancellationToken)">
+            <summary>
+            Waits up to <paramref name="timeout"/> milliseconds for data to be available to read.
+            </summary>
+            <param name="timeout">The timeout to wait for, in milliseconds.</param>
+            <param name="token">
+            The cancellation token that can be used by other objects or threads to receive notice of cancellation.
+            </param>
+            <returns>
+            <see langword="true"/> if at least one byte is now available for read, <see langword="false"/> if there was
+            a timeout and no data is available to read.
+            </returns>
+        </member>
+        <member name="M:RJCP.IO.Buffer.Memory.IReadBufferStream.WaitForRead(System.Int32,System.Int32)">
+            <summary>
+            Waits up to <paramref name="timeout"/> milliseconds to read at least <paramref name="count"/> bytes.
+            </summary>
+            <param name="count">The number of bytes to wait for to read.</param>
+            <param name="timeout">The timeout to wait for, in milliseconds.</param>
+            <returns>
+            <see langword="true"/> if at least <paramref name="count"/> bytes are now available for read,
+            <see langword="false"/> if there was a timeout and no data, or insufficient data, is available to read.
+            </returns>
+        </member>
+        <member name="M:RJCP.IO.Buffer.Memory.IReadBufferStream.WaitForRead(System.Int32,System.Int32,System.Threading.CancellationToken)">
+            <summary>
+            Waits up to <paramref name="timeout"/> milliseconds to read at least <paramref name="count"/> bytes.
+            </summary>
+            <param name="count">The number of bytes to wait for to read.</param>
+            <param name="timeout">The timeout to wait for, in milliseconds.</param>
+            <param name="token">
+            The cancellation token that can be used by other objects or threads to receive notice of cancellation.
+            </param>
+            <returns>
+            <see langword="true"/> if at least <paramref name="count"/> bytes are now available for read,
+            <see langword="false"/> if there was a timeout and no data, or insufficient data, is available to read.
+            </returns>
+        </member>
+        <member name="M:RJCP.IO.Buffer.Memory.IReadBufferStream.WaitForReadAsync(System.Int32)">
+            <summary>
+            Waits up to <paramref name="timeout"/> milliseconds for data to be available to read.
+            </summary>
+            <param name="timeout">The timeout to wait for, in milliseconds.</param>
+            <returns>
+            <see langword="true"/> if at least one byte is now available for read, <see langword="false"/> if there was
+            a timeout and no data is available to read.
+            </returns>
+        </member>
+        <member name="M:RJCP.IO.Buffer.Memory.IReadBufferStream.WaitForReadAsync(System.Int32,System.Threading.CancellationToken)">
+            <summary>
+            Waits up to <paramref name="timeout"/> milliseconds for data to be available to read.
+            </summary>
+            <param name="timeout">The timeout to wait for, in milliseconds.</param>
+            <param name="token">
+            The cancellation token that can be used by other objects or threads to receive notice of cancellation.
+            </param>
+            <returns>
+            <see langword="true"/> if at least one byte is now available for read, <see langword="false"/> if there was
+            a timeout and no data is available to read.
+            </returns>
+        </member>
+        <member name="M:RJCP.IO.Buffer.Memory.IReadBufferStream.WaitForReadAsync(System.Int32,System.Int32)">
+            <summary>
+            Waits up to <paramref name="timeout"/> milliseconds to read at least <paramref name="count"/> bytes.
+            </summary>
+            <param name="count">The number of bytes to wait for to read.</param>
+            <param name="timeout">The timeout to wait for, in milliseconds.</param>
+            <returns>
+            <see langword="true"/> if at least <paramref name="count"/> bytes are now available for read,
+            <see langword="false"/> if there was a timeout and no data, or insufficient data, is available to read.
+            </returns>
+        </member>
+        <member name="M:RJCP.IO.Buffer.Memory.IReadBufferStream.WaitForReadAsync(System.Int32,System.Int32,System.Threading.CancellationToken)">
+            <summary>
+            Waits up to <paramref name="timeout"/> milliseconds to read at least <paramref name="count"/> bytes.
+            </summary>
+            <param name="count">The number of bytes to wait for to read.</param>
+            <param name="timeout">The timeout to wait for, in milliseconds.</param>
+            <param name="token">
+            The cancellation token that can be used by other objects or threads to receive notice of cancellation.
+            </param>
+            <returns>
+            <see langword="true"/> if at least <paramref name="count"/> bytes are now available for read,
+            <see langword="false"/> if there was a timeout and no data, or insufficient data, is available to read.
+            </returns>
+        </member>
+        <member name="M:RJCP.IO.Buffer.Memory.IReadBufferStream.Read(System.Byte[],System.Int32,System.Int32)">
+            <summary>
+            Performs a non-blocking read, copying data from the memory buffer to the array specified.
+            </summary>
+            <param name="buffer">The buffer to copy data into.</param>
+            <param name="offset">The offset into the buffer to copy into.</param>
+            <param name="count">The maximum number of bytes to copy.</param>
+            <returns>
+            Returns the number of bytes copied, which may be less or equal to <paramref name="count"/>.
+            </returns>
+        </member>
+        <member name="M:RJCP.IO.Buffer.Memory.IReadBufferStream.ReadByte">
+            <summary>
+            Reads a single byte from the buffer without blocking.
+            </summary>
+            <returns>The byte value, or -1, if there is no data in the buffer.</returns>
+        </member>
+        <member name="P:RJCP.IO.Buffer.Memory.IReadBufferStream.BytesToRead">
+            <summary>
+            Gets the number of bytes in the buffer available for reading.
+            </summary>
+            <value>The number of bytes in the buffer available for reading.</value>
+        </member>
+        <member name="M:RJCP.IO.Buffer.Memory.IReadBufferStream.Clear">
+            <summary>
+            Clears the read buffer so it is empty.
+            </summary>
+        </member>
+        <member name="T:RJCP.IO.Buffer.Memory.IWriteBufferStream">
+            <summary>
+            The interface for <see cref="T:RJCP.IO.Buffer.MemoryReadBuffer"/> for stream implementations.
+            </summary>
+        </member>
+        <member name="M:RJCP.IO.Buffer.Memory.IWriteBufferStream.WaitForWrite(System.Int32,System.Int32)">
+            <summary>
+            Waits up to <paramref name="timeout"/> milliseconds to write at least <paramref name="count"/> bytes.
+            </summary>
+            <param name="count">The number of bytes to wait for to write.</param>
+            <param name="timeout">The timeout to wait for, in milliseconds.</param>
+            <returns>
+            <see langword="true"/> if at least <paramref name="count"/> bytes are now available for writing,
+            <see langword="false"/> if there was a timeout and insufficient space is available to write.
+            </returns>
+        </member>
+        <member name="M:RJCP.IO.Buffer.Memory.IWriteBufferStream.WaitForWrite(System.Int32,System.Int32,System.Threading.CancellationToken)">
+            <summary>
+            Waits up to <paramref name="timeout"/> milliseconds to write at least <paramref name="count"/> bytes.
+            </summary>
+            <param name="count">The number of bytes to wait for to read.</param>
+            <param name="timeout">The timeout to wait for, in milliseconds.</param>
+            <param name="token">
+            The cancellation token that can be used by other objects or threads to receive notice of cancellation.
+            </param>
+            <returns>
+            <see langword="true"/> if at least <paramref name="count"/> bytes are now available for writing,
+            <see langword="false"/> if there was a timeout and insufficient space is available to write.
+            </returns>
+        </member>
+        <member name="M:RJCP.IO.Buffer.Memory.IWriteBufferStream.WaitForWriteAsync(System.Int32,System.Int32)">
+            <summary>
+            Waits up to <paramref name="timeout"/> milliseconds to write at least <paramref name="count"/> bytes.
+            </summary>
+            <param name="count">The number of bytes to wait for to write.</param>
+            <param name="timeout">The timeout to wait for, in milliseconds.</param>
+            <returns>
+            <see langword="true"/> if at least <paramref name="count"/> bytes are now available for writing,
+            <see langword="false"/> if there was a timeout and insufficient space is available to write.
+            </returns>
+        </member>
+        <member name="M:RJCP.IO.Buffer.Memory.IWriteBufferStream.WaitForWriteAsync(System.Int32,System.Int32,System.Threading.CancellationToken)">
+            <summary>
+            Waits up to <paramref name="timeout"/> milliseconds to read at least <paramref name="count"/> bytes.
+            </summary>
+            <param name="count">The number of bytes to wait for to read.</param>
+            <param name="timeout">The timeout to wait for, in milliseconds.</param>
+            <param name="token">
+            The cancellation token that can be used by other objects or threads to receive notice of cancellation.
+            </param>
+            <returns>
+            <see langword="true"/> if at least <paramref name="count"/> bytes are now available for writing,
+            <see langword="false"/> if there was a timeout and insufficient space is available to write.
+            </returns>
+        </member>
+        <member name="M:RJCP.IO.Buffer.Memory.IWriteBufferStream.WaitForEmpty(System.Int32)">
+            <summary>
+            Waits for the write buffer to become empty.
+            </summary>
+            <param name="timeout">The timeout to wait for, in milliseconds.</param>
+            <returns>
+            <see langword="true"/> if the buffer became completely empty while waiting, <see langword="false"/> if there
+            was a timeout and data still remains to write.
+            </returns>
+        </member>
+        <member name="M:RJCP.IO.Buffer.Memory.IWriteBufferStream.WaitForEmpty(System.Int32,System.Threading.CancellationToken)">
+            <summary>
+            Waits for the write buffer to become empty.
+            </summary>
+            <param name="timeout">The timeout to wait for, in milliseconds.</param>
+            <param name="token">
+            The cancellation token that can be used by other objects or threads to receive notice of cancellation.
+            </param>
+            <returns>
+            <see langword="true"/> if the buffer became completely empty while waiting, <see langword="false"/> if there
+            was a timeout and data still remains to write.
+            </returns>
+        </member>
+        <member name="M:RJCP.IO.Buffer.Memory.IWriteBufferStream.WaitForEmptyAsync(System.Int32)">
+            <summary>
+            Waits for the write buffer to become empty.
+            </summary>
+            <param name="timeout">The timeout to wait for, in milliseconds.</param>
+            <returns>
+            <see langword="true"/> if the buffer became completely empty while waiting, <see langword="false"/> if there
+            was a timeout and data still remains to write.
+            </returns>
+        </member>
+        <member name="M:RJCP.IO.Buffer.Memory.IWriteBufferStream.WaitForEmptyAsync(System.Int32,System.Threading.CancellationToken)">
+            <summary>
+            Waits for the write buffer to become empty.
+            </summary>
+            <param name="timeout">The timeout to wait for, in milliseconds.</param>
+            <param name="token">
+            The cancellation token that can be used by other objects or threads to receive notice of cancellation.
+            </param>
+            <returns>
+            <see langword="true"/> if the buffer became completely empty while waiting, <see langword="false"/> if there
+            was a timeout and data still remains to write.
+            </returns>
+        </member>
+        <member name="M:RJCP.IO.Buffer.Memory.IWriteBufferStream.Write(System.Byte[],System.Int32,System.Int32)">
+            <summary>
+            Performs a non-blocking write, copying data from the memory buffer to the array specified.
+            </summary>
+            <param name="buffer">The buffer to copy data into.</param>
+            <param name="offset">The offset into the buffer to copy into.</param>
+            <param name="count">The maximum number of bytes to copy.</param>
+            <returns>
+            Returns the number of bytes copied, which may be less or equal to <paramref name="count"/>.
+            </returns>
+        </member>
+        <member name="P:RJCP.IO.Buffer.Memory.IWriteBufferStream.BytesToWrite">
+            <summary>
+            Gets the number of bytes in the buffer still pending for writing.
+            </summary>
+            <value>The number of bytes in the buffer pending for writing.</value>
+        </member>
+        <member name="T:RJCP.IO.Buffer.Memory.IWriteBuffer">
+            <summary>
+            The <see cref="T:RJCP.IO.Buffer.Memory.IWriteBuffer"/> allows writing to the memory region that the user reads from
+            <see cref="T:RJCP.IO.Buffer.Memory.IWriteBufferStream"/>.
+            </summary>
+        </member>
+        <member name="P:RJCP.IO.Buffer.Memory.IWriteBuffer.BufferStart">
+            <summary>
+            The offset into <see cref="P:RJCP.IO.Buffer.Memory.IWriteBuffer.Buffer"/> where data can be read from.
+            </summary>
+            <value>The offset into <see cref="P:RJCP.IO.Buffer.Memory.IWriteBuffer.Buffer"/> that data can be read from.</value>
+        </member>
+        <member name="P:RJCP.IO.Buffer.Memory.IWriteBuffer.BufferReadLength">
+            <summary>
+            Gets the length of contiguous data that can be read from <see cref="P:RJCP.IO.Buffer.Memory.IWriteBuffer.Buffer"/>.
+            </summary>
+            <value>The length of contiguous data that can be read from <see cref="P:RJCP.IO.Buffer.Memory.IWriteBuffer.Buffer"/>.</value>
+        </member>
+        <member name="P:RJCP.IO.Buffer.Memory.IWriteBuffer.BufferPtr">
+            <summary>
+            Gets a pointer to the memory that data can be read from, useful for low level API to read directly from the
+            buffer, e.g. to write somewhere else.
+            </summary>
+            <value>The pointer to the memory that data can be read from.</value>
+        </member>
+        <member name="P:RJCP.IO.Buffer.Memory.IWriteBuffer.Buffer">
+            <summary>
+            Gets the read buffer.
+            </summary>
+            <value>The read buffer.</value>
+        </member>
+        <member name="P:RJCP.IO.Buffer.Memory.IWriteBuffer.IsBufferNotEmpty">
+            <summary>
+            Gets a value indicating whether the read buffer is not empty.
+            </summary>
+            <value>Is <see langword="true"/> if the read buffer has data; <see langword="false"/> otherwise.</value>
+            <remarks>
+            This property can be used to quickly test if there is data in the buffer or not. If there is data in the
+            read buffer, then there is no reason to wait for it and data can be given to lower level API to write the
+            data.
+            </remarks>
+        </member>
+        <member name="P:RJCP.IO.Buffer.Memory.IWriteBuffer.BufferNotEmpty">
+            <summary>
+            Gets a wait handle that indicates if there is data put into the buffer.
+            </summary>
+            <value>
+            A wait handle that indicates if the user put data into the buffer that low level code can wait on.
+            </value>
+        </member>
+        <member name="M:RJCP.IO.Buffer.Memory.IWriteBuffer.Consume(System.Int32)">
+            <summary>
+            Indicates that data has been read from the array.
+            </summary>
+            <param name="length">The amount of data that was read from the array that can be now discarded.</param>
+            <remarks>
+            Data is read from the array <see cref="P:RJCP.IO.Buffer.Memory.IWriteBuffer.Buffer"/>, starting at <see cref="P:RJCP.IO.Buffer.Memory.IWriteBuffer.BufferStart"/>, and not
+            more than <see cref="P:RJCP.IO.Buffer.Memory.IWriteBuffer.BufferReadLength"/> bytes.
+            </remarks>
+        </member>
+        <member name="P:RJCP.IO.Buffer.Memory.IWriteBuffer.Lock">
+            <summary>
+            Gets the lock object for driver modifications.
+            </summary>
+            <value>The lock object for low level API.</value>
+            <remarks>
+            When low level code needs to access the read buffer via <see cref="T:RJCP.IO.Buffer.Memory.IWriteBuffer"/>, it should first take this
+            lock, so that user code is synchronized. The implementations intended for user code (such as
+            <see cref="T:RJCP.IO.Buffer.Memory.IWriteBufferStream"/>) automatically takes this lock as needed.
+            </remarks>
+        </member>
+        <member name="P:RJCP.IO.Buffer.Memory.IWriteBuffer.BytesFree">
+            <summary>
+            Gets the number of bytes in the buffer available for writing.
+            </summary>
+            <value>The number of bytes in the buffer available for writing.</value>
+        </member>
+        <member name="M:RJCP.IO.Buffer.Memory.IWriteBuffer.Purge">
+            <summary>
+            Purges (clears) the output buffer.
+            </summary>
+        </member>
+        <member name="M:RJCP.IO.Buffer.Memory.IWriteBuffer.DeviceDead">
+            <summary>
+            Indicates the underlying driver has a problem, so that there are no wait timeouts.
+            </summary>
+            <remarks>
+            Marking the write buffer as dead will purge all data still pending. It can't be written any more.
+            </remarks>
+        </member>
+        <member name="P:RJCP.IO.Buffer.Memory.IWriteBuffer.IsDeviceDead">
+            <summary>
+            Gets a value indicating if the buffer has been told that the device is dead.
+            </summary>
+            <value><see langword="true"/> if this instance device is dead; otherwise, <see langword="false"/>.</value>
+        </member>
+        <member name="T:RJCP.IO.Buffer.MemoryReadBuffer">
+            <summary>
+            The <see cref="T:RJCP.IO.Buffer.MemoryReadBuffer"/> is a fixed memory buffer that can assist with buffered I/O.
+            </summary>
+            <remarks>
+            This class implements a thread-safe producer/consumer model, where the consumer is mapped to a stream for
+            reading data, and the producer is mapped to a lower level driver for writing data.
+            </remarks>
+        </member>
+        <member name="M:RJCP.IO.Buffer.MemoryReadBuffer.#ctor(System.Int32)">
+            <summary>
+            Initializes a new instance of the <see cref="T:RJCP.IO.Buffer.MemoryReadBuffer"/> class for a particular size and no pinned buffers.
+            </summary>
+            <param name="length">The size of the buffer to allocate.</param>
+            <exception cref="T:System.ArgumentOutOfRangeException">
+            Parameter <paramref name="length"/> must be positive.
+            </exception>
+        </member>
+        <member name="M:RJCP.IO.Buffer.MemoryReadBuffer.#ctor(System.Int32,System.Boolean)">
+            <summary>
+            Initializes a new instance of the <see cref="T:RJCP.IO.Buffer.MemoryReadBuffer"/> class for a particular size and optionally
+            pin buffers.
+            </summary>
+            <param name="length">The size of the buffer to allocate.</param>
+            <param name="pinned">If set to <see langword="true"/>, the buffers are pinned in memory.</param>
+            <exception cref="T:System.ArgumentOutOfRangeException">
+            Parameter <paramref name="length"/> must be positive.
+            </exception>
+        </member>
+        <member name="P:RJCP.IO.Buffer.MemoryReadBuffer.ReadBuffer">
+            <summary>
+            Gets the read circular buffer for advanced operations.
+            </summary>
+            <value>The read circular buffer for advanced operations.</value>
+            <remarks>
+            Modifications to the buffer (any change in the size), must be followed by a subsequent call to
+            <see cref="M:RJCP.IO.Buffer.MemoryReadBuffer.CheckBufferState(System.Boolean)"/>. This ensures that notifications when data can be read or written from the
+            buffer from other threads do not unnecessarily block.
+            </remarks>
+        </member>
+        <member name="M:RJCP.IO.Buffer.MemoryReadBuffer.WaitForRead(System.Int32)">
+            <summary>
+            Waits up to <paramref name="timeout"/> milliseconds for data to be available to read.
+            </summary>
+            <param name="timeout">The timeout to wait for, in milliseconds.</param>
+            <returns>
+            <see langword="true"/> if at least one byte is now available for read, <see langword="false"/> if there was
+            a timeout and no data is available to read.
+            </returns>
+            <exception cref="T:System.ArgumentOutOfRangeException"><paramref name="timeout"/> is out of range.</exception>
+            <exception cref="T:System.ObjectDisposedException">This object is disposed of.</exception>
+        </member>
+        <member name="M:RJCP.IO.Buffer.MemoryReadBuffer.WaitForRead(System.Int32,System.Threading.CancellationToken)">
+            <summary>
+            Waits up to <paramref name="timeout"/> milliseconds for data to be available to read.
+            </summary>
+            <param name="timeout">The timeout to wait for, in milliseconds.</param>
+            <param name="token">
+            The cancellation token that can be used by other objects or threads to receive notice of cancellation.
+            </param>
+            <returns>
+            <see langword="true"/> if at least one byte is now available for read, <see langword="false"/> if there was
+            a timeout and no data is available to read.
+            </returns>
+            <exception cref="T:System.ArgumentOutOfRangeException"><paramref name="timeout"/> is out of range.</exception>
+            <exception cref="T:System.ObjectDisposedException">This object is disposed of.</exception>
+        </member>
+        <member name="M:RJCP.IO.Buffer.MemoryReadBuffer.WaitForRead(System.Int32,System.Int32)">
+            <summary>
+            Waits up to <paramref name="timeout"/> milliseconds to read at least <paramref name="count"/> bytes.
+            </summary>
+            <param name="count">The number of bytes to wait for to read.</param>
+            <param name="timeout">The timeout to wait for, in milliseconds.</param>
+            <returns>
+            <see langword="true"/> if at least <paramref name="count"/> bytes are now available for read,
+            <see langword="false"/> if there was a timeout and no data, or insufficient data, is available to read.
+            </returns>
+            <exception cref="T:System.ArgumentOutOfRangeException">
+            <paramref name="timeout"/> is out of range.
+            <para>- or -</para>
+            <paramref name="count"/> is negative.
+            </exception>
+            <exception cref="T:System.ObjectDisposedException">This object is disposed of.</exception>
+            <remarks>
+            IF the <paramref name="count"/> requested is greater than the initialized capacity, this method will return
+            <see langword="false"/> immediately without waiting.
+            </remarks>
+        </member>
+        <member name="M:RJCP.IO.Buffer.MemoryReadBuffer.WaitForRead(System.Int32,System.Int32,System.Threading.CancellationToken)">
+            <summary>
+            Waits up to <paramref name="timeout"/> milliseconds to read at least <paramref name="count"/> bytes.
+            </summary>
+            <param name="count">The number of bytes to wait for to read.</param>
+            <param name="timeout">The timeout to wait for, in milliseconds.</param>
+            <param name="token">
+            The cancellation token that can be used by other objects or threads to receive notice of cancellation.
+            </param>
+            <returns>
+            <see langword="true"/> if at least <paramref name="count"/> bytes are now available for read,
+            <see langword="false"/> if there was a timeout and no data, or insufficient data, is available to read.
+            </returns>
+            <exception cref="T:System.ArgumentOutOfRangeException">
+            <paramref name="timeout"/> is out of range.
+            <para>- or -</para>
+            <paramref name="count"/> is negative.
+            </exception>
+            <exception cref="T:System.ObjectDisposedException">This object is disposed of.</exception>
+            <remarks>
+            IF the <paramref name="count"/> requested is greater than the initialized capacity, this method will return
+            <see langword="false"/> immediately without waiting.
+            </remarks>
+        </member>
+        <member name="M:RJCP.IO.Buffer.MemoryReadBuffer.WaitForReadAsync(System.Int32)">
+            <summary>
+            Waits up to <paramref name="timeout"/> milliseconds for data to be available to read.
+            </summary>
+            <param name="timeout">The timeout to wait for, in milliseconds.</param>
+            <returns>
+            <see langword="true"/> if at least one byte is now available for read, <see langword="false"/> if there was
+            a timeout and no data is available to read.
+            </returns>
+        </member>
+        <member name="M:RJCP.IO.Buffer.MemoryReadBuffer.WaitForReadAsync(System.Int32,System.Threading.CancellationToken)">
+            <summary>
+            Waits up to <paramref name="timeout"/> milliseconds for data to be available to read.
+            </summary>
+            <param name="timeout">The timeout to wait for, in milliseconds.</param>
+            <param name="token">
+            The cancellation token that can be used by other objects or threads to receive notice of cancellation.
+            </param>
+            <returns>
+            <see langword="true"/> if at least one byte is now available for read, <see langword="false"/> if there was
+            a timeout and no data is available to read.
+            </returns>
+        </member>
+        <member name="M:RJCP.IO.Buffer.MemoryReadBuffer.WaitForReadAsync(System.Int32,System.Int32)">
+            <summary>
+            Waits up to <paramref name="timeout"/> milliseconds to read at least <paramref name="count"/> bytes.
+            </summary>
+            <param name="count">The number of bytes to wait for to read.</param>
+            <param name="timeout">The timeout to wait for, in milliseconds.</param>
+            <returns>
+            <see langword="true"/> if at least <paramref name="count"/> bytes are now available for read,
+            <see langword="false"/> if there was a timeout and no data, or insufficient data, is available to read.
+            </returns>
+        </member>
+        <member name="M:RJCP.IO.Buffer.MemoryReadBuffer.WaitForReadAsync(System.Int32,System.Int32,System.Threading.CancellationToken)">
+            <summary>
+            Waits up to <paramref name="timeout"/> milliseconds to read at least <paramref name="count"/> bytes.
+            </summary>
+            <param name="count">The number of bytes to wait for to read.</param>
+            <param name="timeout">The timeout to wait for, in milliseconds.</param>
+            <param name="token">
+            The cancellation token that can be used by other objects or threads to receive notice of cancellation.
+            </param>
+            <returns>
+            <see langword="true"/> if at least <paramref name="count"/> bytes are now available for read,
+            <see langword="false"/> if there was a timeout and no data, or insufficient data, is available to read.
+            </returns>
+        </member>
+        <member name="M:RJCP.IO.Buffer.MemoryReadBuffer.Read(System.Byte[],System.Int32,System.Int32)">
+            <summary>
+            Performs a non-blocking read, copying data from the memory buffer to the array specified.
+            </summary>
+            <param name="buffer">The buffer to copy data into.</param>
+            <param name="offset">The offset into the buffer to copy into.</param>
+            <param name="count">The maximum number of bytes to copy.</param>
+            <returns>
+            Returns the number of bytes copied, which may be less or equal to <paramref name="count"/>.
+            </returns>
+            <exception cref="T:System.ArgumentNullException">
+            <paramref name="buffer"/> may not be <see langword="null"/>.
+            </exception>
+            <exception cref="T:System.ArgumentOutOfRangeException">
+            <paramref name="count"/> may not be negative;
+            <para>- or -</para>
+            <paramref name="offset"/> may not be negative.
+            </exception>
+            <exception cref="T:System.ArgumentException">
+            <paramref name="offset"/> and <paramref name="count"/> would exceed <paramref name="buffer"/> length.
+            </exception>
+        </member>
+        <member name="M:RJCP.IO.Buffer.MemoryReadBuffer.ReadByte">
+            <summary>
+            Reads a single byte from the buffer without blocking.
+            </summary>
+            <returns>The byte value, or -1, if there is no data in the buffer.</returns>
+        </member>
+        <member name="M:RJCP.IO.Buffer.MemoryReadBuffer.OnRead(System.Int32)">
+            <summary>
+            Called when a read operation is finished, that derived classes can perform additional actions.
+            </summary>
+            <param name="bytes">The number of bytes that were just read and consumed.</param>
+        </member>
+        <member name="P:RJCP.IO.Buffer.MemoryReadBuffer.BytesToRead">
+            <summary>
+            Gets the number of bytes in the buffer available for reading.
+            </summary>
+            <value>The number of bytes in the buffer available for reading.</value>
+        </member>
+        <member name="M:RJCP.IO.Buffer.MemoryReadBuffer.Clear">
+            <summary>
+            Clears the read buffer so it is empty.
+            </summary>
+        </member>
+        <member name="P:RJCP.IO.Buffer.MemoryReadBuffer.BufferEnd">
+            <summary>
+            The offset into <see cref="P:RJCP.IO.Buffer.MemoryReadBuffer.Buffer"/> where data can be written to.
+            </summary>
+            <value>The offset into <see cref="P:RJCP.IO.Buffer.MemoryReadBuffer.Buffer"/> that data can be written to.</value>
+            <remarks>
+            This property is not thread safe and must be wrapped around a lock with <see cref="P:RJCP.IO.Buffer.MemoryReadBuffer.Lock"/>.
+            </remarks>
+        </member>
+        <member name="P:RJCP.IO.Buffer.MemoryReadBuffer.BufferWriteLength">
+            <summary>
+            Gets the length of contiguous data that can be written to <see cref="P:RJCP.IO.Buffer.MemoryReadBuffer.Buffer"/>.
+            </summary>
+            <value>The length of contiguous data that can be written to <see cref="P:RJCP.IO.Buffer.MemoryReadBuffer.Buffer"/>.</value>
+            <remarks>
+            This property is not thread safe and must be wrapped around a lock with <see cref="P:RJCP.IO.Buffer.MemoryReadBuffer.Lock"/>.
+            </remarks>
+        </member>
+        <member name="P:RJCP.IO.Buffer.MemoryReadBuffer.BufferPtr">
+            <summary>
+            Gets a pointer to the memory that data can be written to, useful for low level API to write directly.
+            </summary>
+            <value>The pointer to the memory that data can be written to.</value>
+            <remarks>
+            This property is only valid if this object was initialized with a pinned array in
+            <see cref="M:RJCP.IO.Buffer.MemoryReadBuffer.#ctor(System.Int32,System.Boolean)"/>.
+            <para>This property is not thread safe and must be wrapped around a lock with <see cref="P:RJCP.IO.Buffer.MemoryReadBuffer.Lock"/>.</para>
+            </remarks>
+        </member>
+        <member name="P:RJCP.IO.Buffer.MemoryReadBuffer.Buffer">
+            <summary>
+            Gets the write buffer.
+            </summary>
+            <value>The write buffer.</value>
+        </member>
+        <member name="P:RJCP.IO.Buffer.MemoryReadBuffer.IsBufferNotFull">
+            <summary>
+            Gets a value indicating whether the write buffer is empty.
+            </summary>
+            <value>Is <see langword="true"/> if the write buffer is not full; <see langword="false"/> otherwise.</value>
+            <remarks>
+            This property can be used to quickly test if there is space to write data to the write buffer. If there is
+            free space in the write buffer, then there is no reason to wait for it and low level API can be called to
+            fill data in the write buffer.
+            </remarks>
+        </member>
+        <member name="P:RJCP.IO.Buffer.MemoryReadBuffer.BufferNotFull">
+            <summary>
+            Gets a wait handle that indicates that data can be written to the buffer.
+            </summary>
+            <value>A wait handle that low level code can wait on when the buffer is no longer full.</value>
+        </member>
+        <member name="M:RJCP.IO.Buffer.MemoryReadBuffer.Produce(System.Int32)">
+            <summary>
+            Indicates that data has been written to the array.
+            </summary>
+            <param name="length">The amount of data that was written to the array.</param>
+            <remarks>
+            Data is written to the array <see cref="P:RJCP.IO.Buffer.MemoryReadBuffer.Buffer"/>, starting at <see cref="P:RJCP.IO.Buffer.MemoryReadBuffer.BufferEnd"/>, and not more than
+            <see cref="P:RJCP.IO.Buffer.MemoryReadBuffer.BufferWriteLength"/>.
+            <para>This property is not thread safe and must be wrapped around a lock with <see cref="P:RJCP.IO.Buffer.MemoryReadBuffer.Lock"/>.</para>
+            </remarks>
+            <exception cref="T:System.ArgumentOutOfRangeException">
+            Cannot produce negative <paramref name="length"/>, or producing <paramref name="length"/> exceeds the amount
+            of free space.
+            </exception>
+        </member>
+        <member name="P:RJCP.IO.Buffer.MemoryReadBuffer.Lock">
+            <summary>
+            Gets the lock object for driver modifications.
+            </summary>
+            <value>The lock object for low level API.</value>
+            <remarks>
+            When low level code needs to access the read buffer via <see cref="T:RJCP.IO.Buffer.Memory.IReadBuffer"/>, it should first take this
+            lock, so that user code is synchronized. The implementations intended for user code (such as
+            <see cref="T:RJCP.IO.Buffer.Memory.IReadBufferStream"/>) automatically takes this lock as needed.
+            </remarks>
+        </member>
+        <member name="M:RJCP.IO.Buffer.MemoryReadBuffer.DeviceDead">
+            <summary>
+            Indicates the underlying driver has a problem, so that there are no wait timeouts.
+            </summary>
+        </member>
+        <member name="P:RJCP.IO.Buffer.MemoryReadBuffer.IsDeviceDead">
+            <summary>
+            Gets a value indicating if the buffer has been told that the device is dead.
+            </summary>
+            <value><see langword="true"/> if this instance device is dead; otherwise, <see langword="false"/>.</value>
+        </member>
+        <member name="M:RJCP.IO.Buffer.MemoryReadBuffer.CheckBufferState(System.Boolean)">
+            <summary>
+            Checks the <see cref="P:RJCP.IO.Buffer.MemoryReadBuffer.ReadBuffer"/> and updates internal state.
+            </summary>
+            <param name="readEvent">
+            Set to <see langword="true"/> if a read event has occurred, i.e. if new data as been added to the buffer.
+            This causes the <see cref="M:RJCP.IO.Buffer.MemoryReadBuffer.WaitForRead(System.Int32)"/> methods to recheck for data.
+            </param>
+            <remarks>
+            Any modifications to the allocated space of <see cref="P:RJCP.IO.Buffer.MemoryReadBuffer.ReadBuffer"/> directly, must result in a call to this
+            method to ensure the state of this object is consistent to avoid unexpected blocking behaviour. It checks
+            the buffer if data can now be read or written to the buffer.
+            </remarks>
+        </member>
+        <member name="M:RJCP.IO.Buffer.MemoryReadBuffer.Reset">
+            <summary>
+            Resets this instance to the empty state.
+            </summary>
+        </member>
+        <member name="M:RJCP.IO.Buffer.MemoryReadBuffer.OnReset">
+            <summary>
+            Called when <see cref="M:RJCP.IO.Buffer.MemoryReadBuffer.Reset"/> is requested.
+            </summary>
+            <remarks>
+            Allows a safe way that derived classes can reset their state.
+            </remarks>
+        </member>
+        <member name="M:RJCP.IO.Buffer.MemoryReadBuffer.Dispose">
+            <summary>
+            Performs application-defined tasks associated with freeing, releasing, or resetting managed and unmanaged
+            resources.
+            </summary>
+        </member>
+        <member name="M:RJCP.IO.Buffer.MemoryReadBuffer.Dispose(System.Boolean)">
+            <summary>
+            Releases unmanaged and - optionally - managed resources.
+            </summary>
+            <param name="disposing">
+            <see langword="true"/> to release both managed and unmanaged resources; <see langword="false"/> to release
+            only unmanaged resources.
+            </param>
+        </member>
+        <member name="T:RJCP.IO.Buffer.MemoryWriteBuffer">
+            <summary>
+            The <see cref="T:RJCP.IO.Buffer.MemoryWriteBuffer"/> is a fixed memory buffer that can assist with buffered I/O.
+            </summary>
+            <remarks>
+            This class implements a thread-safe producer/consumer model, where the producer is mapped to a stream for
+            writing data, and the consume is mapped to a lower level driver for reading data.
+            </remarks>
+        </member>
+        <member name="M:RJCP.IO.Buffer.MemoryWriteBuffer.#ctor(System.Int32)">
+            <summary>
+            Initializes a new instance of the <see cref="T:RJCP.IO.Buffer.MemoryReadBuffer"/> class for a particular size and no pinned buffers.
+            </summary>
+            <param name="length">The size of the buffer to allocate.</param>
+            <exception cref="T:System.ArgumentOutOfRangeException">
+            Parameter <paramref name="length"/> must be positive.
+            </exception>
+        </member>
+        <member name="M:RJCP.IO.Buffer.MemoryWriteBuffer.#ctor(System.Int32,System.Boolean)">
+            <summary>
+            Initializes a new instance of the <see cref="T:RJCP.IO.Buffer.MemoryReadBuffer"/> class for a particular size and optionally pin buffers.
+            </summary>
+            <param name="length">The size of the buffer to allocate.</param>
+            <param name="pinned">If set to <see langword="true"/>, the buffers are pinned in memory.</param>
+            <exception cref="T:System.ArgumentOutOfRangeException">
+            Parameter <paramref name="length"/> must be positive.
+            </exception>
+        </member>
+        <member name="P:RJCP.IO.Buffer.MemoryWriteBuffer.WriteBuffer">
+            <summary>
+            Gets the write circular buffer for advanced operations.
+            </summary>
+            <value>The write circular buffer for advanced operations.</value>
+        </member>
+        <member name="M:RJCP.IO.Buffer.MemoryWriteBuffer.WaitForWrite(System.Int32,System.Int32)">
+            <summary>
+            Waits up to <paramref name="timeout"/> milliseconds to write at least <paramref name="count"/> bytes.
+            </summary>
+            <param name="count">The number of bytes to wait for to write.</param>
+            <param name="timeout">The timeout to wait for, in milliseconds.</param>
+            <returns>
+            <see langword="true"/> if at least <paramref name="count"/> bytes are now available for writing,
+            <see langword="false"/> if there was a timeout and insufficient space is available to write.
+            </returns>
+            <exception cref="T:System.ArgumentOutOfRangeException"><paramref name="timeout"/> is out of range.</exception>
+            <exception cref="T:System.ObjectDisposedException">This object is disposed of.</exception>
+        </member>
+        <member name="M:RJCP.IO.Buffer.MemoryWriteBuffer.WaitForWrite(System.Int32,System.Int32,System.Threading.CancellationToken)">
+            <summary>
+            Waits up to <paramref name="timeout"/> milliseconds to write at least <paramref name="count"/> bytes.
+            </summary>
+            <param name="count">The number of bytes to wait for to read.</param>
+            <param name="timeout">The timeout to wait for, in milliseconds.</param>
+            <param name="token">
+            The cancellation token that can be used by other objects or threads to receive notice of cancellation.
+            </param>
+            <returns>
+            <see langword="true"/> if at least <paramref name="count"/> bytes are now available for writing,
+            <see langword="false"/> if there was a timeout and insufficient space is available to write.
+            </returns>
+            <exception cref="T:System.ArgumentOutOfRangeException">
+            <paramref name="timeout"/> is out of range.
+            <para>- or -</para>
+            <paramref name="count"/> is negative.
+            </exception>
+            <exception cref="T:System.ObjectDisposedException">This object is disposed of.</exception>
+        </member>
+        <member name="M:RJCP.IO.Buffer.MemoryWriteBuffer.WaitForEmpty(System.Int32)">
+            <summary>
+            Waits for the write buffer to become empty.
+            </summary>
+            <param name="timeout">The timeout to wait for, in milliseconds.</param>
+            <returns>
+            <see langword="true"/> if the buffer became completely empty while waiting, <see langword="false"/> if there
+            was a timeout and data still remains to write.
+            </returns>
+        </member>
+        <member name="M:RJCP.IO.Buffer.MemoryWriteBuffer.WaitForEmpty(System.Int32,System.Threading.CancellationToken)">
+            <summary>
+            Waits for the write buffer to become empty.
+            </summary>
+            <param name="timeout">The timeout to wait for, in milliseconds.</param>
+            <param name="token">
+            The cancellation token that can be used by other objects or threads to receive notice of cancellation.
+            </param>
+            <returns>
+            <see langword="true"/> if the buffer became completely empty while waiting, <see langword="false"/> if there
+            was a timeout and data still remains to write.
+            </returns>
+        </member>
+        <member name="M:RJCP.IO.Buffer.MemoryWriteBuffer.WaitForWriteAsync(System.Int32,System.Int32)">
+            <summary>
+            Waits up to <paramref name="timeout"/> milliseconds to write at least <paramref name="count"/> bytes.
+            </summary>
+            <param name="count">The number of bytes to wait for to write.</param>
+            <param name="timeout">The timeout to wait for, in milliseconds.</param>
+            <returns>
+            <see langword="true"/> if at least <paramref name="count"/> bytes are now available for writing,
+            <see langword="false"/> if there was a timeout and insufficient space is available to write.
+            </returns>
+        </member>
+        <member name="M:RJCP.IO.Buffer.MemoryWriteBuffer.WaitForWriteAsync(System.Int32,System.Int32,System.Threading.CancellationToken)">
+            <summary>
+            Waits up to <paramref name="timeout"/> milliseconds to read at least <paramref name="count"/> bytes.
+            </summary>
+            <param name="count">The number of bytes to wait for to read.</param>
+            <param name="timeout">The timeout to wait for, in milliseconds.</param>
+            <param name="token">
+            The cancellation token that can be used by other objects or threads to receive notice of cancellation.
+            </param>
+            <returns>
+            <see langword="true"/> if at least <paramref name="count"/> bytes are now available for writing,
+            <see langword="false"/> if there was a timeout and insufficient space is available to write.
+            </returns>
+        </member>
+        <member name="M:RJCP.IO.Buffer.MemoryWriteBuffer.WaitForEmptyAsync(System.Int32)">
+            <summary>
+            Waits for the write buffer to become empty.
+            </summary>
+            <param name="timeout">The timeout to wait for, in milliseconds.</param>
+            <returns>
+            <see langword="true"/> if the buffer became completely empty while waiting, <see langword="false"/> if there
+            was a timeout and data still remains to write.
+            </returns>
+        </member>
+        <member name="M:RJCP.IO.Buffer.MemoryWriteBuffer.WaitForEmptyAsync(System.Int32,System.Threading.CancellationToken)">
+            <summary>
+            Waits for the write buffer to become empty.
+            </summary>
+            <param name="timeout">The timeout to wait for, in milliseconds.</param>
+            <param name="token">
+            The cancellation token that can be used by other objects or threads to receive notice of cancellation.
+            </param>
+            <returns>
+            <see langword="true"/> if the buffer became completely empty while waiting, <see langword="false"/> if there
+            was a timeout and data still remains to write.
+            </returns>
+        </member>
+        <member name="M:RJCP.IO.Buffer.MemoryWriteBuffer.Write(System.Byte[],System.Int32,System.Int32)">
+            <summary>
+            Performs a non-blocking write, copying data from the memory buffer to the array specified.
+            </summary>
+            <param name="buffer">The buffer to copy data into.</param>
+            <param name="offset">The offset into the buffer to copy into.</param>
+            <param name="count">The maximum number of bytes to copy.</param>
+            <returns>
+            Returns the number of bytes copied, which may be less or equal to <paramref name="count"/>.
+            </returns>
+            <remarks>
+            Data may be lost if an attempt to write <paramref name="count"/> bytes exceeds the buffer size. To ensure
+            this doesn't happen, call <see cref="M:RJCP.IO.Buffer.MemoryWriteBuffer.WaitForWrite(System.Int32,System.Int32,System.Threading.CancellationToken)"/> prior.
+            </remarks>
+        </member>
+        <member name="M:RJCP.IO.Buffer.MemoryWriteBuffer.OnWrite(System.Int32)">
+            <summary>
+            Called when the user wants to write.
+            </summary>
+            <param name="count">The number of bytes that were written.</param>
+            <remarks>
+            The write occurs from the user layer, but the driver layer may need to be notified. Override this class and
+            provide your own implementation for notification.
+            </remarks>
+        </member>
+        <member name="P:RJCP.IO.Buffer.MemoryWriteBuffer.BytesToWrite">
+            <summary>
+            Gets the number of bytes in the buffer still pending for writing.
+            </summary>
+            <value>The number of bytes in the buffer pending for writing.</value>
+        </member>
+        <member name="P:RJCP.IO.Buffer.MemoryWriteBuffer.BufferStart">
+            <summary>
+            The offset into <see cref="P:RJCP.IO.Buffer.MemoryWriteBuffer.Buffer"/> where data can be read from.
+            </summary>
+            <value>The offset into <see cref="P:RJCP.IO.Buffer.MemoryWriteBuffer.Buffer"/> that data can be read from.</value>
+            <remarks>
+            This property is not thread safe and must be wrapped around a lock with <see cref="P:RJCP.IO.Buffer.MemoryWriteBuffer.Lock"/>.
+            </remarks>
+        </member>
+        <member name="P:RJCP.IO.Buffer.MemoryWriteBuffer.BufferReadLength">
+            <summary>
+            Gets the length of contiguous data that can be read from <see cref="P:RJCP.IO.Buffer.MemoryWriteBuffer.Buffer"/>.
+            </summary>
+            <value>The length of contiguous data that can be read from <see cref="P:RJCP.IO.Buffer.MemoryWriteBuffer.Buffer"/>.</value>
+            <remarks>
+            This property is not thread safe and must be wrapped around a lock with <see cref="P:RJCP.IO.Buffer.MemoryWriteBuffer.Lock"/>.
+            </remarks>
+        </member>
+        <member name="P:RJCP.IO.Buffer.MemoryWriteBuffer.BufferPtr">
+            <summary>
+            Gets a pointer to the memory that data can be read from, useful for low level API to read directly from the
+            buffer, e.g. to write somewhere else.
+            </summary>
+            <value>The pointer to the memory that data can be read from.</value>
+            <remarks>
+            This property is not thread safe and must be wrapped around a lock with <see cref="P:RJCP.IO.Buffer.MemoryWriteBuffer.Lock"/>.
+            </remarks>
+        </member>
+        <member name="P:RJCP.IO.Buffer.MemoryWriteBuffer.Buffer">
+            <summary>
+            Gets the read buffer.
+            </summary>
+            <value>The read buffer.</value>
+        </member>
+        <member name="P:RJCP.IO.Buffer.MemoryWriteBuffer.IsBufferNotEmpty">
+            <summary>
+            Gets a value indicating whether the read buffer is not empty.
+            </summary>
+            <value>Is <see langword="true"/> if the read buffer has data; <see langword="false"/> otherwise.</value>
+            <remarks>
+            This property can be used to quickly test if there is data in the buffer or not. If there is data in the
+            read buffer, then there is no reason to wait for it and data can be given to lower level API to write the
+            data.
+            </remarks>
+        </member>
+        <member name="P:RJCP.IO.Buffer.MemoryWriteBuffer.BufferNotEmpty">
+            <summary>
+            Gets a wait handle that indicates if there is data put into the buffer.
+            </summary>
+            <value>
+            A wait handle that indicates if the user put data into the buffer that low level code can wait on.
+            </value>
+        </member>
+        <member name="M:RJCP.IO.Buffer.MemoryWriteBuffer.Consume(System.Int32)">
+            <summary>
+            Indicates that data has been read from the array.
+            </summary>
+            <param name="length">The amount of data that was read from the array that can be now discarded.</param>
+            <remarks>
+            Data is read from the array <see cref="P:RJCP.IO.Buffer.MemoryWriteBuffer.Buffer"/>, starting at <see cref="P:RJCP.IO.Buffer.MemoryWriteBuffer.BufferStart"/>, and not
+            more than <see cref="P:RJCP.IO.Buffer.MemoryWriteBuffer.BufferReadLength"/> bytes.
+            <para>This property is not thread safe and must be wrapped around a lock with <see cref="P:RJCP.IO.Buffer.MemoryWriteBuffer.Lock"/>.</para>
+            </remarks>
+        </member>
+        <member name="P:RJCP.IO.Buffer.MemoryWriteBuffer.Lock">
+            <summary>
+            Gets the lock object for driver modifications.
+            </summary>
+            <value>The lock object for low level API.</value>
+            <remarks>
+            When low level code needs to access the read buffer via <see cref="T:RJCP.IO.Buffer.Memory.IWriteBuffer"/>, it should first take this
+            lock, so that user code is synchronized. The implementations intended for user code (such as
+            <see cref="T:RJCP.IO.Buffer.Memory.IWriteBufferStream"/>) automatically takes this lock as needed.
+            </remarks>
+        </member>
+        <member name="P:RJCP.IO.Buffer.MemoryWriteBuffer.BytesFree">
+            <summary>
+            Gets the number of bytes in the buffer available for writing.
+            </summary>
+            <value>The number of bytes in the buffer available for writing.</value>
+            <remarks>
+            This property is not thread safe and must be wrapped around a lock with <see cref="P:RJCP.IO.Buffer.MemoryWriteBuffer.Lock"/>.
+            </remarks>
+        </member>
+        <member name="M:RJCP.IO.Buffer.MemoryWriteBuffer.Purge">
+            <summary>
+            Purges (clears) the output buffer.
+            </summary>
+        </member>
+        <member name="M:RJCP.IO.Buffer.MemoryWriteBuffer.DeviceDead">
+            <summary>
+            Indicates the underlying driver has a problem, so that there are no wait timeouts.
+            </summary>
+            <remarks>
+            Marking the write buffer as dead will purge all data still pending. It can't be written any more.
+            </remarks>
+        </member>
+        <member name="P:RJCP.IO.Buffer.MemoryWriteBuffer.IsDeviceDead">
+            <summary>
+            Gets a value indicating if the buffer has been told that the device is dead.
+            </summary>
+            <value><see langword="true"/> if this instance device is dead; otherwise, <see langword="false"/>.</value>
+        </member>
+        <member name="M:RJCP.IO.Buffer.MemoryWriteBuffer.Reset">
+            <summary>
+            Resets this instance to the empty state.
+            </summary>
+        </member>
+        <member name="M:RJCP.IO.Buffer.MemoryWriteBuffer.OnReset">
+            <summary>
+            Called when <see cref="M:RJCP.IO.Buffer.MemoryWriteBuffer.Reset"/> is requested.
+            </summary>
+            <remarks>
+            Allows a safe way that derived classes can reset their state.
+            </remarks>
+        </member>
+        <member name="M:RJCP.IO.Buffer.MemoryWriteBuffer.Dispose">
+            <summary>
+            Performs application-defined tasks associated with freeing, releasing, or resetting managed and unmanaged
+            resources.
+            </summary>
+        </member>
+        <member name="M:RJCP.IO.Buffer.MemoryWriteBuffer.Dispose(System.Boolean)">
+            <summary>
+            Releases unmanaged and - optionally - managed resources.
+            </summary>
+            <param name="disposing">
+            <see langword="true"/> to release both managed and unmanaged resources; <see langword="false"/> to release
+            only unmanaged resources.
+            </param>
+        </member>
+        <member name="T:RJCP.IO.Resources">
+            <summary>
+              A strongly-typed resource class, for looking up localized strings, etc.
+            </summary>
+        </member>
+        <member name="P:RJCP.IO.Resources.ResourceManager">
+            <summary>
+              Returns the cached ResourceManager instance used by this class.
+            </summary>
+        </member>
+        <member name="P:RJCP.IO.Resources.Culture">
+            <summary>
+              Overrides the current thread's CurrentUICulture property for all
+              resource lookups using this strongly typed resource class.
+            </summary>
+        </member>
+        <member name="P:RJCP.IO.Resources.AsyncResult_EndInvalidOperation">
+            <summary>
+              Looks up a localized string similar to End operation type was different than Begin.
+            </summary>
+        </member>
+        <member name="P:RJCP.IO.Resources.AsyncResult_EndMultipleCalls">
+            <summary>
+              Looks up a localized string similar to End was called multiple times for this operation.
+            </summary>
+        </member>
+        <member name="P:RJCP.IO.Resources.AsyncResult_EndWithInvalidObject">
+            <summary>
+              Looks up a localized string similar to End was called on a different object than Begin.
+            </summary>
+        </member>
+        <member name="P:RJCP.IO.Resources.AsyncResult_UnsupportedResult">
+            <summary>
+              Looks up a localized string similar to Result passed represents an operation not supported by this framework.
+            </summary>
+        </member>
+        <member name="T:RJCP.IO.Timer.TimerExpiry">
+             <summary>
+             A class to maintain how much time is remaining since the last reset, until expiry.
+             </summary>
+             <remarks>
+             This class is useful when implementing time outs in other methods. It can provide the remaining time, in units
+             of milliseconds, that can be used with many Operating System calls as an expiry time.
+             <para>
+             One example is the <see cref="M:System.Threading.WaitHandle.WaitOne"/> method which expects a time out
+             parameter. Either instantiate the <see cref="T:RJCP.IO.Timer.TimerExpiry"/> class at the beginning immediately before its use,
+             or call the <see cref="M:RJCP.IO.Timer.TimerExpiry.Reset"/> method at the beginning of the time out operation. Then on return of the
+             function, if no other operation occurred, the method <see cref="M:RJCP.IO.Timer.TimerExpiry.RemainingTime"/> should return 0 indicating that
+             the timer has expired.
+             </para>
+             <para>
+             Another thread can be programmed to <see cref="M:RJCP.IO.Timer.TimerExpiry.Reset"/> the timer class during a time out operation, so that
+             even if the result of Wait operation by the Operating system resulted in a time out, a <see cref="M:RJCP.IO.Timer.TimerExpiry.Reset"/>,
+             which results in the <see cref="M:RJCP.IO.Timer.TimerExpiry.RemainingTime"/> being more than 0 milliseconds, indicates that another wait
+             operation should occur.
+             </para>
+             <para>
+             Even if no expiry is to occur, but the Operating System function returns early, you can opt to restart the time
+             out operation which will then take into account the current time and reduce the time out so that the operation
+             ends as expected.
+             </para>
+             <para>
+             As an example, say you need to wait for data by calling a method which waits for the first set of data within a
+             time out. But your method must wait for at least two elements of data within the time out. This can be
+             implemented as follows:
+             </para>
+             <example>
+             <code lang="csharp">
+             <![CDATA[
+             public bool MyFunc(int timeOut) {
+                 TimerExpiry myExpiry = new TimerExpiry(timeOut);
+                 int elements = 0;
+                 do {
+                     elements += GetData(myExpiry.RemainingTime());
+                 } while (elements < 2 && !myExpiry.Expired);
+            
+                 if (elements >= 2)
+                     return true;
+                 return false;
+             }
+             ]]>
+             </code>
+             </example>
+             </remarks>
+        </member>
+        <member name="M:RJCP.IO.Timer.TimerExpiry.#ctor(System.Int32)">
+            <summary>
+            Constructor. Initialise expiry based on the current time.
+            </summary>
+            <param name="milliseconds">The initial time out in milliseconds.</param>
+            <exception cref="T:System.ArgumentOutOfRangeException">
+            The value of <paramref name="milliseconds"/> is not a valid value.
+            </exception>
+            <remarks>
+            The constructor sets the initial time out that should be used. On construction of the new object, the timer
+            is automatically started.
+            </remarks>
+        </member>
+        <member name="P:RJCP.IO.Timer.TimerExpiry.Timeout">
+            <summary>
+            The time for expiry on the next reset.
+            </summary>
+            <value>
+            The expiry timeout in milliseconds. The value <see cref="F:System.Threading.Timeout.Infinite"/> indicates no expiry.
+            </value>
+            <exception cref="T:System.ArgumentOutOfRangeException">
+            The value of <see name="Timeout"/> is not a valid value.
+            </exception>
+        </member>
+        <member name="M:RJCP.IO.Timer.TimerExpiry.RemainingTime">
+            <summary>
+            Estimate the amount of time (ms) remaining from when this function is called until expiry.
+            </summary>
+            <returns>The time to expiry in milliseconds.</returns>
+        </member>
+        <member name="P:RJCP.IO.Timer.TimerExpiry.Expired">
+            <summary>
+            Test if the timer expiry has expired.
+            </summary>
+        </member>
+        <member name="M:RJCP.IO.Timer.TimerExpiry.Reset">
+            <summary>
+            Reset the time out so it occurs with the given <see cref="P:RJCP.IO.Timer.TimerExpiry.Timeout"/>.
+            </summary>
+        </member>
+    </members>
+</doc>

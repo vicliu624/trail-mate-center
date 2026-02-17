@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Avalonia.Win32.Automation</name>
+    </assembly>
+    <members>
+        <member name="T:Avalonia.Win32.Automation.InteropAutomationNode">
+            <summary>
+            An automation node which serves as the root of an embedded native control automation tree.
+            </summary>
+        </member>
+    </members>
+</doc>

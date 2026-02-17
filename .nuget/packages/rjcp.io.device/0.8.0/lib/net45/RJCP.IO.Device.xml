@@ -1,0 +1,866 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>RJCP.IO.Device</name>
+    </assembly>
+    <members>
+        <member name="T:RJCP.IO.DeviceMgr.DeviceCapabilities">
+            <summary>
+            Device Capabilities.
+            </summary>
+        </member>
+        <member name="F:RJCP.IO.DeviceMgr.DeviceCapabilities.None">
+            <summary>
+            No capabilities listed.
+            </summary>
+        </member>
+        <member name="F:RJCP.IO.DeviceMgr.DeviceCapabilities.LockSupported">
+            <summary>
+            Locking is supported.
+            </summary>
+        </member>
+        <member name="F:RJCP.IO.DeviceMgr.DeviceCapabilities.EjectSupported">
+            <summary>
+            Ejecting is supported.
+            </summary>
+        </member>
+        <member name="F:RJCP.IO.DeviceMgr.DeviceCapabilities.Removable">
+            <summary>
+            Device is removable.
+            </summary>
+        </member>
+        <member name="F:RJCP.IO.DeviceMgr.DeviceCapabilities.DockDevice">
+            <summary>
+            Docking Device.
+            </summary>
+        </member>
+        <member name="F:RJCP.IO.DeviceMgr.DeviceCapabilities.UniqueId">
+            <summary>
+            Unique Identifier.
+            </summary>
+        </member>
+        <member name="F:RJCP.IO.DeviceMgr.DeviceCapabilities.SilentInstall">
+            <summary>
+            Silent install
+            </summary>
+        </member>
+        <member name="F:RJCP.IO.DeviceMgr.DeviceCapabilities.RawDeviceOk">
+            <summary>
+            Supports accessing the Raw device.
+            </summary>
+        </member>
+        <member name="F:RJCP.IO.DeviceMgr.DeviceCapabilities.SurpriseRemovalOk">
+            <summary>
+            Surprise removal supported (without ejecting).
+            </summary>
+        </member>
+        <member name="F:RJCP.IO.DeviceMgr.DeviceCapabilities.HardwareDisabled">
+            <summary>
+            Hardware disabled
+            </summary>
+        </member>
+        <member name="F:RJCP.IO.DeviceMgr.DeviceCapabilities.Nondynamic">
+            <summary>
+            Non-Dynamic.
+            </summary>
+        </member>
+        <member name="F:RJCP.IO.DeviceMgr.DeviceCapabilities.SecureDevice">
+            <summary>
+            Secure device
+            </summary>
+        </member>
+        <member name="T:RJCP.IO.DeviceMgr.DeviceInstance">
+            <summary>
+            A Device Instance representing a device in the system.
+            </summary>
+        </member>
+        <member name="M:RJCP.IO.DeviceMgr.DeviceInstance.GetRoot">
+            <summary>
+            Gets a tree of all devices, starting from the root, for devices that are available in the system.
+            </summary>
+            <returns>
+            A tree of <see cref="T:RJCP.IO.DeviceMgr.DeviceInstance"/> objects. If there was a problem retrieving the tree,
+            <see langword="null"/> is returned
+            </returns>
+            <exception cref="T:System.PlatformNotSupportedException">This is only supported on Windows NT platforms.</exception>
+        </member>
+        <member name="M:RJCP.IO.DeviceMgr.DeviceInstance.GetList">
+            <summary>
+            Gets the list of all devices in the system, even if they're not physicall present.
+            </summary>
+            <returns>A list of all devices in the system.</returns>
+            <exception cref="T:System.PlatformNotSupportedException">This is only supported on Windows NT platforms.</exception>
+            <remarks>
+            Even though the list is returned as a flat list, the <see cref="P:RJCP.IO.DeviceMgr.DeviceInstance.Children"/> and <see cref="P:RJCP.IO.DeviceMgr.DeviceInstance.Parent"/> fields
+            can be used to build a device tree. The easiest way to get the root node of the tree is to call
+            <see cref="M:RJCP.IO.DeviceMgr.DeviceInstance.GetRoot"/> after calling this method. It will only locate the root node, and won't reiterate
+            the children.
+            </remarks>
+        </member>
+        <member name="M:RJCP.IO.DeviceMgr.DeviceInstance.GetList(RJCP.IO.DeviceMgr.LocateMode)">
+            <summary>
+            Gets the list of all devices in the system, even if they're not physicall present.
+            </summary>
+            <param name="mode">The query mode when locating devices.</param>
+            <returns>A list of all devices in the system.</returns>
+            <exception cref="T:System.PlatformNotSupportedException"></exception>
+            <remarks>
+            Even though the list is returned as a flat list, the <see cref="P:RJCP.IO.DeviceMgr.DeviceInstance.Children"/> and <see cref="P:RJCP.IO.DeviceMgr.DeviceInstance.Parent"/> fields
+            can be used to build a device tree. The easiest way to get the root node of the tree is to call
+            <see cref="M:RJCP.IO.DeviceMgr.DeviceInstance.GetRoot"/> after calling this method. It will only locate the root node, and won't reiterate
+            the children.
+            </remarks>
+        </member>
+        <member name="P:RJCP.IO.DeviceMgr.DeviceInstance.Handle">
+            <summary>
+            Gets the underlying handle of the DevInst for the CfgMgr32 API.
+            </summary>
+            <value>The underlying configuration manager handle.</value>
+        </member>
+        <member name="P:RJCP.IO.DeviceMgr.DeviceInstance.Parent">
+            <summary>
+            Gets the parent device instance.
+            </summary>
+            <value>The parent device instance.</value>
+        </member>
+        <member name="P:RJCP.IO.DeviceMgr.DeviceInstance.Children">
+            <summary>
+            Get the children device instances from this node.
+            </summary>
+        </member>
+        <member name="P:RJCP.IO.DeviceMgr.DeviceInstance.Status">
+            <summary>
+            Gets the status of the device at the time it was enumerated.
+            </summary>
+            <value>The status of the device at the time it was enumerated.</value>
+        </member>
+        <member name="P:RJCP.IO.DeviceMgr.DeviceInstance.HasProblem">
+            <summary>
+            Gets a value indicating whether this instance has problem.
+            </summary>
+            <value>
+            Returns <see langword="true"/> if this instance has problem; otherwise, <see langword="false"/>.
+            </value>
+        </member>
+        <member name="P:RJCP.IO.DeviceMgr.DeviceInstance.ProblemCode">
+            <summary>
+            Gets the problem code for this driver if it has a problem.
+            </summary>
+            <value>The problem code for this driver.</value>
+        </member>
+        <member name="P:RJCP.IO.DeviceMgr.DeviceInstance.DeviceDescription">
+            <summary>
+            Gets the device description.
+            </summary>
+            <value>The device description.</value>
+        </member>
+        <member name="P:RJCP.IO.DeviceMgr.DeviceInstance.Service">
+            <summary>
+            Gets the name of the service.
+            </summary>
+            <value>The name of the service.</value>
+        </member>
+        <member name="P:RJCP.IO.DeviceMgr.DeviceInstance.Class">
+            <summary>
+            Gets the class name of the device.
+            </summary>
+            <value>The class name of the device.</value>
+        </member>
+        <member name="P:RJCP.IO.DeviceMgr.DeviceInstance.ClassGuid">
+            <summary>
+            Gets the class unique identifier of the device.
+            </summary>
+            <value>The class unique identifier of the device.</value>
+        </member>
+        <member name="P:RJCP.IO.DeviceMgr.DeviceInstance.Driver">
+            <summary>
+            Gets the driver.
+            </summary>
+            <value>The driver.</value>
+        </member>
+        <member name="P:RJCP.IO.DeviceMgr.DeviceInstance.Manufacturer">
+            <summary>
+            Gets the manufacturer of the device or driver.
+            </summary>
+            <value>The manufacturer of the device or driver.</value>
+        </member>
+        <member name="P:RJCP.IO.DeviceMgr.DeviceInstance.FriendlyName">
+            <summary>
+            Gets the friendly name of the device.
+            </summary>
+            <value>The friendly name of the device.</value>
+        </member>
+        <member name="P:RJCP.IO.DeviceMgr.DeviceInstance.Location">
+            <summary>
+            Gets the location of the device.
+            </summary>
+            <value>The location of the device.</value>
+        </member>
+        <member name="P:RJCP.IO.DeviceMgr.DeviceInstance.PhysicalDevice">
+            <summary>
+            Gets the physical device name.
+            </summary>
+            <value>The physical device name.</value>
+        </member>
+        <member name="P:RJCP.IO.DeviceMgr.DeviceInstance.ConfigFlags">
+            <summary>
+            Gets the configuration flags for the device.
+            </summary>
+            <value>The configuration flags for the device.</value>
+        </member>
+        <member name="P:RJCP.IO.DeviceMgr.DeviceInstance.Capabilities">
+            <summary>
+            Gets the capability flags of the device.
+            </summary>
+            <value>The capabilities of the device.</value>
+        </member>
+        <member name="P:RJCP.IO.DeviceMgr.DeviceInstance.HardwareIds">
+            <summary>
+            Gets the hardware ids.
+            </summary>
+            <value>The hardware ids.</value>
+        </member>
+        <member name="P:RJCP.IO.DeviceMgr.DeviceInstance.CompatibleIds">
+            <summary>
+            Gets the compatible ids.
+            </summary>
+            <value>The compatible ids.</value>
+        </member>
+        <member name="P:RJCP.IO.DeviceMgr.DeviceInstance.UpperFilters">
+            <summary>
+            Gets the compatible ids.
+            </summary>
+            <value>The compatible ids.</value>
+        </member>
+        <member name="P:RJCP.IO.DeviceMgr.DeviceInstance.LowerFilters">
+            <summary>
+            Gets the compatible ids.
+            </summary>
+            <value>The compatible ids.</value>
+        </member>
+        <member name="P:RJCP.IO.DeviceMgr.DeviceInstance.LocationPaths">
+            <summary>
+            Gets the compatible ids (Windows 2003 and later).
+            </summary>
+            <value>The compatible ids.</value>
+        </member>
+        <member name="P:RJCP.IO.DeviceMgr.DeviceInstance.BaseContainerId">
+            <summary>
+            Gets the base container identifier (Windows 7).
+            </summary>
+            <value>The location of the device.</value>
+        </member>
+        <member name="M:RJCP.IO.DeviceMgr.DeviceInstance.GetDeviceProperties">
+            <summary>
+            Gets the names of the keys for the device from the registry.
+            </summary>
+            <returns>
+            An array of all the keys for the device from the registry. This can be then used with
+            <see cref="M:RJCP.IO.DeviceMgr.DeviceInstance.GetDeviceProperty``1(System.String,``0)"/>.
+            </returns>
+        </member>
+        <member name="M:RJCP.IO.DeviceMgr.DeviceInstance.GetDeviceProperty(System.String)">
+            <summary>
+            Gets the device property.
+            </summary>
+            <param name="keyName">Name of the key.</param>
+            <returns>The result. If the key doesn't exist, <see langword="null"/> is returned.</returns>
+        </member>
+        <member name="M:RJCP.IO.DeviceMgr.DeviceInstance.GetDeviceProperty(System.String,System.Object)">
+            <summary>
+            Gets the device property.
+            </summary>
+            <param name="keyName">Name of the key.</param>
+            <param name="defValue">The value to return if the key doesn't exist.</param>
+            <returns>The result. If the key doesn't exist, the default value is returned.</returns>
+        </member>
+        <member name="M:RJCP.IO.DeviceMgr.DeviceInstance.GetDeviceProperty``1(System.String)">
+            <summary>
+            Gets the device property.
+            </summary>
+            <typeparam name="T">The type to convert the result to.</typeparam>
+            <param name="keyName">Name of the key.</param>
+            <returns>The result. If the key doesn't exist, the default value is returned.</returns>
+        </member>
+        <member name="M:RJCP.IO.DeviceMgr.DeviceInstance.GetDeviceProperty``1(System.String,``0)">
+            <summary>
+            Gets the device property.
+            </summary>
+            <typeparam name="T">The type to convert the result to.</typeparam>
+            <param name="keyName">Name of the key.</param>
+            <param name="defValue">The value to return if the key doesn't exist.</param>
+            <returns>The result. If the key doesn't exist, the default value is returned.</returns>
+        </member>
+        <member name="M:RJCP.IO.DeviceMgr.DeviceInstance.Refresh">
+            <summary>
+            Refreshes this instance.
+            </summary>
+            <remarks>
+            This method should be used if it is believed that this node, and the children might have changed. Refreshing
+            from this tree will remove nodes that are not currently connected / existing, thus removing entries that may
+            have been populated by <see cref="M:RJCP.IO.DeviceMgr.DeviceInstance.GetList"/>.
+            </remarks>
+        </member>
+        <member name="M:RJCP.IO.DeviceMgr.DeviceInstance.ToString">
+            <summary>
+            Returns a <see cref="T:System.String" /> that represents this instance.
+            </summary>
+            <returns>A <see cref="T:System.String" /> that represents this instance.</returns>
+        </member>
+        <member name="T:RJCP.IO.DeviceMgr.DeviceProblem">
+            <summary>
+            Known Device Problems.
+            </summary>
+            <remarks>
+            Obtained from 'cfg.h' from the Windows SDK.
+            </remarks>
+        </member>
+        <member name="F:RJCP.IO.DeviceMgr.DeviceProblem.None">
+            <summary>
+            No problem identified.
+            </summary>
+        </member>
+        <member name="F:RJCP.IO.DeviceMgr.DeviceProblem.NotConfigured">
+            <summary>
+            No config for device.
+            </summary>
+        </member>
+        <member name="F:RJCP.IO.DeviceMgr.DeviceProblem.DevLoaderFailed">
+            <summary>
+            Service load failed.
+            </summary>
+        </member>
+        <member name="F:RJCP.IO.DeviceMgr.DeviceProblem.OutOfMemory">
+            <summary>
+            Out of memory.
+            </summary>
+        </member>
+        <member name="F:RJCP.IO.DeviceMgr.DeviceProblem.EntryIsWrongType">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="F:RJCP.IO.DeviceMgr.DeviceProblem.LackedArbitrator">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="F:RJCP.IO.DeviceMgr.DeviceProblem.BootConfigConflict">
+            <summary>
+            Boot config conflict.
+            </summary>
+        </member>
+        <member name="F:RJCP.IO.DeviceMgr.DeviceProblem.FailedFilter">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="F:RJCP.IO.DeviceMgr.DeviceProblem.DevLoaderNotFound">
+            <summary>
+            Devloader not found.
+            </summary>
+        </member>
+        <member name="F:RJCP.IO.DeviceMgr.DeviceProblem.InvalidData">
+            <summary>
+            Invalid ID.
+            </summary>
+        </member>
+        <member name="F:RJCP.IO.DeviceMgr.DeviceProblem.FailedStart">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="F:RJCP.IO.DeviceMgr.DeviceProblem.Liar">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="F:RJCP.IO.DeviceMgr.DeviceProblem.NormalConflict">
+            <summary>
+            Config conflict.
+            </summary>
+        </member>
+        <member name="F:RJCP.IO.DeviceMgr.DeviceProblem.NotVerified">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="F:RJCP.IO.DeviceMgr.DeviceProblem.NeedRestart">
+            <summary>
+            Requires restart.
+            </summary>
+        </member>
+        <member name="F:RJCP.IO.DeviceMgr.DeviceProblem.Reenumeration">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="F:RJCP.IO.DeviceMgr.DeviceProblem.PartialLogConf">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="F:RJCP.IO.DeviceMgr.DeviceProblem.UnknownResource">
+            <summary>
+            Unknown resource type.
+            </summary>
+        </member>
+        <member name="F:RJCP.IO.DeviceMgr.DeviceProblem.Reinstall">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="F:RJCP.IO.DeviceMgr.DeviceProblem.Registry">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="F:RJCP.IO.DeviceMgr.DeviceProblem.VXDLDR">
+            <summary>
+            WINDOWS 95 ONLY.
+            </summary>
+        </member>
+        <member name="F:RJCP.IO.DeviceMgr.DeviceProblem.WillBeRemoved">
+            <summary>
+            Device will be removed.
+            </summary>
+        </member>
+        <member name="F:RJCP.IO.DeviceMgr.DeviceProblem.Disabled">
+            <summary>
+            Device is disabled.
+            </summary>
+        </member>
+        <member name="F:RJCP.IO.DeviceMgr.DeviceProblem.DevLoaderNotReady">
+            <summary>
+            Dev loader not ready.
+            </summary>
+        </member>
+        <member name="F:RJCP.IO.DeviceMgr.DeviceProblem.DeviceNotThere">
+            <summary>
+            Device doesn't exist.
+            </summary>
+        </member>
+        <member name="F:RJCP.IO.DeviceMgr.DeviceProblem.Moved">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="F:RJCP.IO.DeviceMgr.DeviceProblem.TooEarly">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="F:RJCP.IO.DeviceMgr.DeviceProblem.NoValidLogConf">
+            <summary>
+            No valid log config.
+            </summary>
+        </member>
+        <member name="F:RJCP.IO.DeviceMgr.DeviceProblem.FailedInstall">
+            <summary>
+            Install failed.
+            </summary>
+        </member>
+        <member name="F:RJCP.IO.DeviceMgr.DeviceProblem.HardwareDisabled">
+            <summary>
+            Device disabled.
+            </summary>
+        </member>
+        <member name="F:RJCP.IO.DeviceMgr.DeviceProblem.CantShareIrq">
+            <summary>
+            Can't share IRQ.
+            </summary>
+        </member>
+        <member name="F:RJCP.IO.DeviceMgr.DeviceProblem.FailedAdd">
+            <summary>
+            Driver failed add.
+            </summary>
+        </member>
+        <member name="F:RJCP.IO.DeviceMgr.DeviceProblem.DisabledService">
+            <summary>
+            Service's start is 4.
+            </summary>
+        </member>
+        <member name="F:RJCP.IO.DeviceMgr.DeviceProblem.TranslationFailed">
+            <summary>
+            Resource translation failed.
+            </summary>
+        </member>
+        <member name="F:RJCP.IO.DeviceMgr.DeviceProblem.NoSoftConfig">
+            <summary>
+            No soft configuration.
+            </summary>
+        </member>
+        <member name="F:RJCP.IO.DeviceMgr.DeviceProblem.BiosTable">
+            <summary>
+            Device missing in BIOS table.
+            </summary>
+        </member>
+        <member name="F:RJCP.IO.DeviceMgr.DeviceProblem.IrqTranslationFailed">
+            <summary>
+            IRQ translator failed.
+            </summary>
+        </member>
+        <member name="F:RJCP.IO.DeviceMgr.DeviceProblem.FailedDriverEntry">
+            <summary>
+            DriverEntry() failed.
+            </summary>
+        </member>
+        <member name="F:RJCP.IO.DeviceMgr.DeviceProblem.DriverFailedPrioUnload">
+            <summary>
+            Driver should have unloaded.
+            </summary>
+        </member>
+        <member name="F:RJCP.IO.DeviceMgr.DeviceProblem.DriverFailedLoad">
+            <summary>
+            Driver load unsuccessful.
+            </summary>
+        </member>
+        <member name="F:RJCP.IO.DeviceMgr.DeviceProblem.DriverServiceKeyInvalid">
+            <summary>
+            Error accessing driver's service key.
+            </summary>
+        </member>
+        <member name="F:RJCP.IO.DeviceMgr.DeviceProblem.LegacyServiceNoDevices">
+            <summary>
+            Loaded legacy service created no devices.
+            </summary>
+        </member>
+        <member name="F:RJCP.IO.DeviceMgr.DeviceProblem.DuplicateDevice">
+            <summary>
+            Two devices were discovered with the same name.
+            </summary>
+        </member>
+        <member name="F:RJCP.IO.DeviceMgr.DeviceProblem.FailedPostStart">
+            <summary>
+            The drivers set the device state to failed.
+            </summary>
+        </member>
+        <member name="F:RJCP.IO.DeviceMgr.DeviceProblem.Halted">
+            <summary>
+            This device was failed post start via usermode.
+            </summary>
+        </member>
+        <member name="F:RJCP.IO.DeviceMgr.DeviceProblem.Phantom">
+            <summary>
+            The devinst currently exists only in the registry.
+            </summary>
+        </member>
+        <member name="F:RJCP.IO.DeviceMgr.DeviceProblem.SystemShutdown">
+            <summary>
+            The system is shutting down.
+            </summary>
+        </member>
+        <member name="F:RJCP.IO.DeviceMgr.DeviceProblem.HeldForEject">
+            <summary>
+            The device is offline awaiting removal.
+            </summary>
+        </member>
+        <member name="F:RJCP.IO.DeviceMgr.DeviceProblem.DriverBlocked">
+            <summary>
+            One or more drivers is blocked from loading.
+            </summary>
+        </member>
+        <member name="F:RJCP.IO.DeviceMgr.DeviceProblem.RegistryTooLarge">
+            <summary>
+            System hive has grown too large.
+            </summary>
+        </member>
+        <member name="F:RJCP.IO.DeviceMgr.DeviceProblem.SetPropertiesFailed">
+            <summary>
+            Failed to apply one or more registry properties.
+            </summary>
+        </member>
+        <member name="F:RJCP.IO.DeviceMgr.DeviceProblem.WaitingOnDependency">
+            <summary>
+            Device is stalled waiting on a dependency to start.
+            </summary>
+        </member>
+        <member name="F:RJCP.IO.DeviceMgr.DeviceProblem.UnsignedDriver">
+            <summary>
+            Failed load driver due to unsigned image.
+            </summary>
+        </member>
+        <member name="F:RJCP.IO.DeviceMgr.DeviceProblem.UsedByDebugger">
+            <summary>
+            Device is being used by kernel debugger.
+            </summary>
+        </member>
+        <member name="F:RJCP.IO.DeviceMgr.DeviceProblem.DeviceReset">
+            <summary>
+            Device is being reset.
+            </summary>
+        </member>
+        <member name="F:RJCP.IO.DeviceMgr.DeviceProblem.ConsoleLocked">
+            <summary>
+            Device is blocked while console is locked.
+            </summary>
+        </member>
+        <member name="F:RJCP.IO.DeviceMgr.DeviceProblem.NeedClassConfig">
+            <summary>
+            Device needs extended class configuration to start.
+            </summary>
+        </member>
+        <member name="F:RJCP.IO.DeviceMgr.DeviceProblem.GuestAssignmentFailed">
+            <summary>
+            Assignment to guest partition failed.
+            </summary>
+        </member>
+        <member name="T:RJCP.IO.DeviceMgr.DeviceStatus">
+            <summary>
+            Contains the Device Status.
+            </summary>
+            <remarks>
+            The device status is retrieved from the Config Manager API (see cfg.h). It is also dependent on the running
+            Operating System. As the codes are dependent also on the Operating System being compiled (due to reuse of some
+            of the codes), some of the older codes might not be available on newer Operating Systems. This list uses Windows
+            XP as a baseline.
+            </remarks>
+        </member>
+        <member name="F:RJCP.IO.DeviceMgr.DeviceStatus.None">
+            <summary>
+            No device status is available.
+            </summary>
+        </member>
+        <member name="F:RJCP.IO.DeviceMgr.DeviceStatus.RootEnumerated">
+            <summary>
+            Was enumerated by ROOT.
+            </summary>
+        </member>
+        <member name="F:RJCP.IO.DeviceMgr.DeviceStatus.DriverLoaded">
+            <summary>
+            Has Register_Device_Driver.
+            </summary>
+        </member>
+        <member name="F:RJCP.IO.DeviceMgr.DeviceStatus.EnumLoaded">
+            <summary>
+            Has Register_Enumerator.
+            </summary>
+        </member>
+        <member name="F:RJCP.IO.DeviceMgr.DeviceStatus.Started">
+            <summary>
+            Is currently configured.
+            </summary>
+        </member>
+        <member name="F:RJCP.IO.DeviceMgr.DeviceStatus.ManuallyInstalled">
+            <summary>
+            Manually installed.
+            </summary>
+        </member>
+        <member name="F:RJCP.IO.DeviceMgr.DeviceStatus.NeedsEnumeration">
+            <summary>
+            May need reenumeration.
+            </summary>
+        </member>
+        <member name="F:RJCP.IO.DeviceMgr.DeviceStatus.DriverBlocked">
+            <summary>
+            One or more drivers are blocked from loading for this Devnode.
+            </summary>
+        </member>
+        <member name="F:RJCP.IO.DeviceMgr.DeviceStatus.HardwareEnum">
+            <summary>
+            Enum generates hardware ID.
+            </summary>
+        </member>
+        <member name="F:RJCP.IO.DeviceMgr.DeviceStatus.NeedRestart">
+            <summary>
+            System needs to be restarted for this device to work properly.
+            </summary>
+        </member>
+        <member name="F:RJCP.IO.DeviceMgr.DeviceStatus.ChildWithInvalidId">
+            <summary>
+            One or more children have invalid ID(s).
+            </summary>
+        </member>
+        <member name="F:RJCP.IO.DeviceMgr.DeviceStatus.HasProblem">
+            <summary>
+            Need device installer.
+            </summary>
+        </member>
+        <member name="F:RJCP.IO.DeviceMgr.DeviceStatus.Filtered">
+            <summary>
+            Is filtered.
+            </summary>
+        </member>
+        <member name="F:RJCP.IO.DeviceMgr.DeviceStatus.LegacyDriver">
+            <summary>
+            This device is using a legacy driver.
+            </summary>
+        </member>
+        <member name="F:RJCP.IO.DeviceMgr.DeviceStatus.Disableable">
+            <summary>
+            Can be disabled.
+            </summary>
+        </member>
+        <member name="F:RJCP.IO.DeviceMgr.DeviceStatus.Removable">
+            <summary>
+            Can be removed.
+            </summary>
+        </member>
+        <member name="F:RJCP.IO.DeviceMgr.DeviceStatus.PrivateProblem">
+            <summary>
+            Has a private problem.
+            </summary>
+        </member>
+        <member name="F:RJCP.IO.DeviceMgr.DeviceStatus.MultiFunctionParent">
+            <summary>
+            Multi function parent. Up until Windows 8.x.
+            </summary>
+        </member>
+        <member name="F:RJCP.IO.DeviceMgr.DeviceStatus.MultiFunctionChild">
+            <summary>
+            Multi function child. Up until Windows 8.x.
+            </summary>
+        </member>
+        <member name="F:RJCP.IO.DeviceMgr.DeviceStatus.WillBeRemoved">
+            <summary>
+            Device is being removed.
+            </summary>
+        </member>
+        <member name="F:RJCP.IO.DeviceMgr.DeviceStatus.NotFirstTimeEnum">
+            <summary>
+            Has received a config enumerate.
+            </summary>
+        </member>
+        <member name="F:RJCP.IO.DeviceMgr.DeviceStatus.StopFreeResources">
+            <summary>
+            When child is stopped, free resources.
+            </summary>
+        </member>
+        <member name="F:RJCP.IO.DeviceMgr.DeviceStatus.RebalanceCandidate">
+            <summary>
+            Don't skip during rebalance.
+            </summary>
+        </member>
+        <member name="F:RJCP.IO.DeviceMgr.DeviceStatus.BadPartial">
+            <summary>
+            This device's log_confs do not have same resources.
+            </summary>
+        </member>
+        <member name="F:RJCP.IO.DeviceMgr.DeviceStatus.NtEnumerator">
+            <summary>
+            This device is an NT enumerator.
+            </summary>
+        </member>
+        <member name="F:RJCP.IO.DeviceMgr.DeviceStatus.NtDriver">
+            <summary>
+            This device is an NT driver.
+            </summary>
+        </member>
+        <member name="F:RJCP.IO.DeviceMgr.DeviceStatus.NeedsLocking">
+            <summary>
+            Device need lock resume processing. This is up to Windows 7.
+            </summary>
+        </member>
+        <member name="F:RJCP.IO.DeviceMgr.DeviceStatus.ArmWakeup">
+            <summary>
+            Device can be the wakeup device.
+            </summary>
+        </member>
+        <member name="F:RJCP.IO.DeviceMgr.DeviceStatus.ApmEnumerator">
+            <summary>
+            APM aware enumerator.
+            </summary>
+        </member>
+        <member name="F:RJCP.IO.DeviceMgr.DeviceStatus.ApmDriver">
+            <summary>
+            APM aware driver.
+            </summary>
+        </member>
+        <member name="F:RJCP.IO.DeviceMgr.DeviceStatus.SilentInstall">
+            <summary>
+            Silent install.
+            </summary>
+        </member>
+        <member name="F:RJCP.IO.DeviceMgr.DeviceStatus.NoShowInDevMgr">
+            <summary>
+            No show in device manager.
+            </summary>
+        </member>
+        <member name="F:RJCP.IO.DeviceMgr.DeviceStatus.BootLogProblem">
+            <summary>
+             Had a problem during preassignment of boot log conf.
+            </summary>
+        </member>
+        <member name="F:RJCP.IO.DeviceMgr.DeviceStatus.DeviceDisconnected">
+            <summary>
+            The function driver for a device reported that the device is not connected. Typically this means a wireless
+            device is out of range. This is in Windows 8 and later.
+            </summary>
+        </member>
+        <member name="F:RJCP.IO.DeviceMgr.DeviceStatus.QueryRemovePending">
+            <summary>
+            Device is part of a set of related devices collectively pending query-removal. This is in Windows 10 and
+            later.
+            </summary>
+        </member>
+        <member name="F:RJCP.IO.DeviceMgr.DeviceStatus.QueryRemoveActive">
+            <summary>
+            Device is actively engaged in a query-remove IRP. This is in Windows 10 and later.
+            </summary>
+        </member>
+        <member name="T:RJCP.IO.DeviceMgr.LocateMode">
+            <summary>
+            Defines how devices should be enumerated.
+            </summary>
+        </member>
+        <member name="F:RJCP.IO.DeviceMgr.LocateMode.Normal">
+            <summary>
+            Retrieves the device instance handle for the specified device only if the device is currently configured in
+            the device tree.
+            </summary>
+        </member>
+        <member name="F:RJCP.IO.DeviceMgr.LocateMode.Phantom">
+            <summary>
+            Retrieves a device instance handle for the specified device if the device is currently configured in the
+            device tree or the device is a nonpresent device that is not currently configured in the device tree.
+            </summary>
+        </member>
+        <member name="M:RJCP.Native.Marshalling.GetMultiSz(System.Char*,System.Int32)">
+            <summary>
+            Gets a list of strings from a Win32 API MULTI_SZ type.
+            </summary>
+            <param name="blob">The blob of character data to convert from.</param>
+            <param name="blobLen">The number of bytes returned for the blob.</param>
+            <returns>A list of strings.</returns>
+            <remarks>
+            Getting the multiple strings is used in many different Win32 API, not just the registry. It iterates through
+            the blob, separating strings by the NUL character. The end of the list has two NUL characters.
+            </remarks>
+        </member>
+        <member name="M:RJCP.Native.Win32.Kernel32.CloseHandle(System.IntPtr)">
+            <summary>
+            Closes an open object handle.
+            </summary>
+            <param name="hObject">A valid handle to an open object.</param>
+            <returns>
+            If the function succeeds, the return value is nonzero. If the function fails, the return value is zero.
+            </returns>
+        </member>
+        <member name="T:RJCP.Native.Win32.SafeDevInst">
+            <summary>
+            Gets a handle to the CfgMgr32 DevInst object.
+            </summary>
+        </member>
+        <member name="M:RJCP.Native.Win32.SafeDevInst.#ctor">
+            <summary>
+            Initializes a new instance of the <see cref="T:RJCP.Native.Win32.SafeDevInst"/> class.
+            </summary>
+        </member>
+        <member name="M:RJCP.Native.Win32.SafeDevInst.#ctor(System.IntPtr)">
+            <summary>
+            Initializes a new instance of the <see cref="T:RJCP.Native.Win32.SafeDevInst"/> class.
+            </summary>
+            <param name="newHandle">The handle to assign to this object.</param>
+        </member>
+        <member name="M:RJCP.Native.Win32.SafeDevInst.ReleaseHandle">
+            <summary>
+            Executes the code required to free the handle.
+            </summary>
+            <returns>
+            Returns <see langword="true"/> if the handle is released successfully; otherwise, in the event of a
+            catastrophic failure, <see langword="false"/>. In this case, it generates a releaseHandleFailed MDA Managed
+            Debugging Assistant.
+            </returns>
+        </member>
+    </members>
+</doc>

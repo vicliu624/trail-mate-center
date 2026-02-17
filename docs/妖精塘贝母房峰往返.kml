@@ -1,0 +1,2564 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2" xmlns:gx="http://www.google.com/kml/ext/2.2">
+	<Document id="TbuluKmlVersion2">
+		<name><![CDATA[妖精塘→贝母房峰往返]]></name>
+		<Style id="TrackStyle_n">
+			<IconStyle>
+				<Icon>
+					<href>https://files.2bulu.com/f/d1?downParams=BYohR0x5OLAr0OBxohfNOA%3D%3D%0A</href>
+				</Icon>
+			</IconStyle>
+			<LineStyle>
+				<color>ee0000ff</color>
+				<width>5.000000</width>
+			</LineStyle>
+		</Style>
+		<Style id="TrackStyle_h">
+			<IconStyle>
+				<Icon>
+					<href>https://files.2bulu.com/f/d1?downParams=BYohR0x5OLAr0OBxohfNOA%3D%3D%0A</href>
+				</Icon>
+			</IconStyle>
+			<LineStyle>
+				<color>ff0000ff</color>
+				<width>7.000000</width>
+			</LineStyle>
+		</Style>
+		<StyleMap id="TrackStyle">
+			<Pair>
+				<key>normal</key>
+				<styleUrl>#TrackStyle_n</styleUrl>
+			</Pair>
+			<Pair>
+				<key>highlight</key>
+				<styleUrl>#TrackStyle_h</styleUrl>
+			</Pair>
+		</StyleMap>
+		<Style id="LineStringStyle">
+			<LineStyle>
+				<color>dd5cba55</color>
+				<width>6.000000</width>
+			</LineStyle>
+		</Style>
+		<Style id="startPointStyle">
+			<IconStyle>
+				<Icon>
+					<href>https://files.2bulu.com/f/d1?downParams=n%2BVE0NaFmzwndk%2BZ75NU9A%3D%3D%0A</href>
+				</Icon>
+			</IconStyle>
+		</Style>
+		<Style id="endPointStyle">
+			<IconStyle>
+				<Icon>
+					<href>https://files.2bulu.com/f/d1?downParams=0Q3GJ5o%2FHpsr0OBxohfNOA%3D%3D%0A</href>
+				</Icon>
+			</IconStyle>
+		</Style>
+		<Style id="MarkerStylePicture">
+			<IconStyle>
+				<Icon>
+					<href>https://files.2bulu.com/f/d1?downParams=vMzvc3dTBl0r0OBxohfNOA%3D%3D%0A</href>
+				</Icon>
+			</IconStyle>
+			<LabelStyle>
+				<color>ff00ffff</color>
+			</LabelStyle>
+		</Style>
+		<Style id="MarkerStyleSound">
+			<IconStyle>
+				<Icon>
+					<href>https://files.2bulu.com/f/d1?downParams=poL0RfxWHTIr0OBxohfNOA%3D%3D%0A</href>
+				</Icon>
+			</IconStyle>
+			<LabelStyle>
+				<color>ff00ffff</color>
+			</LabelStyle>
+		</Style>
+		<Style id="MarkerStyleVideo">
+			<IconStyle>
+				<Icon>
+					<href>https://files.2bulu.com/f/d1?downParams=vMzvc3dTBl0r0OBxohfNOA%3D%3D%0A</href>
+				</Icon>
+			</IconStyle>
+			<LabelStyle>
+				<color>ff00ffff</color>
+			</LabelStyle>
+		</Style>
+		<Style id="MarkerStyleText">
+			<IconStyle>
+				<Icon>
+					<href>https://files.2bulu.com/f/d1?downParams=s2An6%2B3%2BIWUr0OBxohfNOA%3D%3D%0A</href>
+				</Icon>
+			</IconStyle>
+			<LabelStyle>
+				<color>ff00ffff</color>
+			</LabelStyle>
+		</Style>
+		<ExtendedData>
+			<Data name="TrackId">
+				<value>71527575</value>
+			</Data>
+			<Data name="OriginTrackId">
+				<value>71527575</value>
+			</Data>
+			<Data name="SportTypeId">
+				<value>3</value>
+			</Data>
+			<Data name="BeginTime">
+				<value>1756522738000</value>
+			</Data>
+			<Data name="EndTime">
+				<value>1756543202254</value>
+			</Data>
+			<Data name="Privacy">
+				<value>0</value>
+			</Data>
+			<Data name="PauseTime">
+				<value>12521</value>
+			</Data>
+			<Data name="TrackTypeId">
+				<value>8</value>
+			</Data>
+			<Data name="TrackTags">
+				<value><![CDATA[爬山]]></value>
+			</Data>
+			<Data name="PosStartName">
+				<value><![CDATA[妖精塘]]></value>
+			</Data>
+			<Data name="PosEndName">
+				<value><![CDATA[妖精塘]]></value>
+			</Data>
+			<Data name="ProductVersion">
+				<value>8.0.0</value>
+			</Data>
+			<Data name="ContextInfo">
+				<value>region:zh_CN;lan:zh-Hans;model:iPhone17,3;system:18.6.2;app:2bulu-V8.0.0;tag:NotRecord</value>
+			</Data>
+			<Data name="CreaterId">
+				<value>11299034</value>
+			</Data>
+			<Data name="CreaterName">
+				<value><![CDATA[我行我素]]></value>
+			</Data>
+			<Data name="CreaterIcon">
+				<value>0</value>
+			</Data>
+			<Data name="OriginCreaterId">
+				<value>11299034</value>
+			</Data>
+			<Data name="OriginCreaterName">
+				<value>zs_E2667</value>
+			</Data>
+			<Data name="OriginCreaterNickname">
+				<value><![CDATA[我行我素]]></value>
+			</Data>
+			<Data name="OriginCreaterIcon">
+				<value>0</value>
+			</Data>
+			<Data name="ThumbnailId">
+				<value>0</value>
+			</Data>
+			<Data name="Step">
+				<value>26042</value>
+			</Data>
+			<Data name="Calorie">
+				<value>3169.879395</value>
+			</Data>
+			<Data name="Mileage">
+				<value>6118.276685</value>
+			</Data>
+			<Data name="Source">
+				<value>0</value>
+			</Data>
+			<Data name="FragmentId">
+				<value>0</value>
+			</Data>
+		</ExtendedData>
+		<Folder id="TbuluHisPointFolder">
+			<name><![CDATA[标注点]]></name>
+			<Placemark id="startPoint">
+				<name><![CDATA[起点]]></name>
+				<description><![CDATA[<div>经度：102.960588</div><div>纬度：26.157285</div><div>海拔：3691.000000</div><div>时间：2025-08-30 10:59:21</div>]]></description>
+				<styleUrl>#startPointStyle</styleUrl>
+				<Point>
+					<coordinates>102.960588,26.157285,3691.000000</coordinates>
+				</Point>
+			</Placemark>
+			<Placemark id="endPoint">
+				<name><![CDATA[终点]]></name>
+				<description><![CDATA[<div>经度：102.960765</div><div>纬度：26.157994</div><div>海拔：3692.000000</div><div>时间：2025-08-30 16:30:05</div>]]></description>
+				<styleUrl>#endPointStyle</styleUrl>
+				<Point>
+					<coordinates>102.960765,26.157994,3692.000000</coordinates>
+				</Point>
+			</Placemark>
+			<Placemark id="realPoint">
+				<description><![CDATA[<div><a href="https://down-files.2bulu.com/f/dn1?downParams=2EH4jCGB1H1p5td1hozwGg==&p_appVersion=8.0.0&p_userId=11299034&p_productType=0&sdkLevel=18.6.2&p_terminalType=3&deviceName=iPhone 16" target="_blank"><img width="320" style="height:360" src="https://down-files.2bulu.com/f/dn1?downParams=2EH4jCGB1H1p5td1hozwGg%3D%3D"/></a></div></br><div>经度：102.958288</div><div>纬度：26.156614</div><div>海拔：3715.271727</div><div>时间：2025-08-30 11:09:56</div>]]></description>
+				<styleUrl>MarkerStylePicture</styleUrl>
+				<ExtendedData>
+					<Data name="Type">
+						<value>Point</value>
+					</Data>
+					<Data name="ServerId">
+						<value>24</value>
+					</Data>
+					<Data name="PosType">
+						<value>0</value>
+					</Data>
+					<Data name="description">
+					</Data>
+					<Data name="Longtitude">
+						<value>102.958288</value>
+					</Data>
+					<Data name="Latitude">
+						<value>26.156614</value>
+					</Data>
+					<Data name="Altitude">
+						<value>3715.271727</value>
+					</Data>
+					<Data name="Speed">
+						<value>0.000000</value>
+					</Data>
+					<Data name="Accuracy">
+						<value>0.000000</value>
+					</Data>
+					<Data name="Time">
+						<value>1756523396000</value>
+					</Data>
+					<Data name="FileId">
+						<value>1477550848</value>
+					</Data>
+					<Data name="FileSize">
+						<value>0</value>
+					</Data>
+					<Data name="FileName">
+						<value>pic_1477550848.png</value>
+					</Data>
+					<Data name="attach">
+						<value>[{"fileId":"1477550848","fileType":"0","fileName":"pic_1477550848.png","fileSize":"0"}]</value>
+					</Data>
+					<Data name="FileType">
+						<value>0</value>
+					</Data>
+					<Data name="FilePath">
+						<value>pic_1477550848.png</value>
+					</Data>
+				</ExtendedData>
+				<Point>
+					<coordinates>102.958288,26.156614,3715.271727</coordinates>
+				</Point>
+			</Placemark>
+			<Placemark id="realPoint">
+				<description><![CDATA[<div><a href="https://down-files.2bulu.com/f/dn1?downParams=2EH4jCGB1H0UVWTWUzVc5g==&p_appVersion=8.0.0&p_userId=11299034&p_productType=0&sdkLevel=18.6.2&p_terminalType=3&deviceName=iPhone 16" target="_blank"><img width="320" style="height:360" src="https://down-files.2bulu.com/f/dn1?downParams=2EH4jCGB1H0UVWTWUzVc5g%3D%3D"/></a></div></br><div>经度：102.957922</div><div>纬度：26.156430</div><div>海拔：3713.849609</div><div>时间：2025-08-30 11:13:19</div>]]></description>
+				<styleUrl>MarkerStylePicture</styleUrl>
+				<ExtendedData>
+					<Data name="Type">
+						<value>Point</value>
+					</Data>
+					<Data name="ServerId">
+						<value>23</value>
+					</Data>
+					<Data name="PosType">
+						<value>0</value>
+					</Data>
+					<Data name="description">
+					</Data>
+					<Data name="Longtitude">
+						<value>102.957922</value>
+					</Data>
+					<Data name="Latitude">
+						<value>26.156430</value>
+					</Data>
+					<Data name="Altitude">
+						<value>3713.849609</value>
+					</Data>
+					<Data name="Speed">
+						<value>0.000000</value>
+					</Data>
+					<Data name="Accuracy">
+						<value>0.000000</value>
+					</Data>
+					<Data name="Time">
+						<value>1756523599000</value>
+					</Data>
+					<Data name="FileId">
+						<value>1477550851</value>
+					</Data>
+					<Data name="FileSize">
+						<value>0</value>
+					</Data>
+					<Data name="FileName">
+						<value>pic_1477550851.png</value>
+					</Data>
+					<Data name="attach">
+						<value>[{"fileId":"1477550851","fileType":"0","fileName":"pic_1477550851.png","fileSize":"0"}]</value>
+					</Data>
+					<Data name="FileType">
+						<value>0</value>
+					</Data>
+					<Data name="FilePath">
+						<value>pic_1477550851.png</value>
+					</Data>
+				</ExtendedData>
+				<Point>
+					<coordinates>102.957922,26.156430,3713.849609</coordinates>
+				</Point>
+			</Placemark>
+			<Placemark id="realPoint">
+				<description><![CDATA[<div><a href="https://down-files.2bulu.com/f/dn1?downParams=2EH4jCGB1H0f9FkcUzWoqQ==&p_appVersion=8.0.0&p_userId=11299034&p_productType=0&sdkLevel=18.6.2&p_terminalType=3&deviceName=iPhone 16" target="_blank"><img width="320" style="height:360" src="https://down-files.2bulu.com/f/dn1?downParams=2EH4jCGB1H0f9FkcUzWoqQ%3D%3D"/></a></div></br><div>经度：102.957497</div><div>纬度：26.156011</div><div>海拔：3713.521971</div><div>时间：2025-08-30 11:14:40</div>]]></description>
+				<styleUrl>MarkerStylePicture</styleUrl>
+				<ExtendedData>
+					<Data name="Type">
+						<value>Point</value>
+					</Data>
+					<Data name="ServerId">
+						<value>22</value>
+					</Data>
+					<Data name="PosType">
+						<value>0</value>
+					</Data>
+					<Data name="description">
+					</Data>
+					<Data name="Longtitude">
+						<value>102.957497</value>
+					</Data>
+					<Data name="Latitude">
+						<value>26.156011</value>
+					</Data>
+					<Data name="Altitude">
+						<value>3713.521971</value>
+					</Data>
+					<Data name="Speed">
+						<value>0.000000</value>
+					</Data>
+					<Data name="Accuracy">
+						<value>0.000000</value>
+					</Data>
+					<Data name="Time">
+						<value>1756523680000</value>
+					</Data>
+					<Data name="FileId">
+						<value>1477550863</value>
+					</Data>
+					<Data name="FileSize">
+						<value>0</value>
+					</Data>
+					<Data name="FileName">
+						<value>pic_1477550863.png</value>
+					</Data>
+					<Data name="attach">
+						<value>[{"fileId":"1477550863","fileType":"0","fileName":"pic_1477550863.png","fileSize":"0"}]</value>
+					</Data>
+					<Data name="FileType">
+						<value>0</value>
+					</Data>
+					<Data name="FilePath">
+						<value>pic_1477550863.png</value>
+					</Data>
+				</ExtendedData>
+				<Point>
+					<coordinates>102.957497,26.156011,3713.521971</coordinates>
+				</Point>
+			</Placemark>
+			<Placemark id="realPoint">
+				<description><![CDATA[<div><a href="https://down-files.2bulu.com/f/dn1?downParams=2EH4jCGB1H0qKcyKY+fS/w==&p_appVersion=8.0.0&p_userId=11299034&p_productType=0&sdkLevel=18.6.2&p_terminalType=3&deviceName=iPhone 16" target="_blank"><img width="320" style="height:360" src="https://down-files.2bulu.com/f/dn1?downParams=2EH4jCGB1H0qKcyKY%2BfS/w%3D%3D"/></a></div></br><div>经度：102.950225</div><div>纬度：26.153945</div><div>海拔：3791.654867</div><div>时间：2025-08-30 11:48:46</div>]]></description>
+				<styleUrl>MarkerStylePicture</styleUrl>
+				<ExtendedData>
+					<Data name="Type">
+						<value>Point</value>
+					</Data>
+					<Data name="ServerId">
+						<value>21</value>
+					</Data>
+					<Data name="PosType">
+						<value>0</value>
+					</Data>
+					<Data name="description">
+					</Data>
+					<Data name="Longtitude">
+						<value>102.950225</value>
+					</Data>
+					<Data name="Latitude">
+						<value>26.153945</value>
+					</Data>
+					<Data name="Altitude">
+						<value>3791.654867</value>
+					</Data>
+					<Data name="Speed">
+						<value>0.000000</value>
+					</Data>
+					<Data name="Accuracy">
+						<value>0.000000</value>
+					</Data>
+					<Data name="Time">
+						<value>1756525726030</value>
+					</Data>
+					<Data name="FileId">
+						<value>1477550865</value>
+					</Data>
+					<Data name="FileSize">
+						<value>0</value>
+					</Data>
+					<Data name="FileName">
+						<value>pic_1477550865.png</value>
+					</Data>
+					<Data name="attach">
+						<value>[{"fileId":"1477550865","fileType":"0","fileName":"pic_1477550865.png","fileSize":"0"}]</value>
+					</Data>
+					<Data name="FileType">
+						<value>0</value>
+					</Data>
+					<Data name="FilePath">
+						<value>pic_1477550865.png</value>
+					</Data>
+				</ExtendedData>
+				<Point>
+					<coordinates>102.950225,26.153945,3791.654867</coordinates>
+				</Point>
+			</Placemark>
+			<Placemark id="realPoint">
+				<description><![CDATA[<div><a href="https://down-files.2bulu.com/f/dn1?downParams=2EH4jCGB1H11QX/kPAw6EA==&p_appVersion=8.0.0&p_userId=11299034&p_productType=0&sdkLevel=18.6.2&p_terminalType=3&deviceName=iPhone 16" target="_blank"><img width="320" style="height:360" src="https://down-files.2bulu.com/f/dn1?downParams=2EH4jCGB1H11QX/kPAw6EA%3D%3D"/></a></div></br><div>经度：102.949347</div><div>纬度：26.153089</div><div>海拔：3841.363171</div><div>时间：2025-08-30 12:05:33</div>]]></description>
+				<styleUrl>MarkerStylePicture</styleUrl>
+				<ExtendedData>
+					<Data name="Type">
+						<value>Point</value>
+					</Data>
+					<Data name="ServerId">
+						<value>20</value>
+					</Data>
+					<Data name="PosType">
+						<value>0</value>
+					</Data>
+					<Data name="description">
+					</Data>
+					<Data name="Longtitude">
+						<value>102.949347</value>
+					</Data>
+					<Data name="Latitude">
+						<value>26.153089</value>
+					</Data>
+					<Data name="Altitude">
+						<value>3841.363171</value>
+					</Data>
+					<Data name="Speed">
+						<value>0.000000</value>
+					</Data>
+					<Data name="Accuracy">
+						<value>0.000000</value>
+					</Data>
+					<Data name="Time">
+						<value>1756526733348</value>
+					</Data>
+					<Data name="FileId">
+						<value>1477550869</value>
+					</Data>
+					<Data name="FileSize">
+						<value>0</value>
+					</Data>
+					<Data name="FileName">
+						<value>pic_1477550869.png</value>
+					</Data>
+					<Data name="attach">
+						<value>[{"fileId":"1477550869","fileType":"0","fileName":"pic_1477550869.png","fileSize":"0"}]</value>
+					</Data>
+					<Data name="FileType">
+						<value>0</value>
+					</Data>
+					<Data name="FilePath">
+						<value>pic_1477550869.png</value>
+					</Data>
+				</ExtendedData>
+				<Point>
+					<coordinates>102.949347,26.153089,3841.363171</coordinates>
+				</Point>
+			</Placemark>
+			<Placemark id="realPoint">
+				<description><![CDATA[<div><a href="https://down-files.2bulu.com/f/dn1?downParams=4SJSx9zi0Vnw5Aava0ngqw==&p_appVersion=8.0.0&p_userId=11299034&p_productType=0&sdkLevel=18.6.2&p_terminalType=3&deviceName=iPhone 16" target="_blank"><img width="320" style="height:360" src="https://down-files.2bulu.com/f/dn1?downParams=4SJSx9zi0Vnw5Aava0ngqw%3D%3D"/></a></div></br><div>经度：102.949150</div><div>纬度：26.153105</div><div>海拔：3849.584838</div><div>时间：2025-08-30 12:10:19</div>]]></description>
+				<styleUrl>MarkerStylePicture</styleUrl>
+				<ExtendedData>
+					<Data name="Type">
+						<value>Point</value>
+					</Data>
+					<Data name="ServerId">
+						<value>19</value>
+					</Data>
+					<Data name="PosType">
+						<value>0</value>
+					</Data>
+					<Data name="description">
+					</Data>
+					<Data name="Longtitude">
+						<value>102.949150</value>
+					</Data>
+					<Data name="Latitude">
+						<value>26.153105</value>
+					</Data>
+					<Data name="Altitude">
+						<value>3849.584838</value>
+					</Data>
+					<Data name="Speed">
+						<value>0.000000</value>
+					</Data>
+					<Data name="Accuracy">
+						<value>0.000000</value>
+					</Data>
+					<Data name="Time">
+						<value>1756527019957</value>
+					</Data>
+					<Data name="FileId">
+						<value>1477550924</value>
+					</Data>
+					<Data name="FileSize">
+						<value>0</value>
+					</Data>
+					<Data name="FileName">
+						<value>pic_1477550924.png</value>
+					</Data>
+					<Data name="attach">
+						<value>[{"fileId":"1477550924","fileType":"0","fileName":"pic_1477550924.png","fileSize":"0"}]</value>
+					</Data>
+					<Data name="FileType">
+						<value>0</value>
+					</Data>
+					<Data name="FilePath">
+						<value>pic_1477550924.png</value>
+					</Data>
+				</ExtendedData>
+				<Point>
+					<coordinates>102.949150,26.153105,3849.584838</coordinates>
+				</Point>
+			</Placemark>
+			<Placemark id="realPoint">
+				<description><![CDATA[<div><a href="https://down-files.2bulu.com/f/dn1?downParams=A6cBHXk71HK/OeD0sE1fJg==&p_appVersion=8.0.0&p_userId=11299034&p_productType=0&sdkLevel=18.6.2&p_terminalType=3&deviceName=iPhone 16" target="_blank"><img width="320" style="height:360" src="https://down-files.2bulu.com/f/dn1?downParams=A6cBHXk71HK/OeD0sE1fJg%3D%3D"/></a></div></br><div>经度：102.946503</div><div>纬度：26.153289</div><div>海拔：4014.370115</div><div>时间：2025-08-30 13:07:27</div>]]></description>
+				<styleUrl>MarkerStylePicture</styleUrl>
+				<ExtendedData>
+					<Data name="Type">
+						<value>Point</value>
+					</Data>
+					<Data name="ServerId">
+						<value>30</value>
+					</Data>
+					<Data name="PosType">
+						<value>0</value>
+					</Data>
+					<Data name="description">
+					</Data>
+					<Data name="Longtitude">
+						<value>102.946503</value>
+					</Data>
+					<Data name="Latitude">
+						<value>26.153289</value>
+					</Data>
+					<Data name="Altitude">
+						<value>4014.370115</value>
+					</Data>
+					<Data name="Speed">
+						<value>0.000000</value>
+					</Data>
+					<Data name="Accuracy">
+						<value>0.000000</value>
+					</Data>
+					<Data name="Time">
+						<value>1756530447000</value>
+					</Data>
+					<Data name="FileId">
+						<value>1477553339</value>
+					</Data>
+					<Data name="FileSize">
+						<value>0</value>
+					</Data>
+					<Data name="FileName">
+						<value>pic_1477553339.png</value>
+					</Data>
+					<Data name="attach">
+						<value>[{"fileId":"1477553339","fileType":"0","fileName":"pic_1477553339.png","fileSize":"0"}]</value>
+					</Data>
+					<Data name="FileType">
+						<value>0</value>
+					</Data>
+					<Data name="FilePath">
+						<value>pic_1477553339.png</value>
+					</Data>
+				</ExtendedData>
+				<Point>
+					<coordinates>102.946503,26.153289,4014.370115</coordinates>
+				</Point>
+			</Placemark>
+			<Placemark id="realPoint">
+				<description><![CDATA[<div><a href="https://down-files.2bulu.com/f/dn1?downParams=4SJSx9zi0Vk6yhTZ6j4daA==&p_appVersion=8.0.0&p_userId=11299034&p_productType=0&sdkLevel=18.6.2&p_terminalType=3&deviceName=iPhone 16" target="_blank"><img width="320" style="height:360" src="https://down-files.2bulu.com/f/dn1?downParams=4SJSx9zi0Vk6yhTZ6j4daA%3D%3D"/></a></div></br><div>经度：102.944563</div><div>纬度：26.152831</div><div>海拔：4082.486815</div><div>时间：2025-08-30 13:24:34</div>]]></description>
+				<styleUrl>MarkerStylePicture</styleUrl>
+				<ExtendedData>
+					<Data name="Type">
+						<value>Point</value>
+					</Data>
+					<Data name="ServerId">
+						<value>17</value>
+					</Data>
+					<Data name="PosType">
+						<value>0</value>
+					</Data>
+					<Data name="description">
+					</Data>
+					<Data name="Longtitude">
+						<value>102.944563</value>
+					</Data>
+					<Data name="Latitude">
+						<value>26.152831</value>
+					</Data>
+					<Data name="Altitude">
+						<value>4082.486815</value>
+					</Data>
+					<Data name="Speed">
+						<value>0.000000</value>
+					</Data>
+					<Data name="Accuracy">
+						<value>0.000000</value>
+					</Data>
+					<Data name="Time">
+						<value>1756531474000</value>
+					</Data>
+					<Data name="FileId">
+						<value>1477550929</value>
+					</Data>
+					<Data name="FileSize">
+						<value>0</value>
+					</Data>
+					<Data name="FileName">
+						<value>pic_1477550929.png</value>
+					</Data>
+					<Data name="attach">
+						<value>[{"fileId":"1477550929","fileType":"0","fileName":"pic_1477550929.png","fileSize":"0"}]</value>
+					</Data>
+					<Data name="FileType">
+						<value>0</value>
+					</Data>
+					<Data name="FilePath">
+						<value>pic_1477550929.png</value>
+					</Data>
+				</ExtendedData>
+				<Point>
+					<coordinates>102.944563,26.152831,4082.486815</coordinates>
+				</Point>
+			</Placemark>
+			<Placemark id="realPoint">
+				<description><![CDATA[<div><a href="https://down-files.2bulu.com/f/dn1?downParams=4SJSx9zi0Vkr8WdA+OL1mw==&p_appVersion=8.0.0&p_userId=11299034&p_productType=0&sdkLevel=18.6.2&p_terminalType=3&deviceName=iPhone 16" target="_blank"><img width="320" style="height:360" src="https://down-files.2bulu.com/f/dn1?downParams=4SJSx9zi0Vkr8WdA%2BOL1mw%3D%3D"/></a></div></br><div>经度：102.945297</div><div>纬度：26.151961</div><div>海拔：4111.388186</div><div>时间：2025-08-30 13:31:36</div>]]></description>
+				<styleUrl>MarkerStylePicture</styleUrl>
+				<ExtendedData>
+					<Data name="Type">
+						<value>Point</value>
+					</Data>
+					<Data name="ServerId">
+						<value>16</value>
+					</Data>
+					<Data name="PosType">
+						<value>0</value>
+					</Data>
+					<Data name="description">
+					</Data>
+					<Data name="Longtitude">
+						<value>102.945297</value>
+					</Data>
+					<Data name="Latitude">
+						<value>26.151961</value>
+					</Data>
+					<Data name="Altitude">
+						<value>4111.388186</value>
+					</Data>
+					<Data name="Speed">
+						<value>0.000000</value>
+					</Data>
+					<Data name="Accuracy">
+						<value>0.000000</value>
+					</Data>
+					<Data name="Time">
+						<value>1756531896000</value>
+					</Data>
+					<Data name="FileId">
+						<value>1477550932</value>
+					</Data>
+					<Data name="FileSize">
+						<value>0</value>
+					</Data>
+					<Data name="FileName">
+						<value>pic_1477550932.png</value>
+					</Data>
+					<Data name="attach">
+						<value>[{"fileId":"1477550932","fileType":"0","fileName":"pic_1477550932.png","fileSize":"0"}]</value>
+					</Data>
+					<Data name="FileType">
+						<value>0</value>
+					</Data>
+					<Data name="FilePath">
+						<value>pic_1477550932.png</value>
+					</Data>
+				</ExtendedData>
+				<Point>
+					<coordinates>102.945297,26.151961,4111.388186</coordinates>
+				</Point>
+			</Placemark>
+			<Placemark id="realPoint">
+				<description><![CDATA[<div><a href="https://down-files.2bulu.com/f/dn1?downParams=4SJSx9zi0VmmexYjRQjmMA==&p_appVersion=8.0.0&p_userId=11299034&p_productType=0&sdkLevel=18.6.2&p_terminalType=3&deviceName=iPhone 16" target="_blank"><img width="320" style="height:360" src="https://down-files.2bulu.com/f/dn1?downParams=4SJSx9zi0VmmexYjRQjmMA%3D%3D"/></a></div></br><div>经度：102.946205</div><div>纬度：26.151250</div><div>海拔：4155.665746</div><div>时间：2025-08-30 14:00:34</div>]]></description>
+				<styleUrl>MarkerStylePicture</styleUrl>
+				<ExtendedData>
+					<Data name="Type">
+						<value>Point</value>
+					</Data>
+					<Data name="ServerId">
+						<value>15</value>
+					</Data>
+					<Data name="PosType">
+						<value>0</value>
+					</Data>
+					<Data name="description">
+					</Data>
+					<Data name="Longtitude">
+						<value>102.946205</value>
+					</Data>
+					<Data name="Latitude">
+						<value>26.151250</value>
+					</Data>
+					<Data name="Altitude">
+						<value>4155.665746</value>
+					</Data>
+					<Data name="Speed">
+						<value>0.000000</value>
+					</Data>
+					<Data name="Accuracy">
+						<value>0.000000</value>
+					</Data>
+					<Data name="Time">
+						<value>1756533634253</value>
+					</Data>
+					<Data name="FileId">
+						<value>1477550934</value>
+					</Data>
+					<Data name="FileSize">
+						<value>0</value>
+					</Data>
+					<Data name="FileName">
+						<value>pic_1477550934.png</value>
+					</Data>
+					<Data name="attach">
+						<value>[{"fileId":"1477550934","fileType":"0","fileName":"pic_1477550934.png","fileSize":"0"}]</value>
+					</Data>
+					<Data name="FileType">
+						<value>0</value>
+					</Data>
+					<Data name="FilePath">
+						<value>pic_1477550934.png</value>
+					</Data>
+				</ExtendedData>
+				<Point>
+					<coordinates>102.946205,26.151250,4155.665746</coordinates>
+				</Point>
+			</Placemark>
+			<Placemark id="realPoint">
+				<description><![CDATA[<div><a href="https://down-files.2bulu.com/f/dn1?downParams=A6cBHXk71HJAo/7Mmwb6dw==&p_appVersion=8.0.0&p_userId=11299034&p_productType=0&sdkLevel=18.6.2&p_terminalType=3&deviceName=iPhone 16" target="_blank"><img width="320" style="height:360" src="https://down-files.2bulu.com/f/dn1?downParams=A6cBHXk71HJAo/7Mmwb6dw%3D%3D"/></a></div></br><div>经度：102.947708</div><div>纬度：26.150469</div><div>海拔：4180.702259</div><div>时间：2025-08-30 14:30:31</div>]]></description>
+				<styleUrl>MarkerStylePicture</styleUrl>
+				<ExtendedData>
+					<Data name="Type">
+						<value>Point</value>
+					</Data>
+					<Data name="ServerId">
+						<value>29</value>
+					</Data>
+					<Data name="PosType">
+						<value>0</value>
+					</Data>
+					<Data name="description">
+					</Data>
+					<Data name="Longtitude">
+						<value>102.947708</value>
+					</Data>
+					<Data name="Latitude">
+						<value>26.150469</value>
+					</Data>
+					<Data name="Altitude">
+						<value>4180.702259</value>
+					</Data>
+					<Data name="Speed">
+						<value>0.000000</value>
+					</Data>
+					<Data name="Accuracy">
+						<value>0.000000</value>
+					</Data>
+					<Data name="Time">
+						<value>1756535431442</value>
+					</Data>
+					<Data name="FileId">
+						<value>1477553341</value>
+					</Data>
+					<Data name="FileSize">
+						<value>0</value>
+					</Data>
+					<Data name="FileName">
+						<value>pic_1477553341.png</value>
+					</Data>
+					<Data name="attach">
+						<value>[{"fileId":"1477553341","fileType":"0","fileName":"pic_1477553341.png","fileSize":"0"}]</value>
+					</Data>
+					<Data name="FileType">
+						<value>0</value>
+					</Data>
+					<Data name="FilePath">
+						<value>pic_1477553341.png</value>
+					</Data>
+				</ExtendedData>
+				<Point>
+					<coordinates>102.947708,26.150469,4180.702259</coordinates>
+				</Point>
+			</Placemark>
+			<Placemark id="realPoint">
+				<description><![CDATA[<div><a href="https://down-files.2bulu.com/f/dn1?downParams=uemsf7dUOsmSIWMpFkjfCw==&p_appVersion=8.0.0&p_userId=11299034&p_productType=0&sdkLevel=18.6.2&p_terminalType=3&deviceName=iPhone 16" target="_blank"><img width="320" style="height:360" src="https://down-files.2bulu.com/f/dn1?downParams=uemsf7dUOsmSIWMpFkjfCw%3D%3D"/></a></div></br><div>经度：102.948167</div><div>纬度：26.149625</div><div>海拔：4229.261547</div><div>时间：2025-08-30 14:48:00</div>]]></description>
+				<styleUrl>MarkerStylePicture</styleUrl>
+				<ExtendedData>
+					<Data name="Type">
+						<value>Point</value>
+					</Data>
+					<Data name="ServerId">
+						<value>5</value>
+					</Data>
+					<Data name="PosType">
+						<value>0</value>
+					</Data>
+					<Data name="description">
+					</Data>
+					<Data name="Longtitude">
+						<value>102.948167</value>
+					</Data>
+					<Data name="Latitude">
+						<value>26.149625</value>
+					</Data>
+					<Data name="Altitude">
+						<value>4229.261547</value>
+					</Data>
+					<Data name="Speed">
+						<value>0.000000</value>
+					</Data>
+					<Data name="Accuracy">
+						<value>0.000000</value>
+					</Data>
+					<Data name="Time">
+						<value>1756536480000</value>
+					</Data>
+					<Data name="FileId">
+						<value>1477549151</value>
+					</Data>
+					<Data name="FileSize">
+						<value>0</value>
+					</Data>
+					<Data name="FileName">
+						<value>pic_1477549151.png</value>
+					</Data>
+					<Data name="attach">
+						<value>[{"fileId":"1477549151","fileType":"0","fileName":"pic_1477549151.png","fileSize":"0"}]</value>
+					</Data>
+					<Data name="FileType">
+						<value>0</value>
+					</Data>
+					<Data name="FilePath">
+						<value>pic_1477549151.png</value>
+					</Data>
+				</ExtendedData>
+				<Point>
+					<coordinates>102.948167,26.149625,4229.261547</coordinates>
+				</Point>
+			</Placemark>
+			<Placemark id="realPoint">
+				<description><![CDATA[<div><a href="https://down-files.2bulu.com/f/dn1?downParams=4SJSx9zi0Vm6rFGbvB/lKQ==&p_appVersion=8.0.0&p_userId=11299034&p_productType=0&sdkLevel=18.6.2&p_terminalType=3&deviceName=iPhone 16" target="_blank"><img width="320" style="height:360" src="https://down-files.2bulu.com/f/dn1?downParams=4SJSx9zi0Vm6rFGbvB/lKQ%3D%3D"/></a></div></br><div>经度：102.946358</div><div>纬度：26.151061</div><div>海拔：4142.673469</div><div>时间：2025-08-30 15:29:05</div>]]></description>
+				<styleUrl>MarkerStylePicture</styleUrl>
+				<ExtendedData>
+					<Data name="Type">
+						<value>Point</value>
+					</Data>
+					<Data name="ServerId">
+						<value>14</value>
+					</Data>
+					<Data name="PosType">
+						<value>0</value>
+					</Data>
+					<Data name="description">
+					</Data>
+					<Data name="Longtitude">
+						<value>102.946358</value>
+					</Data>
+					<Data name="Latitude">
+						<value>26.151061</value>
+					</Data>
+					<Data name="Altitude">
+						<value>4142.673469</value>
+					</Data>
+					<Data name="Speed">
+						<value>0.000000</value>
+					</Data>
+					<Data name="Accuracy">
+						<value>0.000000</value>
+					</Data>
+					<Data name="Time">
+						<value>1756538945528</value>
+					</Data>
+					<Data name="FileId">
+						<value>1477550940</value>
+					</Data>
+					<Data name="FileSize">
+						<value>0</value>
+					</Data>
+					<Data name="FileName">
+						<value>pic_1477550940.png</value>
+					</Data>
+					<Data name="attach">
+						<value>[{"fileId":"1477550940","fileType":"0","fileName":"pic_1477550940.png","fileSize":"0"}]</value>
+					</Data>
+					<Data name="FileType">
+						<value>0</value>
+					</Data>
+					<Data name="FilePath">
+						<value>pic_1477550940.png</value>
+					</Data>
+				</ExtendedData>
+				<Point>
+					<coordinates>102.946358,26.151061,4142.673469</coordinates>
+				</Point>
+			</Placemark>
+			<Placemark id="realPoint">
+				<description><![CDATA[<div><a href="https://down-files.2bulu.com/f/dn1?downParams=4SJSx9zi0VkWXiYYZCQD4Q==&p_appVersion=8.0.0&p_userId=11299034&p_productType=0&sdkLevel=18.6.2&p_terminalType=3&deviceName=iPhone 16" target="_blank"><img width="320" style="height:360" src="https://down-files.2bulu.com/f/dn1?downParams=4SJSx9zi0VkWXiYYZCQD4Q%3D%3D"/></a></div></br><div>经度：102.946062</div><div>纬度：26.151303</div><div>海拔：4140.962704</div><div>时间：2025-08-30 15:31:03</div>]]></description>
+				<styleUrl>MarkerStylePicture</styleUrl>
+				<ExtendedData>
+					<Data name="Type">
+						<value>Point</value>
+					</Data>
+					<Data name="ServerId">
+						<value>13</value>
+					</Data>
+					<Data name="PosType">
+						<value>0</value>
+					</Data>
+					<Data name="description">
+					</Data>
+					<Data name="Longtitude">
+						<value>102.946062</value>
+					</Data>
+					<Data name="Latitude">
+						<value>26.151303</value>
+					</Data>
+					<Data name="Altitude">
+						<value>4140.962704</value>
+					</Data>
+					<Data name="Speed">
+						<value>0.000000</value>
+					</Data>
+					<Data name="Accuracy">
+						<value>0.000000</value>
+					</Data>
+					<Data name="Time">
+						<value>1756539063496</value>
+					</Data>
+					<Data name="FileId">
+						<value>1477550946</value>
+					</Data>
+					<Data name="FileSize">
+						<value>0</value>
+					</Data>
+					<Data name="FileName">
+						<value>pic_1477550946.png</value>
+					</Data>
+					<Data name="attach">
+						<value>[{"fileId":"1477550946","fileType":"0","fileName":"pic_1477550946.png","fileSize":"0"}]</value>
+					</Data>
+					<Data name="FileType">
+						<value>0</value>
+					</Data>
+					<Data name="FilePath">
+						<value>pic_1477550946.png</value>
+					</Data>
+				</ExtendedData>
+				<Point>
+					<coordinates>102.946062,26.151303,4140.962704</coordinates>
+				</Point>
+			</Placemark>
+			<Placemark id="realPoint">
+				<description><![CDATA[<div><a href="https://down-files.2bulu.com/f/dn1?downParams=A6cBHXk71HIsKOau9bwncA==&p_appVersion=8.0.0&p_userId=11299034&p_productType=0&sdkLevel=18.6.2&p_terminalType=3&deviceName=iPhone 16" target="_blank"><img width="320" style="height:360" src="https://down-files.2bulu.com/f/dn1?downParams=A6cBHXk71HIsKOau9bwncA%3D%3D"/></a></div></br><div>经度：102.945978</div><div>纬度：26.151364</div><div>海拔：4138.730878</div><div>时间：2025-08-30 15:32:51</div>]]></description>
+				<styleUrl>MarkerStylePicture</styleUrl>
+				<ExtendedData>
+					<Data name="Type">
+						<value>Point</value>
+					</Data>
+					<Data name="ServerId">
+						<value>28</value>
+					</Data>
+					<Data name="PosType">
+						<value>0</value>
+					</Data>
+					<Data name="description">
+					</Data>
+					<Data name="Longtitude">
+						<value>102.945978</value>
+					</Data>
+					<Data name="Latitude">
+						<value>26.151364</value>
+					</Data>
+					<Data name="Altitude">
+						<value>4138.730878</value>
+					</Data>
+					<Data name="Speed">
+						<value>0.000000</value>
+					</Data>
+					<Data name="Accuracy">
+						<value>0.000000</value>
+					</Data>
+					<Data name="Time">
+						<value>1756539171896</value>
+					</Data>
+					<Data name="FileId">
+						<value>1477553351</value>
+					</Data>
+					<Data name="FileSize">
+						<value>0</value>
+					</Data>
+					<Data name="FileName">
+						<value>pic_1477553351.png</value>
+					</Data>
+					<Data name="attach">
+						<value>[{"fileId":"1477553351","fileType":"0","fileName":"pic_1477553351.png","fileSize":"0"}]</value>
+					</Data>
+					<Data name="FileType">
+						<value>0</value>
+					</Data>
+					<Data name="FilePath">
+						<value>pic_1477553351.png</value>
+					</Data>
+				</ExtendedData>
+				<Point>
+					<coordinates>102.945978,26.151364,4138.730878</coordinates>
+				</Point>
+			</Placemark>
+			<Placemark id="realPoint">
+				<description><![CDATA[<div><a href="https://down-files.2bulu.com/f/dn1?downParams=4SJSx9zi0Vn4l/dFZAo1Sw==&p_appVersion=8.0.0&p_userId=11299034&p_productType=0&sdkLevel=18.6.2&p_terminalType=3&deviceName=iPhone 16" target="_blank"><img width="320" style="height:360" src="https://down-files.2bulu.com/f/dn1?downParams=4SJSx9zi0Vn4l/dFZAo1Sw%3D%3D"/></a></div></br><div>经度：102.945633</div><div>纬度：26.151650</div><div>海拔：4123.472313</div><div>时间：2025-08-30 15:35:58</div>]]></description>
+				<styleUrl>MarkerStylePicture</styleUrl>
+				<ExtendedData>
+					<Data name="Type">
+						<value>Point</value>
+					</Data>
+					<Data name="ServerId">
+						<value>12</value>
+					</Data>
+					<Data name="PosType">
+						<value>0</value>
+					</Data>
+					<Data name="description">
+					</Data>
+					<Data name="Longtitude">
+						<value>102.945633</value>
+					</Data>
+					<Data name="Latitude">
+						<value>26.151650</value>
+					</Data>
+					<Data name="Altitude">
+						<value>4123.472313</value>
+					</Data>
+					<Data name="Speed">
+						<value>0.000000</value>
+					</Data>
+					<Data name="Accuracy">
+						<value>0.000000</value>
+					</Data>
+					<Data name="Time">
+						<value>1756539358014</value>
+					</Data>
+					<Data name="FileId">
+						<value>1477550955</value>
+					</Data>
+					<Data name="FileSize">
+						<value>0</value>
+					</Data>
+					<Data name="FileName">
+						<value>pic_1477550955.png</value>
+					</Data>
+					<Data name="attach">
+						<value>[{"fileId":"1477550955","fileType":"0","fileName":"pic_1477550955.png","fileSize":"0"}]</value>
+					</Data>
+					<Data name="FileType">
+						<value>0</value>
+					</Data>
+					<Data name="FilePath">
+						<value>pic_1477550955.png</value>
+					</Data>
+				</ExtendedData>
+				<Point>
+					<coordinates>102.945633,26.151650,4123.472313</coordinates>
+				</Point>
+			</Placemark>
+			<Placemark id="realPoint">
+				<description><![CDATA[<div><a href="https://down-files.2bulu.com/f/dn1?downParams=4SJSx9zi0VkG0VMOL1s8ww==&p_appVersion=8.0.0&p_userId=11299034&p_productType=0&sdkLevel=18.6.2&p_terminalType=3&deviceName=iPhone 16" target="_blank"><img width="320" style="height:360" src="https://down-files.2bulu.com/f/dn1?downParams=4SJSx9zi0VkG0VMOL1s8ww%3D%3D"/></a></div></br><div>经度：102.948005</div><div>纬度：26.152672</div><div>海拔：3936.983158</div><div>时间：2025-08-30 15:57:12</div>]]></description>
+				<styleUrl>MarkerStylePicture</styleUrl>
+				<ExtendedData>
+					<Data name="Type">
+						<value>Point</value>
+					</Data>
+					<Data name="ServerId">
+						<value>11</value>
+					</Data>
+					<Data name="PosType">
+						<value>0</value>
+					</Data>
+					<Data name="description">
+					</Data>
+					<Data name="Longtitude">
+						<value>102.948005</value>
+					</Data>
+					<Data name="Latitude">
+						<value>26.152672</value>
+					</Data>
+					<Data name="Altitude">
+						<value>3936.983158</value>
+					</Data>
+					<Data name="Speed">
+						<value>0.000000</value>
+					</Data>
+					<Data name="Accuracy">
+						<value>0.000000</value>
+					</Data>
+					<Data name="Time">
+						<value>1756540632429</value>
+					</Data>
+					<Data name="FileId">
+						<value>1477550959</value>
+					</Data>
+					<Data name="FileSize">
+						<value>0</value>
+					</Data>
+					<Data name="FileName">
+						<value>pic_1477550959.png</value>
+					</Data>
+					<Data name="attach">
+						<value>[{"fileId":"1477550959","fileType":"0","fileName":"pic_1477550959.png","fileSize":"0"}]</value>
+					</Data>
+					<Data name="FileType">
+						<value>0</value>
+					</Data>
+					<Data name="FilePath">
+						<value>pic_1477550959.png</value>
+					</Data>
+				</ExtendedData>
+				<Point>
+					<coordinates>102.948005,26.152672,3936.983158</coordinates>
+				</Point>
+			</Placemark>
+			<Placemark id="realPoint">
+				<description><![CDATA[<div><a href="https://down-files.2bulu.com/f/dn1?downParams=uemsf7dUOsm7RinxvXuGew==&p_appVersion=8.0.0&p_userId=11299034&p_productType=0&sdkLevel=18.6.2&p_terminalType=3&deviceName=iPhone 16" target="_blank"><img width="320" style="height:360" src="https://down-files.2bulu.com/f/dn1?downParams=uemsf7dUOsm7RinxvXuGew%3D%3D"/></a></div></br><div>经度：102.955995</div><div>纬度：26.156711</div><div>海拔：3725.636297</div><div>时间：2025-08-30 16:23:03</div>]]></description>
+				<styleUrl>MarkerStylePicture</styleUrl>
+				<ExtendedData>
+					<Data name="Type">
+						<value>Point</value>
+					</Data>
+					<Data name="ServerId">
+						<value>6</value>
+					</Data>
+					<Data name="PosType">
+						<value>0</value>
+					</Data>
+					<Data name="description">
+					</Data>
+					<Data name="Longtitude">
+						<value>102.955995</value>
+					</Data>
+					<Data name="Latitude">
+						<value>26.156711</value>
+					</Data>
+					<Data name="Altitude">
+						<value>3725.636297</value>
+					</Data>
+					<Data name="Speed">
+						<value>0.000000</value>
+					</Data>
+					<Data name="Accuracy">
+						<value>0.000000</value>
+					</Data>
+					<Data name="Time">
+						<value>1756542183431</value>
+					</Data>
+					<Data name="FileId">
+						<value>1477549167</value>
+					</Data>
+					<Data name="FileSize">
+						<value>0</value>
+					</Data>
+					<Data name="FileName">
+						<value>pic_1477549167.png</value>
+					</Data>
+					<Data name="attach">
+						<value>[{"fileId":"1477549167","fileType":"0","fileName":"pic_1477549167.png","fileSize":"0"}]</value>
+					</Data>
+					<Data name="FileType">
+						<value>0</value>
+					</Data>
+					<Data name="FilePath">
+						<value>pic_1477549167.png</value>
+					</Data>
+				</ExtendedData>
+				<Point>
+					<coordinates>102.955995,26.156711,3725.636297</coordinates>
+				</Point>
+			</Placemark>
+			<Placemark id="realPoint">
+				<description><![CDATA[<div><a href="https://down-files.2bulu.com/f/dn1?downParams=uemsf7dUOsmLWWvJXaV4Iw==&p_appVersion=8.0.0&p_userId=11299034&p_productType=0&sdkLevel=18.6.2&p_terminalType=3&deviceName=iPhone 16" target="_blank"><img width="320" style="height:360" src="https://down-files.2bulu.com/f/dn1?downParams=uemsf7dUOsmLWWvJXaV4Iw%3D%3D"/></a></div></br><div>经度：102.960765</div><div>纬度：26.157994</div><div>海拔：3692.000000</div><div>时间：2025-08-30 16:30:05</div>]]></description>
+				<styleUrl>MarkerStylePicture</styleUrl>
+				<ExtendedData>
+					<Data name="Type">
+						<value>Point</value>
+					</Data>
+					<Data name="ServerId">
+						<value>8</value>
+					</Data>
+					<Data name="PosType">
+						<value>0</value>
+					</Data>
+					<Data name="description">
+					</Data>
+					<Data name="Longtitude">
+						<value>102.960765</value>
+					</Data>
+					<Data name="Latitude">
+						<value>26.157994</value>
+					</Data>
+					<Data name="Altitude">
+						<value>3692.000000</value>
+					</Data>
+					<Data name="Speed">
+						<value>0.000000</value>
+					</Data>
+					<Data name="Accuracy">
+						<value>0.000000</value>
+					</Data>
+					<Data name="Time">
+						<value>1756542605999</value>
+					</Data>
+					<Data name="FileId">
+						<value>1477549168</value>
+					</Data>
+					<Data name="FileSize">
+						<value>0</value>
+					</Data>
+					<Data name="FileName">
+						<value>pic_1477549168.png</value>
+					</Data>
+					<Data name="attach">
+						<value>[{"fileId":"1477549168","fileType":"0","fileName":"pic_1477549168.png","fileSize":"0"}]</value>
+					</Data>
+					<Data name="FileType">
+						<value>0</value>
+					</Data>
+					<Data name="FilePath">
+						<value>pic_1477549168.png</value>
+					</Data>
+				</ExtendedData>
+				<Point>
+					<coordinates>102.960765,26.157994,3692.000000</coordinates>
+				</Point>
+			</Placemark>
+			<Placemark id="realPoint">
+				<description><![CDATA[<div><a href="https://down-files.2bulu.com/f/dn1?downParams=A6cBHXk71HJWxWdOKUIfrg==&p_appVersion=8.0.0&p_userId=11299034&p_productType=0&sdkLevel=18.6.2&p_terminalType=3&deviceName=iPhone 16" target="_blank"><img width="320" style="height:360" src="https://down-files.2bulu.com/f/dn1?downParams=A6cBHXk71HJWxWdOKUIfrg%3D%3D"/></a></div></br><div>经度：102.960765</div><div>纬度：26.157994</div><div>海拔：3692.000000</div><div>时间：2025-08-30 16:30:05</div>]]></description>
+				<styleUrl>MarkerStylePicture</styleUrl>
+				<ExtendedData>
+					<Data name="Type">
+						<value>Point</value>
+					</Data>
+					<Data name="ServerId">
+						<value>26</value>
+					</Data>
+					<Data name="PosType">
+						<value>0</value>
+					</Data>
+					<Data name="description">
+					</Data>
+					<Data name="Longtitude">
+						<value>102.960765</value>
+					</Data>
+					<Data name="Latitude">
+						<value>26.157994</value>
+					</Data>
+					<Data name="Altitude">
+						<value>3692.000000</value>
+					</Data>
+					<Data name="Speed">
+						<value>0.000000</value>
+					</Data>
+					<Data name="Accuracy">
+						<value>0.000000</value>
+					</Data>
+					<Data name="Time">
+						<value>1756542605999</value>
+					</Data>
+					<Data name="FileId">
+						<value>1477553353</value>
+					</Data>
+					<Data name="FileSize">
+						<value>0</value>
+					</Data>
+					<Data name="FileName">
+						<value>pic_1477553353.png</value>
+					</Data>
+					<Data name="attach">
+						<value>[{"fileId":"1477553353","fileType":"0","fileName":"pic_1477553353.png","fileSize":"0"}]</value>
+					</Data>
+					<Data name="FileType">
+						<value>0</value>
+					</Data>
+					<Data name="FilePath">
+						<value>pic_1477553353.png</value>
+					</Data>
+				</ExtendedData>
+				<Point>
+					<coordinates>102.960765,26.157994,3692.000000</coordinates>
+				</Point>
+			</Placemark>
+			<Placemark id="realPoint">
+				<description><![CDATA[<div><a href="https://down-files.2bulu.com/f/dn1?downParams=A6cBHXk71HLmxvorzkmp8A==&p_appVersion=8.0.0&p_userId=11299034&p_productType=0&sdkLevel=18.6.2&p_terminalType=3&deviceName=iPhone 16" target="_blank"><img width="320" style="height:360" src="https://down-files.2bulu.com/f/dn1?downParams=A6cBHXk71HLmxvorzkmp8A%3D%3D"/></a></div></br><div>经度：102.960765</div><div>纬度：26.157994</div><div>海拔：3692.000000</div><div>时间：2025-08-30 16:30:05</div>]]></description>
+				<styleUrl>MarkerStylePicture</styleUrl>
+				<ExtendedData>
+					<Data name="Type">
+						<value>Point</value>
+					</Data>
+					<Data name="ServerId">
+						<value>27</value>
+					</Data>
+					<Data name="PosType">
+						<value>0</value>
+					</Data>
+					<Data name="description">
+					</Data>
+					<Data name="Longtitude">
+						<value>102.960765</value>
+					</Data>
+					<Data name="Latitude">
+						<value>26.157994</value>
+					</Data>
+					<Data name="Altitude">
+						<value>3692.000000</value>
+					</Data>
+					<Data name="Speed">
+						<value>0.000000</value>
+					</Data>
+					<Data name="Accuracy">
+						<value>0.000000</value>
+					</Data>
+					<Data name="Time">
+						<value>1756542605999</value>
+					</Data>
+					<Data name="FileId">
+						<value>1477553355</value>
+					</Data>
+					<Data name="FileSize">
+						<value>0</value>
+					</Data>
+					<Data name="FileName">
+						<value>pic_1477553355.png</value>
+					</Data>
+					<Data name="attach">
+						<value>[{"fileId":"1477553355","fileType":"0","fileName":"pic_1477553355.png","fileSize":"0"}]</value>
+					</Data>
+					<Data name="FileType">
+						<value>0</value>
+					</Data>
+					<Data name="FilePath">
+						<value>pic_1477553355.png</value>
+					</Data>
+				</ExtendedData>
+				<Point>
+					<coordinates>102.960765,26.157994,3692.000000</coordinates>
+				</Point>
+			</Placemark>
+			<Placemark id="realPoint">
+				<description><![CDATA[<div><a href="https://down-files.2bulu.com/f/dn1?downParams=BwFc5UyQe5uSJVa1zZ5MAQ==&p_appVersion=8.0.0&p_userId=11299034&p_productType=0&sdkLevel=18.6.2&p_terminalType=3&deviceName=iPhone 16" target="_blank"><img width="320" style="height:360" src="https://down-files.2bulu.com/f/dn1?downParams=BwFc5UyQe5uSJVa1zZ5MAQ%3D%3D"/></a></div></br><div>经度：102.958022</div><div>纬度：26.156508</div><div>海拔：3722.572509</div><div>时间：2025-08-31 00:29:54</div>]]></description>
+				<styleUrl>MarkerStylePicture</styleUrl>
+				<ExtendedData>
+					<Data name="Type">
+						<value>Point</value>
+					</Data>
+					<Data name="ServerId">
+						<value>25</value>
+					</Data>
+					<Data name="PosType">
+						<value>0</value>
+					</Data>
+					<Data name="description">
+					</Data>
+					<Data name="Longtitude">
+						<value>102.958022</value>
+					</Data>
+					<Data name="Latitude">
+						<value>26.156508</value>
+					</Data>
+					<Data name="Altitude">
+						<value>3722.572509</value>
+					</Data>
+					<Data name="Speed">
+						<value>0.000000</value>
+					</Data>
+					<Data name="Accuracy">
+						<value>0.000000</value>
+					</Data>
+					<Data name="Time">
+						<value>1756571394000</value>
+					</Data>
+					<Data name="FileId">
+						<value>1477552197</value>
+					</Data>
+					<Data name="FileSize">
+						<value>0</value>
+					</Data>
+					<Data name="FileName">
+						<value>pic_1477552197.png</value>
+					</Data>
+					<Data name="attach">
+						<value>[{"fileId":"1477552197","fileType":"0","fileName":"pic_1477552197.png","fileSize":"0"}]</value>
+					</Data>
+					<Data name="FileType">
+						<value>0</value>
+					</Data>
+					<Data name="FilePath">
+						<value>pic_1477552197.png</value>
+					</Data>
+				</ExtendedData>
+				<Point>
+					<coordinates>102.958022,26.156508,3722.572509</coordinates>
+				</Point>
+			</Placemark>
+		</Folder>
+		<Folder id="TbuluTrackFolder">
+			<name><![CDATA[轨迹]]></name>
+			<Placemark>
+				<styleUrl>#TrackStyle</styleUrl>
+				<gx:Track>
+					<ExtendedData>
+						<Data name="GxTrackExtendedData">
+							<value>-1.000000,0.0;1.059577,0.0;1.177298,0.0;1.243206,0.0;1.384046,0.0;1.415157,0.0;1.516184,0.0;1.208073,0.0;1.354152,0.0;0.808631,0.0;1.138552,0.0;0.962877,0.0;1.408986,0.0;1.144099,0.0;0.972207,0.0;1.345903,0.0;1.273748,0.0;1.391488,0.0;1.236881,0.0;1.345332,0.0;1.287022,0.0;1.164810,0.0;1.226705,0.0;1.460557,0.0;1.665108,0.0;1.136858,0.0;1.167885,0.0;1.251435,0.0;1.194735,0.0;1.221263,0.0;1.383246,0.0;1.596956,0.0;1.031523,0.0;1.292641,0.0;1.290553,0.0;1.351351,0.0;1.379587,0.0;1.445102,0.0;0.990061,0.0;1.523042,0.0;0.924267,0.0;0.770164,0.0;1.036017,0.0;0.798312,0.0;1.310589,0.0;1.354301,0.0;1.257455,0.0;1.135342,0.0;1.006096,0.0;0.587701,0.0;1.177720,0.0;1.278193,0.0;1.226568,0.0;0.662365,0.0;0.016814,0.0;0.904694,0.0;0.904419,0.0;1.146438,0.0;1.455311,0.0;1.144799,0.0;1.063413,0.0;1.191516,0.0;0.978182,0.0;0.751576,0.0;0.564210,0.0;1.012249,0.0;0.970654,0.0;1.227149,0.0;1.258886,0.0;1.468744,0.0;0.972762,0.0;0.712767,0.0;0.967275,0.0;1.057682,0.0;1.015538,0.0;1.015351,0.0;1.389029,0.0;1.307461,0.0;1.361368,0.0;1.464669,0.0;1.289760,0.0;1.321038,0.0;1.065285,0.0;0.936519,0.0;0.907606,0.0;0.888287,0.0;1.113784,0.0;1.242569,0.0;0.870353,0.0;0.744618,0.0;1.049741,0.0;0.796097,0.0;0.823248,0.0;1.006388,0.0;0.919010,0.0;0.678950,0.0;0.726762,0.0;0.652210,0.0;0.598992,0.0;0.482583,0.0;0.129078,0.0;0.745650,0.0;0.059241,0.0;0.844004,0.0;0.318143,0.0;0.930499,0.0;0.840907,0.0;1.097249,0.0;1.033213,0.0;0.619686,0.0;0.669437,0.0;1.031546,0.0;0.679799,0.0;0.651565,0.0;0.564371,0.0;0.859504,0.0;0.166764,0.0;0.740792,0.0;0.855088,0.0;0.821576,0.0;0.713786,0.0;0.967632,0.0;0.181852,0.0;0.997638,0.0;0.429826,0.0;0.422837,0.0;0.498018,0.0;0.362359,0.0;0.497155,0.0;0.186562,0.0;0.578374,0.0;0.868369,0.0;0.155315,0.0;0.500219,0.0;0.303119,0.0;0.450771,0.0;0.849528,0.0;0.953754,0.0;1.003684,0.0;0.638240,0.0;0.431132,0.0;0.755581,0.0;0.623604,0.0;0.964615,0.0;0.584347,0.0;0.753759,0.0;0.141552,0.0;0.780771,0.0;0.789461,0.0;0.378064,0.0;0.027226,0.0;0.047255,0.0;0.178341,0.0;0.000000,0.0;0.259208,0.0;0.131952,0.0;0.493783,0.0;0.643457,0.0;0.921663,0.0;0.622552,0.0;0.035056,0.0;1.000304,0.0;1.214368,0.0;0.395589,0.0;0.265316,0.0;0.979506,0.0;0.479889,0.0;0.324957,0.0;0.503976,0.0;0.420204,0.0;0.576150,0.0;0.814771,0.0;0.039556,0.0;0.040651,0.0;0.734314,0.0;0.529338,0.0;1.090563,0.0;1.211108,0.0;1.177133,0.0;0.609205,0.0;0.394791,0.0;0.000000,0.0;0.616803,0.0;0.156965,0.0;0.154754,0.0;0.094557,0.0;0.770576,0.0;0.647318,0.0;0.884742,0.0;0.834030,0.0;0.080475,0.0;0.918881,0.0;0.652282,0.0;1.276945,0.0;0.816959,0.0;0.601154,0.0;0.751472,0.0;0.966919,0.0;1.064508,0.0;0.904057,0.0;1.088846,0.0;0.485846,0.0;0.637906,0.0;</value>
+						</Data>
+					</ExtendedData>
+					<gx:coord>102.960588 26.157285 3691.000000</gx:coord>
+					<gx:coord>102.960331 26.156966 3695.000000</gx:coord>
+					<gx:coord>102.960248 26.156908 3695.000000</gx:coord>
+					<gx:coord>102.960158 26.156852 3697.000000</gx:coord>
+					<gx:coord>102.960049 26.156818 3700.000000</gx:coord>
+					<gx:coord>102.959941 26.156793 3700.000000</gx:coord>
+					<gx:coord>102.959838 26.156775 3699.000000</gx:coord>
+					<gx:coord>102.959737 26.156761 3699.000000</gx:coord>
+					<gx:coord>102.959641 26.156735 3700.000000</gx:coord>
+					<gx:coord>102.959529 26.156729 3701.000000</gx:coord>
+					<gx:coord>102.959428 26.156706 3704.000000</gx:coord>
+					<gx:coord>102.959330 26.156680 3704.000000</gx:coord>
+					<gx:coord>102.959250 26.156617 3709.000000</gx:coord>
+					<gx:coord>102.959102 26.156478 3710.000000</gx:coord>
+					<gx:coord>102.959016 26.156433 3714.000000</gx:coord>
+					<gx:coord>102.958914 26.156416 3713.000000</gx:coord>
+					<gx:coord>102.958807 26.156415 3711.000000</gx:coord>
+					<gx:coord>102.958715 26.156452 3711.000000</gx:coord>
+					<gx:coord>102.958625 26.156501 3712.000000</gx:coord>
+					<gx:coord>102.958521 26.156542 3712.000000</gx:coord>
+					<gx:coord>102.958412 26.156560 3712.000000</gx:coord>
+					<gx:coord>102.958311 26.156587 3714.000000</gx:coord>
+					<gx:coord>102.958194 26.156556 3715.000000</gx:coord>
+					<gx:coord>102.958103 26.156514 3715.000000</gx:coord>
+					<gx:coord>102.958004 26.156483 3714.000000</gx:coord>
+					<gx:coord>102.957922 26.156429 3713.000000</gx:coord>
+					<gx:coord>102.957827 26.156391 3713.000000</gx:coord>
+					<gx:coord>102.957780 26.156305 3713.000000</gx:coord>
+					<gx:coord>102.957703 26.156239 3715.000000</gx:coord>
+					<gx:coord>102.957656 26.156150 3714.000000</gx:coord>
+					<gx:coord>102.957565 26.156096 3712.000000</gx:coord>
+					<gx:coord>102.957489 26.156035 3713.000000</gx:coord>
+					<gx:coord>102.957396 26.156079 3714.000000</gx:coord>
+					<gx:coord>102.957314 26.156142 3714.000000</gx:coord>
+					<gx:coord>102.957210 26.156178 3715.000000</gx:coord>
+					<gx:coord>102.957102 26.156206 3714.000000</gx:coord>
+					<gx:coord>102.956996 26.156215 3715.000000</gx:coord>
+					<gx:coord>102.956893 26.156244 3714.000000</gx:coord>
+					<gx:coord>102.956792 26.156250 3713.000000</gx:coord>
+					<gx:coord>102.956688 26.156273 3713.000000</gx:coord>
+					<gx:coord>102.956596 26.156327 3713.000000</gx:coord>
+					<gx:coord>102.956498 26.156356 3715.000000</gx:coord>
+					<gx:coord>102.956402 26.156389 3718.000000</gx:coord>
+					<gx:coord>102.956348 26.156465 3720.000000</gx:coord>
+					<gx:coord>102.956237 26.156485 3717.000000</gx:coord>
+					<gx:coord>102.956142 26.156515 3717.000000</gx:coord>
+					<gx:coord>102.956076 26.156588 3716.000000</gx:coord>
+					<gx:coord>102.956000 26.156658 3718.000000</gx:coord>
+					<gx:coord>102.955908 26.156698 3718.000000</gx:coord>
+					<gx:coord>102.955808 26.156707 3715.000000</gx:coord>
+					<gx:coord>102.955700 26.156739 3716.000000</gx:coord>
+					<gx:coord>102.955616 26.156790 3717.000000</gx:coord>
+					<gx:coord>102.955505 26.156824 3718.000000</gx:coord>
+					<gx:coord>102.955404 26.156857 3717.000000</gx:coord>
+					<gx:coord>102.955301 26.156850 3715.000000</gx:coord>
+					<gx:coord>102.955206 26.156896 3715.000000</gx:coord>
+					<gx:coord>102.955114 26.156937 3714.000000</gx:coord>
+					<gx:coord>102.955014 26.156929 3715.000000</gx:coord>
+					<gx:coord>102.954911 26.156925 3716.000000</gx:coord>
+					<gx:coord>102.954801 26.156910 3714.000000</gx:coord>
+					<gx:coord>102.954695 26.156917 3713.000000</gx:coord>
+					<gx:coord>102.954589 26.156914 3715.000000</gx:coord>
+					<gx:coord>102.954490 26.156877 3715.000000</gx:coord>
+					<gx:coord>102.954389 26.156879 3715.000000</gx:coord>
+					<gx:coord>102.954338 26.156800 3716.000000</gx:coord>
+					<gx:coord>102.954236 26.156800 3717.000000</gx:coord>
+					<gx:coord>102.954135 26.156768 3719.000000</gx:coord>
+					<gx:coord>102.954054 26.156711 3723.000000</gx:coord>
+					<gx:coord>102.953970 26.156647 3724.000000</gx:coord>
+					<gx:coord>102.953899 26.156569 3727.000000</gx:coord>
+					<gx:coord>102.953879 26.156476 3726.000000</gx:coord>
+					<gx:coord>102.953784 26.156318 3729.000000</gx:coord>
+					<gx:coord>102.953720 26.156242 3734.000000</gx:coord>
+					<gx:coord>102.953689 26.156149 3737.000000</gx:coord>
+					<gx:coord>102.953666 26.156056 3738.000000</gx:coord>
+					<gx:coord>102.953574 26.156010 3738.000000</gx:coord>
+					<gx:coord>102.953485 26.155969 3738.000000</gx:coord>
+					<gx:coord>102.953375 26.155948 3738.000000</gx:coord>
+					<gx:coord>102.953274 26.155938 3736.000000</gx:coord>
+					<gx:coord>102.953176 26.155909 3737.000000</gx:coord>
+					<gx:coord>102.953075 26.155882 3737.000000</gx:coord>
+					<gx:coord>102.952980 26.155852 3740.000000</gx:coord>
+					<gx:coord>102.952890 26.155796 3741.000000</gx:coord>
+					<gx:coord>102.952788 26.155786 3742.000000</gx:coord>
+					<gx:coord>102.952720 26.155707 3744.000000</gx:coord>
+					<gx:coord>102.952650 26.155639 3747.000000</gx:coord>
+					<gx:coord>102.952584 26.155560 3749.000000</gx:coord>
+					<gx:coord>102.952509 26.155477 3751.000000</gx:coord>
+					<gx:coord>102.952445 26.155405 3750.000000</gx:coord>
+					<gx:coord>102.952384 26.155332 3751.000000</gx:coord>
+					<gx:coord>102.952321 26.155253 3752.000000</gx:coord>
+					<gx:coord>102.952237 26.155202 3752.000000</gx:coord>
+					<gx:coord>102.952135 26.155171 3752.000000</gx:coord>
+					<gx:coord>102.952033 26.155154 3754.000000</gx:coord>
+					<gx:coord>102.951939 26.155109 3754.000000</gx:coord>
+					<gx:coord>102.951841 26.155086 3757.000000</gx:coord>
+					<gx:coord>102.951766 26.155017 3758.000000</gx:coord>
+					<gx:coord>102.951690 26.154956 3758.000000</gx:coord>
+					<gx:coord>102.951616 26.154890 3765.000000</gx:coord>
+					<gx:coord>102.951522 26.154859 3766.000000</gx:coord>
+					<gx:coord>102.951430 26.154815 3769.000000</gx:coord>
+					<gx:coord>102.951337 26.154780 3771.000000</gx:coord>
+					<gx:coord>102.951246 26.154739 3773.000000</gx:coord>
+					<gx:coord>102.951148 26.154710 3776.000000</gx:coord>
+					<gx:coord>102.951063 26.154660 3779.000000</gx:coord>
+					<gx:coord>102.950990 26.154590 3780.000000</gx:coord>
+					<gx:coord>102.950921 26.154513 3781.000000</gx:coord>
+					<gx:coord>102.950831 26.154456 3783.000000</gx:coord>
+					<gx:coord>102.950756 26.154387 3784.000000</gx:coord>
+					<gx:coord>102.950700 26.154307 3787.000000</gx:coord>
+					<gx:coord>102.950595 26.154290 3786.000000</gx:coord>
+					<gx:coord>102.950507 26.154229 3788.000000</gx:coord>
+					<gx:coord>102.950413 26.154185 3789.000000</gx:coord>
+					<gx:coord>102.950403 26.154096 3788.000000</gx:coord>
+					<gx:coord>102.950369 26.154009 3787.000000</gx:coord>
+					<gx:coord>102.950282 26.153951 3789.000000</gx:coord>
+					<gx:coord>102.950181 26.153929 3790.000000</gx:coord>
+					<gx:coord>102.950092 26.153886 3793.000000</gx:coord>
+					<gx:coord>102.950037 26.153808 3796.000000</gx:coord>
+					<gx:coord>102.949975 26.153733 3797.000000</gx:coord>
+					<gx:coord>102.949925 26.153652 3799.000000</gx:coord>
+					<gx:coord>102.949834 26.153609 3800.000000</gx:coord>
+					<gx:coord>102.949766 26.153540 3801.000000</gx:coord>
+					<gx:coord>102.949699 26.153460 3806.000000</gx:coord>
+					<gx:coord>102.949595 26.153452 3808.000000</gx:coord>
+					<gx:coord>102.949492 26.153452 3815.000000</gx:coord>
+					<gx:coord>102.949409 26.153401 3821.000000</gx:coord>
+					<gx:coord>102.949416 26.153307 3824.000000</gx:coord>
+					<gx:coord>102.949326 26.153264 3831.000000</gx:coord>
+					<gx:coord>102.949290 26.153178 3835.000000</gx:coord>
+					<gx:coord>102.949330 26.153094 3837.000000</gx:coord>
+					<gx:coord>102.949221 26.153104 3846.000000</gx:coord>
+					<gx:coord>102.949122 26.153088 3850.000000</gx:coord>
+					<gx:coord>102.949021 26.153066 3853.000000</gx:coord>
+					<gx:coord>102.948929 26.153105 3858.000000</gx:coord>
+					<gx:coord>102.948845 26.153051 3862.000000</gx:coord>
+					<gx:coord>102.948755 26.153102 3867.000000</gx:coord>
+					<gx:coord>102.948659 26.153132 3868.000000</gx:coord>
+					<gx:coord>102.948557 26.153136 3877.000000</gx:coord>
+					<gx:coord>102.948470 26.153076 3882.000000</gx:coord>
+					<gx:coord>102.948451 26.152986 3886.000000</gx:coord>
+					<gx:coord>102.948353 26.152955 3893.000000</gx:coord>
+					<gx:coord>102.948291 26.152882 3898.000000</gx:coord>
+					<gx:coord>102.948188 26.152902 3900.000000</gx:coord>
+					<gx:coord>102.948174 26.152812 3906.000000</gx:coord>
+					<gx:coord>102.948121 26.152730 3908.000000</gx:coord>
+					<gx:coord>102.948222 26.152713 3919.000000</gx:coord>
+					<gx:coord>102.948137 26.152660 3922.000000</gx:coord>
+					<gx:coord>102.948059 26.152728 3927.000000</gx:coord>
+					<gx:coord>102.948018 26.152644 3928.000000</gx:coord>
+					<gx:coord>102.948000 26.152554 3927.000000</gx:coord>
+					<gx:coord>102.948023 26.152646 3932.000000</gx:coord>
+					<gx:coord>102.948124 26.152656 3923.000000</gx:coord>
+					<gx:coord>102.948107 26.152747 3925.000000</gx:coord>
+					<gx:coord>102.948064 26.152663 3923.000000</gx:coord>
+					<gx:coord>102.947983 26.152605 3924.000000</gx:coord>
+					<gx:coord>102.948096 26.152691 3942.000000</gx:coord>
+					<gx:coord>102.947899 26.152749 3940.000000</gx:coord>
+					<gx:coord>102.947818 26.152816 3942.000000</gx:coord>
+					<gx:coord>102.947755 26.152886 3946.000000</gx:coord>
+					<gx:coord>102.947697 26.152970 3948.000000</gx:coord>
+					<gx:coord>102.947633 26.153047 3951.000000</gx:coord>
+					<gx:coord>102.947562 26.153124 3956.000000</gx:coord>
+					<gx:coord>102.947518 26.153211 3966.000000</gx:coord>
+					<gx:coord>102.947442 26.153273 3968.000000</gx:coord>
+					<gx:coord>102.947334 26.153260 3972.000000</gx:coord>
+					<gx:coord>102.947283 26.153340 3981.000000</gx:coord>
+					<gx:coord>102.947219 26.153414 3984.000000</gx:coord>
+					<gx:coord>102.947157 26.153492 3990.000000</gx:coord>
+					<gx:coord>102.947143 26.153587 3996.000000</gx:coord>
+					<gx:coord>102.947056 26.153634 3999.000000</gx:coord>
+					<gx:coord>102.946971 26.153683 4008.000000</gx:coord>
+					<gx:coord>102.946919 26.153605 4006.000000</gx:coord>
+					<gx:coord>102.946953 26.153518 4002.000000</gx:coord>
+					<gx:coord>102.947036 26.153463 3999.000000</gx:coord>
+					<gx:coord>102.947119 26.153409 3997.000000</gx:coord>
+					<gx:coord>102.947123 26.153298 3991.000000</gx:coord>
+					<gx:coord>102.947098 26.153201 3993.000000</gx:coord>
+					<gx:coord>102.946996 26.153188 3996.000000</gx:coord>
+					<gx:coord>102.946891 26.153202 3999.000000</gx:coord>
+					<gx:coord>102.946810 26.153256 4005.000000</gx:coord>
+					<gx:coord>102.946714 26.153294 4006.000000</gx:coord>
+					<gx:coord>102.946617 26.153329 4008.000000</gx:coord>
+					<gx:coord>102.946589 26.153240 4010.000000</gx:coord>
+					<gx:coord>102.946501 26.153289 4014.000000</gx:coord>
+					<gx:coord>102.946401 26.153305 4015.000000</gx:coord>
+					<gx:coord>102.946296 26.153321 4017.000000</gx:coord>
+					<gx:coord>102.946198 26.153302 4020.000000</gx:coord>
+					<gx:coord>102.946097 26.153277 4024.000000</gx:coord>
+					<gx:coord>102.946001 26.153313 4026.000000</gx:coord>
+					<gx:coord>102.945919 26.153367 4030.000000</gx:coord>
+					<gx:coord>102.945911 26.153273 4034.000000</gx:coord>
+					<gx:coord>102.945814 26.153236 4036.000000</gx:coord>
+					<gx:coord>102.945715 26.153212 4037.000000</gx:coord>
+					<gx:coord>102.945618 26.153184 4039.000000</gx:coord>
+					<gx:coord>102.945517 26.153177 4046.000000</gx:coord>
+					<gx:coord>102.945438 26.153242 4048.000000</gx:coord>
+					<gx:coord>102.945362 26.153174 4047.000000</gx:coord>
+					<gx:coord>102.945263 26.153197 4048.000000</gx:coord>
+					<gx:coord>102.945161 26.153226 4049.000000</gx:coord>
+					<gx:coord>102.945061 26.153206 4051.000000</gx:coord>
+					<gx:coord>102.944981 26.153146 4056.000000</gx:coord>
+					<gx:coord>102.944916 26.153076 4061.000000</gx:coord>
+					<when>2025-08-30T02:59:21Z</when>
+					<when>2025-08-30T03:02:26Z</when>
+					<when>2025-08-30T03:02:34Z</when>
+					<when>2025-08-30T03:02:42Z</when>
+					<when>2025-08-30T03:02:52Z</when>
+					<when>2025-08-30T03:03:01Z</when>
+					<when>2025-08-30T03:03:09Z</when>
+					<when>2025-08-30T03:03:19Z</when>
+					<when>2025-08-30T03:03:28Z</when>
+					<when>2025-08-30T03:03:42Z</when>
+					<when>2025-08-30T03:03:52Z</when>
+					<when>2025-08-30T03:04:09Z</when>
+					<when>2025-08-30T03:06:33Z</when>
+					<when>2025-08-30T03:06:50Z</when>
+					<when>2025-08-30T03:06:58Z</when>
+					<when>2025-08-30T03:07:05Z</when>
+					<when>2025-08-30T03:07:12Z</when>
+					<when>2025-08-30T03:07:18Z</when>
+					<when>2025-08-30T03:07:25Z</when>
+					<when>2025-08-30T03:07:34Z</when>
+					<when>2025-08-30T03:07:43Z</when>
+					<when>2025-08-30T03:07:58Z</when>
+					<when>2025-08-30T03:12:15Z</when>
+					<when>2025-08-30T03:12:23Z</when>
+					<when>2025-08-30T03:12:31Z</when>
+					<when>2025-08-30T03:12:39Z</when>
+					<when>2025-08-30T03:13:40Z</when>
+					<when>2025-08-30T03:13:48Z</when>
+					<when>2025-08-30T03:14:00Z</when>
+					<when>2025-08-30T03:14:09Z</when>
+					<when>2025-08-30T03:14:17Z</when>
+					<when>2025-08-30T03:14:26Z</when>
+					<when>2025-08-30T03:15:38Z</when>
+					<when>2025-08-30T03:15:48Z</when>
+					<when>2025-08-30T03:15:57Z</when>
+					<when>2025-08-30T03:16:06Z</when>
+					<when>2025-08-30T03:16:23Z</when>
+					<when>2025-08-30T03:16:31Z</when>
+					<when>2025-08-30T03:16:39Z</when>
+					<when>2025-08-30T03:16:46Z</when>
+					<when>2025-08-30T03:16:56Z</when>
+					<when>2025-08-30T03:17:08Z</when>
+					<when>2025-08-30T03:17:19Z</when>
+					<when>2025-08-30T03:17:44Z</when>
+					<when>2025-08-30T03:17:54Z</when>
+					<when>2025-08-30T03:18:03Z</when>
+					<when>2025-08-30T03:18:10Z</when>
+					<when>2025-08-30T03:18:34Z</when>
+					<when>2025-08-30T03:19:03Z</when>
+					<when>2025-08-30T03:19:20Z</when>
+					<when>2025-08-30T03:19:37Z</when>
+					<when>2025-08-30T03:19:53Z</when>
+					<when>2025-08-30T03:20:04Z</when>
+					<when>2025-08-30T03:20:24Z</when>
+					<when>2025-08-30T03:20:41Z</when>
+					<when>2025-08-30T03:20:55Z</when>
+					<when>2025-08-30T03:21:04Z</when>
+					<when>2025-08-30T03:21:12Z</when>
+					<when>2025-08-30T03:21:19Z</when>
+					<when>2025-08-30T03:21:29Z</when>
+					<when>2025-08-30T03:21:37Z</when>
+					<when>2025-08-30T03:22:31Z</when>
+					<when>2025-08-30T03:22:42Z</when>
+					<when>2025-08-30T03:23:02Z</when>
+					<when>2025-08-30T03:23:18Z</when>
+					<when>2025-08-30T03:23:33Z</when>
+					<when>2025-08-30T03:23:44Z</when>
+					<when>2025-08-30T03:24:01Z</when>
+					<when>2025-08-30T03:24:26Z</when>
+					<when>2025-08-30T03:24:36Z</when>
+					<when>2025-08-30T03:24:45Z</when>
+					<when>2025-08-30T03:34:02Z</when>
+					<when>2025-08-30T03:34:38Z</when>
+					<when>2025-08-30T03:34:49Z</when>
+					<when>2025-08-30T03:34:59Z</when>
+					<when>2025-08-30T03:35:08Z</when>
+					<when>2025-08-30T03:35:18Z</when>
+					<when>2025-08-30T03:35:27Z</when>
+					<when>2025-08-30T03:35:35Z</when>
+					<when>2025-08-30T03:35:42Z</when>
+					<when>2025-08-30T03:35:50Z</when>
+					<when>2025-08-30T03:35:58Z</when>
+					<when>2025-08-30T03:36:08Z</when>
+					<when>2025-08-30T03:36:23Z</when>
+					<when>2025-08-30T03:36:36Z</when>
+					<when>2025-08-30T03:36:45Z</when>
+					<when>2025-08-30T03:36:55Z</when>
+					<when>2025-08-30T03:37:37Z</when>
+					<when>2025-08-30T03:39:23Z</when>
+					<when>2025-08-30T03:39:33Z</when>
+					<when>2025-08-30T03:39:42Z</when>
+					<when>2025-08-30T03:39:54Z</when>
+					<when>2025-08-30T03:40:53Z</when>
+					<when>2025-08-30T03:41:02Z</when>
+					<when>2025-08-30T03:41:15Z</when>
+					<when>2025-08-30T03:41:25Z</when>
+					<when>2025-08-30T03:41:50Z</when>
+					<when>2025-08-30T03:42:21Z</when>
+					<when>2025-08-30T03:42:43Z</when>
+					<when>2025-08-30T03:43:09Z</when>
+					<when>2025-08-30T03:43:47Z</when>
+					<when>2025-08-30T03:44:00Z</when>
+					<when>2025-08-30T03:44:22Z</when>
+					<when>2025-08-30T03:44:49Z</when>
+					<when>2025-08-30T03:45:16Z</when>
+					<when>2025-08-30T03:45:52Z</when>
+					<when>2025-08-30T03:46:04Z</when>
+					<when>2025-08-30T03:46:15Z</when>
+					<when>2025-08-30T03:46:24Z</when>
+					<when>2025-08-30T03:46:35Z</when>
+					<when>2025-08-30T03:46:48Z</when>
+					<when>2025-08-30T03:46:58Z</when>
+					<when>2025-08-30T03:47:14Z</when>
+					<when>2025-08-30T03:47:25Z</when>
+					<when>2025-08-30T03:47:35Z</when>
+					<when>2025-08-30T03:48:04Z</when>
+					<when>2025-08-30T03:51:42Z</when>
+					<when>2025-08-30T03:51:53Z</when>
+					<when>2025-08-30T03:52:11Z</when>
+					<when>2025-08-30T03:52:23Z</when>
+					<when>2025-08-30T03:53:03Z</when>
+					<when>2025-08-30T03:53:14Z</when>
+					<when>2025-08-30T03:53:40Z</when>
+					<when>2025-08-30T03:57:59Z</when>
+					<when>2025-08-30T03:58:23Z</when>
+					<when>2025-08-30T04:00:41Z</when>
+					<when>2025-08-30T04:01:54Z</when>
+					<when>2025-08-30T04:02:26Z</when>
+					<when>2025-08-30T04:04:16Z</when>
+					<when>2025-08-30T04:04:51Z</when>
+					<when>2025-08-30T04:05:05Z</when>
+					<when>2025-08-30T04:08:25Z</when>
+					<when>2025-08-30T04:09:23Z</when>
+					<when>2025-08-30T04:10:59Z</when>
+					<when>2025-08-30T04:11:23Z</when>
+					<when>2025-08-30T04:13:22Z</when>
+					<when>2025-08-30T04:13:41Z</when>
+					<when>2025-08-30T04:14:23Z</when>
+					<when>2025-08-30T04:20:22Z</when>
+					<when>2025-08-30T04:22:00Z</when>
+					<when>2025-08-30T04:22:23Z</when>
+					<when>2025-08-30T04:24:40Z</when>
+					<when>2025-08-30T04:25:04Z</when>
+					<when>2025-08-30T04:26:20Z</when>
+					<when>2025-08-30T04:26:39Z</when>
+					<when>2025-08-30T04:27:02Z</when>
+					<when>2025-08-30T04:27:59Z</when>
+					<when>2025-08-30T04:31:24Z</when>
+					<when>2025-08-30T04:32:57Z</when>
+					<when>2025-08-30T04:33:51Z</when>
+					<when>2025-08-30T04:34:10Z</when>
+					<when>2025-08-30T04:34:55Z</when>
+					<when>2025-08-30T04:36:35Z</when>
+					<when>2025-08-30T04:38:46Z</when>
+					<when>2025-08-30T04:39:28Z</when>
+					<when>2025-08-30T04:40:00Z</when>
+					<when>2025-08-30T04:40:29Z</when>
+					<when>2025-08-30T04:40:48Z</when>
+					<when>2025-08-30T04:41:45Z</when>
+					<when>2025-08-30T04:42:06Z</when>
+					<when>2025-08-30T04:44:17Z</when>
+					<when>2025-08-30T04:44:31Z</when>
+					<when>2025-08-30T04:44:49Z</when>
+					<when>2025-08-30T04:46:44Z</when>
+					<when>2025-08-30T04:47:48Z</when>
+					<when>2025-08-30T04:52:47Z</when>
+					<when>2025-08-30T04:53:46Z</when>
+					<when>2025-08-30T04:54:09Z</when>
+					<when>2025-08-30T04:54:46Z</when>
+					<when>2025-08-30T04:55:14Z</when>
+					<when>2025-08-30T04:59:37Z</when>
+					<when>2025-08-30T04:59:56Z</when>
+					<when>2025-08-30T05:01:02Z</when>
+					<when>2025-08-30T05:01:25Z</when>
+					<when>2025-08-30T05:01:48Z</when>
+					<when>2025-08-30T05:02:53Z</when>
+					<when>2025-08-30T05:03:25Z</when>
+					<when>2025-08-30T05:03:46Z</when>
+					<when>2025-08-30T05:04:03Z</when>
+					<when>2025-08-30T05:04:15Z</when>
+					<when>2025-08-30T05:04:41Z</when>
+					<when>2025-08-30T05:05:17Z</when>
+					<when>2025-08-30T05:06:38Z</when>
+					<when>2025-08-30T05:06:56Z</when>
+					<when>2025-08-30T05:07:19Z</when>
+					<when>2025-08-30T05:07:54Z</when>
+					<when>2025-08-30T05:08:04Z</when>
+					<when>2025-08-30T05:08:16Z</when>
+					<when>2025-08-30T05:08:30Z</when>
+					<when>2025-08-30T05:09:37Z</when>
+					<when>2025-08-30T05:10:46Z</when>
+					<when>2025-08-30T05:13:07Z</when>
+					<when>2025-08-30T05:13:40Z</when>
+					<when>2025-08-30T05:13:54Z</when>
+					<when>2025-08-30T05:14:10Z</when>
+					<when>2025-08-30T05:14:59Z</when>
+					<when>2025-08-30T05:15:16Z</when>
+					<when>2025-08-30T05:16:03Z</when>
+					<when>2025-08-30T05:16:11Z</when>
+					<when>2025-08-30T05:16:20Z</when>
+					<when>2025-08-30T05:16:30Z</when>
+					<when>2025-08-30T05:16:46Z</when>
+					<when>2025-08-30T05:17:06Z</when>
+				</gx:Track>
+			</Placemark>
+			<Placemark>
+				<styleUrl>#TrackStyle</styleUrl>
+				<gx:Track>
+					<ExtendedData>
+						<Data name="GxTrackExtendedData">
+							<value>0.109087,0.0;0.615569,0.0;1.177197,0.0;1.256716,0.0;0.905218,0.0;1.692522,0.0;0.000000,0.0;0.624214,0.0;0.691141,0.0;0.615062,0.0;1.385405,0.0;0.101458,0.0;1.198734,0.0;1.285876,0.0;1.054314,0.0;0.804945,0.0;0.811628,0.0;0.046925,0.0;1.145402,0.0;1.206140,0.0;0.728219,0.0;0.829788,0.0;0.134483,0.0;1.023747,0.0;0.637865,0.0;0.619868,0.0;0.450389,0.0;0.723272,0.0;0.682766,0.0;0.263279,0.0;0.687772,0.0;0.554869,0.0;0.107123,0.0;1.053754,0.0;0.470505,0.0;0.518642,0.0;0.131638,0.0;0.484006,0.0;0.794858,0.0;1.240407,0.0;0.366161,0.0;0.069796,0.0;0.809388,0.0;0.246683,0.0;0.232889,0.0;1.079418,0.0;1.113464,0.0;0.202147,0.0;0.832756,0.0;0.658365,0.0;0.442144,0.0;0.702376,0.0;0.647420,0.0;0.617517,0.0;1.189823,0.0;1.068251,0.0;1.006660,0.0;0.022253,0.0;</value>
+						</Data>
+					</ExtendedData>
+					<gx:coord>102.944680 26.152988 4074.000000</gx:coord>
+					<gx:coord>102.944616 26.152916 4077.000000</gx:coord>
+					<gx:coord>102.944561 26.152831 4082.000000</gx:coord>
+					<gx:coord>102.944548 26.152736 4083.000000</gx:coord>
+					<gx:coord>102.944571 26.152640 4085.000000</gx:coord>
+					<gx:coord>102.944592 26.152548 4086.000000</gx:coord>
+					<gx:coord>102.944611 26.152456 4088.000000</gx:coord>
+					<gx:coord>102.944605 26.152363 4091.000000</gx:coord>
+					<gx:coord>102.944589 26.152273 4094.000000</gx:coord>
+					<gx:coord>102.944648 26.152196 4096.000000</gx:coord>
+					<gx:coord>102.944690 26.152111 4098.000000</gx:coord>
+					<gx:coord>102.944629 26.152036 4097.000000</gx:coord>
+					<gx:coord>102.944546 26.151973 4101.000000</gx:coord>
+					<gx:coord>102.944596 26.152056 4100.000000</gx:coord>
+					<gx:coord>102.944693 26.152094 4099.000000</gx:coord>
+					<gx:coord>102.944802 26.152087 4100.000000</gx:coord>
+					<gx:coord>102.944822 26.152177 4101.000000</gx:coord>
+					<gx:coord>102.944834 26.152085 4099.000000</gx:coord>
+					<gx:coord>102.944933 26.152070 4097.000000</gx:coord>
+					<gx:coord>102.945038 26.152081 4098.000000</gx:coord>
+					<gx:coord>102.945145 26.152088 4101.000000</gx:coord>
+					<gx:coord>102.945226 26.152029 4108.000000</gx:coord>
+					<gx:coord>102.945295 26.151963 4111.000000</gx:coord>
+					<gx:coord>102.945338 26.151878 4114.000000</gx:coord>
+					<gx:coord>102.945362 26.151787 4119.000000</gx:coord>
+					<gx:coord>102.945428 26.151717 4119.000000</gx:coord>
+					<gx:coord>102.945518 26.151674 4110.000000</gx:coord>
+					<gx:coord>102.945610 26.151627 4113.000000</gx:coord>
+					<gx:coord>102.945718 26.151629 4123.000000</gx:coord>
+					<gx:coord>102.945796 26.151568 4129.000000</gx:coord>
+					<gx:coord>102.945842 26.151487 4139.000000</gx:coord>
+					<gx:coord>102.945941 26.151464 4142.000000</gx:coord>
+					<gx:coord>102.945998 26.151386 4151.000000</gx:coord>
+					<gx:coord>102.946070 26.151323 4149.000000</gx:coord>
+					<gx:coord>102.946166 26.151291 4153.000000</gx:coord>
+					<gx:coord>102.946254 26.151242 4160.000000</gx:coord>
+					<gx:coord>102.946291 26.151156 4164.000000</gx:coord>
+					<gx:coord>102.946251 26.151247 4162.000000</gx:coord>
+					<gx:coord>102.946145 26.151256 4163.000000</gx:coord>
+					<gx:coord>102.946225 26.151177 4131.000000</gx:coord>
+					<gx:coord>102.946328 26.151167 4128.000000</gx:coord>
+					<gx:coord>102.946271 26.151092 4131.000000</gx:coord>
+					<gx:coord>102.946225 26.151006 4133.000000</gx:coord>
+					<gx:coord>102.946325 26.151000 4130.000000</gx:coord>
+					<gx:coord>102.946424 26.150970 4133.000000</gx:coord>
+					<gx:coord>102.946528 26.150981 4133.000000</gx:coord>
+					<gx:coord>102.946593 26.151057 4129.000000</gx:coord>
+					<gx:coord>102.946521 26.150991 4133.000000</gx:coord>
+					<gx:coord>102.946616 26.150948 4171.000000</gx:coord>
+					<gx:coord>102.946720 26.150941 4173.000000</gx:coord>
+					<gx:coord>102.946822 26.150959 4171.000000</gx:coord>
+					<gx:coord>102.946915 26.150906 4174.000000</gx:coord>
+					<gx:coord>102.947005 26.150839 4172.000000</gx:coord>
+					<gx:coord>102.947106 26.150832 4168.000000</gx:coord>
+					<gx:coord>102.947200 26.150784 4172.000000</gx:coord>
+					<gx:coord>102.947284 26.150733 4171.000000</gx:coord>
+					<gx:coord>102.947380 26.150692 4173.000000</gx:coord>
+					<gx:coord>102.947452 26.150626 4179.000000</gx:coord>
+					<when>2025-08-30T05:22:59Z</when>
+					<when>2025-08-30T05:23:21Z</when>
+					<when>2025-08-30T05:23:42Z</when>
+					<when>2025-08-30T05:24:44Z</when>
+					<when>2025-08-30T05:25:28Z</when>
+					<when>2025-08-30T05:25:37Z</when>
+					<when>2025-08-30T05:25:59Z</when>
+					<when>2025-08-30T05:26:19Z</when>
+					<when>2025-08-30T05:26:52Z</when>
+					<when>2025-08-30T05:27:04Z</when>
+					<when>2025-08-30T05:27:14Z</when>
+					<when>2025-08-30T05:27:34Z</when>
+					<when>2025-08-30T05:28:13Z</when>
+					<when>2025-08-30T05:28:30Z</when>
+					<when>2025-08-30T05:28:45Z</when>
+					<when>2025-08-30T05:28:59Z</when>
+					<when>2025-08-30T05:29:15Z</when>
+					<when>2025-08-30T05:29:46Z</when>
+					<when>2025-08-30T05:29:55Z</when>
+					<when>2025-08-30T05:30:08Z</when>
+					<when>2025-08-30T05:30:21Z</when>
+					<when>2025-08-30T05:30:42Z</when>
+					<when>2025-08-30T05:31:10Z</when>
+					<when>2025-08-30T05:32:00Z</when>
+					<when>2025-08-30T05:32:22Z</when>
+					<when>2025-08-30T05:32:36Z</when>
+					<when>2025-08-30T05:33:03Z</when>
+					<when>2025-08-30T05:33:36Z</when>
+					<when>2025-08-30T05:35:04Z</when>
+					<when>2025-08-30T05:35:31Z</when>
+					<when>2025-08-30T05:40:50Z</when>
+					<when>2025-08-30T05:41:08Z</when>
+					<when>2025-08-30T05:42:05Z</when>
+					<when>2025-08-30T05:42:32Z</when>
+					<when>2025-08-30T05:43:44Z</when>
+					<when>2025-08-30T05:44:26Z</when>
+					<when>2025-08-30T05:49:15Z</when>
+					<when>2025-08-30T05:54:38Z</when>
+					<when>2025-08-30T06:04:45Z</when>
+					<when>2025-08-30T06:07:00Z</when>
+					<when>2025-08-30T06:07:15Z</when>
+					<when>2025-08-30T06:08:01Z</when>
+					<when>2025-08-30T06:08:42Z</when>
+					<when>2025-08-30T06:09:02Z</when>
+					<when>2025-08-30T06:10:59Z</when>
+					<when>2025-08-30T06:12:09Z</when>
+					<when>2025-08-30T06:13:48Z</when>
+					<when>2025-08-30T06:14:10Z</when>
+					<when>2025-08-30T06:16:09Z</when>
+					<when>2025-08-30T06:16:32Z</when>
+					<when>2025-08-30T06:17:31Z</when>
+					<when>2025-08-30T06:17:48Z</when>
+					<when>2025-08-30T06:18:33Z</when>
+					<when>2025-08-30T06:19:13Z</when>
+					<when>2025-08-30T06:19:51Z</when>
+					<when>2025-08-30T06:20:03Z</when>
+					<when>2025-08-30T06:20:13Z</when>
+					<when>2025-08-30T06:22:10Z</when>
+				</gx:Track>
+			</Placemark>
+			<Placemark>
+				<styleUrl>#TrackStyle</styleUrl>
+				<gx:Track>
+					<ExtendedData>
+						<Data name="GxTrackExtendedData">
+							<value>1.474582,0.0;1.289009,0.0;1.247220,0.0;1.421139,0.0;1.558533,0.0;0.487446,0.0;1.091200,0.0;0.821305,0.0;0.198035,0.0;2.130130,0.0;0.539621,0.0;0.944370,0.0;0.878100,0.0;0.971143,0.0;0.756802,0.0;0.399709,0.0;1.046898,0.0;0.522042,0.0;0.808110,0.0;1.424102,0.0;1.155277,0.0;0.834721,0.0;0.772940,0.0;0.523319,0.0;0.170947,0.0;1.132800,0.0;0.402059,0.0;0.789516,0.0;0.265636,0.0;0.047962,0.0;0.136945,0.0;0.330445,0.0;0.764625,0.0;0.524972,0.0;0.719606,0.0;0.773740,0.0;0.860459,0.0;0.965456,0.0;0.953768,0.0;1.043833,0.0;0.850910,0.0;0.933229,0.0;0.450213,0.0;1.561628,0.0;1.221345,0.0;0.990978,0.0;0.931329,0.0;1.090052,0.0;0.884932,0.0;0.776419,0.0;1.248491,0.0;1.028925,0.0;0.840325,0.0;0.105533,0.0;0.822300,0.0;0.079455,0.0;0.064540,0.0;0.806577,0.0;0.550317,0.0;1.044359,0.0;0.067116,0.0;0.254142,0.0;0.175947,0.0;0.134352,0.0;0.533819,0.0;0.633505,0.0;0.830536,0.0;0.271052,0.0;0.497306,0.0;0.782414,0.0;0.533605,0.0;1.014051,0.0;0.467536,0.0;0.702157,0.0;0.852253,0.0;0.734651,0.0;0.532158,0.0;0.884353,0.0;0.354761,0.0;0.453169,0.0;0.088201,0.0;0.105800,0.0;0.162031,0.0;1.087294,0.0;1.813747,0.0;0.224263,0.0;0.547936,0.0;0.888874,0.0;0.579621,0.0;0.749324,0.0;0.584180,0.0;0.870481,0.0;0.560701,0.0;0.876255,0.0;0.879316,0.0;0.569415,0.0;0.386709,0.0;0.286739,0.0;0.870772,0.0;0.794250,0.0;0.888013,0.0;1.324716,0.0;1.582634,0.0;0.788361,0.0;0.544829,0.0;1.029552,0.0;1.244518,0.0;1.083325,0.0;0.790049,0.0;0.828837,0.0;1.056226,0.0;1.198644,0.0;1.370254,0.0;1.166607,0.0;0.369240,0.0;0.802887,0.0;0.484217,0.0;0.825746,0.0;0.634421,0.0;0.897794,0.0;1.613764,0.0;0.854306,0.0;0.863775,0.0;0.631670,0.0;0.189328,0.0;0.441254,0.0;0.333541,0.0;0.382472,0.0;0.454705,0.0;0.358899,0.0;0.918780,0.0;0.522206,0.0;0.804466,0.0;0.614280,0.0;0.684704,0.0;0.242628,0.0;0.665179,0.0;0.645113,0.0;0.795876,0.0;0.547169,0.0;0.794769,0.0;0.246922,0.0;0.947784,0.0;0.359287,0.0;1.159468,0.0;0.678550,0.0;0.605104,0.0;0.604454,0.0;0.555432,0.0;0.481878,0.0;0.776761,0.0;0.717722,0.0;0.319347,0.0;0.581395,0.0;0.825477,0.0;0.314180,0.0;0.499965,0.0;0.613693,0.0;0.573658,0.0;0.628259,0.0;1.062434,0.0;0.725355,0.0;0.850990,0.0;0.757200,0.0;1.494598,0.0;1.120330,0.0;1.083526,0.0;1.116040,0.0;1.120823,0.0;0.669068,0.0;1.168586,0.0;1.486797,0.0;0.681128,0.0;1.248265,0.0;0.550991,0.0;0.971154,0.0;1.080673,0.0;0.672815,0.0;0.852567,0.0;0.873987,0.0;0.428121,0.0;0.986733,0.0;0.643251,0.0;0.344626,0.0;0.566958,0.0;1.037946,0.0;0.998617,0.0;1.108541,0.0;1.315680,0.0;1.959247,0.0;1.131103,0.0;1.284802,0.0;1.519064,0.0;1.210571,0.0;1.379705,0.0;1.210483,0.0;1.223889,0.0;1.472633,0.0;1.421897,0.0;1.037138,0.0;1.153576,0.0;1.221563,0.0;3.794945,0.0;3.434082,0.0;2.938552,0.0;3.015396,0.0;2.116358,0.0;2.568505,0.0;2.244505,0.0;2.227009,0.0;2.311871,0.0;1.773366,0.0;2.328026,0.0;2.078374,0.0;2.659778,0.0;2.118510,0.0;1.918713,0.0;2.622661,0.0;2.223632,0.0;2.404084,0.0;1.904563,0.0;2.585841,0.0;1.099828,0.0;1.385055,0.0;1.074827,0.0;0.881073,0.0;1.138010,0.0;1.545051,0.0;0.367342,0.0;1.546767,0.0;1.320499,0.0;1.464828,0.0;1.187448,0.0;1.253994,0.0;0.970974,0.0;1.391951,0.0;1.398686,0.0;0.937901,0.0;0.710314,0.0;0.635700,0.0;1.416986,0.0;1.002414,0.0;1.086494,0.0;1.486375,0.0;1.264306,0.0;1.615608,0.0;1.138375,0.0;1.202472,0.0;1.186499,0.0;1.460080,0.0;1.582629,0.0;1.373721,0.0;1.621811,0.0;1.217082,0.0;1.123334,0.0;1.365141,0.0;1.881267,0.0;1.168639,0.0;1.054029,0.0;1.158667,0.0;1.425376,0.0;0.962956,0.0;1.334815,0.0;2.069838,0.0;3.357947,0.0;3.351530,0.0;2.453033,0.0;3.408788,0.0;3.649394,0.0;3.683972,0.0;4.029858,0.0;1.107697,0.0;1.102029,0.0;1.442670,0.0;2.020434,0.0;2.929529,0.0;3.079551,0.0;3.234494,0.0;3.063750,0.0;3.709174,0.0;3.412590,0.0;3.609133,0.0;3.382220,0.0;2.821719,0.0;3.260536,0.0;3.253921,0.0;3.479195,0.0;2.135732,0.0;0.560196,0.0;0.745109,0.0;</value>
+						</Data>
+					</ExtendedData>
+					<gx:coord>102.947343 26.150684 4174.000000</gx:coord>
+					<gx:coord>102.947252 26.150730 4174.000000</gx:coord>
+					<gx:coord>102.947172 26.150795 4174.000000</gx:coord>
+					<gx:coord>102.947268 26.150737 4175.000000</gx:coord>
+					<gx:coord>102.947347 26.150672 4177.000000</gx:coord>
+					<gx:coord>102.947440 26.150625 4177.000000</gx:coord>
+					<gx:coord>102.947545 26.150583 4172.000000</gx:coord>
+					<gx:coord>102.947634 26.150524 4175.000000</gx:coord>
+					<gx:coord>102.947707 26.150462 4177.000000</gx:coord>
+					<gx:coord>102.947779 26.150396 4170.000000</gx:coord>
+					<gx:coord>102.947679 26.150386 4174.000000</gx:coord>
+					<gx:coord>102.947721 26.150304 4173.000000</gx:coord>
+					<gx:coord>102.947757 26.150205 4178.000000</gx:coord>
+					<gx:coord>102.947827 26.150138 4181.000000</gx:coord>
+					<gx:coord>102.947850 26.150039 4187.000000</gx:coord>
+					<gx:coord>102.947918 26.149964 4187.000000</gx:coord>
+					<gx:coord>102.947974 26.149886 4198.000000</gx:coord>
+					<gx:coord>102.948016 26.149800 4202.000000</gx:coord>
+					<gx:coord>102.947977 26.149706 4200.000000</gx:coord>
+					<gx:coord>102.947959 26.149616 4190.000000</gx:coord>
+					<gx:coord>102.947938 26.149528 4187.000000</gx:coord>
+					<gx:coord>102.947968 26.149434 4192.000000</gx:coord>
+					<gx:coord>102.947945 26.149345 4191.000000</gx:coord>
+					<gx:coord>102.948026 26.149292 4193.000000</gx:coord>
+					<gx:coord>102.948097 26.149359 4194.000000</gx:coord>
+					<gx:coord>102.948169 26.149435 4199.000000</gx:coord>
+					<gx:coord>102.948169 26.149526 4204.000000</gx:coord>
+					<gx:coord>102.948142 26.149617 4227.000000</gx:coord>
+					<gx:coord>102.948170 26.149530 4223.000000</gx:coord>
+					<gx:coord>102.948126 26.149449 4197.000000</gx:coord>
+					<gx:coord>102.948130 26.149357 4196.000000</gx:coord>
+					<gx:coord>102.948035 26.149328 4192.000000</gx:coord>
+					<gx:coord>102.947935 26.149336 4193.000000</gx:coord>
+					<gx:coord>102.947900 26.149422 4192.000000</gx:coord>
+					<gx:coord>102.947919 26.149513 4193.000000</gx:coord>
+					<gx:coord>102.947920 26.149607 4191.000000</gx:coord>
+					<gx:coord>102.947963 26.149691 4192.000000</gx:coord>
+					<gx:coord>102.948003 26.149775 4188.000000</gx:coord>
+					<gx:coord>102.947915 26.149819 4184.000000</gx:coord>
+					<gx:coord>102.947838 26.149884 4177.000000</gx:coord>
+					<gx:coord>102.947757 26.149939 4175.000000</gx:coord>
+					<gx:coord>102.947766 26.150033 4173.000000</gx:coord>
+					<gx:coord>102.947692 26.150103 4169.000000</gx:coord>
+					<gx:coord>102.947670 26.150207 4161.000000</gx:coord>
+					<gx:coord>102.947694 26.150305 4163.000000</gx:coord>
+					<gx:coord>102.947620 26.150371 4168.000000</gx:coord>
+					<gx:coord>102.947568 26.150450 4170.000000</gx:coord>
+					<gx:coord>102.947504 26.150522 4172.000000</gx:coord>
+					<gx:coord>102.947432 26.150589 4174.000000</gx:coord>
+					<gx:coord>102.947377 26.150665 4181.000000</gx:coord>
+					<gx:coord>102.947286 26.150712 4183.000000</gx:coord>
+					<gx:coord>102.947191 26.150755 4180.000000</gx:coord>
+					<gx:coord>102.947150 26.150840 4182.000000</gx:coord>
+					<gx:coord>102.947050 26.150840 4181.000000</gx:coord>
+					<gx:coord>102.946968 26.150893 4180.000000</gx:coord>
+					<gx:coord>102.946877 26.150931 4184.000000</gx:coord>
+					<gx:coord>102.946772 26.150938 4183.000000</gx:coord>
+					<gx:coord>102.946669 26.150972 4178.000000</gx:coord>
+					<gx:coord>102.946566 26.150980 4176.000000</gx:coord>
+					<gx:coord>102.946468 26.151007 4171.000000</gx:coord>
+					<gx:coord>102.946369 26.151026 4155.000000</gx:coord>
+					<gx:coord>102.946271 26.151059 4149.000000</gx:coord>
+					<gx:coord>102.946378 26.151060 4139.000000</gx:coord>
+					<gx:coord>102.946281 26.151090 4149.000000</gx:coord>
+					<gx:coord>102.946240 26.151177 4149.000000</gx:coord>
+					<gx:coord>102.946171 26.151245 4150.000000</gx:coord>
+					<gx:coord>102.946073 26.151282 4144.000000</gx:coord>
+					<gx:coord>102.946014 26.151357 4135.000000</gx:coord>
+					<gx:coord>102.945949 26.151426 4134.000000</gx:coord>
+					<gx:coord>102.945869 26.151483 4129.000000</gx:coord>
+					<gx:coord>102.945764 26.151479 4119.000000</gx:coord>
+					<gx:coord>102.945713 26.151557 4122.000000</gx:coord>
+					<gx:coord>102.945645 26.151626 4120.000000</gx:coord>
+					<gx:coord>102.945544 26.151601 4112.000000</gx:coord>
+					<gx:coord>102.945453 26.151660 4110.000000</gx:coord>
+					<gx:coord>102.945373 26.151726 4109.000000</gx:coord>
+					<gx:coord>102.945317 26.151801 4108.000000</gx:coord>
+					<gx:coord>102.945294 26.151892 4109.000000</gx:coord>
+					<gx:coord>102.945229 26.151969 4106.000000</gx:coord>
+					<gx:coord>102.945180 26.152050 4105.000000</gx:coord>
+					<gx:coord>102.945119 26.152123 4103.000000</gx:coord>
+					<gx:coord>102.945025 26.152086 4093.000000</gx:coord>
+					<gx:coord>102.944923 26.152073 4091.000000</gx:coord>
+					<gx:coord>102.944817 26.152074 4094.000000</gx:coord>
+					<gx:coord>102.944702 26.152091 4094.000000</gx:coord>
+					<gx:coord>102.944651 26.152169 4093.000000</gx:coord>
+					<gx:coord>102.944601 26.152247 4094.000000</gx:coord>
+					<gx:coord>102.944619 26.152340 4094.000000</gx:coord>
+					<gx:coord>102.944617 26.152434 4089.000000</gx:coord>
+					<gx:coord>102.944569 26.152520 4087.000000</gx:coord>
+					<gx:coord>102.944568 26.152610 4089.000000</gx:coord>
+					<gx:coord>102.944553 26.152712 4086.000000</gx:coord>
+					<gx:coord>102.944538 26.152804 4088.000000</gx:coord>
+					<gx:coord>102.944587 26.152892 4084.000000</gx:coord>
+					<gx:coord>102.944645 26.152971 4084.000000</gx:coord>
+					<gx:coord>102.944726 26.153033 4082.000000</gx:coord>
+					<gx:coord>102.944813 26.153080 4079.000000</gx:coord>
+					<gx:coord>102.944916 26.153091 4074.000000</gx:coord>
+					<gx:coord>102.944984 26.153159 4066.000000</gx:coord>
+					<gx:coord>102.945056 26.153230 4065.000000</gx:coord>
+					<gx:coord>102.945159 26.153266 4059.000000</gx:coord>
+					<gx:coord>102.945262 26.153241 4055.000000</gx:coord>
+					<gx:coord>102.945362 26.153225 4053.000000</gx:coord>
+					<gx:coord>102.945458 26.153190 4051.000000</gx:coord>
+					<gx:coord>102.945554 26.153149 4049.000000</gx:coord>
+					<gx:coord>102.945657 26.153173 4046.000000</gx:coord>
+					<gx:coord>102.945747 26.153227 4042.000000</gx:coord>
+					<gx:coord>102.945824 26.153288 4043.000000</gx:coord>
+					<gx:coord>102.945921 26.153330 4040.000000</gx:coord>
+					<gx:coord>102.946028 26.153343 4032.000000</gx:coord>
+					<gx:coord>102.946136 26.153318 4030.000000</gx:coord>
+					<gx:coord>102.946245 26.153347 4027.000000</gx:coord>
+					<gx:coord>102.946354 26.153354 4024.000000</gx:coord>
+					<gx:coord>102.946454 26.153348 4023.000000</gx:coord>
+					<gx:coord>102.946541 26.153302 4019.000000</gx:coord>
+					<gx:coord>102.946626 26.153356 4015.000000</gx:coord>
+					<gx:coord>102.946713 26.153305 4008.000000</gx:coord>
+					<gx:coord>102.946812 26.153263 4008.000000</gx:coord>
+					<gx:coord>102.946907 26.153235 4009.000000</gx:coord>
+					<gx:coord>102.947009 26.153217 4005.000000</gx:coord>
+					<gx:coord>102.947126 26.153211 4003.000000</gx:coord>
+					<gx:coord>102.947170 26.153294 3999.000000</gx:coord>
+					<gx:coord>102.947261 26.153248 3991.000000</gx:coord>
+					<gx:coord>102.947353 26.153290 3990.000000</gx:coord>
+					<gx:coord>102.947452 26.153231 3991.000000</gx:coord>
+					<gx:coord>102.947553 26.153211 3974.000000</gx:coord>
+					<gx:coord>102.947611 26.153136 3969.000000</gx:coord>
+					<gx:coord>102.947648 26.153051 3964.000000</gx:coord>
+					<gx:coord>102.947662 26.152957 3952.000000</gx:coord>
+					<gx:coord>102.947733 26.152886 3951.000000</gx:coord>
+					<gx:coord>102.947793 26.152804 3948.000000</gx:coord>
+					<gx:coord>102.947866 26.152739 3947.000000</gx:coord>
+					<gx:coord>102.947946 26.152667 3943.000000</gx:coord>
+					<gx:coord>102.948033 26.152603 3943.000000</gx:coord>
+					<gx:coord>102.948100 26.152528 3940.000000</gx:coord>
+					<gx:coord>102.948044 26.152610 3941.000000</gx:coord>
+					<gx:coord>102.947989 26.152687 3933.000000</gx:coord>
+					<gx:coord>102.948089 26.152713 3929.000000</gx:coord>
+					<gx:coord>102.948166 26.152775 3920.000000</gx:coord>
+					<gx:coord>102.948167 26.152869 3910.000000</gx:coord>
+					<gx:coord>102.948247 26.152927 3907.000000</gx:coord>
+					<gx:coord>102.948351 26.152928 3904.000000</gx:coord>
+					<gx:coord>102.948413 26.153000 3899.000000</gx:coord>
+					<gx:coord>102.948496 26.153055 3892.000000</gx:coord>
+					<gx:coord>102.948513 26.153160 3883.000000</gx:coord>
+					<gx:coord>102.948617 26.153171 3872.000000</gx:coord>
+					<gx:coord>102.948714 26.153135 3868.000000</gx:coord>
+					<gx:coord>102.948795 26.153082 3866.000000</gx:coord>
+					<gx:coord>102.948909 26.153105 3863.000000</gx:coord>
+					<gx:coord>102.949016 26.153114 3856.000000</gx:coord>
+					<gx:coord>102.949115 26.153095 3852.000000</gx:coord>
+					<gx:coord>102.949218 26.153122 3851.000000</gx:coord>
+					<gx:coord>102.949287 26.153191 3843.000000</gx:coord>
+					<gx:coord>102.949378 26.153231 3842.000000</gx:coord>
+					<gx:coord>102.949427 26.153314 3835.000000</gx:coord>
+					<gx:coord>102.949427 26.153406 3827.000000</gx:coord>
+					<gx:coord>102.949522 26.153444 3825.000000</gx:coord>
+					<gx:coord>102.949593 26.153509 3821.000000</gx:coord>
+					<gx:coord>102.949697 26.153504 3818.000000</gx:coord>
+					<gx:coord>102.949783 26.153552 3814.000000</gx:coord>
+					<gx:coord>102.949879 26.153591 3812.000000</gx:coord>
+					<gx:coord>102.949920 26.153678 3808.000000</gx:coord>
+					<gx:coord>102.949980 26.153752 3806.000000</gx:coord>
+					<gx:coord>102.950039 26.153837 3803.000000</gx:coord>
+					<gx:coord>102.950097 26.153921 3802.000000</gx:coord>
+					<gx:coord>102.950163 26.153990 3801.000000</gx:coord>
+					<gx:coord>102.950222 26.154068 3796.000000</gx:coord>
+					<gx:coord>102.950315 26.154103 3796.000000</gx:coord>
+					<gx:coord>102.950408 26.154141 3797.000000</gx:coord>
+					<gx:coord>102.950447 26.154227 3796.000000</gx:coord>
+					<gx:coord>102.950508 26.154306 3795.000000</gx:coord>
+					<gx:coord>102.950586 26.154368 3795.000000</gx:coord>
+					<gx:coord>102.950685 26.154389 3796.000000</gx:coord>
+					<gx:coord>102.950773 26.154436 3792.000000</gx:coord>
+					<gx:coord>102.950850 26.154502 3790.000000</gx:coord>
+					<gx:coord>102.950936 26.154560 3789.000000</gx:coord>
+					<gx:coord>102.950979 26.154647 3788.000000</gx:coord>
+					<gx:coord>102.951071 26.154694 3786.000000</gx:coord>
+					<gx:coord>102.951151 26.154762 3784.000000</gx:coord>
+					<gx:coord>102.951249 26.154788 3783.000000</gx:coord>
+					<gx:coord>102.951302 26.154865 3778.000000</gx:coord>
+					<gx:coord>102.951390 26.154910 3777.000000</gx:coord>
+					<gx:coord>102.951487 26.154947 3773.000000</gx:coord>
+					<gx:coord>102.951574 26.154992 3770.000000</gx:coord>
+					<gx:coord>102.951610 26.155080 3768.000000</gx:coord>
+					<gx:coord>102.951689 26.155155 3767.000000</gx:coord>
+					<gx:coord>102.951801 26.155144 3767.000000</gx:coord>
+					<gx:coord>102.951912 26.155150 3767.000000</gx:coord>
+					<gx:coord>102.952002 26.155210 3767.000000</gx:coord>
+					<gx:coord>102.952060 26.155307 3765.000000</gx:coord>
+					<gx:coord>102.952154 26.155354 3763.000000</gx:coord>
+					<gx:coord>102.952234 26.155420 3764.000000</gx:coord>
+					<gx:coord>102.952302 26.155502 3763.000000</gx:coord>
+					<gx:coord>102.952372 26.155584 3762.000000</gx:coord>
+					<gx:coord>102.952451 26.155651 3762.000000</gx:coord>
+					<gx:coord>102.952527 26.155720 3760.000000</gx:coord>
+					<gx:coord>102.952629 26.155740 3758.000000</gx:coord>
+					<gx:coord>102.952714 26.155798 3758.000000</gx:coord>
+					<gx:coord>102.952797 26.155864 3752.000000</gx:coord>
+					<gx:coord>102.952891 26.155901 3751.000000</gx:coord>
+					<gx:coord>102.952991 26.155892 3746.000000</gx:coord>
+					<gx:coord>102.953091 26.155930 3744.000000</gx:coord>
+					<gx:coord>102.953250 26.155969 3741.000000</gx:coord>
+					<gx:coord>102.953359 26.155981 3741.000000</gx:coord>
+					<gx:coord>102.953483 26.156002 3741.000000</gx:coord>
+					<gx:coord>102.953586 26.155994 3741.000000</gx:coord>
+					<gx:coord>102.953693 26.156033 3740.000000</gx:coord>
+					<gx:coord>102.953775 26.156096 3737.000000</gx:coord>
+					<gx:coord>102.953837 26.156199 3734.000000</gx:coord>
+					<gx:coord>102.953847 26.156302 3733.000000</gx:coord>
+					<gx:coord>102.953906 26.156398 3731.000000</gx:coord>
+					<gx:coord>102.953907 26.156505 3726.000000</gx:coord>
+					<gx:coord>102.953928 26.156618 3725.000000</gx:coord>
+					<gx:coord>102.953998 26.156688 3723.000000</gx:coord>
+					<gx:coord>102.954047 26.156779 3721.000000</gx:coord>
+					<gx:coord>102.954125 26.156847 3719.000000</gx:coord>
+					<gx:coord>102.954207 26.156904 3719.000000</gx:coord>
+					<gx:coord>102.954306 26.156916 3718.000000</gx:coord>
+					<gx:coord>102.954419 26.156909 3719.000000</gx:coord>
+					<gx:coord>102.954534 26.156930 3720.000000</gx:coord>
+					<gx:coord>102.954654 26.156936 3722.000000</gx:coord>
+					<gx:coord>102.954778 26.156958 3721.000000</gx:coord>
+					<gx:coord>102.954888 26.156970 3722.000000</gx:coord>
+					<gx:coord>102.955002 26.156962 3721.000000</gx:coord>
+					<gx:coord>102.955102 26.156992 3721.000000</gx:coord>
+					<gx:coord>102.955200 26.156964 3721.000000</gx:coord>
+					<gx:coord>102.955287 26.156912 3719.000000</gx:coord>
+					<gx:coord>102.955392 26.156907 3722.000000</gx:coord>
+					<gx:coord>102.955494 26.156901 3725.000000</gx:coord>
+					<gx:coord>102.955600 26.156878 3724.000000</gx:coord>
+					<gx:coord>102.955689 26.156826 3725.000000</gx:coord>
+					<gx:coord>102.955773 26.156775 3724.000000</gx:coord>
+					<gx:coord>102.955878 26.156759 3726.000000</gx:coord>
+					<gx:coord>102.955977 26.156742 3725.000000</gx:coord>
+					<gx:coord>102.956044 26.156660 3723.000000</gx:coord>
+					<gx:coord>102.956129 26.156611 3723.000000</gx:coord>
+					<gx:coord>102.956221 26.156563 3723.000000</gx:coord>
+					<gx:coord>102.956328 26.156546 3725.000000</gx:coord>
+					<gx:coord>102.956424 26.156506 3725.000000</gx:coord>
+					<gx:coord>102.956500 26.156440 3724.000000</gx:coord>
+					<gx:coord>102.956590 26.156382 3721.000000</gx:coord>
+					<gx:coord>102.956685 26.156353 3720.000000</gx:coord>
+					<gx:coord>102.956781 26.156314 3719.000000</gx:coord>
+					<gx:coord>102.956881 26.156286 3718.000000</gx:coord>
+					<gx:coord>102.956991 26.156277 3718.000000</gx:coord>
+					<gx:coord>102.957099 26.156265 3718.000000</gx:coord>
+					<gx:coord>102.957203 26.156270 3719.000000</gx:coord>
+					<gx:coord>102.957314 26.156285 3722.000000</gx:coord>
+					<gx:coord>102.957415 26.156306 3723.000000</gx:coord>
+					<gx:coord>102.957526 26.156318 3722.000000</gx:coord>
+					<gx:coord>102.957635 26.156295 3721.000000</gx:coord>
+					<gx:coord>102.957737 26.156314 3721.000000</gx:coord>
+					<gx:coord>102.957808 26.156382 3719.000000</gx:coord>
+					<gx:coord>102.957898 26.156436 3717.000000</gx:coord>
+					<gx:coord>102.957989 26.156485 3718.000000</gx:coord>
+					<gx:coord>102.958076 26.156539 3722.000000</gx:coord>
+					<gx:coord>102.958171 26.156591 3723.000000</gx:coord>
+					<gx:coord>102.958272 26.156610 3724.000000</gx:coord>
+					<gx:coord>102.958375 26.156633 3724.000000</gx:coord>
+					<gx:coord>102.958477 26.156624 3725.000000</gx:coord>
+					<gx:coord>102.958578 26.156596 3724.000000</gx:coord>
+					<gx:coord>102.958663 26.156549 3724.000000</gx:coord>
+					<gx:coord>102.958752 26.156491 3721.000000</gx:coord>
+					<gx:coord>102.958853 26.156464 3723.000000</gx:coord>
+					<gx:coord>102.958975 26.156506 3720.000000</gx:coord>
+					<gx:coord>102.959079 26.156488 3716.000000</gx:coord>
+					<gx:coord>102.959136 26.156568 3716.000000</gx:coord>
+					<gx:coord>102.959245 26.156633 3716.000000</gx:coord>
+					<gx:coord>102.959332 26.156700 3717.000000</gx:coord>
+					<gx:coord>102.959454 26.156739 3714.000000</gx:coord>
+					<gx:coord>102.959553 26.156784 3713.000000</gx:coord>
+					<gx:coord>102.959654 26.156787 3711.000000</gx:coord>
+					<gx:coord>102.959756 26.156775 3712.000000</gx:coord>
+					<gx:coord>102.959854 26.156803 3711.000000</gx:coord>
+					<gx:coord>102.959973 26.156825 3711.000000</gx:coord>
+					<gx:coord>102.960070 26.156849 3707.000000</gx:coord>
+					<gx:coord>102.960182 26.156901 3706.000000</gx:coord>
+					<gx:coord>102.960270 26.156961 3705.000000</gx:coord>
+					<gx:coord>102.960353 26.157022 3706.000000</gx:coord>
+					<gx:coord>102.960423 26.157107 3705.000000</gx:coord>
+					<gx:coord>102.960515 26.157162 3707.000000</gx:coord>
+					<gx:coord>102.960572 26.157276 3705.000000</gx:coord>
+					<gx:coord>102.960640 26.157357 3703.000000</gx:coord>
+					<gx:coord>102.960727 26.157430 3699.000000</gx:coord>
+					<gx:coord>102.960735 26.157535 3697.000000</gx:coord>
+					<gx:coord>102.960756 26.157625 3696.000000</gx:coord>
+					<gx:coord>102.960772 26.157729 3695.000000</gx:coord>
+					<gx:coord>102.960777 26.157819 3694.000000</gx:coord>
+					<gx:coord>102.960810 26.157906 3693.000000</gx:coord>
+					<gx:coord>102.960765 26.157994 3692.000000</gx:coord>
+					<when>2025-08-30T06:24:52Z</when>
+					<when>2025-08-30T06:25:00Z</when>
+					<when>2025-08-30T06:25:29Z</when>
+					<when>2025-08-30T06:26:31Z</when>
+					<when>2025-08-30T06:27:34Z</when>
+					<when>2025-08-30T06:27:45Z</when>
+					<when>2025-08-30T06:28:51Z</when>
+					<when>2025-08-30T06:29:13Z</when>
+					<when>2025-08-30T06:30:00Z</when>
+					<when>2025-08-30T06:31:47Z</when>
+					<when>2025-08-30T06:36:42Z</when>
+					<when>2025-08-30T06:36:58Z</when>
+					<when>2025-08-30T06:37:55Z</when>
+					<when>2025-08-30T06:38:40Z</when>
+					<when>2025-08-30T06:40:09Z</when>
+					<when>2025-08-30T06:40:41Z</when>
+					<when>2025-08-30T06:41:14Z</when>
+					<when>2025-08-30T06:41:39Z</when>
+					<when>2025-08-30T06:42:04Z</when>
+					<when>2025-08-30T06:42:35Z</when>
+					<when>2025-08-30T06:42:55Z</when>
+					<when>2025-08-30T06:43:10Z</when>
+					<when>2025-08-30T06:43:32Z</when>
+					<when>2025-08-30T06:43:48Z</when>
+					<when>2025-08-30T06:44:28Z</when>
+					<when>2025-08-30T06:45:41Z</when>
+					<when>2025-08-30T06:46:18Z</when>
+					<when>2025-08-30T06:47:49Z</when>
+					<when>2025-08-30T07:02:11Z</when>
+					<when>2025-08-30T07:07:34Z</when>
+					<when>2025-08-30T07:09:49Z</when>
+					<when>2025-08-30T07:12:54Z</when>
+					<when>2025-08-30T07:13:30Z</when>
+					<when>2025-08-30T07:13:58Z</when>
+					<when>2025-08-30T07:14:30Z</when>
+					<when>2025-08-30T07:14:42Z</when>
+					<when>2025-08-30T07:15:04Z</when>
+					<when>2025-08-30T07:15:32Z</when>
+					<when>2025-08-30T07:16:48Z</when>
+					<when>2025-08-30T07:17:20Z</when>
+					<when>2025-08-30T07:17:40Z</when>
+					<when>2025-08-30T07:18:01Z</when>
+					<when>2025-08-30T07:18:57Z</when>
+					<when>2025-08-30T07:19:33Z</when>
+					<when>2025-08-30T07:19:44Z</when>
+					<when>2025-08-30T07:19:50Z</when>
+					<when>2025-08-30T07:20:01Z</when>
+					<when>2025-08-30T07:20:14Z</when>
+					<when>2025-08-30T07:20:30Z</when>
+					<when>2025-08-30T07:21:29Z</when>
+					<when>2025-08-30T07:21:37Z</when>
+					<when>2025-08-30T07:22:00Z</when>
+					<when>2025-08-30T07:22:17Z</when>
+					<when>2025-08-30T07:22:48Z</when>
+					<when>2025-08-30T07:23:01Z</when>
+					<when>2025-08-30T07:23:24Z</when>
+					<when>2025-08-30T07:23:46Z</when>
+					<when>2025-08-30T07:24:13Z</when>
+					<when>2025-08-30T07:24:35Z</when>
+					<when>2025-08-30T07:25:02Z</when>
+					<when>2025-08-30T07:26:22Z</when>
+					<when>2025-08-30T07:27:42Z</when>
+					<when>2025-08-30T07:28:31Z</when>
+					<when>2025-08-30T07:29:16Z</when>
+					<when>2025-08-30T07:29:37Z</when>
+					<when>2025-08-30T07:30:02Z</when>
+					<when>2025-08-30T07:30:31Z</when>
+					<when>2025-08-30T07:32:36Z</when>
+					<when>2025-08-30T07:33:05Z</when>
+					<when>2025-08-30T07:33:18Z</when>
+					<when>2025-08-30T07:34:18Z</when>
+					<when>2025-08-30T07:34:51Z</when>
+					<when>2025-08-30T07:35:34Z</when>
+					<when>2025-08-30T07:36:51Z</when>
+					<when>2025-08-30T07:37:27Z</when>
+					<when>2025-08-30T07:37:39Z</when>
+					<when>2025-08-30T07:37:50Z</when>
+					<when>2025-08-30T07:38:14Z</when>
+					<when>2025-08-30T07:38:33Z</when>
+					<when>2025-08-30T07:38:46Z</when>
+					<when>2025-08-30T07:39:15Z</when>
+					<when>2025-08-30T07:39:29Z</when>
+					<when>2025-08-30T07:39:40Z</when>
+					<when>2025-08-30T07:39:44Z</when>
+					<when>2025-08-30T07:39:51Z</when>
+					<when>2025-08-30T07:40:33Z</when>
+					<when>2025-08-30T07:40:55Z</when>
+					<when>2025-08-30T07:41:07Z</when>
+					<when>2025-08-30T07:41:29Z</when>
+					<when>2025-08-30T07:41:48Z</when>
+					<when>2025-08-30T07:41:59Z</when>
+					<when>2025-08-30T07:42:13Z</when>
+					<when>2025-08-30T07:42:30Z</when>
+					<when>2025-08-30T07:42:51Z</when>
+					<when>2025-08-30T07:43:27Z</when>
+					<when>2025-08-30T07:43:49Z</when>
+					<when>2025-08-30T07:44:15Z</when>
+					<when>2025-08-30T07:44:39Z</when>
+					<when>2025-08-30T07:45:03Z</when>
+					<when>2025-08-30T07:45:20Z</when>
+					<when>2025-08-30T07:46:17Z</when>
+					<when>2025-08-30T07:46:28Z</when>
+					<when>2025-08-30T07:46:36Z</when>
+					<when>2025-08-30T07:46:47Z</when>
+					<when>2025-08-30T07:47:08Z</when>
+					<when>2025-08-30T07:47:24Z</when>
+					<when>2025-08-30T07:47:40Z</when>
+					<when>2025-08-30T07:47:48Z</when>
+					<when>2025-08-30T07:48:03Z</when>
+					<when>2025-08-30T07:48:34Z</when>
+					<when>2025-08-30T07:48:44Z</when>
+					<when>2025-08-30T07:48:54Z</when>
+					<when>2025-08-30T07:49:05Z</when>
+					<when>2025-08-30T07:49:14Z</when>
+					<when>2025-08-30T07:49:47Z</when>
+					<when>2025-08-30T07:50:11Z</when>
+					<when>2025-08-30T07:50:37Z</when>
+					<when>2025-08-30T07:50:47Z</when>
+					<when>2025-08-30T07:50:56Z</when>
+					<when>2025-08-30T07:51:12Z</when>
+					<when>2025-08-30T07:51:22Z</when>
+					<when>2025-08-30T07:51:31Z</when>
+					<when>2025-08-30T07:51:56Z</when>
+					<when>2025-08-30T07:52:21Z</when>
+					<when>2025-08-30T07:52:52Z</when>
+					<when>2025-08-30T07:54:00Z</when>
+					<when>2025-08-30T07:54:22Z</when>
+					<when>2025-08-30T07:54:46Z</when>
+					<when>2025-08-30T07:55:12Z</when>
+					<when>2025-08-30T07:55:32Z</when>
+					<when>2025-08-30T07:55:52Z</when>
+					<when>2025-08-30T07:56:13Z</when>
+					<when>2025-08-30T07:56:25Z</when>
+					<when>2025-08-30T07:56:33Z</when>
+					<when>2025-08-30T07:56:40Z</when>
+					<when>2025-08-30T07:56:47Z</when>
+					<when>2025-08-30T07:57:27Z</when>
+					<when>2025-08-30T07:57:47Z</when>
+					<when>2025-08-30T07:58:59Z</when>
+					<when>2025-08-30T07:59:31Z</when>
+					<when>2025-08-30T07:59:49Z</when>
+					<when>2025-08-30T08:00:06Z</when>
+					<when>2025-08-30T08:00:37Z</when>
+					<when>2025-08-30T08:01:12Z</when>
+					<when>2025-08-30T08:01:35Z</when>
+					<when>2025-08-30T08:01:57Z</when>
+					<when>2025-08-30T08:02:10Z</when>
+					<when>2025-08-30T08:02:28Z</when>
+					<when>2025-08-30T08:02:58Z</when>
+					<when>2025-08-30T08:03:22Z</when>
+					<when>2025-08-30T08:03:42Z</when>
+					<when>2025-08-30T08:04:03Z</when>
+					<when>2025-08-30T08:04:42Z</when>
+					<when>2025-08-30T08:04:50Z</when>
+					<when>2025-08-30T08:05:16Z</when>
+					<when>2025-08-30T08:05:35Z</when>
+					<when>2025-08-30T08:05:56Z</when>
+					<when>2025-08-30T08:06:15Z</when>
+					<when>2025-08-30T08:06:36Z</when>
+					<when>2025-08-30T08:06:51Z</when>
+					<when>2025-08-30T08:07:04Z</when>
+					<when>2025-08-30T08:07:32Z</when>
+					<when>2025-08-30T08:08:26Z</when>
+					<when>2025-08-30T08:08:38Z</when>
+					<when>2025-08-30T08:08:46Z</when>
+					<when>2025-08-30T08:09:58Z</when>
+					<when>2025-08-30T08:10:11Z</when>
+					<when>2025-08-30T08:10:21Z</when>
+					<when>2025-08-30T08:10:30Z</when>
+					<when>2025-08-30T08:10:41Z</when>
+					<when>2025-08-30T08:10:51Z</when>
+					<when>2025-08-30T08:11:00Z</when>
+					<when>2025-08-30T08:11:11Z</when>
+					<when>2025-08-30T08:11:28Z</when>
+					<when>2025-08-30T08:11:39Z</when>
+					<when>2025-08-30T08:11:48Z</when>
+					<when>2025-08-30T08:12:00Z</when>
+					<when>2025-08-30T08:12:13Z</when>
+					<when>2025-08-30T08:12:27Z</when>
+					<when>2025-08-30T08:12:35Z</when>
+					<when>2025-08-30T08:12:57Z</when>
+					<when>2025-08-30T08:13:07Z</when>
+					<when>2025-08-30T08:13:19Z</when>
+					<when>2025-08-30T08:14:05Z</when>
+					<when>2025-08-30T08:14:19Z</when>
+					<when>2025-08-30T08:14:29Z</when>
+					<when>2025-08-30T08:14:38Z</when>
+					<when>2025-08-30T08:14:47Z</when>
+					<when>2025-08-30T08:14:56Z</when>
+					<when>2025-08-30T08:15:04Z</when>
+					<when>2025-08-30T08:15:12Z</when>
+					<when>2025-08-30T08:15:24Z</when>
+					<when>2025-08-30T08:15:40Z</when>
+					<when>2025-08-30T08:15:55Z</when>
+					<when>2025-08-30T08:16:03Z</when>
+					<when>2025-08-30T08:16:10Z</when>
+					<when>2025-08-30T08:16:18Z</when>
+					<when>2025-08-30T08:16:26Z</when>
+					<when>2025-08-30T08:16:44Z</when>
+					<when>2025-08-30T08:16:51Z</when>
+					<when>2025-08-30T08:17:11Z</when>
+					<when>2025-08-30T08:17:18Z</when>
+					<when>2025-08-30T08:17:23Z</when>
+					<when>2025-08-30T08:17:26Z</when>
+					<when>2025-08-30T08:17:30Z</when>
+					<when>2025-08-30T08:17:33Z</when>
+					<when>2025-08-30T08:17:40Z</when>
+					<when>2025-08-30T08:17:44Z</when>
+					<when>2025-08-30T08:17:49Z</when>
+					<when>2025-08-30T08:17:54Z</when>
+					<when>2025-08-30T08:18:02Z</when>
+					<when>2025-08-30T08:18:08Z</when>
+					<when>2025-08-30T08:18:13Z</when>
+					<when>2025-08-30T08:18:18Z</when>
+					<when>2025-08-30T08:18:22Z</when>
+					<when>2025-08-30T08:18:27Z</when>
+					<when>2025-08-30T08:18:33Z</when>
+					<when>2025-08-30T08:18:43Z</when>
+					<when>2025-08-30T08:18:50Z</when>
+					<when>2025-08-30T08:18:56Z</when>
+					<when>2025-08-30T08:19:02Z</when>
+					<when>2025-08-30T08:19:08Z</when>
+					<when>2025-08-30T08:19:29Z</when>
+					<when>2025-08-30T08:19:37Z</when>
+					<when>2025-08-30T08:19:45Z</when>
+					<when>2025-08-30T08:20:11Z</when>
+					<when>2025-08-30T08:20:32Z</when>
+					<when>2025-08-30T08:20:40Z</when>
+					<when>2025-08-30T08:20:52Z</when>
+					<when>2025-08-30T08:20:59Z</when>
+					<when>2025-08-30T08:21:08Z</when>
+					<when>2025-08-30T08:21:16Z</when>
+					<when>2025-08-30T08:21:23Z</when>
+					<when>2025-08-30T08:22:15Z</when>
+					<when>2025-08-30T08:23:21Z</when>
+					<when>2025-08-30T08:23:30Z</when>
+					<when>2025-08-30T08:23:37Z</when>
+					<when>2025-08-30T08:23:47Z</when>
+					<when>2025-08-30T08:24:00Z</when>
+					<when>2025-08-30T08:24:16Z</when>
+					<when>2025-08-30T08:24:28Z</when>
+					<when>2025-08-30T08:24:36Z</when>
+					<when>2025-08-30T08:24:43Z</when>
+					<when>2025-08-30T08:24:56Z</when>
+					<when>2025-08-30T08:25:04Z</when>
+					<when>2025-08-30T08:25:11Z</when>
+					<when>2025-08-30T08:25:18Z</when>
+					<when>2025-08-30T08:25:25Z</when>
+					<when>2025-08-30T08:25:32Z</when>
+					<when>2025-08-30T08:25:40Z</when>
+					<when>2025-08-30T08:25:50Z</when>
+					<when>2025-08-30T08:25:57Z</when>
+					<when>2025-08-30T08:26:05Z</when>
+					<when>2025-08-30T08:26:13Z</when>
+					<when>2025-08-30T08:26:19Z</when>
+					<when>2025-08-30T08:27:04Z</when>
+					<when>2025-08-30T08:27:11Z</when>
+					<when>2025-08-30T08:27:18Z</when>
+					<when>2025-08-30T08:27:26Z</when>
+					<when>2025-08-30T08:27:33Z</when>
+					<when>2025-08-30T08:27:41Z</when>
+					<when>2025-08-30T08:27:49Z</when>
+					<when>2025-08-30T08:27:57Z</when>
+					<when>2025-08-30T08:28:03Z</when>
+					<when>2025-08-30T08:28:07Z</when>
+					<when>2025-08-30T08:28:10Z</when>
+					<when>2025-08-30T08:28:14Z</when>
+					<when>2025-08-30T08:28:18Z</when>
+					<when>2025-08-30T08:28:21Z</when>
+					<when>2025-08-30T08:28:25Z</when>
+					<when>2025-08-30T08:28:28Z</when>
+					<when>2025-08-30T08:28:35Z</when>
+					<when>2025-08-30T08:28:43Z</when>
+					<when>2025-08-30T08:28:50Z</when>
+					<when>2025-08-30T08:28:57Z</when>
+					<when>2025-08-30T08:29:01Z</when>
+					<when>2025-08-30T08:29:05Z</when>
+					<when>2025-08-30T08:29:08Z</when>
+					<when>2025-08-30T08:29:11Z</when>
+					<when>2025-08-30T08:29:14Z</when>
+					<when>2025-08-30T08:29:17Z</when>
+					<when>2025-08-30T08:29:21Z</when>
+					<when>2025-08-30T08:29:24Z</when>
+					<when>2025-08-30T08:29:28Z</when>
+					<when>2025-08-30T08:29:31Z</when>
+					<when>2025-08-30T08:29:34Z</when>
+					<when>2025-08-30T08:29:37Z</when>
+					<when>2025-08-30T08:29:41Z</when>
+					<when>2025-08-30T08:29:53Z</when>
+					<when>2025-08-30T08:30:05Z</when>
+				</gx:Track>
+			</Placemark>
+		</Folder>
+	</Document>
+</kml>

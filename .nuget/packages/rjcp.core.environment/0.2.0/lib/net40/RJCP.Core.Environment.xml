@@ -1,0 +1,2486 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>RJCP.Core.Environment</name>
+    </assembly>
+    <members>
+        <member name="T:RJCP.Core.Environment.Resources.Messages">
+            <summary>
+              A strongly-typed resource class, for looking up localized strings, etc.
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Resources.Messages.ResourceManager">
+            <summary>
+              Returns the cached ResourceManager instance used by this class.
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Resources.Messages.Culture">
+            <summary>
+              Overrides the current thread's CurrentUICulture property for all
+              resource lookups using this strongly typed resource class.
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Resources.Messages.ArgumentEx_NotOsVersion">
+            <summary>
+              Looks up a localized string similar to Not an OSVersion.
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Resources.Messages.ArgumentEx_XdgUnknownSpecialFolder">
+            <summary>
+              Looks up a localized string similar to Unknown special folder.
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Resources.Messages.InvalidOperationEx_CheckLock">
+            <summary>
+              Looks up a localized string similar to Cannot set &apos;{0}&apos; on Sealed instance.
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Resources.Messages.InvalidOperationEx_InternalGetOsVersion">
+            <summary>
+              Looks up a localized string similar to Internal Error: Must get OS version information first.
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Resources.Messages.InvalidOperationEx_XdgUnknownHome">
+            <summary>
+              Looks up a localized string similar to Unable to determine home directory path.
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Resources.Messages.Net45">
+            <summary>
+              Looks up a localized string similar to .NET Framework 4.5.
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Resources.Messages.Net45_Unknown">
+            <summary>
+              Looks up a localized string similar to Unknown .NET version before .NET 4.5 ({0}).
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Resources.Messages.Net451_Vista">
+            <summary>
+              Looks up a localized string similar to .NET Framework 4.5.1 installed on Windows 8, Windows 7 SP1, or Windows Vista SP2.
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Resources.Messages.Net451_Win81">
+            <summary>
+              Looks up a localized string similar to .NET Framework 4.5.1 installed with Windows 8.1 or Windows Server 2012 R2.
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Resources.Messages.Net452">
+            <summary>
+              Looks up a localized string similar to .NET Framework 4.5.2.
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Resources.Messages.Net46">
+            <summary>
+              Looks up a localized string similar to .NET Framework 4.6.
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Resources.Messages.Net46_Win10">
+            <summary>
+              Looks up a localized string similar to .NET Framework 4.6 on Windows 10 (1507).
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Resources.Messages.Net461">
+            <summary>
+              Looks up a localized string similar to .NET Framework 4.6.1.
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Resources.Messages.Net461_Win10">
+            <summary>
+              Looks up a localized string similar to .NET Framework 4.6.1 on Windows 10, November Update (1511).
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Resources.Messages.Net462">
+            <summary>
+              Looks up a localized string similar to .NET Framework 4.6.2.
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Resources.Messages.Net462_Win10">
+            <summary>
+              Looks up a localized string similar to .NET Framework 4.6.2 on Windows 10, Anniversary Update (1607) or Windows Server 2016.
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Resources.Messages.Net47">
+            <summary>
+              Looks up a localized string similar to .NET Framework 4.7.
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Resources.Messages.Net47_Win10">
+            <summary>
+              Looks up a localized string similar to .NET Framework 4.7 on Windows 10, Creators Update (1703).
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Resources.Messages.Net471">
+            <summary>
+              Looks up a localized string similar to .NET Framework 4.7.1.
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Resources.Messages.Net471_Win10">
+            <summary>
+              Looks up a localized string similar to .NET Framework 4.7.1 on Windows 10, Fall Creators Update (1709).
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Resources.Messages.Net472">
+            <summary>
+              Looks up a localized string similar to .NET Framework 4.7.2.
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Resources.Messages.Net472_Win10">
+            <summary>
+              Looks up a localized string similar to .NET Framework 4.7.2 on Windows 10, Spring Creators Update (1803).
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Resources.Messages.Net48">
+            <summary>
+              Looks up a localized string similar to .NET Framework 4.8.
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Resources.Messages.Net48_Win10_1903">
+            <summary>
+              Looks up a localized string similar to .NET Framework 4.8 on Windows 10, May 2019 Update (1903).
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Resources.Messages.Net48_Win10_1909">
+            <summary>
+              Looks up a localized string similar to .NET Framework 4.8 on Windows 10, October 2019 Update (1909).
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Resources.Messages.Net48_Win10_20H2">
+            <summary>
+              Looks up a localized string similar to .NET Framework 4.8 on Windows 10, October 2020 Update (20H2, 21H1).
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Resources.Messages.Net48_Win11">
+            <summary>
+              Looks up a localized string similar to .NET Framework 4.8 on Windows 11 / Server 2022.
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Resources.Messages.Net481">
+            <summary>
+              Looks up a localized string similar to .NET Framework 4.8.1.
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Resources.Messages.Net481_Win11_22H2">
+            <summary>
+              Looks up a localized string similar to .NET Framework 4.8.1 on Windows 11 22H2.
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Resources.Messages.NetFx">
+            <summary>
+              Looks up a localized string similar to .NET {0} or later, release {1}.
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Resources.Messages.NetFx45Details">
+            <summary>
+              Looks up a localized string similar to .NET Framework Net Version {0}, Release {1}.
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Resources.Messages.NetFxDetails">
+            <summary>
+              Looks up a localized string similar to .NET Framework {0} {1}.
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Resources.Messages.NetFxLegacy">
+            <summary>
+              Looks up a localized string similar to .NET Framework.
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Resources.Messages.NetFxLegacyProfile">
+            <summary>
+              Looks up a localized string similar to Profile.
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Resources.Messages.NetFxLegacySp">
+            <summary>
+              Looks up a localized string similar to SP.
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Resources.Messages.NetFxRuntime">
+            <summary>
+              Looks up a localized string similar to .NET Environment Runtime.
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Resources.Messages.PlatformNotSupportedEx">
+            <summary>
+              Looks up a localized string similar to WinVersionQuery is only supported on Windows.
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Resources.Messages.Win32Ex_GetVersionEx">
+            <summary>
+              Looks up a localized string similar to GetVersionEx() failure. Error = 0x{0:8x}.
+            </summary>
+        </member>
+        <member name="T:RJCP.Core.Environment.Version.INetVersion">
+            <summary>
+            Interface INetVersion for getting the version of .NET installed.
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Version.INetVersion.IsValid">
+            <summary>
+            Returns <see langword="true"/> if the version information contains valid (even if partially) information.
+            </summary>
+            <value><see langword="true"/> if this instance is valid; otherwise, <see langword="false"/>.</value>
+        </member>
+        <member name="P:RJCP.Core.Environment.Version.INetVersion.Version">
+            <summary>
+            Gets the version string for the .NET version installed.
+            </summary>
+            <value>The .NET version string.</value>
+        </member>
+        <member name="P:RJCP.Core.Environment.Version.INetVersion.Description">
+            <summary>
+            Gets the description of the .NET version installed.
+            </summary>
+            <value>The .NET version description.</value>
+        </member>
+        <member name="T:RJCP.Core.Environment.Version.NetFx.NetFx10">
+            <summary>
+            Installation details for .NET 1.0.
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Version.NetFx.NetFx10.Package">
+            <summary>
+            Gets the package for .NET 1.0 as read from the registry.
+            </summary>
+            <value>The package as read from the registry.</value>
+        </member>
+        <member name="P:RJCP.Core.Environment.Version.NetFx.NetFx10.NetVersion">
+            <summary>
+            Gets the version of .NET 1.0 as read from the registry.
+            </summary>
+            <value>The version of .NET as read from the registry.</value>
+        </member>
+        <member name="P:RJCP.Core.Environment.Version.NetFx.NetFx10.IsValid">
+            <summary>
+            Returns <see langword="true"/> if the version information contains valid (even if partially) information.
+            </summary>
+            <value><see langword="true"/> if this instance is valid; otherwise, <see langword="false"/>.</value>
+        </member>
+        <member name="P:RJCP.Core.Environment.Version.NetFx.NetFx10.Description">
+            <summary>
+            Gets the description of the .NET version installed.
+            </summary>
+            <value>The .NET version description.</value>
+        </member>
+        <member name="P:RJCP.Core.Environment.Version.NetFx.NetFx10.Version">
+            <summary>
+            Gets the version string for the .NET version installed.
+            </summary>
+            <value>The .NET version string.</value>
+        </member>
+        <member name="T:RJCP.Core.Environment.Version.NetFx.NetFx45">
+            <summary>
+            Installation details for .NET 4.5 and later (up to .NET 4.8).
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Version.NetFx.NetFx45.Net45Release">
+            <summary>
+            Gets the release version of .NET 4.5 and later.
+            </summary>
+            <value>The release version of .NET 4.5 and later.</value>
+        </member>
+        <member name="P:RJCP.Core.Environment.Version.NetFx.NetFx45.TargetVersion">
+            <summary>
+            Gets the target version for the runtime.
+            </summary>
+            <value>The target version for the runtime.</value>
+        </member>
+        <member name="P:RJCP.Core.Environment.Version.NetFx.NetFx45.NetVersion">
+            <summary>
+            Gets the version of .NET 1.0 as read from the registry.
+            </summary>
+            <value>The version of .NET as read from the registry.</value>
+        </member>
+        <member name="P:RJCP.Core.Environment.Version.NetFx.NetFx45.IsValid">
+            <summary>
+            Returns <see langword="true"/> if the version information contains valid (even if partially) information.
+            </summary>
+            <value><see langword="true"/> if this instance is valid; otherwise, <see langword="false"/>.</value>
+        </member>
+        <member name="P:RJCP.Core.Environment.Version.NetFx.NetFx45.Version">
+            <summary>
+            Gets the version string for the .NET version installed.
+            </summary>
+            <value>The .NET version string.</value>
+        </member>
+        <member name="P:RJCP.Core.Environment.Version.NetFx.NetFx45.Description">
+            <summary>
+            Gets the description of the .NET version installed.
+            </summary>
+            <value>The .NET version description.</value>
+        </member>
+        <member name="T:RJCP.Core.Environment.Version.NetFx.NetFxLegacy">
+            <summary>
+            Older version of .NET 2.0 to 3.5
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Version.NetFx.NetFxLegacy.NetVersion">
+            <summary>
+            Gets the version of .NET as read from the registry.
+            </summary>
+            <value>The version of .NET as read from the registry.</value>
+        </member>
+        <member name="P:RJCP.Core.Environment.Version.NetFx.NetFxLegacy.IsValid">
+            <summary>
+            Returns <see langword="true"/> if the version information contains valid (even if partially) information.
+            </summary>
+            <value><see langword="true"/> if this instance is valid; otherwise, <see langword="false"/>.</value>
+        </member>
+        <member name="P:RJCP.Core.Environment.Version.NetFx.NetFxLegacy.Description">
+            <summary>
+            Gets the description of the .NET version installed.
+            </summary>
+            <value>The .NET version description.</value>
+        </member>
+        <member name="P:RJCP.Core.Environment.Version.NetFx.NetFxLegacy.Version">
+            <summary>
+            Gets the version string for the .NET version installed.
+            </summary>
+            <value>The .NET version string.</value>
+        </member>
+        <member name="T:RJCP.Core.Environment.Version.NetFx.Runtime.NetRuntime">
+            <summary>
+            Description about the current running runtime.
+            </summary>
+        </member>
+        <member name="M:RJCP.Core.Environment.Version.NetFx.Runtime.NetRuntime.#ctor">
+            <summary>
+            Initializes a new instance of the <see cref="T:RJCP.Core.Environment.Version.NetFx.Runtime.NetRuntime"/> class.
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Version.NetFx.Runtime.NetRuntime.Description">
+            <summary>
+            Gets the description of the .NET version installed.
+            </summary>
+            <value>The .NET version description.</value>
+        </member>
+        <member name="P:RJCP.Core.Environment.Version.NetFx.Runtime.NetRuntime.IsValid">
+            <summary>
+            Returns <see langword="true"/> if the version information contains valid (even if partially) information.
+            </summary>
+            <value><see langword="true"/> if this instance is valid; otherwise, <see langword="false"/>.</value>
+        </member>
+        <member name="P:RJCP.Core.Environment.Version.NetFx.Runtime.NetRuntime.Version">
+            <summary>
+            Gets the version string for the .NET version installed.
+            </summary>
+            <value>The .NET version string.</value>
+        </member>
+        <member name="T:RJCP.Core.Environment.Version.NetFx.Runtime.Mono">
+            <summary>
+            An instance checking if the .NET Run Time is MONO on Windows or Unix.
+            </summary>
+        </member>
+        <member name="M:RJCP.Core.Environment.Version.NetFx.Runtime.Mono.#ctor">
+            <summary>
+            Initializes a new instance of the <see cref="T:RJCP.Core.Environment.Version.NetFx.Runtime.Mono"/> class.
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Version.NetFx.Runtime.Mono.IsValid">
+            <summary>
+            Returns <see langword="true"/> if the version information contains valid (even if partially) information.
+            </summary>
+            <value><see langword="true"/> if this instance is valid; otherwise, <see langword="false"/>.</value>
+        </member>
+        <member name="P:RJCP.Core.Environment.Version.NetFx.Runtime.Mono.Version">
+            <summary>
+            Gets the version string for the .NET version installed.
+            </summary>
+            <value>The .NET version string.</value>
+        </member>
+        <member name="P:RJCP.Core.Environment.Version.NetFx.Runtime.Mono.Description">
+            <summary>
+            Gets the description of the .NET version installed.
+            </summary>
+            <value>The .NET version description.</value>
+        </member>
+        <member name="T:RJCP.Core.Environment.Version.NetVersions">
+            <summary>
+            A class to get the versions of .NET installed on the local computer. Only relevant for Windows.
+            </summary>
+        </member>
+        <member name="M:RJCP.Core.Environment.Version.NetVersions.#ctor">
+            <summary>
+            Initializes a new instance of the <see cref="T:RJCP.Core.Environment.Version.NetVersions"/> class. Other operating systems will just list no
+            versions of .NET (until there might be support at a later date).
+            </summary>
+        </member>
+        <member name="M:RJCP.Core.Environment.Version.NetVersions.GetEnumerator">
+            <summary>
+            Returns an enumerator that iterates through the collection.
+            </summary>
+            <returns>An enumerator that can be used to iterate through the collection of .NET versions found.</returns>
+        </member>
+        <member name="P:RJCP.Core.Environment.Version.NetVersions.Runtime">
+            <summary>
+            Gets the detected .NET runtimes.
+            </summary>
+            <value>The current .NET runtimes.</value>
+        </member>
+        <member name="T:RJCP.Core.Environment.Version.WinArchitecture">
+            <summary>
+            The processor architecture on which the machine is running.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinArchitecture.Unknown">
+            <summary>
+            Unknown.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinArchitecture.x86">
+            <summary>
+            Intel x86 32-bit.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinArchitecture.Mips">
+            <summary>
+            MIPS architecture.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinArchitecture.Alpha">
+            <summary>
+            Alpha architecture.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinArchitecture.PPC">
+            <summary>
+            Power PC architecture.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinArchitecture.SHX">
+            <summary>
+            SHx architecture.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinArchitecture.ARM">
+            <summary>
+            ARM architecture.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinArchitecture.IA64">
+            <summary>
+            Intel IA64 architecture (this is not x64).
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinArchitecture.Alpha64">
+            <summary>
+            Alpha 64-bit architecture.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinArchitecture.MSIL">
+            <summary>
+            Microsoft Intermediate Language.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinArchitecture.x64">
+            <summary>
+            AMD64 bit instructions.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinArchitecture.ARM64">
+            <summary>
+            ARM 64-bit architecture.
+            </summary>
+        </member>
+        <member name="T:RJCP.Core.Environment.Version.WinPlatform">
+            <summary>
+            List of various platform IDs provided by Microsoft.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinPlatform.Unknown">
+            <summary>
+            Unknown PlatformId.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinPlatform.Win32s">
+            <summary>
+            Win32 Subsystem.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinPlatform.Win9x">
+            <summary>
+            Windows 9x.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinPlatform.WinNT">
+            <summary>
+            Windows NT.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinPlatform.WinCE">
+            <summary>
+            Windows Embedded.
+            </summary>
+        </member>
+        <member name="T:RJCP.Core.Environment.Version.WinProductInfo">
+            <summary>
+            The Operating System Product Info. Supported in Vista and later.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Undefined">
+            <summary>
+            Product unknown.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Unlicensed">
+            <summary>
+            Product is unlicensed.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Ultimate">
+            <summary>
+            Ultimate.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Home_Basic">
+            <summary>
+            Home Basic.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Home_Premium">
+            <summary>
+            Home Premium.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Enterprise">
+            <summary>
+            Enterprise.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Home_Basic_N">
+            <summary>
+            Home Basic N.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Business">
+            <summary>
+            Business.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Standard_Server">
+            <summary>
+            Server Standard (full installation).
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.DataCenter_Server">
+            <summary>
+            Server Datacenter (full installation).
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.SmallBusiness_Server">
+            <summary>
+            Windows Small Business Server.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Enterprise_Server">
+            <summary>
+            Server Enterprise (full installation).
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Starter">
+            <summary>
+            Starter.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.DataCenter_Server_Core">
+            <summary>
+            Server Datacenter (core installation).
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Standard_Server_Core">
+            <summary>
+            Server Standard (core installation).
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Enterprise_Server_Core">
+            <summary>
+            Server Enterprise (core installation).
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Enterprise_Server_IA64">
+            <summary>
+            Server Enterprise for Itanium-based Systems.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Business_N">
+            <summary>
+            Business N.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Web_Server">
+            <summary>
+            Web Server (full installation).
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Cluster_Server">
+            <summary>
+            HPC Edition.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Home_Server">
+            <summary>
+            Windows Storage Server 2008 R2 Essentials.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Storage_Express_Server">
+            <summary>
+            Storage Server Express.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Storage_Standard_Server">
+            <summary>
+            Storage Server Standard.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Storage_Workgroup_Server">
+            <summary>
+            Storage Server Workgroup.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Storage_Enterprise_Server">
+            <summary>
+            Storage Server Enterprise.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Server_For_SmallBusiness">
+            <summary>
+            Windows Server 2008 for Windows Essential Server Solutions.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.SmallBusiness_Server_Premium">
+            <summary>
+            Small Business Server Premium.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Home_Premium_N">
+            <summary>
+            Home Premium N.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Enterprise_N">
+            <summary>
+            Enterprise N.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Ultimate_N">
+            <summary>
+            Ultimate N.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Web_Server_Core">
+            <summary>
+            Web Server (core installation).
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.MediumBusiness_Server_Management">
+            <summary>
+            Windows Essential Business Server Management Server.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.MediumBusiness_Server_Security">
+            <summary>
+            Windows Essential Business Server Security Server.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.MediumBusiness_Server_Messaging">
+            <summary>
+            Windows Essential Business Server Messaging Server.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Server_Foundation">
+            <summary>
+            Server Foundation.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Home_Premium_Server">
+            <summary>
+            Windows Home Server 2011.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Server_For_SmallBusiness_V">
+            <summary>
+            Windows Server 2008 without Hyper-V for Windows Essential Server Solutions.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Standard_Server_V">
+            <summary>
+            Server Standard without Hyper-V (full installation).
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.DataCenter_Server_V">
+            <summary>
+            Server Datacenter without Hyper-V (full installation).
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Enterprise_Server_V">
+            <summary>
+            Server Enterprise without Hyper-V (full installation).
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.DataCenter_Server_Core_V">
+            <summary>
+            Server Datacenter without Hyper-V (core installation).
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Standard_Server_Core_V">
+            <summary>
+            Server Standard without Hyper-V (core installation).
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Enterprise_Server_Core_V">
+            <summary>
+            Server Enterprise without Hyper-V (core installation).
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.HyperV">
+            <summary>
+            Hyper-V Server.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Storage_Express_Server_Core">
+            <summary>
+            Storage Server Express (core installation).
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Storage_Standard_Server_Core">
+            <summary>
+            Storage Server Standard (core installation).
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Storage_Workgroup_Server_Core">
+            <summary>
+            Storage Server Workgroup (core installation).
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Storage_Enterprise_Core">
+            <summary>
+            Storage Server Enterprise (core installation).
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Starter_N">
+            <summary>
+            Starter N.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Professional">
+            <summary>
+            Professional.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Professional_N">
+            <summary>
+            Professional N.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Sb_Solution_Server">
+            <summary>
+            Windows Small Business Server 2011 Essentials.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Server_For_Sb_Solutions">
+            <summary>
+            Server For SB Solutions.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Standard_Server_Solutions">
+            <summary>
+            Server Solutions Premium.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Standard_Server_Solutions_Core">
+            <summary>
+            Server Solutions Premium (core installation).
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Sb_Solution_Server_Em">
+            <summary>
+            Server For SB Solutions EM.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Server_For_Sb_Solutions_Em">
+            <summary>
+            Server For SB Solutions EM.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Solution_EmbeddedServer">
+            <summary>
+            Windows Multipoint Server.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Solution_EmbeddedServerCore">
+            <summary>
+            Windows Multipoint Server Core.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Professional_Embedded">
+            <summary>
+            Windows Embedded Professional.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.EssentialBusiness_Server_Mgmt">
+            <summary>
+            Windows Essential Server Solution Management.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.EssentialBusiness_Server_Addl">
+            <summary>
+            Windows Essential Server Solution Additional.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.EssentialBusiness_Server_MgmtSvc">
+            <summary>
+            Windows Essential Server Solution Management SVC.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.EssentialBusiness_Server_AddlSvc">
+            <summary>
+            Windows Essential Server Solution Additional SVC.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.SmallBusiness_Server_Premium_Core">
+            <summary>
+            Small Business Server Premium (core installation).
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Cluster_Server_V">
+            <summary>
+            Server Hyper Core V.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Embedded">
+            <summary>
+            Windows Embedded.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Starter_E">
+            <summary>
+            Starter E (not supported).
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Home_Basic_E">
+            <summary>
+            Home Basic E (not supported).
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Home_Premium_E">
+            <summary>
+            Home Premium E (not supported).
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Professional_E">
+            <summary>
+            Professional E (not supported).
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Enterprise_E">
+            <summary>
+            Enterprise E (Not supported).
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Ultimate_E">
+            <summary>
+            Ultimate E (not supported).
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Enterprise_Evaluation">
+            <summary>
+            Enterprise (Evaluation Edition).
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Multipoint_Standard_Server">
+            <summary>
+            Windows MultiPoint Server Standard (full installation).
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Multipoint_Premium_Server">
+            <summary>
+            Windows MultiPoint Server Premium (full installation).
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Standard_Evaluation_Server">
+            <summary>
+            Server Standard (evaluation installation).
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Datacenter_Evaluation_Server">
+            <summary>
+            Server Datacenter (Evaluation Edition).
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Enterprise_N_Evaluation">
+            <summary>
+            Enterprise N (evaluation installation).
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Embedded_Automotive">
+            <summary>
+            Windows Embedded Automotive.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Embedded_Industry_A">
+            <summary>
+            Windows Embedded Industrial A
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.ThinPC">
+            <summary>
+            Thin PC.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Embedded_A">
+            <summary>
+            Windows Embedded A
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Embedded_Industry">
+            <summary>
+            Windows Embedded Industrial.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Embedded_E">
+            <summary>
+            Windows Embedded E.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Embedded_Industry_E">
+            <summary>
+            Windows Embedded Industry E.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Embedded_Industry_A_E">
+            <summary>
+            Windows Embedded Industry A E.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Storage_Workgroup_Evaluation_Server">
+            <summary>
+            Storage Server Workgroup (evaluation installation).
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Storage_Standard_Evaluation_Server">
+            <summary>
+            Storage Server Standard (evaluation installation).
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Core_Arm">
+            <summary>
+            Windows Core for Arm.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Core_N">
+            <summary>
+            Windows Core N.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Core_CountrySpecific">
+            <summary>
+            Windows 8 China.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Core_SingleLanguage">
+            <summary>
+            Windows 8 Single Language.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Core">
+            <summary>
+            Windows 8.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Professional_Wmc">
+            <summary>
+            Professional with Media Center.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Embedded_Industry_Eval">
+            <summary>
+            Embedded industry eval.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Embedded_E_Industry_Eval">
+            <summary>
+            Embedded E industry eval.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Embedded_Eval">
+            <summary>
+            Embedded eval.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Embedded_E_Eval">
+            <summary>
+            Embedded E eval.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Nano_Server">
+            <summary>
+            Nano server.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Cloud_Storage_Server">
+            <summary>
+            Cloud storage server.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Core_Connected">
+            <summary>
+            Core connected.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Professional_Student">
+            <summary>
+            Professional student.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Core_Connected_N">
+            <summary>
+            Core connected N.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Professional_Student_N">
+            <summary>
+            Professional student N.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Core_Connected_Single_Language">
+            <summary>
+            Core connected single language.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Core_Connected_Country_Specific">
+            <summary>
+            Core connected country specific.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Connected_Car">
+            <summary>
+            Connected car.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Industry_Handheld">
+            <summary>
+            Industry handheld.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.PPI_Pro">
+            <summary>
+            PPI pro.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Arm64_Server">
+            <summary>
+            Arm64 server.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Education">
+            <summary>
+            Education.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Education_N">
+            <summary>
+            Education n.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.IOTUAP">
+            <summary>
+            IOTUAP.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Cloud_Host_Infrastructure_Server">
+            <summary>
+            Cloud host infrastructure server.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Enterprise_S">
+            <summary>
+            Enterprise S.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Enterprise_S_N">
+            <summary>
+            Enterprise S N.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Professional_S">
+            <summary>
+            Professional S.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Professional_S_N">
+            <summary>
+            Professional S N.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Enterprise_S_Eval">
+            <summary>
+            Enterprise S eval.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Enterprise_S_N_Eval">
+            <summary>
+            Enterprise S N eval.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Holographic">
+            <summary>
+            Holographic.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Holographic_Business">
+            <summary>
+            Holographic business.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Pro_Single_Language">
+            <summary>
+            Pro single language.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Pro_China">
+            <summary>
+            Pro china
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Enterprise_Subscription">
+            <summary>
+            Enterprise subscription.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Enterprise_Subscription_N">
+            <summary>
+            Enterprise subscription N.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Datacenter_Nano_Server">
+            <summary>
+            Datacenter nano server.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Standard_Nano_Server">
+            <summary>
+            Standard nano server.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Datacenter_A_Server_Core">
+            <summary>
+            Datacenter a server core.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Standard_A_Server_Core">
+            <summary>
+            Standard A server core.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Datacenter_WS_Server_Core">
+            <summary>
+            Datacenter WS server core.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Standard_WS_Server_Core">
+            <summary>
+            Standard WS server core.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Utility_VM">
+            <summary>
+            The utility VM.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Datacenter_Eval_Server_Core">
+            <summary>
+            Datacenter eval server core.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Standard_Eval_Server_Core">
+            <summary>
+            Standard eval server core.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Pro_Workstation">
+            <summary>
+            Pro workstation.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Pro_Workstation_N">
+            <summary>
+            Pro workstation N.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Pro_For_Education">
+            <summary>
+            Pro for education.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Pro_For_Education_N">
+            <summary>
+            Pro for education N.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Azure_Server_Core">
+            <summary>
+            Azure server core.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Azure_Nano_Server">
+            <summary>
+            Azure nano server.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Enterprise_G">
+            <summary>
+            Enterprise G.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Enterprise_G_N">
+            <summary>
+            Enterprise G N.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Server_RDSH">
+            <summary>
+            Server RDSH.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Cloud">
+            <summary>
+            Cloud.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Cloud_N">
+            <summary>
+            Cloud N.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.HubOS">
+            <summary>
+            Hub OS.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.One_Core_Update_OS">
+            <summary>
+            One core update OS.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Cloud_E">
+            <summary>
+            Cloud E.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Andromeda">
+            <summary>
+            Andromeda
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.IOT_OS">
+            <summary>
+            IOT OS.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Cloud_E_N">
+            <summary>
+            Cloud E N.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.IOT_EDGEOS">
+            <summary>
+            IOT Edge OS.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.IOT_Enterprise">
+            <summary>
+            IOT Enterprise.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Lite">
+            <summary>
+            Lite
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.IOT_Enterprise_S">
+            <summary>
+            IOT Enterprise S.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.XBox_System_OS">
+            <summary>
+            X-Box system OS.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.XBox_Native_OS">
+            <summary>
+            X-Box native OS.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.XBox_Game_OS">
+            <summary>
+            X-Box game OS.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.XBox_Era_OS">
+            <summary>
+            X-Box era OS.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.XBox_Durango_Host_OS">
+            <summary>
+            X-Box durango host OS.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.XBox_Scarlett_Host_OS">
+            <summary>
+            X-Box scarlett host OS.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.XBox_Keystone">
+            <summary>
+            X-Box Keystone host OS.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Azure_Server_CloudHost">
+            <summary>
+            Azure Server Cloud Host.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Azure_Server_CloudMos">
+            <summary>
+            Azure Server Cloud.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.CloudEdition_N">
+            <summary>
+            Windows Cloud Edition N.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.CloudEdition">
+            <summary>
+            Windows Cloud Edition.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.AzureStackHci_Server_Core">
+            <summary>
+            Azure Stack HCI Server Core.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Datacenter_Server_Azure_Edition">
+            <summary>
+            Datacenter Server Azure Edition.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.Datacenter_Server_Core_Azure_Edition">
+            <summary>
+            Datacenter Server Azure Edition Core.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.MediaCenter">
+            <summary>
+            Windows XP MediaCenter.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductInfo.TabletPc">
+            <summary>
+            Windows XP Tablet PC.
+            </summary>
+        </member>
+        <member name="T:RJCP.Core.Environment.Version.WinProductType">
+            <summary>
+            The Windows Product Type.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductType.Unknown">
+            <summary>
+            Unknown Product Type.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductType.Win9x">
+            <summary>
+            Windows 9x, 32-bit, referring to Windows 95, 95OSR2, 98, 98SE, or ME.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductType.Workstation">
+            <summary>
+            The operating system is Windows 8, Windows 7, Windows Vista, Windows XP Professional, Windows XP Home
+            Edition, or Windows 2000 Professional.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductType.DomainController">
+            <summary>
+            The system is a domain controller and the operating system is Windows Server 2012 , Windows Server 2008 R2,
+            Windows Server 2008, Windows Server 2003, or Windows 2000 Server.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinProductType.Server">
+            <summary>
+            The operating system is Windows Server 2012, Windows Server 2008 R2, Windows Server 2008, Windows Server
+            2003, or Windows 2000 Server. Note that a server that is also a domain controller is reported as
+            VER_NT_DOMAIN_CONTROLLER, not VER_NT_SERVER.
+            </summary>
+        </member>
+        <member name="T:RJCP.Core.Environment.Version.WinSuite">
+            <summary>
+            Various OS Suite variants.
+            </summary>
+            <remarks>This field is derived from <c>OSVERSIONINFOEX.wSuiteMask</c>.</remarks>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinSuite.None">
+            <summary>
+            No OS Suite defined.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinSuite.SmallBusiness">
+            <summary>
+            Microsoft Small Business Server was once installed on the system, but may have been upgraded to another
+            version of Windows. You should not rely upon only the <c>SmallBusiness</c> flag to determine whether Small
+            Business Server has been installed on the system, as both this flag and the
+            <see cref="F:RJCP.Core.Environment.Version.WinSuite.SmallBusinessRestricted"/> flag are set when this product suite is installed. If you upgrade this
+            installation to Windows Server, Standard Edition, the <see cref="F:RJCP.Core.Environment.Version.WinSuite.SmallBusinessRestricted"/> flag will be
+            cleared — however, the <see cref="F:RJCP.Core.Environment.Version.WinSuite.SmallBusiness"/> flag will remain set. In this case, this indicates that
+            Small Business Server was once installed on this system. If this installation is further upgraded to Windows
+            Server, Enterprise Edition, the <see cref="F:RJCP.Core.Environment.Version.WinSuite.SmallBusiness"/> flag will remain set.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinSuite.Enterprise">
+            <summary>
+            Windows Server 2008 Enterprise, Windows Server 2003, Enterprise Edition, or Windows 2000 Advanced Server is
+            installed.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinSuite.BackOffice">
+            <summary>
+            Microsoft BackOffice components are installed.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinSuite.Communications">
+            <summary>
+            TBD: Communications Server.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinSuite.Terminal">
+            <summary>
+            Terminal Services is installed. This value is always set. If <c>Terminal</c> is set but <c>SingleUserTS</c>
+            is not set, the system is running in application server mode.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinSuite.SmallBusinessRestricted">
+            <summary>
+            Microsoft Small Business Server is installed with the restrictive client license in force.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinSuite.EmbeddedNT">
+            <summary>
+            Windows XP Embedded is installed.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinSuite.Datacenter">
+            <summary>
+            Windows Server 2008 Datacenter, Windows Server 2003, Datacenter Edition, or Windows 2000 Datacenter Server
+            is installed.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinSuite.SingleUserTS">
+            <summary>
+            Remote Desktop is supported, but only one interactive session is supported. This value is set unless the
+            system is running in application server mode.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinSuite.Personal">
+            <summary>
+            Windows Vista Home Premium, Windows Vista Home Basic, or Windows XP Home Edition is installed.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinSuite.Blade">
+            <summary>
+            Windows Server 2003, Web Edition is installed.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinSuite.EmbeddedRestricted">
+            <summary>
+            TBD: Embedded Restricted.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinSuite.SecurityAppliance">
+            <summary>
+            TBD: Security Appliance.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinSuite.StorageServer">
+            <summary>
+            Windows Storage Server 2003 R2 or Windows Storage Server 2003is installed.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinSuite.ComputeServer">
+            <summary>
+            Windows Server 2003, Compute Cluster Edition is installed.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinSuite.HomeServer">
+            <summary>
+            Windows Home Server is installed.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinSuite.MultiUserTS">
+            <summary>
+            AppServer mode is enabled.
+            </summary>
+        </member>
+        <member name="T:RJCP.Core.Environment.Version.WinVersionQuery">
+            <summary>
+            Class to get information about the local machine.
+            </summary>
+        </member>
+        <member name="M:RJCP.Core.Environment.Version.WinVersionQuery.#ctor">
+            <summary>
+            Default constructor, getting information about the local machine. Use the static method <c>LocalMachine</c>
+            instead for efficiency.
+            </summary>
+        </member>
+        <member name="M:RJCP.Core.Environment.Version.WinVersionQuery.GetVersionEx">
+            <summary>
+            Gets the Operating System version.
+            </summary>
+            <remarks>
+            We use the Microsoft recommended way of getting the Operating System Version using GetVersionEx(), first
+            with OSVERSIONINFO and then with OSVERSIONINFOEX if supported.
+            </remarks>
+            <returns><see langword="true"/> if we successfully retrieved OS version information.</returns>
+        </member>
+        <member name="M:RJCP.Core.Environment.Version.WinVersionQuery.GetVersion">
+            <summary>
+            In case we couldn't get the version using the recommended way.
+            </summary>
+            <remarks>
+            See http://msdn.microsoft.com/en-us/library/ms724439%28VS.85%29.aspx. This method doesn't support WinCE, as
+            we don't get information about the platform ID. Win32s is determined by the upper bit in the system and then
+            by the operating system version number.
+            </remarks>
+        </member>
+        <member name="M:RJCP.Core.Environment.Version.WinVersionQuery.GetNativeVersion">
+            <summary>
+            A method to get OS information natively from the .NET subsystem.
+            </summary>
+            <returns><see langword="true"/> if the information could be obtained; <see langword="false"/> otherwise.</returns>
+        </member>
+        <member name="M:RJCP.Core.Environment.Version.WinVersionQuery.GetProductInfo">
+            <summary>
+            Get product information that is available in Windows Vista and later.
+            </summary>
+        </member>
+        <member name="M:RJCP.Core.Environment.Version.WinVersionQuery.CalculateWinVersion(RJCP.Core.Environment.Version.WinVersion)">
+            <summary>
+            Calculates the Windows version for a non-exact match.
+            </summary>
+            <param name="lastMatch">The last match.</param>
+            <returns>A string that should be presented to the user.</returns>
+            <remarks>
+            This class has an internal database of Windows Versions obtained from MSDN. It might be that the internal
+            database is out of date, applications can override this to provide more accurate information.
+            </remarks>
+        </member>
+        <member name="T:RJCP.Core.Environment.Version.WinVersion">
+            <summary>
+            Base class for containing Operating System Version Information for Windows based Systems.
+            </summary>
+            <remarks>
+            This class represents information about a particular Windows Operating System. To get information about your
+            system, use the <see cref="P:RJCP.Core.Environment.Version.WinVersion.LocalMachine"/> class.
+            </remarks>
+        </member>
+        <member name="M:RJCP.Core.Environment.Version.WinVersion.#ctor">
+            <summary>
+            Initializes a new instance of the <see cref="T:RJCP.Core.Environment.Version.WinVersion"/> class.
+            </summary>
+        </member>
+        <member name="M:RJCP.Core.Environment.Version.WinVersion.#ctor(RJCP.Core.Environment.Version.WinPlatform)">
+            <summary>
+            Initializes a new instance of the <see cref="T:RJCP.Core.Environment.Version.WinVersion"/> class for a specific Platform ID.
+            </summary>
+            <param name="platformId">The Platform ID to define.</param>
+        </member>
+        <member name="M:RJCP.Core.Environment.Version.WinVersion.#ctor(RJCP.Core.Environment.Version.WinPlatform,System.Boolean)">
+            <summary>
+            For internal use, initializes a new instance of the <see cref="T:RJCP.Core.Environment.Version.WinVersion"/> class for a specific Platform
+            ID.
+            </summary>
+            <param name="platformId">The Platform ID to define.</param>
+            <param name="readOnly"><see langword="true"/> if this object is read only after instantiation.</param>
+        </member>
+        <member name="M:RJCP.Core.Environment.Version.WinVersion.#ctor(RJCP.Core.Environment.Version.WinPlatform,System.Int32,System.Int32)">
+            <summary>
+            Initializes a new instance of the <see cref="T:RJCP.Core.Environment.Version.WinVersion"/> class for a specific Windows version.
+            </summary>
+            <param name="platformId">The Platform ID to define.</param>
+            <param name="majorVersion">The minor version of the OS.</param>
+            <param name="minorVersion">The major version of the OS.</param>
+        </member>
+        <member name="M:RJCP.Core.Environment.Version.WinVersion.#ctor(RJCP.Core.Environment.Version.WinPlatform,System.Int32,System.Int32,System.Boolean)">
+            <summary>
+            For internal use, initializes a new instance of the <see cref="T:RJCP.Core.Environment.Version.WinVersion"/> class for a specific Windows
+            version.
+            </summary>
+            <param name="platformId">The Platform ID to define.</param>
+            <param name="majorVersion">The minor version of the OS.</param>
+            <param name="minorVersion">The major version of the OS.</param>
+            <param name="readOnly"><see langword="true"/> if this object is read only after instantiation.</param>
+        </member>
+        <member name="M:RJCP.Core.Environment.Version.WinVersion.#ctor(RJCP.Core.Environment.Version.WinPlatform,System.Int32,System.Int32,System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:RJCP.Core.Environment.Version.WinVersion"/> class for a specific Windows version with a CSD.
+            </summary>
+            <param name="platformId">The Platform ID to define.</param>
+            <param name="majorVersion">The minor version of the OS.</param>
+            <param name="minorVersion">The major version of the OS.</param>
+            <param name="csd">
+            A null-terminated string, such as "Service Pack 3", that indicates the latest Service Pack installed on the
+            system. If no Service Pack has been installed, the string is empty.
+            </param>
+        </member>
+        <member name="M:RJCP.Core.Environment.Version.WinVersion.#ctor(RJCP.Core.Environment.Version.WinPlatform,System.Int32,System.Int32,System.String,System.Boolean)">
+            <summary>
+            For internal use, initializes a new instance of the <see cref="T:RJCP.Core.Environment.Version.WinVersion"/> class for a specific Windows
+            version with a CSD.
+            </summary>
+            <param name="platformId">The Platform ID to define.</param>
+            <param name="majorVersion">The minor version of the OS.</param>
+            <param name="minorVersion">The major version of the OS.</param>
+            <param name="csd">
+            A null-terminated string, such as "Service Pack 3", that indicates the latest Service Pack installed on the
+            system. If no Service Pack has been installed, the string is empty.
+            </param>
+            <param name="readOnly"><see langword="true"/> if this object is read only after instantiation.</param>
+        </member>
+        <member name="M:RJCP.Core.Environment.Version.WinVersion.#ctor(RJCP.Core.Environment.Version.WinPlatform,System.Int32,System.Int32,RJCP.Core.Environment.Version.WinProductType)">
+            <summary>
+            Initializes a new instance of the <see cref="T:RJCP.Core.Environment.Version.WinVersion"/> class for a product type.
+            </summary>
+            <param name="platformId">The Platform ID to define.</param>
+            <param name="majorVersion">The minor version of the OS.</param>
+            <param name="minorVersion">The major version of the OS.</param>
+            <param name="productType">The product type, Server, Workstation, etc.</param>
+        </member>
+        <member name="M:RJCP.Core.Environment.Version.WinVersion.#ctor(RJCP.Core.Environment.Version.WinPlatform,System.Int32,System.Int32,RJCP.Core.Environment.Version.WinProductType,System.Boolean)">
+            <summary>
+            For internal use, initializes a new instance of the <see cref="T:RJCP.Core.Environment.Version.WinVersion"/> class for a product type.
+            </summary>
+            <param name="platformId">The Platform ID to define.</param>
+            <param name="majorVersion">The minor version of the OS.</param>
+            <param name="minorVersion">The major version of the OS.</param>
+            <param name="productType">The product type, Server, Workstation, etc.</param>
+            <param name="readOnly"><see langword="true"/> if this object is read only after instantiation.</param>
+        </member>
+        <member name="M:RJCP.Core.Environment.Version.WinVersion.#ctor(RJCP.Core.Environment.Version.WinPlatform,System.Int32,System.Int32,System.Boolean,RJCP.Core.Environment.Version.WinProductType)">
+            <summary>
+            Initializes a new instance of the <see cref="T:RJCP.Core.Environment.Version.WinVersion"/> class for product type for R2.
+            </summary>
+            <param name="platformId">The Platform ID to define.</param>
+            <param name="majorVersion">The minor version of the OS.</param>
+            <param name="minorVersion">The major version of the OS.</param>
+            <param name="R2"><b>True</b> if this is an R2 release.</param>
+            <param name="productType">The product type, Server, Workstation, etc.</param>
+        </member>
+        <member name="M:RJCP.Core.Environment.Version.WinVersion.#ctor(RJCP.Core.Environment.Version.WinPlatform,System.Int32,System.Int32,System.Boolean,RJCP.Core.Environment.Version.WinProductType,System.Boolean)">
+            <summary>
+            For internal use, initializes a new instance of the <see cref="T:RJCP.Core.Environment.Version.WinVersion"/> class for product type for R2.
+            </summary>
+            <param name="platformId">The Platform ID to define.</param>
+            <param name="majorVersion">The minor version of the OS.</param>
+            <param name="minorVersion">The major version of the OS.</param>
+            <param name="R2"><b>True</b> if this is an R2 release.</param>
+            <param name="productType">The product type, Server, Workstation, etc.</param>
+            <param name="readOnly"><see langword="true"/> if this object is read only after instantiation.</param>
+        </member>
+        <member name="M:RJCP.Core.Environment.Version.WinVersion.#ctor(RJCP.Core.Environment.Version.WinPlatform,System.Int32,System.Int32,RJCP.Core.Environment.Version.WinProductType,System.Int32)">
+            <summary>
+            Initializes a new instance of the <see cref="T:RJCP.Core.Environment.Version.WinVersion"/> class with Service Pack information.
+            </summary>
+            <param name="platformId">The Platform ID to define.</param>
+            <param name="majorVersion">The minor version of the OS.</param>
+            <param name="minorVersion">The major version of the OS.</param>
+            <param name="productType">The product type, Server, Workstation, etc.</param>
+            <param name="build">The build number.</param>
+        </member>
+        <member name="M:RJCP.Core.Environment.Version.WinVersion.#ctor(RJCP.Core.Environment.Version.WinPlatform,System.Int32,System.Int32,RJCP.Core.Environment.Version.WinProductType,System.Int32,System.Boolean)">
+            <summary>
+            For internal use, initializes a new instance of the <see cref="T:RJCP.Core.Environment.Version.WinVersion"/> class with Service Pack
+            information.
+            </summary>
+            <param name="platformId">The Platform ID to define.</param>
+            <param name="majorVersion">The minor version of the OS.</param>
+            <param name="minorVersion">The major version of the OS.</param>
+            <param name="productType">The product type, Server, Workstation, etc.</param>
+            <param name="build">The build number.</param>
+            <param name="readOnly"><see langword="true"/> if this object is read only after instantiation.</param>
+        </member>
+        <member name="M:RJCP.Core.Environment.Version.WinVersion.#ctor(RJCP.Core.Environment.Version.WinPlatform,System.Int32,System.Int32,RJCP.Core.Environment.Version.WinProductType,System.Int32,System.Int32,System.Int32)">
+            <summary>
+            Initializes a new instance of the <see cref="T:RJCP.Core.Environment.Version.WinVersion"/> class with Service Pack information.
+            </summary>
+            <param name="platformId">The Platform ID to define.</param>
+            <param name="majorVersion">The minor version of the OS.</param>
+            <param name="minorVersion">The major version of the OS.</param>
+            <param name="productType">The product type, Server, Workstation, etc.</param>
+            <param name="build">The build number.</param>
+            <param name="spmajor">The service pack major version number.</param>
+            <param name="spminor">The service pack minor version number.</param>
+        </member>
+        <member name="M:RJCP.Core.Environment.Version.WinVersion.#ctor(RJCP.Core.Environment.Version.WinPlatform,System.Int32,System.Int32,RJCP.Core.Environment.Version.WinProductType,System.Int32,System.Int32,System.Int32,System.Boolean)">
+            <summary>
+            For internal use, initializes a new instance of the <see cref="T:RJCP.Core.Environment.Version.WinVersion"/> class with Service Pack
+            information.
+            </summary>
+            <param name="platformId">The Platform ID to define.</param>
+            <param name="majorVersion">The minor version of the OS.</param>
+            <param name="minorVersion">The major version of the OS.</param>
+            <param name="productType">The product type, Server, Workstation, etc.</param>
+            <param name="build">The build number.</param>
+            <param name="spmajor">The service pack major version number.</param>
+            <param name="spminor">The service pack minor version number.</param>
+            <param name="readOnly"><see langword="true"/> if this object is read only after instantiation.</param>
+        </member>
+        <member name="M:RJCP.Core.Environment.Version.WinVersion.#ctor(RJCP.Core.Environment.Version.WinPlatform,System.Int32,System.Int32,RJCP.Core.Environment.Version.WinArchitecture)">
+            <summary>
+            Initializes a new instance of the <see cref="T:RJCP.Core.Environment.Version.WinVersion"/> class for a specific architecture.
+            </summary>
+            <param name="platformId">The Platform ID to define.</param>
+            <param name="majorVersion">The minor version of the OS.</param>
+            <param name="minorVersion">The major version of the OS.</param>
+            <param name="arch">The architecture.</param>
+        </member>
+        <member name="M:RJCP.Core.Environment.Version.WinVersion.#ctor(RJCP.Core.Environment.Version.WinPlatform,System.Int32,System.Int32,RJCP.Core.Environment.Version.WinArchitecture,System.Boolean)">
+            <summary>
+            For internal use, initializes a new instance of the <see cref="T:RJCP.Core.Environment.Version.WinVersion"/> class for a specific
+            architecture.
+            </summary>
+            <param name="platformId">The Platform ID to define.</param>
+            <param name="majorVersion">The minor version of the OS.</param>
+            <param name="minorVersion">The major version of the OS.</param>
+            <param name="arch">The architecture.</param>
+            <param name="readOnly"><see langword="true"/> if this object is read only after instantiation.</param>
+        </member>
+        <member name="P:RJCP.Core.Environment.Version.WinVersion.LocalMachine">
+            <summary>
+            Get the version of the OS that we're running on.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Version.WinVersion.WinVersionDatabase">
+            <summary>
+            The WinVersionString lookup database.
+            </summary>
+            <remarks>
+            Entries in the database are searched from top to bottom. Items marked as Unknown, -1, Empty, Unknown or
+            false are not compared. The first entry is taken and returned. An OSProductType of DomainController will
+            also match OSProductType.Server for convenience. See <see cref="M:RJCP.Core.Environment.Version.WinVersion.CalculateWinVersion"/> for how to sort this
+            table.
+            </remarks>
+        </member>
+        <member name="P:RJCP.Core.Environment.Version.WinVersion.Win32s">
+            <summary>
+            A predefined <see cref="T:RJCP.Core.Environment.Version.WinVersion"/> object identifying Win32S.
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Version.WinVersion.WinCE">
+            <summary>
+            A predefined <see cref="T:RJCP.Core.Environment.Version.WinVersion"/> object identifying Windows CE.
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Version.WinVersion.Win95">
+            <summary>
+            A predefined <see cref="T:RJCP.Core.Environment.Version.WinVersion"/> object identifying Windows 95.
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Version.WinVersion.Win95OSR2">
+            <summary>
+            A predefined <see cref="T:RJCP.Core.Environment.Version.WinVersion"/> object identifying Windows 95 OSR2.
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Version.WinVersion.Win98">
+            <summary>
+            A predefined <see cref="T:RJCP.Core.Environment.Version.WinVersion"/> object identifying Windows 98.
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Version.WinVersion.Win98SE">
+            <summary>
+            A predefined <see cref="T:RJCP.Core.Environment.Version.WinVersion"/> object identifying Windows 98SE.
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Version.WinVersion.WinME">
+            <summary>
+            A predefined <see cref="T:RJCP.Core.Environment.Version.WinVersion"/> object identifying Windows ME.
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Version.WinVersion.WinNT351">
+            <summary>
+            A predefined <see cref="T:RJCP.Core.Environment.Version.WinVersion"/> object identifying Windows NT 3.51.
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Version.WinVersion.WinNT4">
+            <summary>
+            A predefined <see cref="T:RJCP.Core.Environment.Version.WinVersion"/> object identifying Windows NT 4.0.
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Version.WinVersion.Win2000">
+            <summary>
+            A predefined <see cref="T:RJCP.Core.Environment.Version.WinVersion"/> object identifying Windows 2000.
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Version.WinVersion.WinXP">
+            <summary>
+            A predefined <see cref="T:RJCP.Core.Environment.Version.WinVersion"/> object identifying Windows XP 32-bit.
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Version.WinVersion.WinXPSP0">
+            <summary>
+            A predefined <see cref="T:RJCP.Core.Environment.Version.WinVersion"/> object identifying Windows XP 32-bit.
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Version.WinVersion.WinXPSP1">
+            <summary>
+            A predefined <see cref="T:RJCP.Core.Environment.Version.WinVersion"/> object identifying Windows XP 32-bit.
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Version.WinVersion.WinXPSP2">
+            <summary>
+            A predefined <see cref="T:RJCP.Core.Environment.Version.WinVersion"/> object identifying Windows XP 32-bit.
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Version.WinVersion.WinXPSP3">
+            <summary>
+            A predefined <see cref="T:RJCP.Core.Environment.Version.WinVersion"/> object identifying Windows XP 32-bit.
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Version.WinVersion.WinXPx64">
+            <summary>
+            A predefined <see cref="T:RJCP.Core.Environment.Version.WinVersion"/> object identifying Windows XP 64-bit.
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Version.WinVersion.Win2003">
+            <summary>
+            A predefined <see cref="T:RJCP.Core.Environment.Version.WinVersion"/> object identifying Windows Server 2003.
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Version.WinVersion.Win2003R2">
+            <summary>
+            A predefined <see cref="T:RJCP.Core.Environment.Version.WinVersion"/> object identifying Windows Server 2003 R2.
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Version.WinVersion.Vista">
+            <summary>
+            A predefined <see cref="T:RJCP.Core.Environment.Version.WinVersion"/> object identifying Windows Vista.
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Version.WinVersion.Win2008">
+            <summary>
+            A predefined <see cref="T:RJCP.Core.Environment.Version.WinVersion"/> object identifying Windows Server 2008.
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Version.WinVersion.Win7">
+            <summary>
+            A predefined <see cref="T:RJCP.Core.Environment.Version.WinVersion"/> object identifying Windows 7.
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Version.WinVersion.Win2008R2">
+            <summary>
+            A predefined <see cref="T:RJCP.Core.Environment.Version.WinVersion"/> object identifying Windows Server 2008 R2.
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Version.WinVersion.Win8">
+            <summary>
+            A predefined <see cref="T:RJCP.Core.Environment.Version.WinVersion"/> object identifying Windows 8.
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Version.WinVersion.Win2012">
+            <summary>
+            A predefined <see cref="T:RJCP.Core.Environment.Version.WinVersion"/> object identifying Windows Server 2012.
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Version.WinVersion.Win8_1">
+            <summary>
+            A predefined <see cref="T:RJCP.Core.Environment.Version.WinVersion"/> object identifying Windows 8.1.
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Version.WinVersion.Win2012R2">
+            <summary>
+            A predefined <see cref="T:RJCP.Core.Environment.Version.WinVersion"/> object identifying Windows Server 2012 R2.
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Version.WinVersion.Windows10">
+            <summary>
+            A predefined <see cref="T:RJCP.Core.Environment.Version.WinVersion"/> object identifying Windows 10.
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Version.WinVersion.Windows10_1507">
+            <summary>
+            A predefined <see cref="T:RJCP.Core.Environment.Version.WinVersion"/> object identifying Windows 10.
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Version.WinVersion.Windows10_1511">
+            <summary>
+            A predefined <see cref="T:RJCP.Core.Environment.Version.WinVersion"/> object identifying Windows 10.
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Version.WinVersion.Windows10_1607">
+            <summary>
+            A predefined <see cref="T:RJCP.Core.Environment.Version.WinVersion"/> object identifying Windows 10.
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Version.WinVersion.Windows10_1703">
+            <summary>
+            A predefined <see cref="T:RJCP.Core.Environment.Version.WinVersion"/> object identifying Windows 10.
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Version.WinVersion.Windows10_1709">
+            <summary>
+            A predefined <see cref="T:RJCP.Core.Environment.Version.WinVersion"/> object identifying Windows 10.
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Version.WinVersion.Windows10_1803">
+            <summary>
+            A predefined <see cref="T:RJCP.Core.Environment.Version.WinVersion"/> object identifying Windows 10.
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Version.WinVersion.Windows10_1809">
+            <summary>
+            A predefined <see cref="T:RJCP.Core.Environment.Version.WinVersion"/> object identifying Windows 10.
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Version.WinVersion.Windows10_1903">
+            <summary>
+            A predefined <see cref="T:RJCP.Core.Environment.Version.WinVersion"/> object identifying Windows 10.
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Version.WinVersion.Windows10_1909">
+            <summary>
+            A predefined <see cref="T:RJCP.Core.Environment.Version.WinVersion"/> object identifying Windows 10.
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Version.WinVersion.Windows10_2004">
+            <summary>
+            A predefined <see cref="T:RJCP.Core.Environment.Version.WinVersion"/> object identifying Windows 10.
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Version.WinVersion.Windows10_20H2">
+            <summary>
+            A predefined <see cref="T:RJCP.Core.Environment.Version.WinVersion"/> object identifying Windows 10.
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Version.WinVersion.Windows10_21H1">
+            <summary>
+            A predefined <see cref="T:RJCP.Core.Environment.Version.WinVersion"/> object identifying Windows 10.
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Version.WinVersion.Windows10_21H2">
+            <summary>
+            A predefined <see cref="T:RJCP.Core.Environment.Version.WinVersion"/> object identifying Windows 10.
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Version.WinVersion.Windows10_22H2">
+            <summary>
+            A predefined <see cref="T:RJCP.Core.Environment.Version.WinVersion"/> object identifying Windows 10.
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Version.WinVersion.Win2016">
+            <summary>
+            A predefined <see cref="T:RJCP.Core.Environment.Version.WinVersion"/> object identifying Windows Server 2016.
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Version.WinVersion.Win2019">
+            <summary>
+            A predefined <see cref="T:RJCP.Core.Environment.Version.WinVersion"/> object identifying Windows Server 2019.
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Version.WinVersion.Windows11_21H2">
+            <summary>
+            A predefined <see cref="T:RJCP.Core.Environment.Version.WinVersion"/> object identifying Windows 11 22H1.
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Version.WinVersion.Windows11_22H2">
+            <summary>
+            A predefined <see cref="T:RJCP.Core.Environment.Version.WinVersion"/> object identifying Windows 11 22H2.
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Version.WinVersion.Win2022">
+            <summary>
+            A predefined <see cref="T:RJCP.Core.Environment.Version.WinVersion"/> object identifying Windows Server 2022.
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Version.WinVersion.PlatformId">
+            <summary>
+            The Operating System Platform ID.
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Version.WinVersion.MajorVersion">
+            <summary>
+            The Operating System Major Version number.
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Version.WinVersion.MinorVersion">
+            <summary>
+            The Operating System Minor Version number.
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Version.WinVersion.BuildNumber">
+            <summary>
+            The Operating System Version Build Number.
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Version.WinVersion.UpdateBuildNumber">
+            <summary>
+            Gets or sets the update build number, as an alternative to the service pack information.
+            </summary>
+            <value>The update build number.</value>
+            <remarks>
+            Windows 10 and later doesn't use Service Pack information, instead a "UBR" value.
+            </remarks>
+        </member>
+        <member name="P:RJCP.Core.Environment.Version.WinVersion.CSDVersion">
+            <summary>
+            The Operating System extension, such as Service Pack or update details as a string.
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Version.WinVersion.NativeArchitecture">
+            <summary>
+            The Operating System Architecture.
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Version.WinVersion.Architecture">
+            <summary>
+            The Architecture for the Process.
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Version.WinVersion.SuiteFlags">
+            <summary>
+            The Operating System Suite flags (variant for configuration differences).
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Version.WinVersion.ProductType">
+            <summary>
+            The Operating System Product Type, Server, Workstation, Domain Controller, etc.
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Version.WinVersion.IsServer">
+            <summary>
+            Returns if the current object represents a server.
+            </summary>
+            <remarks>
+            If the Operating system is configured as a DomainController or a Server, this property returns
+            <see cref="T:RJCP.Core.Environment.Version.WinVersion"/>.
+            </remarks>
+        </member>
+        <member name="P:RJCP.Core.Environment.Version.WinVersion.ServicePackMajor">
+            <summary>
+            The Operating System Major Service Pack number.
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Version.WinVersion.ServicePackMinor">
+            <summary>
+            The Operating System Minor Service Pack number.
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Version.WinVersion.ServerR2">
+            <summary>
+            The Operating System release type, if this is an R2 release (Windows 2003 only).
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Version.WinVersion.ProductInfo">
+            <summary>
+            The Operating System Product Information flags.
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Version.WinVersion.Version">
+            <summary>
+            The Operating System as a Version string.
+            </summary>
+            <remarks>
+            The Major and Minor version numbers correspond to the Operating System major and minor number. For example,
+            Windows 7 has a version of "6.2". If the build number is provided, this is given as the third digit. If
+            there is a service pack version, this is provided in the fourth field, with the lowest byte being the
+            service pack minor version, the upper byte being the service pack major number.
+            </remarks>
+        </member>
+        <member name="P:RJCP.Core.Environment.Version.WinVersion.VersionString">
+            <summary>
+            Get the Operating System version as a string.
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Version.WinVersion.PlatformIdString">
+            <summary>
+            Get the platform ID of this OSVersion object as a string.
+            </summary>
+        </member>
+        <member name="M:RJCP.Core.Environment.Version.WinVersion.SuiteFlag(RJCP.Core.Environment.Version.WinSuite)">
+            <summary>
+            Test if this <see cref="T:RJCP.Core.Environment.Version.WinVersion"/> object is of a particular OS Suite.
+            </summary>
+            <param name="test">The flags to test for.</param>
+            <returns><see langword="true"/> if the flag requested is set; <see langword="false"/> otherwise.</returns>
+        </member>
+        <member name="P:RJCP.Core.Environment.Version.WinVersion.SuiteString">
+            <summary>
+            Get the Suite as a string for this <see cref="T:RJCP.Core.Environment.Version.WinVersion"/> object.
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Version.WinVersion.ProductTypeString">
+            <summary>
+            Get the Product Type as a string for this object.
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Version.WinVersion.ProductInfoString">
+            <summary>
+            Get the Product Info as a string for this object.
+            </summary>
+        </member>
+        <member name="M:RJCP.Core.Environment.Version.WinVersion.CalculateWinVersion(RJCP.Core.Environment.Version.WinVersion)">
+            <summary>
+            Calculates the Windows version for a non-exact match.
+            </summary>
+            <param name="lastMatch">The Windows version.</param>
+            <returns>A string that should be presented to the user.</returns>
+            <remarks>
+            This class has an internal database of Windows Versions obtained from MSDN. It might be that the internal
+            database is out of date, applications can override this to provide more accurate information.
+            </remarks>
+        </member>
+        <member name="P:RJCP.Core.Environment.Version.WinVersion.WinVersionString">
+            <summary>
+            Get the Windows version as a simple string, the same as the Enum value <c>OSVersionKind</c>.
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Version.WinVersion.IsExtendedPropsSet">
+            <summary>
+            Check if this OSVersion object has extended properties set.
+            </summary>
+        </member>
+        <member name="P:RJCP.Core.Environment.Version.WinVersion.IsReadOnly">
+            <summary>
+            Check if this object is read only.
+            </summary>
+            <value>
+            If this is <see langword="true"/>, the object is read only and the properties cannot be modified.
+            </value>
+        </member>
+        <member name="M:RJCP.Core.Environment.Version.WinVersion.Lock">
+            <summary>
+            Lock this object so that the properties cannot be modified.
+            </summary>
+        </member>
+        <member name="M:RJCP.Core.Environment.Version.WinVersion.#ctor(RJCP.Core.Environment.Version.WinVersion)">
+            <summary>
+            Instantiate a new object based on an existing object that is not Sealed.
+            </summary>
+            <param name="o">The object to copy from.</param>
+        </member>
+        <member name="M:RJCP.Core.Environment.Version.WinVersion.Copy(RJCP.Core.Environment.Version.WinVersion)">
+            <summary>
+            Make this object a copy of the object provided.
+            </summary>
+            <param name="o">The object to copy from.</param>
+        </member>
+        <member name="M:RJCP.Core.Environment.Version.WinVersion.CreateCopy">
+            <summary>
+            Create a new object that is not Sealed, based on this object.
+            </summary>
+            <returns>A new OSVersion object that is modifiable.</returns>
+        </member>
+        <member name="M:RJCP.Core.Environment.Version.WinVersion.Clone">
+            <summary>
+            Create a new object that is not Sealed, based on this object.
+            </summary>
+            <returns>A new OSVersion object that is modifiable.</returns>
+        </member>
+        <member name="M:RJCP.Core.Environment.Version.WinVersion.GetHashCode">
+            <summary>
+            Returns a hash code for this instance.
+            </summary>
+            <returns>
+            A hash code for this instance, suitable for use in hashing algorithms and data structures like a hash table.
+            </returns>
+        </member>
+        <member name="M:RJCP.Core.Environment.Version.WinVersion.ToString">
+            <summary>
+            Returns a <see cref="T:System.String"/> that represents this instance.
+            </summary>
+            <remarks>
+            A long meaningful string is returned that represents the operating system details of this object.
+            </remarks>
+            <returns>A <see cref="T:System.String"/> that represents this instance.</returns>
+        </member>
+        <member name="M:RJCP.Core.Environment.Version.WinVersion.Equals(System.Object)">
+            <summary>
+            Determines whether the specified <see cref="T:System.Object"/> is equal to this instance.
+            </summary>
+            <param name="obj">The <see cref="T:System.Object"/> to compare with this instance.</param>
+            <returns>
+            <see langword="true"/> if the specified <see cref="T:System.Object"/> is equal to this instance; otherwise,
+            <see langword="false"/>.
+            </returns>
+        </member>
+        <member name="M:RJCP.Core.Environment.Version.WinVersion.op_Equality(RJCP.Core.Environment.Version.WinVersion,RJCP.Core.Environment.Version.WinVersion)">
+            <summary>
+            Compares two OSVersion objects if they are the same.
+            </summary>
+            <remarks>
+            Two OSVersion objects are the same if they have the same major, minor, build, service pack and
+            OSVersionKind.
+            <para>
+            You can use this to check if your operating system, returned by the OSVerQuery class is the same as a
+            predefined object, e.g. Win95, Vista, Win7, etc.
+            </para>
+            </remarks>
+            <param name="o">The first OSVersion object.</param>
+            <param name="p">The second OSVersion object.</param>
+            <returns><b>true</b> if the objects match.</returns>
+        </member>
+        <member name="M:RJCP.Core.Environment.Version.WinVersion.op_Inequality(RJCP.Core.Environment.Version.WinVersion,RJCP.Core.Environment.Version.WinVersion)">
+            <summary>
+            Compares two OSVersion objects if they are the same.
+            </summary>
+            <remarks>
+            Two OSVersion objects are different if they have the any differences in major, minor, build, service pack or
+            OSVersionKind.
+            <para>
+            You can use this to check if your operating system, returned by the OSVerQuery class is the same as a
+            predefined object, e.g. Win95, Vista, Win7, etc.
+            </para>
+            </remarks>
+            <param name="o">The first OSVersion object.</param>
+            <param name="p">The second OSVersion object.</param>
+            <returns><b>true</b> if the versions do not match.</returns>
+        </member>
+        <member name="M:RJCP.Core.Environment.Version.WinVersion.op_LessThan(RJCP.Core.Environment.Version.WinVersion,RJCP.Core.Environment.Version.WinVersion)">
+            <summary>
+            Compares two OSVersion objects for versions.
+            </summary>
+            <remarks>
+            Versions are compared against the major, minor, build and then the service pack. If they all match, then the
+            enumeration is finally checked in the order defined.
+            <para>
+            You can use this to check if your operating system, returned by the OSVerQuery class against a predefined
+            object, e.g. Win95, Vista, Win7, etc.
+            </para>
+            </remarks>
+            <param name="o">The first OSVersion object.</param>
+            <param name="p">The second OSVersion object.</param>
+            <returns><b>true</b> if the first is older than the second.</returns>
+        </member>
+        <member name="M:RJCP.Core.Environment.Version.WinVersion.op_GreaterThan(RJCP.Core.Environment.Version.WinVersion,RJCP.Core.Environment.Version.WinVersion)">
+            <summary>
+            Compares two OSVersion objects for versions.
+            </summary>
+            <remarks>
+            Versions are compared against the major, minor, build and then the service pack. If they all match, then the
+            enumeration is finally checked in the order defined.
+            <para>
+            You can use this to check if your operating system, returned by the OSVerQuery class against a predefined
+            object, e.g. Win95, Vista, Win7, etc.
+            </para>
+            </remarks>
+            <param name="o">The first OSVersion object.</param>
+            <param name="p">The second OSVersion object.</param>
+            <returns><b>true</b> if the first is newer than the second.</returns>
+        </member>
+        <member name="M:RJCP.Core.Environment.Version.WinVersion.op_LessThanOrEqual(RJCP.Core.Environment.Version.WinVersion,RJCP.Core.Environment.Version.WinVersion)">
+            <summary>
+            Compares two OSVersion objects for versions.
+            </summary>
+            <remarks>
+            Versions are compared against the major, minor, build and then the service pack. If they all match, then the
+            enumeration is finally checked in the order defined.
+            <para>
+            You can use this to check if your operating system, returned by the OSVerQuery class against a predefined
+            object, e.g. Win95, Vista, Win7, etc.
+            </para>
+            </remarks>
+            <param name="o">The first OSVersion object.</param>
+            <param name="p">The second OSVersion object.</param>
+            <returns><b>true</b> if the first is older or the same as the second.</returns>
+        </member>
+        <member name="M:RJCP.Core.Environment.Version.WinVersion.op_GreaterThanOrEqual(RJCP.Core.Environment.Version.WinVersion,RJCP.Core.Environment.Version.WinVersion)">
+            <summary>
+            Compares two OSVersion objects for versions.
+            </summary>
+            <remarks>
+            Versions are compared against the major, minor, build and then the service pack. If they all match, then the
+            enumeration is finally checked in the order defined.
+            <para>
+            You can use this to check if your operating system, returned by the OSVerQuery class against a predefined
+            object, e.g. Win95, Vista, Win7, etc.
+            </para>
+            </remarks>
+            <param name="o">The first OSVersion object.</param>
+            <param name="p">The second OSVersion object.</param>
+            <returns><b>true</b> if the first is newer or the same as the second.</returns>
+        </member>
+        <member name="M:RJCP.Core.Environment.Version.WinVersion.CompareTo(System.Object)">
+            <summary>
+            Compares an OSVersion object against this object.
+            </summary>
+            <remarks>
+            Versions are compared against the major, minor, build and then the service pack. If they all match, then the
+            enumeration is finally checked in the order defined.
+            <para>
+            You can use this to check if your operating system, returned by the OSVerQuery class against a predefined
+            object, e.g. Win95, Vista, Win7, etc.
+            </para>
+            </remarks>
+            <param name="obj">The other OSVersion object.</param>
+            <returns>
+            -1 indicates that this object is older than the other OSVersion. 0 indicates they are the same. 1 indicates
+            this object is newer than the other OSVersion.
+            </returns>
+        </member>
+        <member name="T:RJCP.Core.Environment.Platform">
+            <summary>
+            Utility class providing OS specific functionality.
+            </summary>
+        </member>
+        <member name="M:RJCP.Core.Environment.Platform.IsWinNT">
+            <summary>
+            Determines whether the operating system is Windows NT or later.
+            </summary>
+            <returns>
+            <see langword="true"/> if the operating system is Windows NT or later; otherwise, <see langword="false"/>.
+            </returns>
+        </member>
+        <member name="M:RJCP.Core.Environment.Platform.IsUnix">
+            <summary>
+            Determines whether the operating system is a supported version of a Unix based system.
+            </summary>
+            <returns>
+            <see langword="true"/> if the operating system is a supported version of a Unix based system; otherwise, <see langword="false"/>.
+            </returns>
+            <remarks>
+            The method is meant to be compatible with both the .NET CLR and the MONO framework.
+            Details of how to detect the platform under MONO can be found at
+            http://www.mono-project.com/docs/faq/technical/#how-to-detect-the-execution-platform
+            </remarks>
+        </member>
+        <member name="M:RJCP.Core.Environment.Platform.GetFolderPath(System.Environment.SpecialFolder)">
+            <summary>
+            Gets the path to the system special folder that is identified by the specified enumeration.
+            </summary>
+            <param name="folder">An enumerated constant that identifies a system special folder.</param>
+            <returns>
+            The path to the specified system special folder, if that folder physically exists on your computer;
+            otherwise, an empty string ( <see cref="F:System.String.Empty"/>). A folder will not physically exist if the operating
+            system did not create it, the existing folder was deleted, or the folder is a virtual directory, such as
+            <see cref="F:System.Environment.SpecialFolder.MyComputer"/>, which does not correspond to a physical path.
+            </returns>
+            <exception cref="T:System.PlatformNotSupportedException">The platform is not supported.</exception>
+            <exception cref="T:System.ArgumentException">
+            <paramref name="folder"/> is not a member of <see cref="T:System.Environment.SpecialFolder"/>.
+            </exception>
+            <exception cref="T:System.Security.SecurityException">
+            The caller doesn't have permissions to read environment variables.
+            </exception>
+            <exception cref="T:System.InvalidOperationException">
+            Unable to determine the location of the home directory.
+            </exception>
+            <remarks>
+            This method can be used in place of the .NET <see cref="T:System.Environment.SpecialFolder"/>. On Windows, it will
+            return the same results. On Linux, it will initially apply the XDG specifications for folder paths, and if
+            not available, will fall back to <see cref="T:System.Environment.SpecialFolder"/>.
+            </remarks>
+        </member>
+        <member name="M:RJCP.Core.Environment.Platform.IsMonoClr">
+            <summary>
+            Determines if the software is running on top of the Mono Common Language Runtime.
+            </summary>
+            <returns><see langword="true"/> if running on the Mono CLR; otherwise, <see langword="false"/>.</returns>
+        </member>
+        <member name="M:RJCP.Core.Environment.Platform.IsMSys">
+            <summary>
+            Determines if the process is started from an MSys Shell
+            </summary>
+            <returns>
+            Returns <see langword="true"/> the system is running from an MSys shell, otherwise, <see langword="false"/>.
+            </returns>
+        </member>
+        <member name="T:RJCP.Core.Environment.Xdg">
+            <summary>
+            A class to implement portions of the XDG Base Directory Specification.
+            </summary>
+            <remarks>
+            The XDG specification is for Unix like operating systems. Please refer to
+            https://specifications.freedesktop.org/basedir-spec/basedir-spec-0.7.html
+            </remarks>
+        </member>
+        <member name="M:RJCP.Core.Environment.Xdg.GetFolderPath(RJCP.Core.Environment.Xdg.SpecialFolder)">
+            <summary>
+            Gets the folder path for a specific <see cref="T:RJCP.Core.Environment.Xdg.SpecialFolder"/>.
+            </summary>
+            <param name="folder">The special folder value to obtain.</param>
+            <returns>A path in the native format.</returns>
+            <exception cref="T:System.ArgumentException">The value of <paramref name="folder"/> is not known.</exception>
+            <exception cref="T:System.Security.SecurityException">
+            The caller doesn't have permissions to read environment variables.
+            </exception>
+            <exception cref="T:System.PlatformNotSupportedException">
+            The platform is not supported. Only Windows NT and Unix platforms are supported.
+            </exception>
+            <exception cref="T:System.InvalidOperationException">
+            Unable to determine the location of the home directory.
+            </exception>
+            <remarks>
+            This function fulfills the XDG Base Specification v0.7 and is intended for usage only on Unix like operating
+            systems. Environment variables defined in the XDG specification are for Unix like operating systems and are
+            interpreted as such. No variable substitution is done within the environment variables from the XDG
+            specification and must be expanded prior.
+            <para>
+            When determining the home directory, the <c>$HOME</c> is used on Unix like operating systems. If the
+            <c>$HOME</c> environment variable is not defined, the root directory path '/' is used. On Windows NT
+            operating systems, the local application directory from the system is returned (as referred to
+            <see cref="T:System.Environment.SpecialFolder"/> enumeration).
+            </para>
+            </remarks>
+        </member>
+        <member name="M:RJCP.Core.Environment.Xdg.ResolveFile(RJCP.Core.Environment.Xdg.SpecialFolder,System.String)">
+            <summary>
+            Returns the full path to the file name, relative to the special folder provided.
+            </summary>
+            <param name="folder">The special folder base directory.</param>
+            <param name="fileName">Name of the file to resolve.</param>
+            <returns>A path in the native format.</returns>
+            <exception cref="T:System.PlatformNotSupportedException">The platform is not supported.</exception>
+            <remarks>
+            For some folder paths (specifically, only <see cref="F:RJCP.Core.Environment.Xdg.SpecialFolder.LocalApplicationData"/> and
+            <see cref="F:RJCP.Core.Environment.Xdg.SpecialFolder.CommonApplicationData"/>, a set of paths may be searched if a file is not found in
+            the current home directory. This should be the function used when identifying a file for loading from disk.
+            Use the method <see cref="M:RJCP.Core.Environment.Xdg.GetFolderPath(RJCP.Core.Environment.Xdg.SpecialFolder)"/> for getting a path when writing a file to disk.
+            </remarks>
+        </member>
+        <member name="M:RJCP.Core.Environment.Xdg.ResolveDirectory(RJCP.Core.Environment.Xdg.SpecialFolder,System.String)">
+            <summary>
+            Returns the full path to the directory name, relative to the special folder provided.
+            </summary>
+            <param name="folder">The special folder base directory.</param>
+            <param name="directoryName">Name of the directory to resolve.</param>
+            <returns>A path in the native format.</returns>
+            <exception cref="T:System.PlatformNotSupportedException">The platform is not supported.</exception>
+            <remarks>
+            For some folder paths (specifically, only <see cref="F:RJCP.Core.Environment.Xdg.SpecialFolder.LocalApplicationData"/> and
+            <see cref="F:RJCP.Core.Environment.Xdg.SpecialFolder.CommonApplicationData"/>, a set of paths may be searched if a file is not found in
+            the current home directory. This should be the function used when identifying a file for loading from disk.
+            Use the method <see cref="M:RJCP.Core.Environment.Xdg.GetFolderPath(RJCP.Core.Environment.Xdg.SpecialFolder)"/> for getting a path when writing a file to disk.
+            </remarks>
+        </member>
+        <member name="T:RJCP.Core.Environment.Xdg.SpecialFolder">
+            <summary>
+            Specifies enumerated constants used to retrieve directory paths to system special folders.
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Xdg.SpecialFolder.LocalApplicationData">
+            <summary>
+            Directory location for local application data (default is <c>$HOME/.local/share</c>).
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Xdg.SpecialFolder.CommonApplicationData">
+            <summary>
+            The common application data, or configuration data (default is <c>$HOME/.config</c>).
+            </summary>
+        </member>
+        <member name="F:RJCP.Core.Environment.Xdg.SpecialFolder.CacheData">
+            <summary>
+            Cache data (default is <c>$HOME/.cache</c>).
+            </summary>
+        </member>
+    </members>
+</doc>

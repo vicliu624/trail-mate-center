@@ -33,11 +33,25 @@
             Background="{Binding BubbleBackground}"
             CornerRadius="8"
             Classes="panel">
-      <Grid RowDefinitions="Auto,Auto,Auto" ColumnDefinitions="*,Auto" ColumnSpacing="8">
+      <Border.ContextMenu>
+        <ContextMenu>
+          <MenuItem Header="{DynamicResource Status.Message.JumpToMap}"
+                    Command="{Binding JumpToMapCommand}"
+                    IsEnabled="{Binding HasLocation}"/>
+        </ContextMenu>
+      </Border.ContextMenu>
+      <Grid RowDefinitions="Auto,Auto,Auto,Auto" ColumnDefinitions="*,Auto" ColumnSpacing="8">
         <StackPanel Orientation="Horizontal" Spacing="6">
           <TextBlock Text="{Binding TitleText}" FontWeight="Bold" Foreground="{Binding TitleColor}"/>
           <Border Background="{DynamicResource SurfaceDark}" BorderBrush="{DynamicResource PanelBorder}" BorderThickness="1" CornerRadius="4" Padding="6,1">
             <TextBlock Text="{Binding ChannelTag}" FontSize="10" Foreground="{DynamicResource AccentWarn}"/>
+          </Border>
+          <Border Background="{DynamicResource SurfaceDark}"
+                  BorderBrush="{Binding MediaTypeColor}"
+                  BorderThickness="1"
+                  CornerRadius="4"
+                  Padding="6,1">
+            <TextBlock Text="{Binding MediaTypeText}" FontSize="10" Foreground="{Binding MediaTypeColor}"/>
           </Border>
         </StackPanel>
         <StackPanel Grid.Column="1" HorizontalAlignment="Right" Spacing="2">
@@ -45,7 +59,53 @@
           <TextBlock Text="{Binding DeviceTimeText}" FontSize="9" Foreground="{DynamicResource TextDim}" IsVisible="{Binding HasDeviceTime}"/>
         </StackPanel>
         <TextBlock Grid.Row="1" Grid.ColumnSpan="2" Text="{Binding Text}" TextWrapping="Wrap" Foreground="{Binding TextColor}"/>
-        <WrapPanel Grid.Row="2" Grid.ColumnSpan="2">
+        <Border Grid.Row="2"
+                Grid.ColumnSpan="2"
+                Margin="0,8,0,8"
+                Padding="8"
+                CornerRadius="6"
+                Background="#10253A"
+                BorderBrush="#3B82F6"
+                BorderThickness="1"
+                IsVisible="{Binding ShowLocationPreview}">
+          <Grid RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="4">
+            <TextBlock Text="{Binding LocationPreviewTitle}" Foreground="#93C5FD" FontSize="10" FontWeight="Bold"/>
+            <Border Grid.Row="1"
+                    Height="96"
+                    CornerRadius="4"
+                    BorderThickness="1"
+                    BorderBrush="#406A93"
+                    Background="#0D1B2A"
+                    ClipToBounds="True">
+              <Grid>
+                <Image Source="{Binding MapPreviewBitmap}"
+                       Stretch="UniformToFill"
+                       IsVisible="{Binding HasMapPreview}"/>
+                <Border Width="12"
+                        Height="12"
+                        CornerRadius="6"
+                        BorderThickness="2"
+                        BorderBrush="#F97316"
+                        Background="#B91C1C"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        IsVisible="{Binding HasMapPreview}"/>
+                <TextBlock Text="{Binding MapPreviewMissingText}"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center"
+                           TextWrapping="Wrap"
+                           TextAlignment="Center"
+                           Margin="8"
+                           Foreground="{DynamicResource TextDim}"
+                           FontSize="10"
+                           IsVisible="{Binding HasNoMapPreview}"/>
+              </Grid>
+            </Border>
+            <TextBlock Grid.Row="2" Text="{Binding LocationPreviewText}" Foreground="{DynamicResource TextPrimary}" FontSize="11"/>
+            <TextBlock Grid.Row="3" Text="{Binding LocationContextHint}" Foreground="{DynamicResource TextDim}" FontSize="10"/>
+          </Grid>
+        </Border>
+        <WrapPanel Grid.Row="3" Grid.ColumnSpan="2">
           <Border Background="{DynamicResource SurfaceDark}" BorderBrush="{Binding StatusColor}" BorderThickness="1" CornerRadius="4" Padding="6,2" Margin="0,0,6,6">
             <TextBlock Text="{Binding StatusText}" FontSize="10" Foreground="{Binding StatusColor}"/>
           </Border>
@@ -140,8 +200,21 @@
       <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto">
         <TextBlock Text="{Binding Title}" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}"/>
         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-          <Border Background="{DynamicResource AccentDanger}" CornerRadius="12" Padding="8,2" IsVisible="{Binding HasUnread}">
-            <TextBlock Text="{Binding UnreadCount}" FontSize="11" Foreground="White" FontWeight="Bold"/>
+          <Border Background="{DynamicResource AccentDanger}"
+                  BorderBrush="#B91C1C"
+                  BorderThickness="1"
+                  CornerRadius="9"
+                  Height="18"
+                  MinWidth="18"
+                  Padding="4,0"
+                  IsVisible="{Binding HasUnread}">
+            <TextBlock Text="{Binding UnreadCount}"
+                       FontSize="10"
+                       Foreground="White"
+                       FontWeight="Bold"
+                       TextAlignment="Center"
+                       VerticalAlignment="Center"
+                       HorizontalAlignment="Center"/>
           </Border>
           <TextBlock Text="{Binding TimeText}" FontSize="10" Foreground="{DynamicResource TextDim}"/>
         </StackPanel>

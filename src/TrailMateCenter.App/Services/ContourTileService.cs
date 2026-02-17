@@ -13,13 +13,16 @@ namespace TrailMateCenter.Services;
 internal sealed class ContourTileService
 {
     private const int TileSize = 256;
+    private const int PngZLevel = 1;
+    private static readonly int QueueWorkerCount = Math.Clamp(Environment.ProcessorCount - 1, 2, 6);
     private static readonly string ContourRoot = ContourPaths.Root;
     private static readonly string DemRoot = ContourPaths.DemRoot;
     private static readonly string WorkRoot = ContourPaths.WorkRoot;
 
     private readonly Action<ContourLogLevel, string>? _log;
-    private readonly Channel<ContourTileRequest> _requests = Channel.CreateUnbounded<ContourTileRequest>();
+    private readonly Channel<ContourTileBatchRequest> _requests = Channel.CreateUnbounded<ContourTileBatchRequest>();
     private readonly ConcurrentDictionary<string, byte> _pending = new(StringComparer.OrdinalIgnoreCase);
+    private readonly ConcurrentDictionary<string, SemaphoreSlim> _tileInitLocks = new(StringComparer.OrdinalIgnoreCase);
     private readonly CancellationTokenSource _cts = new();
     private readonly EarthdataClient _earthdata;
     private readonly GdalRunner _gdal = new();
@@ -33,7 +36,8 @@ internal sealed class ContourTileService
         _onTileReady = onTileReady;
         _log = log;
         _earthdata = new EarthdataClient(Log);
-        _ = Task.Run(ProcessQueueAsync);
+        for (var i = 0; i < QueueWorkerCount; i++)
+            _ = Task.Run(ProcessQueueAsync);
     }
 
     public void UpdateSettings(ContourSettings settings)
@@ -137,6 +141,11 @@ internal sealed class ContourTileService
         if (spec.Count == 0)
             return;
 
+        var orderedSpec = spec
+            .OrderBy(s => s.Interval)
+            .ThenBy(s => s.Kind == ContourLineKind.Minor ? 0 : 1)
+            .ToArray();
+
         var queued = 0;
         var requested = 0;
         var cached = 0;
@@ -145,7 +154,10 @@ internal sealed class ContourTileService
         {
             for (var y = minY; y <= maxY; y++)
             {
-                foreach (var key in spec)
+                var batchKeys = new List<ContourKey>(orderedSpec.Length);
+                var batchPendingKeys = new List<string>(orderedSpec.Length);
+
+                foreach (var key in orderedSpec)
                 {
                     requested++;
                     var outputPath = GetTilePath(key, zoom, x, y);
@@ -162,8 +174,14 @@ internal sealed class ContourTileService
                         continue;
                     }
 
-                    _requests.Writer.TryWrite(new ContourTileRequest(zoom, x, y, key, outputPath, pendingKey));
-                    queued++;
+                    batchKeys.Add(key);
+                    batchPendingKeys.Add(pendingKey);
+                }
+
+                if (batchKeys.Count > 0)
+                {
+                    _requests.Writer.TryWrite(new ContourTileBatchRequest(zoom, x, y, batchKeys.ToArray(), batchPendingKeys.ToArray()));
+                    queued += batchKeys.Count;
                 }
             }
         }
@@ -179,13 +197,27 @@ internal sealed class ContourTileService
         }
     }
 
+    public int PendingCount => _pending.Count;
+
+    public async Task WaitForIdleAsync(CancellationToken cancellationToken)
+    {
+        while (true)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (_pending.IsEmpty)
+                return;
+
+            await Task.Delay(200, cancellationToken);
+        }
+    }
+
     private async Task ProcessQueueAsync()
     {
         await foreach (var request in _requests.Reader.ReadAllAsync(_cts.Token))
         {
             try
             {
-                await GenerateTileAsync(request, _cts.Token);
+                await GenerateTileBatchAsync(request, _cts.Token);
             }
             catch
             {
@@ -193,12 +225,15 @@ internal sealed class ContourTileService
             }
             finally
             {
-                _pending.TryRemove(request.PendingKey, out _);
+                foreach (var pendingKey in request.PendingKeys)
+                {
+                    _pending.TryRemove(pendingKey, out _);
+                }
             }
         }
     }
 
-    private async Task GenerateTileAsync(ContourTileRequest request, CancellationToken cancellationToken)
+    private async Task GenerateTileBatchAsync(ContourTileBatchRequest request, CancellationToken cancellationToken)
     {
         if (!_settings.Enabled)
             return;
@@ -224,65 +259,154 @@ internal sealed class ContourTileService
         }
         _gdalPausedLogged = false;
 
-        Log(ContourLogLevel.Info, $"Tile Z{request.Zoom} {request.X}/{request.Y} {request.Key.Kind.ToString().ToLowerInvariant()}-{request.Key.Interval}m: start");
+        var requestKeys = request.Keys
+            .OrderBy(k => k.Interval)
+            .ThenBy(k => k.Kind == ContourLineKind.Minor ? 0 : 1)
+            .ToArray();
+        if (requestKeys.Length == 0)
+            return;
 
         var bounds = ContourTileMath.TileToBounds(request.X, request.Y, request.Zoom);
-        var demFiles = await _earthdata.EnsureDemFilesAsync(bounds, cancellationToken);
-        if (demFiles.Count == 0)
-        {
-            Log(ContourLogLevel.Warning, $"Tile Z{request.Zoom} {request.X}/{request.Y}: no DEM files available");
-            return;
-        }
-
-        var workDir = Path.Combine(WorkRoot, $"{request.Zoom}_{request.X}_{request.Y}_{request.Key.Kind}_{request.Key.Interval}");
-        Directory.CreateDirectory(workDir);
-
-        var vrtPath = Path.Combine(workDir, "dem.vrt");
-        var contourPath = Path.Combine(workDir, "contours.geojson");
-        var rasterPath = Path.Combine(workDir, "contours.tif");
-
         var te = $"{Fmt(bounds.West)} {Fmt(bounds.South)} {Fmt(bounds.East)} {Fmt(bounds.North)}";
-        var sources = string.Join(' ', demFiles.Select(Quote));
+        var tileKey = $"{request.Zoom}/{request.X}/{request.Y}";
+        var tileWorkDir = Path.Combine(WorkRoot, $"{request.Zoom}_{request.X}_{request.Y}");
+        var vrtPath = Path.Combine(tileWorkDir, "dem.vrt");
+        var requestedText = string.Join(", ", requestKeys.Select(k => $"{k.Kind.ToString().ToLowerInvariant()}-{k.Interval}m"));
+        Log(ContourLogLevel.Info, $"Tile Z{request.Zoom} {request.X}/{request.Y}: start [{requestedText}]");
 
-        if (await _gdal.RunAsync("gdalbuildvrt", $"-overwrite -te {te} {Quote(vrtPath)} {sources}", cancellationToken) != 0)
-        {
-            Log(ContourLogLevel.Error, $"Tile Z{request.Zoom} {request.X}/{request.Y}: gdalbuildvrt failed");
+        if (!await EnsureTileInputsAsync(request.Zoom, request.X, request.Y, tileKey, bounds, te, tileWorkDir, vrtPath, cancellationToken))
             return;
-        }
-        if (await _gdal.RunAsync("gdal_contour", $"-i {request.Key.Interval} -a elev -f GeoJSON {Quote(vrtPath)} {Quote(contourPath)}", cancellationToken) != 0)
+
+        var contourPathsByInterval = new Dictionary<int, string>();
+        var tempFiles = new List<string>();
+        var generated = 0;
+        var skipped = 0;
+        var failed = 0;
+
+        foreach (var key in requestKeys)
         {
-            Log(ContourLogLevel.Error, $"Tile Z{request.Zoom} {request.X}/{request.Y}: gdal_contour failed");
-            return;
+            var outputPath = GetTilePath(key, request.Zoom, request.X, request.Y);
+            if (File.Exists(outputPath))
+            {
+                skipped++;
+                continue;
+            }
+
+            var (contourInterval, whereClause) = ResolveContourSource(key, requestKeys);
+            if (!contourPathsByInterval.TryGetValue(contourInterval, out var contourPath))
+            {
+                contourPath = Path.Combine(tileWorkDir, $"contours_i{contourInterval}.geojson");
+                if (!File.Exists(contourPath))
+                {
+                    if (await _gdal.RunAsync("gdal_contour", $"-q -i {contourInterval} -a elev -f GeoJSON {Quote(vrtPath)} {Quote(contourPath)}", cancellationToken) != 0)
+                    {
+                        Log(ContourLogLevel.Error, $"Tile Z{request.Zoom} {request.X}/{request.Y}: gdal_contour failed (interval {contourInterval}m)");
+                        failed++;
+                        continue;
+                    }
+
+                    tempFiles.Add(contourPath);
+                }
+
+                contourPathsByInterval[contourInterval] = contourPath;
+            }
+
+            Directory.CreateDirectory(Path.GetDirectoryName(outputPath)!);
+            var keySuffix = $"{key.Kind.ToString().ToLowerInvariant()}_{key.Interval}";
+            var rasterPath = Path.Combine(tileWorkDir, $"contours_{keySuffix}.tif");
+            tempFiles.Add(rasterPath);
+
+            var (r, g, b, a) = GetColor(key.Kind);
+            var whereArg = string.IsNullOrWhiteSpace(whereClause)
+                ? string.Empty
+                : $"-where {Quote(whereClause)} ";
+            // gdal_rasterize requires drivers with Create() capability; PNG is often CreateCopy-only.
+            // Rasterize to GeoTIFF first, then convert to PNG for map tiles.
+            var rasterArgs = $"-q {whereArg}-burn {r} -burn {g} -burn {b} -burn {a} -init 0 0 0 0 -ts {TileSize} {TileSize} -te {te} -a_nodata 0 -ot Byte -of GTiff {Quote(contourPath)} {Quote(rasterPath)}";
+            if (await _gdal.RunAsync("gdal_rasterize", rasterArgs, cancellationToken) != 0)
+            {
+                Log(ContourLogLevel.Error, $"Tile Z{request.Zoom} {request.X}/{request.Y}: gdal_rasterize failed ({key.Kind.ToString().ToLowerInvariant()}-{key.Interval}m)");
+                failed++;
+                continue;
+            }
+
+            if (await _gdal.RunAsync("gdal_translate", $"-q -of PNG -co ZLEVEL={PngZLevel} {Quote(rasterPath)} {Quote(outputPath)}", cancellationToken) != 0)
+            {
+                Log(ContourLogLevel.Error, $"Tile Z{request.Zoom} {request.X}/{request.Y}: gdal_translate failed ({key.Kind.ToString().ToLowerInvariant()}-{key.Interval}m)");
+                failed++;
+                continue;
+            }
+
+            generated++;
         }
 
-        Directory.CreateDirectory(Path.GetDirectoryName(request.OutputPath)!);
-        var (r, g, b, a) = GetColor(request.Key.Kind);
-        // gdal_rasterize requires drivers with Create() capability; PNG is often CreateCopy-only.
-        // Rasterize to GeoTIFF first, then convert to PNG for map tiles.
-        var rasterArgs = $"-burn {r} -burn {g} -burn {b} -burn {a} -init 0 0 0 0 -ts {TileSize} {TileSize} -te {te} -a_nodata 0 -ot Byte -of GTiff {Quote(contourPath)} {Quote(rasterPath)}";
-        if (await _gdal.RunAsync("gdal_rasterize", rasterArgs, cancellationToken) != 0)
+        foreach (var tempFile in tempFiles.Distinct(StringComparer.OrdinalIgnoreCase))
         {
-            Log(ContourLogLevel.Error, $"Tile Z{request.Zoom} {request.X}/{request.Y}: gdal_rasterize failed");
-            return;
-        }
-        if (await _gdal.RunAsync("gdal_translate", $"-of PNG {Quote(rasterPath)} {Quote(request.OutputPath)}", cancellationToken) != 0)
-        {
-            Log(ContourLogLevel.Error, $"Tile Z{request.Zoom} {request.X}/{request.Y}: gdal_translate failed");
-            return;
+            TryDeleteTempFile(tempFile);
         }
 
-        _onTileReady?.Invoke();
-        var size = -1L;
+        if (generated > 0)
+        {
+            _onTileReady?.Invoke();
+        }
+
+        Log(
+            ContourLogLevel.Info,
+            $"Tile Z{request.Zoom} {request.X}/{request.Y}: done (generated={generated}, skipped={skipped}, failed={failed})");
+    }
+
+    private async Task<bool> EnsureTileInputsAsync(
+        int zoom,
+        int x,
+        int y,
+        string tileKey,
+        (double West, double South, double East, double North) bounds,
+        string te,
+        string tileWorkDir,
+        string vrtPath,
+        CancellationToken cancellationToken)
+    {
+        var initLock = _tileInitLocks.GetOrAdd(tileKey, static _ => new SemaphoreSlim(1, 1));
+        await initLock.WaitAsync(cancellationToken);
         try
         {
-            if (File.Exists(request.OutputPath))
-                size = new FileInfo(request.OutputPath).Length;
+            Directory.CreateDirectory(tileWorkDir);
+            if (File.Exists(vrtPath))
+                return true;
+
+            var demFiles = await _earthdata.EnsureDemFilesAsync(bounds, cancellationToken);
+            if (demFiles.Count == 0)
+            {
+                Log(ContourLogLevel.Warning, $"Tile Z{zoom} {x}/{y}: no DEM files available");
+                return false;
+            }
+
+            var sources = string.Join(' ', demFiles.Select(Quote));
+            if (await _gdal.RunAsync("gdalbuildvrt", $"-q -overwrite -te {te} {Quote(vrtPath)} {sources}", cancellationToken) != 0)
+            {
+                Log(ContourLogLevel.Error, $"Tile Z{zoom} {x}/{y}: gdalbuildvrt failed");
+                return false;
+            }
+
+            return true;
+        }
+        finally
+        {
+            initLock.Release();
+        }
+    }
+
+    private static void TryDeleteTempFile(string path)
+    {
+        try
+        {
+            if (File.Exists(path))
+                File.Delete(path);
         }
         catch
         {
-            // Ignore diagnostics failure; tile output already completed.
+            // Ignore cleanup failures; output tile has already been generated.
         }
-        Log(ContourLogLevel.Info, $"Tile Z{request.Zoom} {request.X}/{request.Y}: done ({size} bytes)");
     }
 
     private void Log(ContourLogLevel level, string message)
@@ -324,15 +448,33 @@ internal sealed class ContourTileService
     private static string Quote(string value) => $"\"{value}\"";
 
     private static string Fmt(double value) => value.ToString("G17", CultureInfo.InvariantCulture);
+
+    private static (int ContourInterval, string? WhereClause) ResolveContourSource(ContourKey key, IReadOnlyList<ContourKey> requestedKeys)
+    {
+        if (key.Kind != ContourLineKind.Major)
+            return (key.Interval, null);
+
+        var minorInterval = requestedKeys
+            .Where(k => k.Kind == ContourLineKind.Minor &&
+                        k.Interval < key.Interval &&
+                        key.Interval % k.Interval == 0)
+            .Select(k => k.Interval)
+            .DefaultIfEmpty(0)
+            .Min();
+
+        if (minorInterval <= 0)
+            return (key.Interval, null);
+
+        return (minorInterval, $"CAST(elev AS INTEGER) % {key.Interval.ToString(CultureInfo.InvariantCulture)} = 0");
+    }
 }
 
-internal readonly record struct ContourTileRequest(
+internal readonly record struct ContourTileBatchRequest(
     int Zoom,
     int X,
     int Y,
-    ContourKey Key,
-    string OutputPath,
-    string PendingKey);
+    IReadOnlyList<ContourKey> Keys,
+    IReadOnlyList<string> PendingKeys);
 
 internal sealed class EarthdataClient
 {
@@ -342,6 +484,10 @@ internal sealed class EarthdataClient
     private HttpClient _downloadClient = new(new HttpClientHandler());
     private string _token = string.Empty;
     private readonly Action<ContourLogLevel, string>? _log;
+    private readonly ConcurrentDictionary<string, IReadOnlyList<Uri>> _granuleUrlCache = new(StringComparer.Ordinal);
+    private readonly ConcurrentDictionary<string, SemaphoreSlim> _granuleUrlLocks = new(StringComparer.Ordinal);
+    private readonly ConcurrentDictionary<string, string[]> _demFileCache = new(StringComparer.OrdinalIgnoreCase);
+    private readonly ConcurrentDictionary<string, SemaphoreSlim> _demFileLocks = new(StringComparer.OrdinalIgnoreCase);
 
     public bool HasCredentials => !string.IsNullOrWhiteSpace(_token);
 
@@ -457,7 +603,7 @@ internal sealed class EarthdataClient
     public async Task<IReadOnlyList<string>> EnsureDemFilesAsync((double West, double South, double East, double North) bounds, CancellationToken cancellationToken)
     {
         Directory.CreateDirectory(ContourPaths.DemRoot);
-        var urls = await FindGranuleUrlsAsync(bounds, cancellationToken);
+        var urls = await FindGranuleUrlsCachedAsync(bounds, cancellationToken);
         if (urls.Count == 0)
             return Array.Empty<string>();
 
@@ -469,26 +615,28 @@ internal sealed class EarthdataClient
                 continue;
 
             var localPath = Path.Combine(ContourPaths.DemRoot, fileName);
-            if (!File.Exists(localPath))
+            var fileLock = _demFileLocks.GetOrAdd(localPath, static _ => new SemaphoreSlim(1, 1));
+            await fileLock.WaitAsync(cancellationToken);
+            try
             {
-                Log(ContourLogLevel.Info, $"Downloading DEM {fileName}");
-                await DownloadAsync(url, localPath, cancellationToken);
-                Log(ContourLogLevel.Info, $"Downloaded DEM {fileName}");
-            }
-
-            if (localPath.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
-            {
-                var extractedDir = Path.Combine(ContourPaths.DemRoot, "extracted", Path.GetFileNameWithoutExtension(fileName));
-                Directory.CreateDirectory(extractedDir);
-                if (!Directory.EnumerateFiles(extractedDir, "*.hgt", SearchOption.AllDirectories).Any())
+                if (!File.Exists(localPath))
                 {
-                    ZipFile.ExtractToDirectory(localPath, extractedDir, true);
+                    Log(ContourLogLevel.Info, $"Downloading DEM {fileName}");
+                    await DownloadAsync(url, localPath, cancellationToken);
+                    Log(ContourLogLevel.Info, $"Downloaded DEM {fileName}");
                 }
-                results.AddRange(Directory.EnumerateFiles(extractedDir, "*.hgt", SearchOption.AllDirectories));
+
+                if (!_demFileCache.TryGetValue(localPath, out var demFiles) || demFiles.Length == 0 || demFiles.Any(path => !File.Exists(path)))
+                {
+                    demFiles = ResolveLocalDemFiles(localPath, fileName);
+                    _demFileCache[localPath] = demFiles;
+                }
+
+                results.AddRange(demFiles);
             }
-            else if (localPath.EndsWith(".hgt", StringComparison.OrdinalIgnoreCase) || localPath.EndsWith(".tif", StringComparison.OrdinalIgnoreCase))
+            finally
             {
-                results.Add(localPath);
+                fileLock.Release();
             }
         }
 
@@ -497,7 +645,7 @@ internal sealed class EarthdataClient
 
     public async Task<Uri?> GetAnyGranuleUrlAsync((double West, double South, double East, double North) bounds, CancellationToken cancellationToken)
     {
-        var urls = await FindGranuleUrlsAsync(bounds, cancellationToken);
+        var urls = await FindGranuleUrlsCachedAsync(bounds, cancellationToken);
         return urls.FirstOrDefault();
     }
 
@@ -506,7 +654,7 @@ internal sealed class EarthdataClient
         CancellationToken cancellationToken,
         int maxCount)
     {
-        var urls = await FindGranuleUrlsAsync(bounds, cancellationToken);
+        var urls = await FindGranuleUrlsCachedAsync(bounds, cancellationToken);
         if (maxCount <= 0)
             return urls;
         return urls.Take(maxCount).ToList();
@@ -612,7 +760,30 @@ internal sealed class EarthdataClient
             or HttpStatusCode.PermanentRedirect;
     }
 
-    private async Task<List<Uri>> FindGranuleUrlsAsync((double West, double South, double East, double North) bounds, CancellationToken cancellationToken)
+    private async Task<List<Uri>> FindGranuleUrlsCachedAsync((double West, double South, double East, double North) bounds, CancellationToken cancellationToken)
+    {
+        var cacheKey = BuildGranuleCacheKey(bounds);
+        if (_granuleUrlCache.TryGetValue(cacheKey, out var cached))
+            return cached.ToList();
+
+        var cacheLock = _granuleUrlLocks.GetOrAdd(cacheKey, static _ => new SemaphoreSlim(1, 1));
+        await cacheLock.WaitAsync(cancellationToken);
+        try
+        {
+            if (_granuleUrlCache.TryGetValue(cacheKey, out cached))
+                return cached.ToList();
+
+            var urls = await FindGranuleUrlsCoreAsync(bounds, cancellationToken);
+            _granuleUrlCache[cacheKey] = urls;
+            return urls.ToList();
+        }
+        finally
+        {
+            cacheLock.Release();
+        }
+    }
+
+    private async Task<List<Uri>> FindGranuleUrlsCoreAsync((double West, double South, double East, double North) bounds, CancellationToken cancellationToken)
     {
         var bbox = $"{Fmt(bounds.West)},{Fmt(bounds.South)},{Fmt(bounds.East)},{Fmt(bounds.North)}";
         var query = $"short_name=NASADEM_HGT&version=001&bounding_box={Uri.EscapeDataString(bbox)}&page_size=2000";
@@ -665,6 +836,36 @@ internal sealed class EarthdataClient
         }
 
         return urls.OrderBy(ScoreUrl).ToList();
+    }
+
+    private static string BuildGranuleCacheKey((double West, double South, double East, double North) bounds)
+    {
+        const double epsilon = 1e-9;
+        var west = Math.Floor(bounds.West);
+        var south = Math.Floor(bounds.South);
+        var east = Math.Floor(bounds.East - epsilon);
+        var north = Math.Floor(bounds.North - epsilon);
+        return $"{west:0}:{south:0}:{east:0}:{north:0}";
+    }
+
+    private static string[] ResolveLocalDemFiles(string localPath, string fileName)
+    {
+        if (localPath.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
+        {
+            var extractedDir = Path.Combine(ContourPaths.DemRoot, "extracted", Path.GetFileNameWithoutExtension(fileName));
+            Directory.CreateDirectory(extractedDir);
+            if (!Directory.EnumerateFiles(extractedDir, "*.hgt", SearchOption.AllDirectories).Any())
+            {
+                ZipFile.ExtractToDirectory(localPath, extractedDir, true);
+            }
+
+            return Directory.EnumerateFiles(extractedDir, "*.hgt", SearchOption.AllDirectories).ToArray();
+        }
+
+        if (localPath.EndsWith(".hgt", StringComparison.OrdinalIgnoreCase) || localPath.EndsWith(".tif", StringComparison.OrdinalIgnoreCase))
+            return [localPath];
+
+        return Array.Empty<string>();
     }
 
     private static async Task<string> ReadErrorSnippetAsync(HttpResponseMessage response, CancellationToken cancellationToken)
@@ -771,8 +972,14 @@ internal sealed class EarthdataClient
                 return DownloadResult.Failed;
 
             await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
-            await using var file = new FileStream(tempPath, FileMode.Create, FileAccess.Write, FileShare.None);
-            await stream.CopyToAsync(file, cancellationToken);
+            await using var file = new FileStream(
+                tempPath,
+                FileMode.Create,
+                FileAccess.Write,
+                FileShare.None,
+                bufferSize: 131072,
+                useAsync: true);
+            await stream.CopyToAsync(file, 131072, cancellationToken);
             return DownloadResult.Success;
         }
         catch
@@ -858,8 +1065,8 @@ internal sealed class GdalRunner
             FileName = exePath,
             Arguments = arguments,
             UseShellExecute = false,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
+            RedirectStandardOutput = false,
+            RedirectStandardError = false,
             CreateNoWindow = true,
         };
 

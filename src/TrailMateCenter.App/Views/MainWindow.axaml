@@ -78,10 +78,26 @@
 
             <TabItem>
                 <TabItem.Header>
-                    <StackPanel Orientation="Horizontal" Spacing="6">
+                    <StackPanel Orientation="Horizontal" Spacing="4">
                         <TextBlock Text="{DynamicResource Ui.Tab.Chat}"/>
-                        <Border Background="{DynamicResource AccentDanger}" CornerRadius="12" Padding="8,2" IsVisible="{Binding HasUnreadChat}">
-                            <TextBlock Text="{Binding UnreadChatCount}" FontSize="11" Foreground="White" FontWeight="Bold"/>
+                        <Border Background="{DynamicResource AccentDanger}"
+                                BorderBrush="#B91C1C"
+                                BorderThickness="1"
+                                CornerRadius="9"
+                                Height="18"
+                                MinWidth="18"
+                                Padding="4,0"
+                                Margin="0,-3,0,0"
+                                VerticalAlignment="Top"
+                                HorizontalAlignment="Left"
+                                IsVisible="{Binding HasUnreadChat}">
+                            <TextBlock Text="{Binding UnreadChatCount}"
+                                       FontSize="10"
+                                       Foreground="White"
+                                       FontWeight="Bold"
+                                       TextAlignment="Center"
+                                       VerticalAlignment="Center"
+                                       HorizontalAlignment="Center"/>
                         </Border>
                     </StackPanel>
                 </TabItem.Header>
