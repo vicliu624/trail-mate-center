@@ -76,3 +76,7 @@ Icon
 # Logs
 logs/
 *.log.*
+
+# Local SDK/package caches (keep out of git)
+.dotnet/
+.nuget/
