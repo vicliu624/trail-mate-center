@@ -25,6 +25,7 @@ public sealed class AppDataDecoder
         var events = new List<TacticalEvent>();
         var positions = new List<PositionUpdate>();
         var nodeInfos = new List<NodeInfoUpdate>();
+        var messages = new List<MessageEntry>();
 
         switch (packet.Portnum)
         {
@@ -32,7 +33,7 @@ public sealed class AppDataDecoder
                 DecodeTeamTrack(packet, events, positions);
                 break;
             case TeamChatPort:
-                DecodeTeamChat(packet, events, positions);
+                DecodeTeamChat(packet, events, positions, messages);
                 break;
             case TeamMgmtPort:
                 DecodeTeamMgmt(packet, events);
@@ -65,7 +66,7 @@ public sealed class AppDataDecoder
                 break;
         }
 
-        return new AppDataDecodeResult(packet, events, positions, nodeInfos);
+        return new AppDataDecodeResult(packet, events, positions, nodeInfos, messages);
     }
 
     private static void DecodeTeamTrack(AppDataPacket packet, List<TacticalEvent> events, List<PositionUpdate> positions)
@@ -112,7 +113,11 @@ public sealed class AppDataDecoder
             null));
     }
 
-    private static void DecodeTeamChat(AppDataPacket packet, List<TacticalEvent> events, List<PositionUpdate> positions)
+    private static void DecodeTeamChat(
+        AppDataPacket packet,
+        List<TacticalEvent> events,
+        List<PositionUpdate> positions,
+        List<MessageEntry> messages)
     {
         var reader = new HostLinkSpanReader(packet.Payload);
         if (!reader.TryReadByte(out var version) || version != 1)
@@ -131,27 +136,29 @@ public sealed class AppDataDecoder
         }
 
         var when = ts > 0 ? DateTimeOffset.FromUnixTimeSeconds(ts) : DateTimeOffset.UtcNow;
+        var sender = from == 0 ? packet.From : from;
 
         switch (type)
         {
             case 1:
                 var text = Encoding.UTF8.GetString(reader.Remaining);
+                AddTeamChatMessage(packet, messages, sender, msgId, when, text);
                 events.Add(new TacticalEvent(
                     when,
                     TacticalRules.GetDefaultSeverity(TacticalEventKind.ChatText),
                     TacticalEventKind.ChatText,
-                    $"消息 · 0x{from:X8}",
+                    $"消息 · 0x{sender:X8}",
                     text,
-                    from,
-                    $"0x{from:X8}",
+                    sender,
+                    $"0x{sender:X8}",
                     null,
                     null));
                 break;
             case 2:
-                DecodeChatLocation(packet, from, when, reader, events, positions);
+                DecodeChatLocation(packet, sender, msgId, when, reader, events, positions, messages);
                 break;
             case 3:
-                DecodeChatCommand(packet, from, when, reader, events);
+                DecodeChatCommand(packet, sender, msgId, when, reader, events, messages);
                 break;
             default:
                 events.Add(BuildOpaqueEvent(packet, TacticalEventKind.ChatText, "Team Chat", $"未知类型 {type}"));
@@ -162,7 +169,15 @@ public sealed class AppDataDecoder
         _ = msgId;
     }
 
-    private static void DecodeChatLocation(AppDataPacket packet, uint from, DateTimeOffset when, HostLinkSpanReader reader, List<TacticalEvent> events, List<PositionUpdate> positions)
+    private static void DecodeChatLocation(
+        AppDataPacket packet,
+        uint from,
+        uint msgId,
+        DateTimeOffset when,
+        HostLinkSpanReader reader,
+        List<TacticalEvent> events,
+        List<PositionUpdate> positions,
+        List<MessageEntry> messages)
     {
         if (!reader.TryReadInt32(out var latE7) ||
             !reader.TryReadInt32(out var lonE7) ||
@@ -204,6 +219,7 @@ public sealed class AppDataDecoder
         var detail = string.IsNullOrWhiteSpace(label)
             ? $"精度 {accM}m · 来源 {sourceLabel} (raw={source})"
             : $"{label} · 精度 {accM}m · 来源 {sourceLabel} (raw={source})";
+        AddTeamChatMessage(packet, messages, from, msgId, ts, $"[位置] {detail}", lat, lon, altM);
 
         events.Add(new TacticalEvent(
             ts,
@@ -217,7 +233,14 @@ public sealed class AppDataDecoder
             lon));
     }
 
-    private static void DecodeChatCommand(AppDataPacket packet, uint from, DateTimeOffset when, HostLinkSpanReader reader, List<TacticalEvent> events)
+    private static void DecodeChatCommand(
+        AppDataPacket packet,
+        uint from,
+        uint msgId,
+        DateTimeOffset when,
+        HostLinkSpanReader reader,
+        List<TacticalEvent> events,
+        List<MessageEntry> messages)
     {
         if (!reader.TryReadByte(out var cmdType) ||
             !reader.TryReadInt32(out var latE7) ||
@@ -246,6 +269,7 @@ public sealed class AppDataDecoder
             _ => $"Cmd{cmdType}",
         };
         var detail = $"半径 {radiusM}m · 优先级 {priority}" + (string.IsNullOrWhiteSpace(note) ? string.Empty : $" · {note}");
+        AddTeamChatMessage(packet, messages, from, msgId, when, $"[指令] {cmdName} · {detail}", lat, lon);
 
         events.Add(new TacticalEvent(
             when,
@@ -257,6 +281,62 @@ public sealed class AppDataDecoder
             $"0x{from:X8}",
             lat,
             lon));
+    }
+
+    private static void AddTeamChatMessage(
+        AppDataPacket packet,
+        List<MessageEntry> messages,
+        uint sender,
+        uint msgId,
+        DateTimeOffset when,
+        string text,
+        double? latitude = null,
+        double? longitude = null,
+        double? altitude = null)
+    {
+        var isBroadcast = packet.To == 0 || packet.To == uint.MaxValue;
+        var teamConversationKey = BuildTeamConversationKey(packet);
+        messages.Add(new MessageEntry
+        {
+            Direction = MessageDirection.Incoming,
+            MessageId = msgId == 0 ? null : msgId,
+            FromId = sender == 0 ? null : sender,
+            ToId = isBroadcast ? null : packet.To,
+            From = sender == 0 ? "APPDATA" : $"0x{sender:X8}",
+            To = isBroadcast ? "broadcast" : $"0x{packet.To:X8}",
+            ChannelId = packet.Channel,
+            Channel = packet.Channel.ToString(),
+            Text = text,
+            Status = MessageDeliveryStatus.Succeeded,
+            Timestamp = DateTimeOffset.UtcNow,
+            DeviceTimestamp = when,
+            Rssi = packet.RxMeta?.RssiDbm,
+            Snr = packet.RxMeta?.SnrDb,
+            Hop = packet.RxMeta?.HopCount,
+            Direct = packet.RxMeta?.Direct,
+            Origin = packet.RxMeta?.Origin,
+            FromIs = packet.RxMeta?.FromIs,
+            Latitude = latitude,
+            Longitude = longitude,
+            Altitude = altitude,
+            IsTeamChat = true,
+            TeamConversationKey = teamConversationKey,
+        });
+    }
+
+    private static string BuildTeamConversationKey(AppDataPacket packet)
+    {
+        if (packet.TeamId is { Length: 8 } teamId && teamId.Any(b => b != 0))
+        {
+            return $"{Convert.ToHexString(teamId)}:{packet.TeamKeyId:X8}";
+        }
+
+        if (packet.TeamKeyId != 0)
+        {
+            return $"KEY:{packet.TeamKeyId:X8}";
+        }
+
+        return "DEFAULT";
     }
 
     private static void DecodeTeamMgmt(AppDataPacket packet, List<TacticalEvent> events)
@@ -806,4 +886,5 @@ public sealed record AppDataDecodeResult(
     AppDataPacket Packet,
     IReadOnlyList<TacticalEvent> TacticalEvents,
     IReadOnlyList<PositionUpdate> Positions,
-    IReadOnlyList<NodeInfoUpdate> NodeInfos);
+    IReadOnlyList<NodeInfoUpdate> NodeInfos,
+    IReadOnlyList<MessageEntry> Messages);

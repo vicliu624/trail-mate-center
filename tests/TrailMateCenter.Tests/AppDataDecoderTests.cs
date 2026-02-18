@@ -70,6 +70,14 @@ public sealed class AppDataDecoderTests
         var result = decoder.Decode(packet);
 
         Assert.Contains(result.TacticalEvents, ev => ev.Kind == TacticalEventKind.ChatText && ev.Detail.Contains("hi"));
+        var message = Assert.Single(result.Messages);
+        Assert.Equal(MessageDirection.Incoming, message.Direction);
+        Assert.Null(message.ToId);
+        Assert.Equal((uint)0x01020304, message.FromId);
+        Assert.Equal((byte)0, message.ChannelId);
+        Assert.Equal("hi", message.Text);
+        Assert.True(message.IsTeamChat);
+        Assert.Equal("DEFAULT", message.TeamConversationKey);
     }
 
     [Fact]
@@ -99,6 +107,49 @@ public sealed class AppDataDecoderTests
 
         Assert.Single(result.Positions);
         Assert.Contains(result.TacticalEvents, ev => ev.Kind == TacticalEventKind.PositionUpdate);
+    }
+
+    [Fact]
+    public void Decode_TeamChatLocation_Produces_Message_With_Coordinates()
+    {
+        var payload = new HostLinkBufferWriter();
+        payload.WriteByte(1); // version
+        payload.WriteByte(2); // type location
+        payload.WriteUInt16(0);
+        payload.WriteUInt32(5);
+        payload.WriteUInt32(1200);
+        payload.WriteUInt32(0x01020304);
+        payload.WriteInt32((int)(23.1234567 * 1e7));
+        payload.WriteInt32((int)(113.7654321 * 1e7));
+        payload.WriteUInt16(35);
+        payload.WriteUInt16(12);
+        payload.WriteUInt32(1201);
+        payload.WriteByte((byte)TeamLocationSource.Rally);
+        payload.WriteUInt16(0); // label len
+
+        var packet = new AppDataPacket(
+            AppDataDecoder.TeamChatPort,
+            0x01020304,
+            0,
+            1,
+            0,
+            new byte[8],
+            0,
+            0,
+            payload.ToArray());
+
+        var decoder = new AppDataDecoder();
+        var result = decoder.Decode(packet);
+
+        Assert.Contains(result.TacticalEvents, ev => ev.Kind == TacticalEventKind.ChatLocation);
+        var message = Assert.Single(result.Messages);
+        Assert.StartsWith("[位置]", message.Text);
+        Assert.Equal((byte)1, message.ChannelId);
+        Assert.NotNull(message.Latitude);
+        Assert.NotNull(message.Longitude);
+        Assert.Equal(35, message.Altitude);
+        Assert.True(message.IsTeamChat);
+        Assert.Equal("DEFAULT", message.TeamConversationKey);
     }
 
     [Fact]

@@ -19,12 +19,14 @@
             <TextBlock Text="{DynamicResource Ui.Dashboard.NoTeams}" Foreground="{DynamicResource TextDim}" FontSize="10" Margin="8,4"
                        IsVisible="{Binding HasNoTeams}"/>
             <ListBox Grid.Row="1"
+                     x:Name="TeamGroupsListBox"
                      ItemsSource="{Binding Teams}"
                      ItemTemplate="{StaticResource TeamGroupTemplate}"
                      IsVisible="{Binding HasTeams}"
                      Background="Transparent"
                      BorderThickness="0"
-                     HorizontalAlignment="Stretch"/>
+                     HorizontalAlignment="Stretch"
+                     PointerReleased="OnTeamPanelPointerReleased"/>
           </Grid>
         </Border>
 
@@ -36,11 +38,13 @@
         </ToggleButton>
         <Border Grid.Row="3" Background="Transparent" Padding="0,6,0,8"
                 IsVisible="{Binding IsChecked, ElementName=NodeToggle}">
-          <ListBox ItemsSource="{Binding UngroupedSubjects}" SelectedItem="{Binding SelectedSubject}"
+          <ListBox x:Name="UngroupedSubjectsListBox"
+                   ItemsSource="{Binding UngroupedSubjects}" SelectedItem="{Binding SelectedSubject}"
                    ItemTemplate="{StaticResource SubjectTemplate}"
                    Background="{DynamicResource PanelBg2}"
                    BorderThickness="0"
-                   HorizontalAlignment="Stretch"/>
+                   HorizontalAlignment="Stretch"
+                   PointerReleased="OnTeamPanelPointerReleased"/>
         </Border>
       </Grid>
     </Border>
@@ -167,6 +171,10 @@
             <Button Content="{DynamicResource Ui.Dashboard.Filter.Info}" Width="60"/>
             <Button Content="{DynamicResource Ui.Dashboard.Filter.Warn}" Width="60"/>
             <Button Content="{DynamicResource Ui.Dashboard.Filter.Crit}" Width="60"/>
+            <CheckBox Content="{DynamicResource Ui.Dashboard.Filter.TeamOnly}"
+                      IsChecked="{Binding ShowTeamEventsOnly}"
+                      VerticalAlignment="Center"
+                      Foreground="{DynamicResource TextPrimary}"/>
           </StackPanel>
           <ListBox Grid.Row="1" ItemsSource="{Binding TacticalEvents}" SelectedItem="{Binding SelectedTacticalEvent}"
                    ItemTemplate="{StaticResource TacticalEventTemplate}"
@@ -192,7 +200,14 @@
         </Border>
         <Border Grid.Row="1" Background="{DynamicResource PanelBg}" BorderBrush="{DynamicResource PanelBorder}" BorderThickness="0,0,0,1" Padding="8" Classes="panel">
           <StackPanel>
-            <TextBlock Text="{DynamicResource Ui.Dashboard.EventStream}" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}" Margin="0,0,0,6"/>
+            <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,6">
+              <TextBlock Text="{DynamicResource Ui.Dashboard.EventStream}" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}"/>
+              <CheckBox Grid.Column="1"
+                        Content="{DynamicResource Ui.Dashboard.Filter.TeamOnly}"
+                        IsChecked="{Binding ShowTeamEventsOnly}"
+                        VerticalAlignment="Center"
+                        Foreground="{DynamicResource TextPrimary}"/>
+            </Grid>
             <ListBox ItemsSource="{Binding TacticalEvents}"
                      SelectedItem="{Binding SelectedTacticalEvent}"
                      ItemTemplate="{StaticResource TacticalEventTemplate}"

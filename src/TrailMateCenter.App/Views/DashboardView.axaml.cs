@@ -41,6 +41,9 @@ public partial class DashboardView : UserControl
     private MenuItem? _teamPositionGoodFindItem;
     private MenuItem? _teamPositionRallyItem;
     private MenuItem? _teamPositionSosItem;
+    private ContextMenu? _teamPanelContextMenu;
+    private MenuItem? _teamPanelStartChatMenuItem;
+    private SubjectViewModel? _teamPanelContextSubject;
     private (double Latitude, double Longitude)? _lastRightClickLocation;
 
     public DashboardView()
@@ -67,6 +70,89 @@ public partial class DashboardView : UserControl
         _mapControl.PointerCaptureLost += OnMapPointerCaptureLost;
         _mapControl.PointerWheelChanged += OnMapPointerWheelChanged;
         _mapControl.MapTapped += OnMapTapped;
+    }
+
+    private void EnsureTeamPanelContextMenu()
+    {
+        if (_teamPanelContextMenu is not null)
+            return;
+
+        _teamPanelStartChatMenuItem = new MenuItem();
+        _teamPanelStartChatMenuItem.Click += OnTeamPanelStartChatMenuItemClicked;
+        _teamPanelContextMenu = new ContextMenu
+        {
+            ItemsSource = new[] { _teamPanelStartChatMenuItem },
+            Placement = PlacementMode.Pointer,
+        };
+    }
+
+    private void OnTeamPanelPointerReleased(object? sender, PointerReleasedEventArgs e)
+    {
+        if (e.InitialPressMouseButton != MouseButton.Right)
+            return;
+        if (sender is not Control target)
+            return;
+        if (DataContext is not MainWindowViewModel vm)
+            return;
+
+        var subject = ResolveSubjectFromVisualSource(e.Source)
+            ?? (target as ListBox)?.SelectedItem as SubjectViewModel;
+        if (subject is null)
+            return;
+
+        vm.SelectedSubject = subject;
+        ShowTeamPanelContextMenu(target, subject);
+        e.Handled = true;
+    }
+
+    private void ShowTeamPanelContextMenu(Control target, SubjectViewModel subject)
+    {
+        EnsureTeamPanelContextMenu();
+        if (_teamPanelContextMenu is null || _teamPanelStartChatMenuItem is null)
+            return;
+        if (TopLevel.GetTopLevel(target) is null)
+            return;
+
+        _teamPanelContextSubject = subject;
+        _teamPanelStartChatMenuItem.Header = LocalizationService.Instance.GetString("Ui.Dashboard.Team.StartChat");
+        _teamPanelStartChatMenuItem.IsEnabled = subject.Id != 0;
+
+        _teamPanelContextMenu.PlacementTarget = target;
+        try
+        {
+            _teamPanelContextMenu.Open(target);
+        }
+        catch (ArgumentNullException)
+        {
+            // Ignore transient detach between right click and popup open.
+        }
+        catch (InvalidOperationException)
+        {
+            // Ignore transient popup placement failures to avoid UI crash.
+        }
+    }
+
+    private void OnTeamPanelStartChatMenuItemClicked(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is not MainWindowViewModel vm)
+            return;
+        if (_teamPanelContextSubject is null)
+            return;
+
+        vm.StartChatWithSubject(_teamPanelContextSubject);
+    }
+
+    private static SubjectViewModel? ResolveSubjectFromVisualSource(object? source)
+    {
+        var element = source as StyledElement;
+        while (element is not null)
+        {
+            if (element.DataContext is SubjectViewModel subject)
+                return subject;
+            element = element.Parent as StyledElement;
+        }
+
+        return null;
     }
 
     private void OnMapTouchPadMagnify(object? sender, PointerDeltaEventArgs e)
@@ -327,8 +413,23 @@ public partial class DashboardView : UserControl
         _teamPositionRallyItem.Header = loc.GetString("Ui.Dashboard.TeamPosition.Rally");
         _teamPositionSosItem.Header = loc.GetString("Ui.Dashboard.TeamPosition.Sos");
 
-        _offlineRouteContextMenu.PlacementTarget = _mapControl;
-        _offlineRouteContextMenu.Open();
+        var mapControl = _mapControl;
+        if (TopLevel.GetTopLevel(mapControl) is null)
+            return;
+
+        _offlineRouteContextMenu.PlacementTarget = mapControl;
+        try
+        {
+            _offlineRouteContextMenu.Open(mapControl);
+        }
+        catch (ArgumentNullException)
+        {
+            // Control can be detached between pointer release and menu opening.
+        }
+        catch (InvalidOperationException)
+        {
+            // Ignore transient popup placement failures to avoid UI crash.
+        }
     }
 
     private async void OnOfflineRouteCacheMenuItemClicked(object? sender, RoutedEventArgs e)

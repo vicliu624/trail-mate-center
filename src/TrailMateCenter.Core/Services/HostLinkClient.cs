@@ -10,6 +10,10 @@ namespace TrailMateCenter.Services;
 
 public sealed class HostLinkClient : IAsyncDisposable
 {
+    private const byte TeamStateFlagInTeam = 1 << 0;
+    private const byte TeamStateFlagPendingJoin = 1 << 1;
+    private const byte TeamStateFlagHasTeamId = 1 << 4;
+
     private readonly ILogger<HostLinkClient> _logger;
     private readonly LogStore _logStore;
     private readonly SessionStore _sessionStore;
@@ -26,6 +30,8 @@ public sealed class HostLinkClient : IAsyncDisposable
     private uint _teamKeyId;
     private byte _teamChannel;
     private bool _hasTeamContext;
+    private uint _teamSelfId;
+    private long _teamAppDataTraceCounter;
 
     private IHostLinkTransport? _transport;
     private TransportEndpoint? _endpoint;
@@ -64,16 +70,28 @@ public sealed class HostLinkClient : IAsyncDisposable
     public event EventHandler<HostLinkEvent>? EventReceived;
     public event EventHandler<HostLinkDecodeError>? ProtocolError;
     public event EventHandler<TransportError>? TransportError;
+    public event EventHandler? TeamContextChanged;
 
     public ConnectionState ConnectionState => _stateMachine.State;
     public string? LastError => _stateMachine.LastError;
     public DeviceInfo? DeviceInfo { get; private set; }
+    public bool HasTeamContext
+    {
+        get
+        {
+            lock (_gate)
+            {
+                return _hasTeamContext;
+            }
+        }
+    }
     public bool SupportsTxAppDataCommand =>
         DeviceInfo?.Capabilities.CapabilitiesMask.HasFlag(HostLinkCapabilities.CapTxAppData) == true;
     public StatusInfo? Status { get; private set; }
 
     public async Task ConnectAsync(TransportEndpoint endpoint, ConnectionOptions options, CancellationToken cancellationToken)
     {
+        ResetTeamContext(notify: true);
         _endpoint = endpoint;
         _options = options;
         _cts?.Cancel();
@@ -88,6 +106,7 @@ public sealed class HostLinkClient : IAsyncDisposable
     public async Task DisconnectAsync(CancellationToken cancellationToken)
     {
         _cts?.Cancel();
+        ResetTeamContext(notify: true);
         if (_transport is not null)
         {
             await _transport.CloseAsync(cancellationToken);
@@ -153,6 +172,70 @@ public sealed class HostLinkClient : IAsyncDisposable
         return message;
     }
 
+    public async Task<HostLinkErrorCode> SendTeamTextAsync(
+        string text,
+        uint? to,
+        byte channel,
+        string? teamConversationKey,
+        CancellationToken cancellationToken)
+    {
+        EnsureReady();
+        if (!SupportsTxAppDataCommand)
+            return HostLinkErrorCode.Unsupported;
+        if (string.IsNullOrWhiteSpace(text))
+            return HostLinkErrorCode.InvalidParam;
+
+        var outboundContext = ResolveOutboundTeamContext(channel, teamConversationKey);
+        var payload = TeamChatEncoder.BuildTextPayload(text);
+
+        var appRequest = new AppDataSendRequest
+        {
+            Portnum = AppDataDecoder.TeamChatPort,
+            From = outboundContext.FromId,
+            To = to ?? 0,
+            Channel = outboundContext.Channel,
+            Flags = outboundContext.HasTeamContext ? HostLinkAppDataFlags.HasTeamMetadata : 0,
+            TeamId = outboundContext.HasTeamContext ? outboundContext.TeamId : new byte[8],
+            TeamKeyId = outboundContext.HasTeamContext ? outboundContext.TeamKeyId : 0,
+            Payload = payload,
+        };
+
+        var isBroadcast = IsBroadcastDestination(to);
+        var outgoingMessage = new MessageEntry
+        {
+            Direction = MessageDirection.Outgoing,
+            From = "PC",
+            To = isBroadcast ? "broadcast" : $"0x{to!.Value:X8}",
+            FromId = null,
+            ToId = isBroadcast ? null : to,
+            ChannelId = outboundContext.Channel,
+            Channel = outboundContext.Channel.ToString(),
+            Text = text,
+            Status = MessageDeliveryStatus.Pending,
+            Timestamp = DateTimeOffset.UtcNow,
+            DeviceTimestamp = null,
+            IsTeamChat = true,
+            TeamConversationKey = BuildTeamConversationKeyForOutbound(
+                outboundContext.HasTeamContext,
+                outboundContext.TeamId,
+                outboundContext.TeamKeyId,
+                teamConversationKey),
+        };
+
+        _sessionStore.AddMessage(outgoingMessage);
+        MessageAdded?.Invoke(this, outgoingMessage);
+
+        var result = await SendTeamAppDataWithCompatibilityFallbackAsync(appRequest, cancellationToken);
+        outgoingMessage.Status = result == HostLinkErrorCode.Ok
+            ? MessageDeliveryStatus.Succeeded
+            : MessageDeliveryStatus.Failed;
+        outgoingMessage.ErrorMessage = result == HostLinkErrorCode.Ok ? null : $"APPDATA {result}";
+        _sessionStore.UpdateMessage(outgoingMessage);
+        MessageUpdated?.Invoke(this, outgoingMessage);
+
+        return result;
+    }
+
     public async Task<DeviceConfig> GetConfigAsync(CancellationToken cancellationToken)
     {
         EnsureReady();
@@ -192,22 +275,21 @@ public sealed class HostLinkClient : IAsyncDisposable
             Channel = request.Channel,
         };
 
+        var outboundContext = ResolveOutboundTeamContext(request.Channel, teamConversationKey: null);
         var payload = TeamChatEncoder.BuildCommandPayload(teamRequest);
-        var channel = request.Channel;
-        if (channel == 0 && _hasTeamContext)
-            channel = _teamChannel;
         var appRequest = new AppDataSendRequest
         {
             Portnum = AppDataDecoder.TeamChatPort,
+            From = outboundContext.FromId,
             To = request.To ?? 0,
-            Channel = channel,
-            Flags = _hasTeamContext ? HostLinkAppDataFlags.HasTeamMetadata : 0,
-            TeamId = _hasTeamContext ? _teamId.ToArray() : new byte[8],
-            TeamKeyId = _hasTeamContext ? _teamKeyId : 0,
+            Channel = outboundContext.Channel,
+            Flags = outboundContext.HasTeamContext ? HostLinkAppDataFlags.HasTeamMetadata : 0,
+            TeamId = outboundContext.HasTeamContext ? outboundContext.TeamId : new byte[8],
+            TeamKeyId = outboundContext.HasTeamContext ? outboundContext.TeamKeyId : 0,
             Payload = payload,
         };
 
-        return await SendAppDataAsync(appRequest, cancellationToken);
+        return await SendTeamAppDataWithCompatibilityFallbackAsync(appRequest, cancellationToken);
     }
 
     public async Task<HostLinkErrorCode> SendTeamLocationAsync(TeamLocationPostRequest request, CancellationToken cancellationToken)
@@ -216,23 +298,211 @@ public sealed class HostLinkClient : IAsyncDisposable
         if (!SupportsTxAppDataCommand)
             return HostLinkErrorCode.Unsupported;
 
+        var outboundContext = ResolveOutboundTeamContext(request.Channel, teamConversationKey: null);
         var payload = TeamChatEncoder.BuildLocationPayload(request);
-        var channel = request.Channel;
-        if (channel == 0 && _hasTeamContext)
-            channel = _teamChannel;
 
         var appRequest = new AppDataSendRequest
         {
             Portnum = AppDataDecoder.TeamChatPort,
+            From = outboundContext.FromId,
             To = request.To ?? 0,
-            Channel = channel,
-            Flags = _hasTeamContext ? HostLinkAppDataFlags.HasTeamMetadata : 0,
-            TeamId = _hasTeamContext ? _teamId.ToArray() : new byte[8],
-            TeamKeyId = _hasTeamContext ? _teamKeyId : 0,
+            Channel = outboundContext.Channel,
+            Flags = outboundContext.HasTeamContext ? HostLinkAppDataFlags.HasTeamMetadata : 0,
+            TeamId = outboundContext.HasTeamContext ? outboundContext.TeamId : new byte[8],
+            TeamKeyId = outboundContext.HasTeamContext ? outboundContext.TeamKeyId : 0,
             Payload = payload,
         };
 
-        return await SendAppDataAsync(appRequest, cancellationToken);
+        return await SendTeamAppDataWithCompatibilityFallbackAsync(appRequest, cancellationToken);
+    }
+
+    private async Task<HostLinkErrorCode> SendTeamAppDataWithCompatibilityFallbackAsync(
+        AppDataSendRequest appRequest,
+        CancellationToken cancellationToken)
+    {
+        var attempts = BuildTeamAppDataCompatibilityAttempts(appRequest);
+        var wireFormats = new (string Name, bool IncludeTimestampField)[]
+        {
+            ("no_ts", false),
+            ("with_ts", true),
+        };
+
+        var traceId = System.Threading.Interlocked.Increment(ref _teamAppDataTraceCounter);
+        WriteTeamAppDataTrace(
+            LogLevel.Information,
+            "APPDATA_TRACE_START",
+            $"trace={traceId} attemptCount={attempts.Count * wireFormats.Length} original={DescribeAppDataRequest(appRequest)} payload={DescribeTeamPayload(appRequest.Payload)}");
+
+        var lastResult = HostLinkErrorCode.Internal;
+        for (var wireIndex = 0; wireIndex < wireFormats.Length; wireIndex++)
+        {
+            var wire = wireFormats[wireIndex];
+            for (var i = 0; i < attempts.Count; i++)
+            {
+                var attempt = attempts[i];
+                var attemptIndex = i + 1;
+                var globalAttemptIndex = wireIndex * attempts.Count + attemptIndex;
+                var totalAttemptCount = attempts.Count * wireFormats.Length;
+                WriteTeamAppDataTrace(
+                    LogLevel.Information,
+                    "APPDATA_TX",
+                    $"trace={traceId} attempt={globalAttemptIndex}/{totalAttemptCount} candidate={attemptIndex}/{attempts.Count} wire={wire.Name} {DescribeAppDataRequest(attempt)} payload={DescribeTeamPayload(attempt.Payload)}");
+                if (globalAttemptIndex > 1)
+                {
+                    _logger.LogWarning(
+                        "CMD_TX_APPDATA compatibility retry #{Retry}: wire={Wire}, port={Port}, from=0x{From:X8}, to=0x{To:X8}, channel={Channel}, flags=0x{Flags:X2}, teamKeyId=0x{TeamKeyId:X8}",
+                        globalAttemptIndex - 1,
+                        wire.Name,
+                        attempt.Portnum,
+                        attempt.From,
+                        attempt.To,
+                        attempt.Channel,
+                        (byte)attempt.Flags,
+                        attempt.TeamKeyId);
+                }
+
+                lastResult = await SendAppDataAsync(attempt, wire.IncludeTimestampField, cancellationToken);
+                WriteTeamAppDataTrace(
+                    lastResult == HostLinkErrorCode.Ok ? LogLevel.Information : LogLevel.Warning,
+                    "APPDATA_ACK",
+                    $"trace={traceId} attempt={globalAttemptIndex}/{totalAttemptCount} candidate={attemptIndex}/{attempts.Count} wire={wire.Name} ack={lastResult} {DescribeAppDataRequest(attempt)}");
+                if (lastResult == HostLinkErrorCode.Ok)
+                {
+                    WriteTeamAppDataTrace(
+                        LogLevel.Information,
+                        "APPDATA_TRACE_DONE",
+                        $"trace={traceId} result=Ok attemptsUsed={globalAttemptIndex} wire={wire.Name}");
+                    return lastResult;
+                }
+                if (lastResult != HostLinkErrorCode.InvalidParam)
+                {
+                    WriteTeamAppDataTrace(
+                        LogLevel.Warning,
+                        "APPDATA_TRACE_DONE",
+                        $"trace={traceId} result={lastResult} attemptsUsed={globalAttemptIndex} wire={wire.Name}");
+                    return lastResult;
+                }
+            }
+
+            if (wireIndex + 1 < wireFormats.Length)
+            {
+                WriteTeamAppDataTrace(
+                    LogLevel.Warning,
+                    "APPDATA_TX",
+                    $"trace={traceId} switching_wire_to={wireFormats[wireIndex + 1].Name} after {attempts.Count} InvalidParam ACKs on wire={wire.Name}");
+            }
+        }
+
+        WriteTeamAppDataTrace(
+            LogLevel.Warning,
+            "APPDATA_TRACE_DONE",
+            $"trace={traceId} result={lastResult} attemptsUsed={attempts.Count * wireFormats.Length}");
+        return lastResult;
+    }
+
+    private static List<AppDataSendRequest> BuildTeamAppDataCompatibilityAttempts(AppDataSendRequest original)
+    {
+        static string BuildSignature(AppDataSendRequest request)
+        {
+            return $"{request.Portnum}:{request.From}:{request.To}:{request.Channel}:{(byte)request.Flags}:{Convert.ToHexString(request.TeamId)}:{request.TeamKeyId}";
+        }
+
+        static AppDataSendRequest WithoutTeamMetadata(AppDataSendRequest request) => request with
+        {
+            Flags = 0,
+            TeamId = new byte[8],
+            TeamKeyId = 0,
+        };
+
+        var attempts = new List<AppDataSendRequest>();
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        void Add(AppDataSendRequest request)
+        {
+            if (seen.Add(BuildSignature(request)))
+            {
+                attempts.Add(request);
+            }
+        }
+
+        Add(original);
+        if (original.From != 0)
+        {
+            Add(original with { From = 0 });
+        }
+
+        if (original.To == 0)
+        {
+            Add(original with { To = uint.MaxValue });
+            if (original.From != 0)
+            {
+                Add(original with { To = uint.MaxValue, From = 0 });
+            }
+        }
+
+        if (original.Flags.HasFlag(HostLinkAppDataFlags.HasTeamMetadata))
+        {
+            var noMetadata = WithoutTeamMetadata(original);
+            Add(noMetadata);
+            if (original.From != 0)
+            {
+                Add(noMetadata with { From = 0 });
+            }
+
+            if (original.To == 0)
+            {
+                Add(noMetadata with { To = uint.MaxValue });
+                if (original.From != 0)
+                {
+                    Add(noMetadata with { To = uint.MaxValue, From = 0 });
+                }
+            }
+        }
+
+        return attempts;
+    }
+
+    private void WriteTeamAppDataTrace(LogLevel level, string code, string message)
+    {
+        _logStore.Add(new HostLinkLogEntry
+        {
+            Timestamp = DateTimeOffset.UtcNow,
+            Level = level,
+            Message = message,
+            RawCode = code,
+        });
+    }
+
+    private static string DescribeAppDataRequest(AppDataSendRequest request)
+    {
+        var teamId = request.TeamId is { Length: 8 } ? Convert.ToHexString(request.TeamId) : "INVALID";
+        return $"port={request.Portnum},from=0x{request.From:X8},to=0x{request.To:X8},ch={request.Channel},flags=0x{(byte)request.Flags:X2},teamId={teamId},teamKeyId=0x{request.TeamKeyId:X8},len={request.Payload?.Length ?? 0}";
+    }
+
+    private static string DescribeTeamPayload(byte[]? payload)
+    {
+        if (payload is null || payload.Length == 0)
+            return "empty";
+
+        var reader = new HostLinkSpanReader(payload);
+        if (!reader.TryReadByte(out var version) ||
+            !reader.TryReadByte(out var type) ||
+            !reader.TryReadUInt16(out var flags) ||
+            !reader.TryReadUInt32(out var msgId) ||
+            !reader.TryReadUInt32(out var ts) ||
+            !reader.TryReadUInt32(out var from))
+        {
+            var previewLen = Math.Min(payload.Length, 24);
+            return $"len={payload.Length},hex={Convert.ToHexString(payload.AsSpan(0, previewLen))}";
+        }
+
+        var typeLabel = type switch
+        {
+            1 => "Text",
+            2 => "Location",
+            3 => "Command",
+            _ => $"Type{type}",
+        };
+        return $"v={version},type={typeLabel}({type}),flags=0x{flags:X4},msgId=0x{msgId:X8},ts={ts},from=0x{from:X8},len={payload.Length}";
     }
 
     private async Task SendCommandAsync(HostLinkFrameType commandType, byte[] payload, CancellationToken cancellationToken)
@@ -266,16 +536,24 @@ public sealed class HostLinkClient : IAsyncDisposable
         }
     }
 
-    private async Task<HostLinkErrorCode> SendAppDataAsync(AppDataSendRequest request, CancellationToken cancellationToken)
+    private async Task<HostLinkErrorCode> SendAppDataAsync(
+        AppDataSendRequest request,
+        bool includeTimestampField,
+        CancellationToken cancellationToken)
     {
         var maxFrame = DeviceInfo?.Capabilities.MaxFrameLength ?? HostLinkConstants.DefaultMaxPayloadLength;
-        const int headerSize = 4 + 4 + 4 + 1 + 1 + 8 + 4 + 4 + 4 + 4 + 2;
+        const int baseHeaderSize = 4 + 4 + 4 + 1 + 1 + 8 + 4 + 4 + 4 + 2;
+        var headerSize = includeTimestampField ? baseHeaderSize + 4 : baseHeaderSize;
         var maxChunk = Math.Max(1, maxFrame - headerSize);
         var payload = request.Payload ?? Array.Empty<byte>();
 
         if (payload.Length == 0)
         {
-            var emptyPayload = HostLinkSerializer.BuildCmdTxAppDataPayload(request, 0, Array.Empty<byte>());
+            var emptyPayload = HostLinkSerializer.BuildCmdTxAppDataPayload(
+                request,
+                0,
+                Array.Empty<byte>(),
+                includeTimestampField);
             return await SendCommandWithAckAsync(HostLinkFrameType.CmdTxAppData, emptyPayload, cancellationToken);
         }
 
@@ -286,7 +564,11 @@ public sealed class HostLinkClient : IAsyncDisposable
             var chunkLen = Math.Min(maxChunk, payload.Length - offset);
             var chunk = new byte[chunkLen];
             Array.Copy(payload, offset, chunk, 0, chunkLen);
-            var cmdPayload = HostLinkSerializer.BuildCmdTxAppDataPayload(request, (uint)offset, chunk);
+            var cmdPayload = HostLinkSerializer.BuildCmdTxAppDataPayload(
+                request,
+                (uint)offset,
+                chunk,
+                includeTimestampField);
             lastResult = await SendCommandWithAckAsync(HostLinkFrameType.CmdTxAppData, cmdPayload, cancellationToken);
             if (lastResult != HostLinkErrorCode.Ok)
                 return lastResult;
@@ -324,7 +606,43 @@ public sealed class HostLinkClient : IAsyncDisposable
 
         DeviceInfo = await _helloTcs.Task.WaitAsync(TimeSpan.FromSeconds(3), cancellationToken);
         DeviceInfoReceived?.Invoke(this, DeviceInfo);
+        await SyncDeviceClockIfSupportedAsync(cancellationToken);
         _stateMachine.Transition(ConnectionState.Ready);
+    }
+
+    private async Task SyncDeviceClockIfSupportedAsync(CancellationToken cancellationToken)
+    {
+        var info = DeviceInfo;
+        if (info?.Capabilities.SupportsSetTime != true)
+            return;
+
+        var now = DateTimeOffset.UtcNow;
+        var payload = HostLinkSerializer.BuildCmdSetTimePayload(now);
+
+        try
+        {
+            var ack = await SendCommandWithAckAsync(HostLinkFrameType.CmdSetTime, payload, cancellationToken);
+            if (ack == HostLinkErrorCode.Ok)
+            {
+                _logger.LogInformation(
+                    "Device clock synchronized to {UtcTime:O} via CMD_SET_TIME",
+                    now);
+            }
+            else
+            {
+                _logger.LogWarning(
+                    "Device clock sync rejected by device: ACK={AckCode}",
+                    ack);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Device clock sync failed");
+        }
     }
 
     private async Task WriteAsync(byte[] bytes, CancellationToken cancellationToken)
@@ -625,6 +943,11 @@ public sealed class HostLinkClient : IAsyncDisposable
                     }
                 }
             }
+            foreach (var msg in decoded.Messages)
+            {
+                _sessionStore.AddMessage(msg);
+                MessageAdded?.Invoke(this, msg);
+            }
             foreach (var pos in decoded.Positions)
             {
                 _sessionStore.AddPositionUpdate(pos);
@@ -646,6 +969,14 @@ public sealed class HostLinkClient : IAsyncDisposable
     private void HandleTeamState(ReadOnlySpan<byte> payload)
     {
         var teamState = HostLinkSerializer.ParseTeamState(payload);
+        _logger.LogInformation(
+            "EV_TEAM_STATE decoded: flags=0x{Flags:X2}, keyId={KeyId}, lastEventSeq={LastEventSeq}, members={Members}, teamName={TeamName}",
+            teamState.Flags,
+            teamState.KeyId,
+            teamState.LastEventSeq,
+            teamState.Members.Count,
+            teamState.TeamName);
+        CacheTeamContext(teamState);
         _sessionStore.AddEvent(teamState);
         EventReceived?.Invoke(this, teamState);
         _sessionStore.SetTeamState(teamState);
@@ -658,12 +989,107 @@ public sealed class HostLinkClient : IAsyncDisposable
             return;
         if (app.TeamId.Length != 8 || app.TeamId.All(b => b == 0))
             return;
+
+        var changed = false;
         lock (_gate)
         {
-            app.TeamId.CopyTo(_teamId, 0);
-            _teamKeyId = app.TeamKeyId;
-            _teamChannel = app.Channel;
-            _hasTeamContext = true;
+            if (!_hasTeamContext ||
+                !_teamId.AsSpan().SequenceEqual(app.TeamId) ||
+                _teamKeyId != app.TeamKeyId ||
+                _teamChannel != app.Channel)
+            {
+                app.TeamId.CopyTo(_teamId, 0);
+                _teamKeyId = app.TeamKeyId;
+                _teamChannel = app.Channel;
+                _hasTeamContext = true;
+                changed = true;
+            }
+        }
+
+        if (changed)
+        {
+            TeamContextChanged?.Invoke(this, EventArgs.Empty);
+        }
+    }
+
+    private void CacheTeamContext(TeamStateEvent teamState)
+    {
+        var hasTeamId = teamState.TeamId.Length == 8 && teamState.TeamId.Any(b => b != 0);
+        var inTeam =
+            (teamState.Flags & TeamStateFlagInTeam) != 0 ||
+            (teamState.Flags & TeamStateFlagPendingJoin) != 0 ||
+            (teamState.Flags & TeamStateFlagHasTeamId) != 0 ||
+            hasTeamId ||
+            teamState.KeyId != 0;
+
+        var changed = false;
+        lock (_gate)
+        {
+            if (!inTeam)
+            {
+                if (_hasTeamContext || _teamKeyId != 0 || _teamChannel != 0 || _teamSelfId != 0 || _teamId.Any(b => b != 0))
+                {
+                    Array.Clear(_teamId, 0, _teamId.Length);
+                    _teamKeyId = 0;
+                    _teamChannel = 0;
+                    _hasTeamContext = false;
+                    _teamSelfId = 0;
+                    changed = true;
+                }
+            }
+            else
+            {
+                if (teamState.SelfId != 0 && _teamSelfId != teamState.SelfId)
+                {
+                    _teamSelfId = teamState.SelfId;
+                    changed = true;
+                }
+
+                if (hasTeamId && !_teamId.AsSpan().SequenceEqual(teamState.TeamId))
+                {
+                    teamState.TeamId.CopyTo(_teamId, 0);
+                    changed = true;
+                }
+
+                if (_teamKeyId != teamState.KeyId)
+                {
+                    _teamKeyId = teamState.KeyId;
+                    changed = true;
+                }
+
+                if (!_hasTeamContext && (hasTeamId || teamState.KeyId != 0))
+                {
+                    _hasTeamContext = true;
+                    changed = true;
+                }
+            }
+        }
+
+        if (changed)
+        {
+            TeamContextChanged?.Invoke(this, EventArgs.Empty);
+        }
+    }
+
+    private void ResetTeamContext(bool notify)
+    {
+        var changed = false;
+        lock (_gate)
+        {
+            if (_hasTeamContext || _teamKeyId != 0 || _teamChannel != 0 || _teamSelfId != 0 || _teamId.Any(b => b != 0))
+            {
+                Array.Clear(_teamId, 0, _teamId.Length);
+                _teamKeyId = 0;
+                _teamChannel = 0;
+                _hasTeamContext = false;
+                _teamSelfId = 0;
+                changed = true;
+            }
+        }
+
+        if (notify && changed)
+        {
+            TeamContextChanged?.Invoke(this, EventArgs.Empty);
         }
     }
 
@@ -792,6 +1218,117 @@ public sealed class HostLinkClient : IAsyncDisposable
     private static bool IsBroadcastDestination(uint? toId)
     {
         return !toId.HasValue || toId.Value == 0 || toId.Value == uint.MaxValue;
+    }
+
+    private (bool HasTeamContext, byte[] TeamId, uint TeamKeyId, byte Channel, uint FromId) ResolveOutboundTeamContext(
+        byte requestedChannel,
+        string? teamConversationKey)
+    {
+        var channel = requestedChannel;
+        var hasContext = false;
+        var teamId = new byte[8];
+        var teamKeyId = 0u;
+        var fromId = 0u;
+
+        lock (_gate)
+        {
+            hasContext = _hasTeamContext;
+            fromId = _teamSelfId;
+            if (hasContext)
+            {
+                _teamId.CopyTo(teamId, 0);
+                teamKeyId = _teamKeyId;
+                if (channel == 0 && _teamChannel != 0)
+                {
+                    channel = _teamChannel;
+                }
+            }
+        }
+
+        if (!hasContext &&
+            TryParseTeamConversationKey(teamConversationKey, out var parsedTeamId, out var parsedTeamKeyId))
+        {
+            hasContext = true;
+            teamId = parsedTeamId;
+            teamKeyId = parsedTeamKeyId;
+        }
+
+        return (hasContext, teamId, teamKeyId, channel, fromId);
+    }
+
+    private static bool TryParseTeamConversationKey(string? key, out byte[] teamId, out uint teamKeyId)
+    {
+        teamId = new byte[8];
+        teamKeyId = 0;
+
+        if (string.IsNullOrWhiteSpace(key))
+            return false;
+
+        var trimmed = key.Trim();
+        if (string.Equals(trimmed, "DEFAULT", StringComparison.OrdinalIgnoreCase))
+            return false;
+
+        if (trimmed.StartsWith("KEY:", StringComparison.OrdinalIgnoreCase))
+        {
+            var keyHex = trimmed[4..];
+            if (uint.TryParse(keyHex, System.Globalization.NumberStyles.HexNumber, null, out var parsedKey))
+            {
+                teamKeyId = parsedKey;
+                return true;
+            }
+
+            return false;
+        }
+
+        var splitIndex = trimmed.IndexOf(':');
+        if (splitIndex <= 0 || splitIndex >= trimmed.Length - 1)
+            return false;
+
+        var teamHex = trimmed[..splitIndex];
+        var keyPart = trimmed[(splitIndex + 1)..];
+        if (teamHex.Length != 16)
+            return false;
+        if (!uint.TryParse(keyPart, System.Globalization.NumberStyles.HexNumber, null, out var parsedTeamKeyId))
+            return false;
+
+        try
+        {
+            var parsedTeamId = Convert.FromHexString(teamHex);
+            if (parsedTeamId.Length != 8)
+                return false;
+            parsedTeamId.CopyTo(teamId, 0);
+            teamKeyId = parsedTeamKeyId;
+            return true;
+        }
+        catch (FormatException)
+        {
+            return false;
+        }
+    }
+
+    private static string BuildTeamConversationKeyForOutbound(
+        bool hasTeamContext,
+        byte[] teamId,
+        uint teamKeyId,
+        string? fallbackKey)
+    {
+        if (hasTeamContext)
+        {
+            if (teamId.Length == 8 && teamId.Any(b => b != 0))
+            {
+                return $"{Convert.ToHexString(teamId)}:{teamKeyId:X8}";
+            }
+
+            if (teamKeyId != 0)
+            {
+                return $"KEY:{teamKeyId:X8}";
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(fallbackKey))
+            return fallbackKey.Trim();
+
+        return "DEFAULT";
     }
 
     private IHostLinkTransport CreateTransport(TransportEndpoint endpoint)

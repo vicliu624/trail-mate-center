@@ -5,6 +5,7 @@ namespace TrailMateCenter.Models;
 public sealed record AppDataSendRequest
 {
     public uint Portnum { get; init; }
+    public uint From { get; init; }
     public uint To { get; init; }
     public byte Channel { get; init; }
     public HostLinkAppDataFlags Flags { get; init; }

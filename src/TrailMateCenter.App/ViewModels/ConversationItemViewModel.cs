@@ -6,19 +6,29 @@ namespace TrailMateCenter.ViewModels;
 
 public sealed partial class ConversationItemViewModel : ObservableObject, ILocalizationAware
 {
-    public ConversationItemViewModel(string key, bool isBroadcast, uint? peerId, byte channelId)
+    public ConversationItemViewModel(
+        string key,
+        bool isBroadcast,
+        uint? peerId,
+        byte channelId,
+        bool isTeamChat = false,
+        string? teamConversationKey = null)
     {
         Key = key;
         IsBroadcast = isBroadcast;
         PeerId = peerId;
         ChannelId = channelId;
+        IsTeamChat = isTeamChat;
+        TeamConversationKey = teamConversationKey ?? string.Empty;
         PeerLabel = peerId.HasValue ? $"0x{peerId.Value:X8}" : string.Empty;
     }
 
     public string Key { get; }
     public bool IsBroadcast { get; }
+    public bool IsTeamChat { get; }
     public uint? PeerId { get; }
     public byte ChannelId { get; }
+    public string TeamConversationKey { get; }
     public string PeerLabel { get; private set; }
 
     [ObservableProperty]
@@ -68,6 +78,11 @@ public sealed partial class ConversationItemViewModel : ObservableObject, ILocal
     private string BuildTitle()
     {
         var loc = LocalizationService.Instance;
+        if (IsTeamChat)
+        {
+            return loc.GetString("Chat.Team");
+        }
+
         if (IsBroadcast)
         {
             return loc.GetString("Chat.Broadcast");
@@ -89,6 +104,11 @@ public sealed partial class ConversationItemViewModel : ObservableObject, ILocal
     private string BuildSubtitle()
     {
         var loc = LocalizationService.Instance;
+        if (IsTeamChat)
+        {
+            return loc.Format("Chat.TeamSubtitle", ChannelId);
+        }
+
         if (IsBroadcast)
         {
             return loc.Format("Common.ChannelFormat", ChannelId);

@@ -49,6 +49,7 @@
   <x:String x:Key="Ui.Chat.Telemetry">Telemetry</x:String>
 
   <x:String x:Key="Ui.Dashboard.Team">Team</x:String>
+  <x:String x:Key="Ui.Dashboard.Team.StartChat">Start Chat</x:String>
   <x:String x:Key="Ui.Dashboard.NoTeams">No teams</x:String>
   <x:String x:Key="Ui.Dashboard.NodeList">Nodes</x:String>
   <x:String x:Key="Ui.Dashboard.Cluster">Cluster</x:String>
@@ -117,6 +118,7 @@
   <x:String x:Key="Ui.Dashboard.Filter.Info">INFO</x:String>
   <x:String x:Key="Ui.Dashboard.Filter.Warn">WARN</x:String>
   <x:String x:Key="Ui.Dashboard.Filter.Crit">CRIT</x:String>
+  <x:String x:Key="Ui.Dashboard.Filter.TeamOnly">Team only</x:String>
   <x:String x:Key="Ui.Dashboard.Command.RallyTo">Rally</x:String>
   <x:String x:Key="Ui.Dashboard.Command.MoveTo">Move</x:String>
   <x:String x:Key="Ui.Dashboard.Command.Hold">Hold</x:String>
@@ -229,6 +231,10 @@
   <x:String x:Key="Error.DeviceNotConnected">Device not connected</x:String>
   <x:String x:Key="Error.MissingTargetLocation">Missing target location (select event or member position)</x:String>
   <x:String x:Key="Error.TeamPosition.NoTeam">No active team is available for TEAM Position post</x:String>
+  <x:String x:Key="Error.TeamChat.NoTeam">No active team is available for Team Chat send</x:String>
+  <x:String x:Key="Error.TeamChat.NoContext">Team security context (team_id/key_id) is not ready yet. Wait for team state sync from device.</x:String>
+  <x:String x:Key="Error.TeamChat.Unsupported">Device firmware does not support Team Chat send (CMD_TX_APPDATA missing)</x:String>
+  <x:String x:Key="Error.TeamChat.SendFailed">Team Chat send failed: {0}</x:String>
   <x:String x:Key="Error.OfflineCacheExportFolderPickerUnavailable">Folder picker is unavailable in current environment</x:String>
   <x:String x:Key="Error.OfflineCacheExportLocalPathUnavailable">Selected folder is not a local path</x:String>
 
@@ -317,9 +323,11 @@
   <x:String x:Key="Status.Port.InfoUnknown">Device info unavailable</x:String>
 
   <x:String x:Key="Chat.Broadcast">Broadcast</x:String>
+  <x:String x:Key="Chat.Team">Team Chat</x:String>
   <x:String x:Key="Chat.WithPeer">With {0}</x:String>
   <x:String x:Key="Chat.Private">Direct chat</x:String>
   <x:String x:Key="Chat.ConversationSubtitle">{0} | Channel {1}</x:String>
+  <x:String x:Key="Chat.TeamSubtitle">Encrypted team session | Channel {0}</x:String>
 
   <x:String x:Key="Event.FromIsTag">From IS</x:String>
   <x:String x:Key="Event.RxMeta">RX Meta: {0}</x:String>

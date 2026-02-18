@@ -11,6 +11,8 @@ namespace TrailMateCenter.ViewModels;
 
 public sealed partial class MessageItemViewModel : ObservableObject, ILocalizationAware
 {
+    private const double DefaultLocationPreviewHeight = 96;
+    private const double TeamLocationPreviewHeight = 148;
     private readonly Action<MessageItemViewModel>? _jumpToMapAction;
     private static readonly int[] PreviewZoomCandidates = [18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8];
     private static readonly string[] PreviewCacheLayers = ["tilecache", "terrain-cache", "satellite-cache"];
@@ -64,6 +66,13 @@ public sealed partial class MessageItemViewModel : ObservableObject, ILocalizati
 
     [ObservableProperty]
     private bool _isBroadcast;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(LocationPreviewHeight))]
+    private bool _isTeamChat;
+
+    [ObservableProperty]
+    private string _teamConversationKey = string.Empty;
 
     [ObservableProperty]
     private MessageDeliveryStatus _status;
@@ -216,6 +225,7 @@ public sealed partial class MessageItemViewModel : ObservableObject, ILocalizati
     private double? _altitude;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(LocationPreviewHeight))]
     private bool _hasLocation;
 
     [ObservableProperty]
@@ -248,6 +258,10 @@ public sealed partial class MessageItemViewModel : ObservableObject, ILocalizati
     [ObservableProperty]
     private string _mediaTypeColor = "#9AA3AE";
 
+    public double LocationPreviewHeight => IsTeamChat && HasLocation
+        ? TeamLocationPreviewHeight
+        : DefaultLocationPreviewHeight;
+
     public IRelayCommand JumpToMapCommand { get; }
 
     partial void OnFromChanged(string value)
@@ -278,6 +292,8 @@ public sealed partial class MessageItemViewModel : ObservableObject, ILocalizati
         ToId = entry.ToId;
         ChannelId = entry.ChannelId;
         IsBroadcast = IsBroadcastDestination(entry.ToId);
+        IsTeamChat = entry.IsTeamChat;
+        TeamConversationKey = entry.TeamConversationKey ?? string.Empty;
         Text = entry.Text;
         Status = entry.Status;
         ErrorMessage = entry.ErrorMessage;
@@ -383,6 +399,11 @@ public sealed partial class MessageItemViewModel : ObservableObject, ILocalizati
 
     private string BuildTitle()
     {
+        if (Direction == MessageDirection.Outgoing && IsTeamChat)
+        {
+            return LocalizationService.Instance.Format("Status.Message.MeTo", LocalizationService.Instance.GetString("Chat.Team"));
+        }
+
         return Direction == MessageDirection.Outgoing
             ? LocalizationService.Instance.Format("Status.Message.MeTo", To)
             : From;

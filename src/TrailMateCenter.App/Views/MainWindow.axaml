@@ -53,6 +53,10 @@
                     <Button Content="{DynamicResource Ui.Main.RefreshPorts}" Command="{Binding RefreshPortsCommand}"/>
                     <Button Content="{DynamicResource Ui.Main.Connect}" Command="{Binding ConnectCommand}"/>
                     <Button Content="{DynamicResource Ui.Main.Disconnect}" Command="{Binding DisconnectCommand}"/>
+                    <CheckBox Content="{DynamicResource Ui.Dashboard.OfflineMode}"
+                              IsChecked="{Binding OfflineMode}"
+                              Foreground="{DynamicResource AccentWarn}"
+                              ToolTip.Tip="{DynamicResource Ui.Dashboard.OfflineModeHint}"/>
                     <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
                         <TextBlock Text="{DynamicResource Ui.Main.Language}" Foreground="{DynamicResource TextDim}" FontSize="11"/>
                         <ComboBox Width="90"

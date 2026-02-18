@@ -71,7 +71,7 @@
           <Grid RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="4">
             <TextBlock Text="{Binding LocationPreviewTitle}" Foreground="#93C5FD" FontSize="10" FontWeight="Bold"/>
             <Border Grid.Row="1"
-                    Height="96"
+                    Height="{Binding LocationPreviewHeight}"
                     CornerRadius="4"
                     BorderThickness="1"
                     BorderBrush="#406A93"

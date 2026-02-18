@@ -20,6 +20,9 @@ namespace TrailMateCenter.ViewModels;
 
 public sealed partial class MainWindowViewModel : ViewModelBase
 {
+    private const byte TeamStateFlagInTeam = 1 << 0;
+    private const byte TeamStateFlagPendingJoin = 1 << 1;
+    private const byte TeamStateFlagHasTeamId = 1 << 4;
     private const int DashboardTabIndex = 0;
     private const int ChatTabIndex = 1;
     private const int LogsTabIndex = 3;
@@ -90,6 +93,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     private bool _autoConnectBusy;
     private DateTimeOffset _lastAutoConnectAttempt = DateTimeOffset.MinValue;
     private readonly HashSet<string> _knownPortNames = new(StringComparer.OrdinalIgnoreCase);
+    private readonly List<TacticalEventViewModel> _allTacticalEvents = new();
     private string? _lastHotplugPortName;
     private readonly HashSet<uint> _subjectListeners = new();
     private uint? _selfNodeId;
@@ -99,6 +103,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     private AprsIsStatus? _lastAprsStatus;
     private AprsGatewayStats? _lastAprsStats;
     private TeamStateEvent? _lastTeamState;
+    private bool _teamStateSeenInCurrentConnection;
     private string? _lastErrorKey;
     private object[] _lastErrorArgs = Array.Empty<object>();
     private string? _earthdataStatusKey;
@@ -168,6 +173,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         _client.PositionUpdated += OnPositionUpdated;
         _client.NodeInfoUpdated += OnNodeInfoUpdated;
         _client.TeamStateUpdated += OnTeamStateUpdated;
+        _client.TeamContextChanged += OnTeamContextChanged;
         _client.TacticalEventReceived += OnTacticalEventReceived;
         _meshtasticMqtt.MessageReceived += OnMqttMessageReceived;
         _meshtasticMqtt.PositionReceived += OnMqttPositionReceived;
@@ -391,6 +397,9 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     private TacticalEventViewModel? _selectedTacticalEvent;
 
     [ObservableProperty]
+    private bool _showTeamEventsOnly;
+
+    [ObservableProperty]
     private string _quickMessageText = string.Empty;
 
     [ObservableProperty]
@@ -491,8 +500,8 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     public bool CanExportSelectedOfflineCacheRegion => SelectedOfflineCacheRegion is not null &&
                                                       !Map.IsOfflineCacheRunning &&
                                                       !IsOfflineCacheExporting;
-    public bool HasTeams => Teams.Count > 0;
-    public bool HasNoTeams => Teams.Count == 0;
+    public bool HasTeams => Teams.Count > 0 || HasAnyTeamSignal();
+    public bool HasNoTeams => Teams.Count == 0 && IsConfirmedNotInTeam();
     public bool SupportsTeamAppPosting => _client.SupportsTxAppDataCommand;
 
     public IAsyncRelayCommand RefreshPortsCommand { get; }
@@ -1978,6 +1987,12 @@ public sealed partial class MainWindowViewModel : ViewModelBase
 
     private async Task SendAsync()
     {
+        if (SelectedConversation?.IsTeamChat == true)
+        {
+            await SendTeamChatAsync();
+            return;
+        }
+
         if (!TryParseNodeId(Target, out var toId))
         {
             SetLastErrorLocalized("Error.InvalidTargetFormat");
@@ -1994,6 +2009,36 @@ public sealed partial class MainWindowViewModel : ViewModelBase
 
         await _client.SendMessageAsync(request, CancellationToken.None);
         OutgoingText = string.Empty;
+    }
+
+    private async Task SendTeamChatAsync()
+    {
+        var channel = SelectedConversation?.ChannelId ?? SelectedChannel?.Id ?? (byte)0;
+        var result = await _client.SendTeamTextAsync(
+            OutgoingText,
+            to: null,
+            channel,
+            SelectedConversation?.TeamConversationKey,
+            CancellationToken.None);
+        if (result == HostLinkErrorCode.Ok)
+        {
+            OutgoingText = string.Empty;
+            return;
+        }
+
+        if (result == HostLinkErrorCode.Unsupported)
+        {
+            SetLastErrorLocalized("Error.TeamChat.Unsupported");
+            return;
+        }
+
+        if (result == HostLinkErrorCode.NotInMode)
+        {
+            SetLastErrorLocalized("Error.TeamChat.NoContext");
+            return;
+        }
+
+        SetLastErrorLocalized("Error.TeamChat.SendFailed", result);
     }
 
     private bool CanQuickSend()
@@ -2092,7 +2137,11 @@ public sealed partial class MainWindowViewModel : ViewModelBase
 
         SelectedChannel = EnsureChannelOption(value.ChannelId);
 
-        if (value.IsBroadcast)
+        if (value.IsTeamChat)
+        {
+            Target = string.Empty;
+        }
+        else if (value.IsBroadcast)
         {
             Target = "0";
         }
@@ -2145,6 +2194,11 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         {
             SelectedSubject = Subjects.FirstOrDefault(s => s.Id == value.SubjectId.Value) ?? SelectedSubject;
         }
+    }
+
+    partial void OnShowTeamEventsOnlyChanged(bool value)
+    {
+        ApplyTacticalEventFilters();
     }
 
     partial void OnSelectedSubjectChanged(SubjectViewModel? value)
@@ -2231,6 +2285,12 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         RemoveMqttSourceCommand.NotifyCanExecuteChanged();
     }
 
+    partial void OnIsConnectedChanged(bool value)
+    {
+        OnPropertyChanged(nameof(HasTeams));
+        OnPropertyChanged(nameof(HasNoTeams));
+    }
+
     partial void OnSelectedOfflineCacheRegionChanged(MapCacheRegionViewModel? value)
     {
         ApplyOfflineCacheRegionCommand.NotifyCanExecuteChanged();
@@ -2256,6 +2316,21 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     {
         Dispatcher.UIThread.Post(() =>
         {
+            IsConnected = args.NewState == ConnectionState.Ready;
+
+            if (args.NewState == ConnectionState.Ready && args.OldState != ConnectionState.Ready)
+            {
+                _lastTeamState = null;
+                _teamStateSeenInCurrentConnection = false;
+                RebuildTeamLists();
+            }
+            else if (args.NewState != ConnectionState.Ready && args.OldState == ConnectionState.Ready)
+            {
+                _lastTeamState = null;
+                _teamStateSeenInCurrentConnection = false;
+                RebuildTeamLists();
+            }
+
             var loc = LocalizationService.Instance;
             ConnectionStateText = args.NewState switch
             {
@@ -2267,7 +2342,6 @@ public sealed partial class MainWindowViewModel : ViewModelBase
                 _ => loc.GetString("Status.Connection.Disconnected"),
             };
             SetLastError(args.Reason ?? string.Empty);
-            IsConnected = args.NewState == ConnectionState.Ready;
             ConnectCommand.NotifyCanExecuteChanged();
             DisconnectCommand.NotifyCanExecuteChanged();
             SendCommand.NotifyCanExecuteChanged();
@@ -2346,7 +2420,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             return;
 
         SelectedTabIndex = DashboardTabIndex;
-        Map.FocusOn(message.Latitude.Value, message.Longitude.Value);
+        Map.FocusOn(message.Latitude.Value, message.Longitude.Value, minZoomLevel: 13);
     }
 
     private MessageEntry EnrichMessageForPreview(MessageEntry entry)
@@ -2537,7 +2611,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             targetLon);
         var vm = new TacticalEventViewModel(ev);
         ApplySeverityOverride(vm);
-        TacticalEvents.Insert(0, vm);
+        AddTacticalEvent(vm);
 
         try
         {
@@ -2599,7 +2673,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             latitude,
             longitude));
         ApplySeverityOverride(vm);
-        TacticalEvents.Insert(0, vm);
+        AddTacticalEvent(vm);
 
         try
         {
@@ -2659,7 +2733,14 @@ public sealed partial class MainWindowViewModel : ViewModelBase
                                 update.TeamLocationMarkerRaw.GetValueOrDefault() > 0
                 ? TimeSpan.FromSeconds(10)
                 : (TimeSpan?)null;
-            Map.AddWaypoint(normalizedId, update.Latitude, update.Longitude, markerLabel, source, pulseDuration);
+            Map.AddWaypoint(
+                normalizedId,
+                update.Latitude,
+                update.Longitude,
+                markerLabel,
+                source,
+                pulseDuration,
+                update.TeamLocationMarker);
         }
         else
         {
@@ -2808,7 +2889,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         {
             var vm = new TacticalEventViewModel(ev);
             ApplySeverityOverride(vm);
-            TacticalEvents.Insert(0, vm);
+            AddTacticalEvent(vm);
             if (ev.SubjectId.HasValue)
             {
                 var normalizedId = NormalizeNodeId(ev.SubjectId.Value);
@@ -2873,6 +2954,35 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     {
         EnsureChannelOption(entry.ChannelId);
 
+        if (entry.IsTeamChat)
+        {
+            var teamKey = string.IsNullOrWhiteSpace(entry.TeamConversationKey)
+                ? "DEFAULT"
+                : entry.TeamConversationKey;
+            var teamConversationId = $"TEAM:{teamKey}";
+            var teamConversation = Conversations.FirstOrDefault(c => c.Key == teamConversationId);
+            if (teamConversation is null)
+            {
+                teamConversation = new ConversationItemViewModel(
+                    teamConversationId,
+                    isBroadcast: false,
+                    peerId: null,
+                    channelId: entry.ChannelId,
+                    isTeamChat: true,
+                    teamConversationKey: teamKey);
+            }
+
+            teamConversation.UpdateFrom(entry);
+            MoveConversationToPreferredPosition(teamConversation);
+
+            if (SelectedConversation is null)
+            {
+                SelectedConversation = teamConversation;
+            }
+
+            return teamConversation;
+        }
+
         var isBroadcast = IsBroadcastDestination(entry.ToId);
         var peerId = isBroadcast
             ? (uint?)null
@@ -2884,14 +2994,12 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         if (existing is null)
         {
             existing = new ConversationItemViewModel(key, isBroadcast, peerId, channelId);
-            Conversations.Insert(0, existing);
         }
 
         var label = peerId.HasValue ? ResolvePeerLabel(peerId.Value) : null;
         existing.UpdateFrom(entry, label);
 
-        Conversations.Remove(existing);
-        Conversations.Insert(0, existing);
+        MoveConversationToPreferredPosition(existing);
 
         if (SelectedConversation is null)
         {
@@ -2899,6 +3007,14 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         }
 
         return existing;
+    }
+
+    private void MoveConversationToPreferredPosition(ConversationItemViewModel conversation)
+    {
+        Conversations.Remove(conversation);
+        var pinnedTeamCount = Conversations.Count(c => c.IsTeamChat);
+        var insertIndex = conversation.IsTeamChat ? 0 : pinnedTeamCount;
+        Conversations.Insert(insertIndex, conversation);
     }
 
     private void ClearConversationUnread(ConversationItemViewModel conversation)
@@ -3042,7 +3158,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         {
             var vm = new TacticalEventViewModel(ev);
             ApplySeverityOverride(vm);
-            TacticalEvents.Add(vm);
+            AddTacticalEvent(vm, appendToTail: true);
             if (ev.Kind == TacticalEventKind.Telemetry && ev.SubjectId.HasValue)
             {
                 var subject = Subjects.FirstOrDefault(s => s.Id == ev.SubjectId.Value);
@@ -3065,7 +3181,12 @@ public sealed partial class MainWindowViewModel : ViewModelBase
                 var markerLabel = update.Source == PositionSource.TeamWaypointApp
                     ? update.Label
                     : BuildTeamLocationWaypointLabel(update);
-                Map.AddWaypoint(normalizedId, update.Latitude, update.Longitude, markerLabel);
+                Map.AddWaypoint(
+                    normalizedId,
+                    update.Latitude,
+                    update.Longitude,
+                    markerLabel,
+                    teamLocationMarker: update.TeamLocationMarker);
             }
             else
             {
@@ -3231,7 +3352,23 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     private void OnTeamStateUpdated(object? sender, TeamStateEvent state)
     {
         _lastTeamState = state;
+        _teamStateSeenInCurrentConnection = true;
+        _logger.LogInformation(
+            "Team state updated: flags=0x{Flags:X2}, keyId={KeyId}, lastEventSeq={LastEventSeq}, members={Members}, teamName={TeamName}",
+            state.Flags,
+            state.KeyId,
+            state.LastEventSeq,
+            state.Members.Count,
+            state.TeamName);
         Dispatcher.UIThread.Post(() => ApplyTeamState(state));
+    }
+
+    private void OnTeamContextChanged(object? sender, EventArgs e)
+    {
+        Dispatcher.UIThread.Post(() =>
+        {
+            RebuildTeamLists();
+        });
     }
 
     private void ApplyTeamState(TeamStateEvent state)
@@ -3334,8 +3471,36 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         }
     }
 
+    public void StartChatWithSubject(SubjectViewModel? subject)
+    {
+        if (subject is null || subject.Id == 0)
+            return;
+
+        var existing = Subjects.FirstOrDefault(s => s.Id == subject.Id);
+        if (existing is null)
+        {
+            existing = subject;
+            Subjects.Add(existing);
+            EnsureSubjectTracked(existing);
+            RebuildTeamLists();
+        }
+
+        SelectedSubject = existing;
+        SetTargetToSelectedSubject();
+        SelectedTabIndex = ChatTabIndex;
+    }
+
     private static bool MatchesConversation(MessageItemViewModel message, ConversationItemViewModel conversation)
     {
+        if (conversation.IsTeamChat)
+        {
+            var teamKey = string.IsNullOrWhiteSpace(message.TeamConversationKey)
+                ? "DEFAULT"
+                : message.TeamConversationKey;
+            return message.IsTeamChat &&
+                   string.Equals(teamKey, conversation.TeamConversationKey, StringComparison.Ordinal);
+        }
+
         if (conversation.IsBroadcast)
         {
             return message.IsBroadcast && message.ChannelId == conversation.ChannelId;
@@ -3460,10 +3625,62 @@ public sealed partial class MainWindowViewModel : ViewModelBase
 
     private void ApplySeverityOverrides(TacticalEventKind kind, TacticalSeverity severity)
     {
-        foreach (var ev in TacticalEvents.Where(e => e.Kind == kind))
+        foreach (var ev in _allTacticalEvents.Where(e => e.Kind == kind))
         {
             ev.ApplySeverity(severity);
         }
+    }
+
+    private void AddTacticalEvent(TacticalEventViewModel ev, bool appendToTail = false)
+    {
+        if (appendToTail)
+        {
+            _allTacticalEvents.Add(ev);
+            if (MatchesTacticalEventFilter(ev))
+                TacticalEvents.Add(ev);
+        }
+        else
+        {
+            _allTacticalEvents.Insert(0, ev);
+            if (MatchesTacticalEventFilter(ev))
+                TacticalEvents.Insert(0, ev);
+        }
+    }
+
+    private void ApplyTacticalEventFilters()
+    {
+        TacticalEvents.Clear();
+        foreach (var ev in _allTacticalEvents)
+        {
+            if (MatchesTacticalEventFilter(ev))
+            {
+                TacticalEvents.Add(ev);
+            }
+        }
+
+        if (SelectedTacticalEvent is not null && !TacticalEvents.Contains(SelectedTacticalEvent))
+        {
+            SelectedTacticalEvent = TacticalEvents.FirstOrDefault();
+        }
+    }
+
+    private bool MatchesTacticalEventFilter(TacticalEventViewModel ev)
+    {
+        if (!ShowTeamEventsOnly)
+            return true;
+
+        return IsTeamTacticalKind(ev.Kind);
+    }
+
+    private static bool IsTeamTacticalKind(TacticalEventKind kind)
+    {
+        return kind == TacticalEventKind.ChatText ||
+               kind == TacticalEventKind.ChatLocation ||
+               kind == TacticalEventKind.CommandIssued ||
+               kind == TacticalEventKind.TrackUpdate ||
+               kind == TacticalEventKind.TeamMgmt ||
+               kind == TacticalEventKind.PositionUpdate ||
+               kind == TacticalEventKind.Waypoint;
     }
 
     private void ApplySeverityOverride(TacticalEventViewModel ev)
@@ -3531,6 +3748,14 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             Teams.Add(new TeamGroupViewModel(group.Key, members, SelectedSubject));
         }
 
+        if (Teams.Count == 0 && HasAnyTeamSignal())
+        {
+            var fallbackName = _lastTeamState is not null
+                ? ResolveDisplayTeamName(_lastTeamState)
+                : LocalizationService.Instance.GetString("Status.Team.Untitled");
+            Teams.Add(new TeamGroupViewModel(fallbackName, Array.Empty<SubjectViewModel>(), SelectedSubject));
+        }
+
         foreach (var subject in Subjects.Where(s => string.IsNullOrWhiteSpace(s.TeamName))
                      .OrderBy(s => s.DisplayName, StringComparer.OrdinalIgnoreCase))
         {
@@ -3539,5 +3764,46 @@ public sealed partial class MainWindowViewModel : ViewModelBase
 
         OnPropertyChanged(nameof(HasTeams));
         OnPropertyChanged(nameof(HasNoTeams));
+    }
+
+    private bool HasAnyTeamSignal()
+    {
+        return IsInTeamMode(_lastTeamState) || _client.HasTeamContext;
+    }
+
+    private bool IsConfirmedNotInTeam()
+    {
+        return !IsConnected &&
+               !HasAnyTeamSignal() &&
+               _teamStateSeenInCurrentConnection &&
+               _lastTeamState is not null &&
+               !IsInTeamMode(_lastTeamState);
+    }
+
+    private static bool IsInTeamMode(TeamStateEvent? state)
+    {
+        if (state is null)
+            return false;
+        var flags = state.Flags;
+        if ((flags & TeamStateFlagInTeam) != 0)
+            return true;
+        if ((flags & TeamStateFlagPendingJoin) != 0)
+            return true;
+        if ((flags & TeamStateFlagHasTeamId) != 0)
+            return true;
+        if (!string.IsNullOrWhiteSpace(state.TeamName))
+            return true;
+        if (state.KeyId != 0)
+            return true;
+        if (state.LastEventSeq != 0)
+            return true;
+        return state.TeamId.Any(b => b != 0);
+    }
+
+    private static string ResolveDisplayTeamName(TeamStateEvent state)
+    {
+        if (!string.IsNullOrWhiteSpace(state.TeamName))
+            return state.TeamName;
+        return LocalizationService.Instance.GetString("Status.Team.Untitled");
     }
 }

@@ -80,7 +80,7 @@ public sealed record MeshtasticMqttSettings
 public sealed record MeshtasticMqttSourceSettings
 {
     public string Id { get; init; } = Guid.NewGuid().ToString("N");
-    public bool Enabled { get; init; } = true;
+    public bool Enabled { get; init; }
     public string Name { get; init; } = "Meshtastic CN";
     public string Host { get; init; } = "mqtt.mess.host";
     public int Port { get; init; } = 1883;

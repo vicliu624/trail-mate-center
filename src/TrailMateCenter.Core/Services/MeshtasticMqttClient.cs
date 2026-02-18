@@ -2,6 +2,7 @@ using System.Text;
 using System.Text.Json;
 using System.Buffers.Binary;
 using System.Security.Cryptography;
+using System.Net.Sockets;
 using Google.Protobuf;
 using Meshtastic.Protobufs;
 using Microsoft.Extensions.Logging;
@@ -16,6 +17,7 @@ namespace TrailMateCenter.Services;
 
 public sealed class MeshtasticMqttClient : IAsyncDisposable
 {
+    private const string DefaultPlaceholderHost = "mqtt.mess.host";
     private static readonly byte[] DefaultLongFastPsk =
     [
         0xD4, 0xF1, 0xBB, 0x3A, 0x20, 0x29, 0x07, 0x59,
@@ -106,8 +108,24 @@ public sealed class MeshtasticMqttClient : IAsyncDisposable
             if (!_started)
                 return;
 
-            var enabledSources = _settings.Sources
+            var normalizedSources = _settings.Sources
                 .Select(NormalizeSource)
+                .ToList();
+
+            var placeholderSources = normalizedSources
+                .Where(source => source.Enabled &&
+                                 string.Equals(source.Host, DefaultPlaceholderHost, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+            foreach (var source in placeholderSources)
+            {
+                _logger.LogWarning(
+                    "Meshtastic MQTT source '{Source}' uses placeholder host '{Host}' and will be ignored. Configure a real broker host in Config > MQTT sources.",
+                    GetSourceName(source),
+                    source.Host);
+            }
+
+            var enabledSources = normalizedSources
                 .Where(IsSourceUsable)
                 .ToList();
 
@@ -207,6 +225,7 @@ public sealed class MeshtasticMqttClient : IAsyncDisposable
         {
             SourceId = source.Id,
             SourceName = GetSourceName(source),
+            Host = source.Host,
             Topic = source.Topic,
             ClientId = clientId,
             CleanSession = source.CleanSession,
@@ -243,15 +262,29 @@ public sealed class MeshtasticMqttClient : IAsyncDisposable
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(
-                    ex,
-                    "Meshtastic MQTT source '{Source}' connect failed, retrying in {DelaySeconds}s",
-                    runtime.SourceName,
-                    _connectRetryDelay.TotalSeconds);
+                var delay = IsNameResolutionError(ex)
+                    ? TimeSpan.FromSeconds(Math.Max(_connectRetryDelay.TotalSeconds, 20))
+                    : _connectRetryDelay;
+                if (IsNameResolutionError(ex))
+                {
+                    _logger.LogWarning(
+                        "Meshtastic MQTT source '{Source}' DNS lookup failed for host '{Host}', retrying in {DelaySeconds}s",
+                        runtime.SourceName,
+                        runtime.Host,
+                        delay.TotalSeconds);
+                }
+                else
+                {
+                    _logger.LogWarning(
+                        ex,
+                        "Meshtastic MQTT source '{Source}' connect failed, retrying in {DelaySeconds}s",
+                        runtime.SourceName,
+                        delay.TotalSeconds);
+                }
 
                 try
                 {
-                    await Task.Delay(_connectRetryDelay, cancellationToken);
+                    await Task.Delay(delay, cancellationToken);
                 }
                 catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
                 {
@@ -330,7 +363,17 @@ public sealed class MeshtasticMqttClient : IAsyncDisposable
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Meshtastic MQTT source '{Source}' reconnect attempt failed", runtime.SourceName);
+            if (IsNameResolutionError(ex))
+            {
+                _logger.LogWarning(
+                    "Meshtastic MQTT source '{Source}' reconnect DNS lookup failed for host '{Host}'",
+                    runtime.SourceName,
+                    runtime.Host);
+            }
+            else
+            {
+                _logger.LogWarning(ex, "Meshtastic MQTT source '{Source}' reconnect attempt failed", runtime.SourceName);
+            }
             _ = ConnectWithRetryAsync(runtime, runtime.Cts.Token);
         }
     }
@@ -859,6 +902,16 @@ public sealed class MeshtasticMqttClient : IAsyncDisposable
             payloadBytes);
 
         var decoded = _decoder.Decode(appPacket);
+        var messageCount = 0;
+        foreach (var msg in decoded.Messages)
+        {
+            _sessionStore.AddMessage(msg);
+            MessageReceived?.Invoke(this, msg);
+            messageCount++;
+        }
+        if (messageCount > 0)
+            Interlocked.Add(ref runtime.TextMessageCount, messageCount);
+
         var nodeInfoCount = 0;
         foreach (var info in decoded.NodeInfos)
         {
@@ -1227,9 +1280,30 @@ public sealed class MeshtasticMqttClient : IAsyncDisposable
             return false;
         if (string.IsNullOrWhiteSpace(source.Host))
             return false;
+        if (string.Equals(source.Host.Trim(), DefaultPlaceholderHost, StringComparison.OrdinalIgnoreCase))
+            return false;
         if (string.IsNullOrWhiteSpace(source.Topic))
             return false;
         return source.Port is > 0 and <= 65535;
+    }
+
+    private static bool IsNameResolutionError(Exception ex)
+    {
+        Exception? current = ex;
+        while (current is not null)
+        {
+            if (current is SocketException socketEx &&
+                (socketEx.SocketErrorCode == SocketError.HostNotFound ||
+                 socketEx.SocketErrorCode == SocketError.TryAgain ||
+                 socketEx.SocketErrorCode == SocketError.NoData))
+            {
+                return true;
+            }
+
+            current = current.InnerException;
+        }
+
+        return false;
     }
 
     private static MeshtasticMqttSettings NormalizeSettings(MeshtasticMqttSettings? settings)
@@ -1289,6 +1363,7 @@ public sealed class MeshtasticMqttClient : IAsyncDisposable
     {
         public required string SourceId { get; init; }
         public required string SourceName { get; init; }
+        public required string Host { get; init; }
         public required string Topic { get; init; }
         public required string ClientId { get; init; }
         public required bool CleanSession { get; init; }

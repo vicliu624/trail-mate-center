@@ -44,4 +44,6 @@ public sealed record MessageEntry
     public double? Latitude { get; init; }
     public double? Longitude { get; init; }
     public double? Altitude { get; init; }
+    public bool IsTeamChat { get; init; }
+    public string? TeamConversationKey { get; init; }
 }

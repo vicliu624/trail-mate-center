@@ -49,6 +49,7 @@
   <x:String x:Key="Ui.Chat.Telemetry">遥测</x:String>
 
   <x:String x:Key="Ui.Dashboard.Team">小队</x:String>
+  <x:String x:Key="Ui.Dashboard.Team.StartChat">发起对话</x:String>
   <x:String x:Key="Ui.Dashboard.NoTeams">暂无小队</x:String>
   <x:String x:Key="Ui.Dashboard.NodeList">节点列表</x:String>
   <x:String x:Key="Ui.Dashboard.Cluster">聚合</x:String>
@@ -117,6 +118,7 @@
   <x:String x:Key="Ui.Dashboard.Filter.Info">信息</x:String>
   <x:String x:Key="Ui.Dashboard.Filter.Warn">警告</x:String>
   <x:String x:Key="Ui.Dashboard.Filter.Crit">严重</x:String>
+  <x:String x:Key="Ui.Dashboard.Filter.TeamOnly">仅看小队</x:String>
   <x:String x:Key="Ui.Dashboard.Command.RallyTo">集结</x:String>
   <x:String x:Key="Ui.Dashboard.Command.MoveTo">前往</x:String>
   <x:String x:Key="Ui.Dashboard.Command.Hold">待命</x:String>
@@ -229,6 +231,10 @@
   <x:String x:Key="Error.DeviceNotConnected">未连接设备</x:String>
   <x:String x:Key="Error.MissingTargetLocation">缺少目标坐标（请选择事件或队员位置）</x:String>
   <x:String x:Key="Error.TeamPosition.NoTeam">当前没有可用队伍，无法发送 TEAM Position</x:String>
+  <x:String x:Key="Error.TeamChat.NoTeam">当前没有可用队伍，无法发送小队聊天消息</x:String>
+  <x:String x:Key="Error.TeamChat.NoContext">尚未获取到小队安全上下文（team_id/key_id），请先等待设备同步小队状态</x:String>
+  <x:String x:Key="Error.TeamChat.Unsupported">设备固件不支持小队聊天发送（缺少 CMD_TX_APPDATA 能力）</x:String>
+  <x:String x:Key="Error.TeamChat.SendFailed">小队聊天发送失败: {0}</x:String>
   <x:String x:Key="Error.OfflineCacheExportFolderPickerUnavailable">当前环境不支持选择文件夹</x:String>
   <x:String x:Key="Error.OfflineCacheExportLocalPathUnavailable">目标目录不是本地路径，无法导出</x:String>
 
@@ -317,9 +323,11 @@
   <x:String x:Key="Status.Port.InfoUnknown">设备信息未知</x:String>
 
   <x:String x:Key="Chat.Broadcast">广播</x:String>
+  <x:String x:Key="Chat.Team">小队聊天</x:String>
   <x:String x:Key="Chat.WithPeer">与 {0}</x:String>
   <x:String x:Key="Chat.Private">私聊</x:String>
   <x:String x:Key="Chat.ConversationSubtitle">{0} · 频道 {1}</x:String>
+  <x:String x:Key="Chat.TeamSubtitle">加密小队会话 · 频道 {0}</x:String>
 
   <x:String x:Key="Event.FromIsTag">来自 IS</x:String>
   <x:String x:Key="Event.RxMeta">接收信息: {0}</x:String>

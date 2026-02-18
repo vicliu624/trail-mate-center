@@ -1,4 +1,5 @@
 using Avalonia.Threading;
+using Avalonia.Platform;
 using Mapsui;
 using Mapsui.Layers;
 using Mapsui.Styles;
@@ -25,6 +26,7 @@ using System.Net.Http.Headers;
 using System.Threading;
 using System.Xml.Linq;
 using TrailMateCenter.Localization;
+using TrailMateCenter.Models;
 using TrailMateCenter.Services;
 using TrailMateCenter.Storage;
 
@@ -59,6 +61,16 @@ public sealed class MapViewModel : INotifyPropertyChanged
     private const double WaypointPulsePeriodMilliseconds = 680;
     private const double WaypointPulseMinScale = 0.85;
     private const double WaypointPulseMaxScale = 1.75;
+    private static readonly Dictionary<TeamLocationSource, string> TeamLocationMarkerAssets = new()
+    {
+        { TeamLocationSource.AreaCleared, "AreaCleared.png" },
+        { TeamLocationSource.BaseCamp, "BaseCamp.png" },
+        { TeamLocationSource.GoodFind, "GoodFind.png" },
+        { TeamLocationSource.Rally, "rally.png" },
+        { TeamLocationSource.Sos, "sos.png" },
+    };
+    private static readonly Dictionary<TeamLocationSource, string?> TeamLocationMarkerImageCache = new();
+    private static readonly object TeamLocationMarkerImageGate = new();
     private readonly object _gate = new();
     private readonly List<MapSample> _samples = new();
     private readonly List<WaypointSample> _waypoints = new();
@@ -219,7 +231,8 @@ public sealed class MapViewModel : INotifyPropertyChanged
         double lon,
         string? label,
         MapSampleSource source = MapSampleSource.Local,
-        TimeSpan? pulseDuration = null)
+        TimeSpan? pulseDuration = null,
+        TeamLocationSource? teamLocationMarker = null)
     {
         var id = fromId ?? 0;
         var (x, y) = SphericalMercator.FromLonLat(lon, lat);
@@ -231,7 +244,7 @@ public sealed class MapViewModel : INotifyPropertyChanged
 
         lock (_gate)
         {
-            _waypoints.Add(new WaypointSample(id, point, label, source, now, pulseUntilUtc));
+            _waypoints.Add(new WaypointSample(id, point, label, source, now, pulseUntilUtc, teamLocationMarker));
             if (_waypoints.Count > 500)
                 _waypoints.RemoveAt(0);
         }
@@ -249,6 +262,22 @@ public sealed class MapViewModel : INotifyPropertyChanged
     {
         var (x, y) = SphericalMercator.FromLonLat(lon, lat);
         Map.Navigator.CenterOn(new MPoint(x, y), 0, null);
+    }
+
+    public void FocusOn(double lat, double lon, int minZoomLevel)
+    {
+        var (x, y) = SphericalMercator.FromLonLat(lon, lat);
+        var center = new MPoint(x, y);
+        Map.Navigator.CenterOn(center, 0, null);
+
+        if (minZoomLevel < 0)
+            return;
+
+        var currentZoom = GetCurrentZoom();
+        if (currentZoom >= minZoomLevel)
+            return;
+
+        Map.Navigator.ZoomToLevel(minZoomLevel);
     }
 
     public void FocusOnBounds((double West, double South, double East, double North) bounds)
@@ -1720,13 +1749,25 @@ public sealed class MapViewModel : INotifyPropertyChanged
                 symbolScale = WaypointPulseMinScale + ((WaypointPulseMaxScale - WaypointPulseMinScale) * wave);
             }
 
-            feature.Styles.Add(new SymbolStyle
+            var markerImageSource = ResolveTeamLocationImagePath(sample.TeamLocationMarker);
+            if (!string.IsNullOrWhiteSpace(markerImageSource))
             {
-                SymbolType = SymbolType.Triangle,
-                Fill = new Brush(Color.FromArgb(220, 239, 68, 68)),
-                Outline = new Pen(Color.FromArgb(255, 185, 28, 28), 1),
-                SymbolScale = symbolScale,
-            });
+                feature.Styles.Add(new ImageStyle
+                {
+                    Image = new Image { Source = markerImageSource },
+                    SymbolScale = symbolScale,
+                });
+            }
+            else
+            {
+                feature.Styles.Add(new SymbolStyle
+                {
+                    SymbolType = SymbolType.Triangle,
+                    Fill = new Brush(Color.FromArgb(220, 239, 68, 68)),
+                    Outline = new Pen(Color.FromArgb(255, 185, 28, 28), 1),
+                    SymbolScale = symbolScale,
+                });
+            }
             if (!string.IsNullOrWhiteSpace(sample.Label))
             {
                 feature.Styles.Add(new LabelStyle
@@ -1741,6 +1782,67 @@ public sealed class MapViewModel : INotifyPropertyChanged
             features.Add(feature);
         }
         return features;
+    }
+
+    private static string? ResolveTeamLocationImagePath(TeamLocationSource? source)
+    {
+        if (!source.HasValue || source.Value == TeamLocationSource.None)
+            return null;
+        if (!TeamLocationMarkerAssets.TryGetValue(source.Value, out var fileName))
+            return null;
+
+        lock (TeamLocationMarkerImageGate)
+        {
+            if (TeamLocationMarkerImageCache.TryGetValue(source.Value, out var cached))
+                return NormalizeMapsuiImageSource(cached);
+        }
+
+        try
+        {
+            var targetDir = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "TrailMateCenter",
+                "mapsui-markers");
+            Directory.CreateDirectory(targetDir);
+
+            var targetPath = Path.Combine(targetDir, fileName);
+            if (!File.Exists(targetPath))
+            {
+                var uri = new Uri($"avares://TrailMateCenter.App/Assets/{fileName}");
+                using var input = AssetLoader.Open(uri);
+                using var output = File.Create(targetPath);
+                input.CopyTo(output);
+            }
+
+            var sourceUri = new Uri(targetPath).AbsoluteUri;
+            lock (TeamLocationMarkerImageGate)
+            {
+                TeamLocationMarkerImageCache[source.Value] = sourceUri;
+            }
+            return sourceUri;
+        }
+        catch
+        {
+            lock (TeamLocationMarkerImageGate)
+            {
+                TeamLocationMarkerImageCache[source.Value] = null;
+            }
+            return null;
+        }
+    }
+
+    private static string? NormalizeMapsuiImageSource(string? source)
+    {
+        if (string.IsNullOrWhiteSpace(source))
+            return null;
+
+        if (Uri.TryCreate(source, UriKind.Absolute, out var absolute))
+            return absolute.AbsoluteUri;
+
+        if (Path.IsPathRooted(source))
+            return new Uri(source).AbsoluteUri;
+
+        return source;
     }
 
     private IEnumerable<IFeature> BuildOfflineRouteFeatures(List<OfflineRoute> routes, string? selectedRouteId)
@@ -2173,7 +2275,8 @@ public sealed class MapViewModel : INotifyPropertyChanged
         string? Label,
         MapSampleSource Source,
         DateTimeOffset CreatedAtUtc,
-        DateTimeOffset? PulseUntilUtc);
+        DateTimeOffset? PulseUntilUtc,
+        TeamLocationSource? TeamLocationMarker);
     private sealed record OfflineRoute(string Id, string Name, IReadOnlyList<MPoint> Points)
     {
         public (double West, double South, double East, double North) Bounds

@@ -47,11 +47,15 @@ public static class HostLinkSerializer
 
     public static byte[] BuildCmdGetGpsPayload() => Array.Empty<byte>();
 
-    public static byte[] BuildCmdTxAppDataPayload(AppDataSendRequest request, uint offset, byte[] chunk)
+    public static byte[] BuildCmdTxAppDataPayload(
+        AppDataSendRequest request,
+        uint offset,
+        byte[] chunk,
+        bool includeTimestampField = false)
     {
         var writer = new HostLinkBufferWriter();
         writer.WriteUInt32(request.Portnum);
-        writer.WriteUInt32(0);
+        writer.WriteUInt32(request.From);
         writer.WriteUInt32(request.To);
         writer.WriteByte(request.Channel);
         writer.WriteByte((byte)request.Flags);
@@ -59,7 +63,8 @@ public static class HostLinkSerializer
         foreach (var b in teamId)
             writer.WriteByte(b);
         writer.WriteUInt32(request.TeamKeyId);
-        writer.WriteUInt32(0);
+        if (includeTimestampField)
+            writer.WriteUInt32(0);
         writer.WriteUInt32((uint)request.Payload.Length);
         writer.WriteUInt32(offset);
         writer.WriteUInt16((ushort)chunk.Length);
