@@ -32,6 +32,7 @@ public sealed class HostLinkClient : IAsyncDisposable
     private bool _hasTeamContext;
     private uint _teamSelfId;
     private long _teamAppDataTraceCounter;
+    private MeshProtocolKind _activeMeshProtocol = MeshProtocolKind.Unknown;
 
     private IHostLinkTransport? _transport;
     private TransportEndpoint? _endpoint;
@@ -88,10 +89,12 @@ public sealed class HostLinkClient : IAsyncDisposable
     public bool SupportsTxAppDataCommand =>
         DeviceInfo?.Capabilities.CapabilitiesMask.HasFlag(HostLinkCapabilities.CapTxAppData) == true;
     public StatusInfo? Status { get; private set; }
+    public MeshProtocolKind ActiveMeshProtocol => _activeMeshProtocol;
 
     public async Task ConnectAsync(TransportEndpoint endpoint, ConnectionOptions options, CancellationToken cancellationToken)
     {
         ResetTeamContext(notify: true);
+        _activeMeshProtocol = MeshProtocolKind.Unknown;
         _endpoint = endpoint;
         _options = options;
         _cts?.Cancel();
@@ -107,6 +110,7 @@ public sealed class HostLinkClient : IAsyncDisposable
     {
         _cts?.Cancel();
         ResetTeamContext(notify: true);
+        _activeMeshProtocol = MeshProtocolKind.Unknown;
         if (_transport is not null)
         {
             await _transport.CloseAsync(cancellationToken);
@@ -141,6 +145,7 @@ public sealed class HostLinkClient : IAsyncDisposable
             Timestamp = DateTimeOffset.UtcNow,
             DeviceTimestamp = null,
             Seq = pending.Seq,
+            Protocol = ResolveActiveMeshProtocol(),
         };
 
         lock (_gate)
@@ -220,6 +225,7 @@ public sealed class HostLinkClient : IAsyncDisposable
                 outboundContext.TeamId,
                 outboundContext.TeamKeyId,
                 teamConversationKey),
+            Protocol = ResolveActiveMeshProtocol(),
         };
 
         _sessionStore.AddMessage(outgoingMessage);
@@ -803,6 +809,7 @@ public sealed class HostLinkClient : IAsyncDisposable
             FromIs = rx.RxMeta?.FromIs,
             Latitude = hasGps ? lat : null,
             Longitude = hasGps ? lon : null,
+            Protocol = ResolveActiveMeshProtocol(),
         };
         _sessionStore.AddMessage(message);
         MessageAdded?.Invoke(this, message);
@@ -848,6 +855,7 @@ public sealed class HostLinkClient : IAsyncDisposable
     private void HandleStatus(ReadOnlySpan<byte> payload)
     {
         var statusEvent = HostLinkSerializer.ParseStatus(payload);
+        _activeMeshProtocol = statusEvent.MeshProtocol;
         Status = new StatusInfo
         {
             BatteryPercent = statusEvent.BatteryPercent,
@@ -922,7 +930,7 @@ public sealed class HostLinkClient : IAsyncDisposable
                     "NodeInfo payload is empty after reassembly: from=0x{From:X8} totalLen={TotalLen} chunkLen={ChunkLen}",
                     app.From, app.TotalLength, app.ChunkLength);
             }
-            var decoded = _appDataDecoder.Decode(packet);
+            var decoded = _appDataDecoder.Decode(packet, ResolveActiveMeshProtocol());
             if (packet.Portnum == AppDataDecoder.NodeInfoPort)
             {
                 if (decoded.NodeInfos.Count == 0)
@@ -1213,6 +1221,13 @@ public sealed class HostLinkClient : IAsyncDisposable
     {
         if (_stateMachine.State != ConnectionState.Ready)
             throw new InvalidOperationException("Not connected");
+    }
+
+    private MeshProtocolKind ResolveActiveMeshProtocol()
+    {
+        if (_activeMeshProtocol != MeshProtocolKind.Unknown)
+            return _activeMeshProtocol;
+        return Status?.MeshProtocol ?? MeshProtocolKind.Unknown;
     }
 
     private static bool IsBroadcastDestination(uint? toId)

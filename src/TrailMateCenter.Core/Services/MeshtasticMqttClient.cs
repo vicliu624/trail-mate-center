@@ -901,7 +901,7 @@ public sealed class MeshtasticMqttClient : IAsyncDisposable
             0,
             payloadBytes);
 
-        var decoded = _decoder.Decode(appPacket);
+        var decoded = _decoder.Decode(appPacket, MeshProtocolKind.Meshtastic);
         var messageCount = 0;
         foreach (var msg in decoded.Messages)
         {
@@ -985,6 +985,7 @@ public sealed class MeshtasticMqttClient : IAsyncDisposable
             Direct = direct,
             Origin = RxOrigin.External,
             FromIs = true,
+            Protocol = MeshProtocolKind.Meshtastic,
         };
 
         _sessionStore.AddMessage(message);

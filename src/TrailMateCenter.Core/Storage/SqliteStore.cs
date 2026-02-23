@@ -2,6 +2,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Microsoft.Data.Sqlite;
 using TrailMateCenter.Models;
+using TrailMateCenter.Protocol;
 
 namespace TrailMateCenter.Storage;
 
@@ -71,7 +72,8 @@ public sealed class SqliteStore
                 longitude REAL,
                 altitude REAL,
                 is_team_chat INTEGER NOT NULL DEFAULT 0,
-                team_conversation_key TEXT
+                team_conversation_key TEXT,
+                protocol INTEGER NOT NULL DEFAULT 0
             );
 
             CREATE INDEX IF NOT EXISTS idx_messages_timestamp ON messages(timestamp);
@@ -192,6 +194,7 @@ public sealed class SqliteStore
         await EnsureColumnAsync(connection, "messages", "device_timestamp", "INTEGER", cancellationToken);
         await EnsureColumnAsync(connection, "messages", "is_team_chat", "INTEGER NOT NULL DEFAULT 0", cancellationToken);
         await EnsureColumnAsync(connection, "messages", "team_conversation_key", "TEXT", cancellationToken);
+        await EnsureColumnAsync(connection, "messages", "protocol", "INTEGER NOT NULL DEFAULT 0", cancellationToken);
         await EnsureColumnAsync(connection, "mqtt_sources", "client_id", "TEXT", cancellationToken);
         await EnsureColumnAsync(connection, "mqtt_sources", "clean_session", "INTEGER NOT NULL DEFAULT 0", cancellationToken);
         await EnsureColumnAsync(connection, "mqtt_sources", "subscribe_qos", "INTEGER NOT NULL DEFAULT 1", cancellationToken);
@@ -214,12 +217,12 @@ public sealed class SqliteStore
                 INSERT INTO messages (
                     id, timestamp, device_timestamp, direction, message_id, from_id, to_id, from_text, to_text, channel_id, channel,
                     text, status, error_message, rssi, snr, hop, retry, airtime_ms, seq, latitude, longitude, altitude,
-                    is_team_chat, team_conversation_key
+                    is_team_chat, team_conversation_key, protocol
                 )
                 VALUES (
                     $id, $timestamp, $device_timestamp, $direction, $message_id, $from_id, $to_id, $from_text, $to_text, $channel_id, $channel,
                     $text, $status, $error_message, $rssi, $snr, $hop, $retry, $airtime_ms, $seq, $latitude, $longitude, $altitude,
-                    $is_team_chat, $team_conversation_key
+                    $is_team_chat, $team_conversation_key, $protocol
                 )
                 ON CONFLICT(id) DO UPDATE SET
                     timestamp = excluded.timestamp,
@@ -245,7 +248,8 @@ public sealed class SqliteStore
                     longitude = excluded.longitude,
                     altitude = excluded.altitude,
                     is_team_chat = excluded.is_team_chat,
-                    team_conversation_key = excluded.team_conversation_key;
+                    team_conversation_key = excluded.team_conversation_key,
+                    protocol = excluded.protocol;
                 """;
 
             cmd.Parameters.AddWithValue("$id", message.Id.ToString());
@@ -273,6 +277,7 @@ public sealed class SqliteStore
             cmd.Parameters.AddWithValue("$altitude", DbValue(message.Altitude));
             cmd.Parameters.AddWithValue("$is_team_chat", message.IsTeamChat ? 1 : 0);
             cmd.Parameters.AddWithValue("$team_conversation_key", DbValue(message.TeamConversationKey));
+            cmd.Parameters.AddWithValue("$protocol", (byte)message.Protocol);
 
             await cmd.ExecuteNonQueryAsync(cancellationToken);
         }
@@ -460,6 +465,9 @@ public sealed class SqliteStore
                     Altitude = ReadNullableDouble(reader, "altitude"),
                     IsTeamChat = ReadBool(reader, "is_team_chat", defaultValue: false),
                     TeamConversationKey = ReadNullableString(reader, "team_conversation_key"),
+                    Protocol = ReadNullableByte(reader, "protocol") is { } protocolByte
+                        ? MeshProtocolKindHelpers.FromWire(protocolByte)
+                        : MeshProtocolKind.Unknown,
                 };
                 results.Add(message);
             }

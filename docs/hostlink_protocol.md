@@ -44,6 +44,7 @@ Constraints:
 | 0x12 | CMD_SET_CONFIG | PC→Dev | Set config values (TLV) |
 | 0x13 | CMD_SET_TIME   | PC→Dev | Set device epoch time |
 | 0x14 | CMD_GET_GPS    | PC→Dev | Request current GPS snapshot |
+| 0x15 | CMD_TX_APP_DATA | PC→Dev | Send app payload (raw or Team-routed) |
 | 0x80 | EV_RX_MSG      | Dev→PC | Device received a message |
 | 0x81 | EV_TX_RESULT   | Dev→PC | Send result for CMD_TX_MSG |
 | 0x82 | EV_STATUS      | Dev→PC | Device status/config (TLV) |
@@ -73,9 +74,10 @@ Bitmask (uint32):
 - bit3: `CapStatus`
 - bit4: `CapLogs`
 - bit5: `CapGps`
-- bit6: `CapAppData`
+- bit6: `CapAppData` (uplink `EV_APP_DATA`)
 - bit7: `CapTeamState`
 - bit8: `CapAprsGateway`
+- bit9: `CapTxAppData` (downlink `CMD_TX_APP_DATA`)
 
 `CapAprsGateway` indicates EV_APP_DATA/EV_RX_MSG carry RX metadata TLV and
 the APRS config keys are supported.
@@ -86,6 +88,8 @@ the APRS config keys are supported.
 2) PC sends HELLO.
 3) Device replies HELLO_ACK.
 4) Link state becomes READY. Commands are accepted.
+5) Device immediately pushes `EV_STATUS` (same payload shape as `CMD_GET_CONFIG` response),
+   so PC can apply protocol-specific UI/config behavior without waiting for periodic status.
 
 If no HELLO is received within 5 seconds after DTR, the device returns to
 Waiting state. Any non-HELLO frames before READY receive `ACK(NOT_IN_MODE)`.
@@ -138,7 +142,7 @@ u8 key, u8 len, u8[len] value
 
 Config keys:
 - 1: MeshProtocol (u8)
-- 2: Region (u8)
+- 2: Region (u8, Meshtastic profile)
 - 3: Channel (u8)
 - 4: DutyCycle (u8, 0/1)
 - 5: ChannelUtil (u8)
@@ -155,6 +159,18 @@ Config keys:
 - 30: AprsNodeIdMap (blob, see format below)
 - 31: AprsSelfEnable (u8, 0/1)
 - 32: AprsSelfCallsign (string, ASCII, CALL-SSID)
+
+MeshProtocol values:
+- 1: Meshtastic
+- 2: MeshCore
+
+Runtime behavior:
+- Changing `MeshProtocol` triggers backend adapter switch in firmware runtime
+  (no stale old-protocol adapter is kept alive).
+- If switch fails, command returns error and config is not persisted.
+- Setting `MeshProtocol` to the already-active value does not force a backend restart.
+- `Region` currently maps to Meshtastic region/profile storage. When MeshCore is active,
+  this key is retained but does not retune active MeshCore RF parameters.
 
 AprsNodeIdMap format (value bytes):
 
@@ -174,6 +190,39 @@ u64 epoch_seconds
 
 ### CMD_GET_GPS (0x14)
 Payload: empty. Device replies with EV_GPS.
+
+### CMD_TX_APP_DATA (0x15)
+Payload:
+
+```
+u32  portnum
+u32  to
+u8   channel
+u8   flags
+u16  payload_len
+u8[] payload
+```
+
+Compatibility:
+- Device also accepts an extended compatibility layout used by newer PC clients:
+  `portnum, from, to, channel, flags, team_id[8], team_key_id, [timestamp_s], total_len, offset, chunk_len, chunk`.
+- `timestamp_s` is optional in this compatibility layout.
+- Current firmware requires a full payload in one frame (`offset=0` and `chunk_len=total_len`) when using the compatibility layout.
+
+Flags:
+- bit0: `want_response` (forwarded to mesh adapter `want_ack`)
+- bit1: `team_mgmt_plain` (only for Team mgmt `portnum=300`; forces plain mgmt send path)
+
+Behavior:
+- Non-Team `portnum`: device forwards payload via mesh adapter `sendAppData(...)`.
+- Team `portnum` (300..304): device decodes/reroutes to Team send path so Team crypto and wire
+  semantics stay consistent with on-device behavior.
+  - 300 (MGMT): payload must be TeamMgmt wire (`version/type/payload`), then routed to
+    Kick/TransferLeader/KeyDist/Status send handlers.
+  - 301 (POSITION): payload is Team position plaintext, encrypted and sent by Team service.
+  - 302 (WAYPOINT): payload is Team waypoint plaintext, encrypted and sent by Team service.
+  - 303 (CHAT): payload must be TeamChatMessage wire, then encrypted and sent by Team service.
+  - 304 (TRACK): payload is Team track plaintext, encrypted and sent by Team service.
 
 ## Event Payloads
 
@@ -213,7 +262,7 @@ Status keys:
 - 2: Charging (u8, 0/1)
 - 3: LinkState (u8)
 - 4: MeshProtocol (u8)
-- 5: Region (u8)
+- 5: Region (u8, Meshtastic profile)
 - 6: Channel (u8)
 - 7: DutyCycle (u8, 0/1)
 - 8: ChannelUtil (u8)
@@ -460,37 +509,48 @@ TeamParams          // if has_params
 
 How PC should respond:
 - EV_APP_DATA itself requires no ACK.
-- Mesh-level response is by sending the corresponding Team mgmt message
-  (not implemented in HostLink yet).
+- Mesh-level response is by sending the corresponding Team mgmt message with
+  `CMD_TX_APP_DATA(portnum=300)`.
 
 #### TEAM_POSITION_APP (portnum 301)
 
 Scenario: team member live position updates.
 
-Payload is **meshtastic_Position protobuf** (Meshtastic schema).
-See `mesh.pb.h` in `src/chat/infra/meshtastic/generated/meshtastic/`.
-Key fields:
-- latitude_i / longitude_i: degrees * 1e7
-- altitude: meters
-- timestamp: epoch seconds
-- ground_speed: m/s
-- ground_track: 0.01 degrees
-- sats_in_view, fix_quality, fix_type, etc.
+Payload is **TeamPositionMessage** (custom binary):
+
+```
+u8  version            // kTeamPositionVersion = 1
+u16 flags              // bit0 alt, bit1 speed, bit2 course, bit3 satellites
+i32 lat_e7
+i32 lon_e7
+i16 alt_m
+u16 speed_dmps         // decimeter per second
+u16 course_cdeg        // centi-degree
+u8  sats_in_view
+u32 ts                 // epoch seconds
+```
 
 #### TEAM_WAYPOINT_APP (portnum 302)
 
 Scenario: team waypoint sharing.
 
-Payload is **meshtastic_Waypoint protobuf** (Meshtastic schema).
-See `mesh.pb.h`.
-Key fields:
-- id
-- latitude_i / longitude_i: degrees * 1e7 (optional)
-- expire (epoch seconds)
-- locked_to
-- name (max 30 chars)
-- description (max 100 chars)
-- icon
+Payload is **TeamWaypointMessage** (custom binary):
+
+```
+u8  version            // kTeamWaypointVersion = 1
+u16 flags              // bit0 has_location
+u32 id
+i32 lat_e7
+i32 lon_e7
+u32 expire_ts          // epoch seconds
+u32 locked_to
+u16 name_len
+u8  name[name_len]     // <= 30 bytes
+u16 desc_len
+u8  desc[desc_len]     // <= 100 bytes
+u16 icon_len
+u8  icon[icon_len]     // <= 24 bytes
+```
 
 #### TEAM_TRACK_APP (portnum 304)
 
@@ -574,8 +634,15 @@ u8  note[note_len]
 ### 2) Other app payloads (non-team portnum)
 
 All other portnums are forwarded as EV_APP_DATA with plaintext payload
-exactly as received from the mesh adapter. Most of these are **Meshtastic
-protobuf messages**. PC should:
+exactly as received from the active mesh adapter.
+
+Protocol guidance:
+- Read `StatusKey::MeshProtocol` from `EV_STATUS` and cache it as current decode context.
+- `MeshProtocol=Meshtastic`: most non-team payloads are Meshtastic protobuf.
+- `MeshProtocol=MeshCore`: payloads can be MeshCore app/control payloads and are not
+  guaranteed to be Meshtastic protobuf-compatible.
+
+For Meshtastic context, PC should:
 
 1) Read `portnum`.
 2) Map it to a Meshtastic message type.

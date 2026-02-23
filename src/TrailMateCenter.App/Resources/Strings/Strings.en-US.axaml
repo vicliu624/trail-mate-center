@@ -221,7 +221,7 @@
   <x:String x:Key="Status.Aprs.Disconnected">APRS-IS: Disconnected</x:String>
   <x:String x:Key="Status.Aprs.Stats">TX {0} | Drop {1} | Dedupe {2} | Rate {3} | Err {4}</x:String>
 
-  <x:String x:Key="Status.Device.Panel">Battery {0} | Charging {1} | State {2} | Channel {3} | Duty {4} | Last error {5}</x:String>
+  <x:String x:Key="Status.Device.Panel">Battery {0} | Charging {1} | State {2} | Mesh {3} | Channel {4} | Duty {5} | Last error {6}</x:String>
   <x:String x:Key="Status.Device.Info">{0} | FW {1} | Proto {2}</x:String>
   <x:String x:Key="Status.Device.Capabilities">MaxFrame {0} | Caps {1}</x:String>
   <x:String x:Key="Status.Team.Untitled">Unnamed team</x:String>

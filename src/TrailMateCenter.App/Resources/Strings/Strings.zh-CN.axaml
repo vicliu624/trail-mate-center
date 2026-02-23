@@ -221,7 +221,7 @@
   <x:String x:Key="Status.Aprs.Disconnected">APRS-IS: 未连接</x:String>
   <x:String x:Key="Status.Aprs.Stats">发送 {0} · 丢弃 {1} · 去重 {2} · 限速 {3} · 错误 {4}</x:String>
 
-  <x:String x:Key="Status.Device.Panel">电量 {0} | 充电 {1} | 状态 {2} | 通道 {3} | 占空 {4} | 最近错误 {5}</x:String>
+  <x:String x:Key="Status.Device.Panel">电量 {0} | 充电 {1} | 状态 {2} | 协议 {3} | 通道 {4} | 占空 {5} | 最近错误 {6}</x:String>
   <x:String x:Key="Status.Device.Info">{0} | 固件 {1} | 协议 {2}</x:String>
   <x:String x:Key="Status.Device.Capabilities">最大帧 {0} | 能力 {1}</x:String>
   <x:String x:Key="Status.Team.Untitled">未命名小队</x:String>

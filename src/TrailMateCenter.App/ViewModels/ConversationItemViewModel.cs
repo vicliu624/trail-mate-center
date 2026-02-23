@@ -1,6 +1,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using TrailMateCenter.Localization;
 using TrailMateCenter.Models;
+using TrailMateCenter.Protocol;
 
 namespace TrailMateCenter.ViewModels;
 
@@ -11,6 +12,7 @@ public sealed partial class ConversationItemViewModel : ObservableObject, ILocal
         bool isBroadcast,
         uint? peerId,
         byte channelId,
+        MeshProtocolKind protocol = MeshProtocolKind.Unknown,
         bool isTeamChat = false,
         string? teamConversationKey = null)
     {
@@ -18,6 +20,7 @@ public sealed partial class ConversationItemViewModel : ObservableObject, ILocal
         IsBroadcast = isBroadcast;
         PeerId = peerId;
         ChannelId = channelId;
+        Protocol = protocol;
         IsTeamChat = isTeamChat;
         TeamConversationKey = teamConversationKey ?? string.Empty;
         PeerLabel = peerId.HasValue ? $"0x{peerId.Value:X8}" : string.Empty;
@@ -28,6 +31,7 @@ public sealed partial class ConversationItemViewModel : ObservableObject, ILocal
     public bool IsTeamChat { get; }
     public uint? PeerId { get; }
     public byte ChannelId { get; }
+    public MeshProtocolKind Protocol { get; }
     public string TeamConversationKey { get; }
     public string PeerLabel { get; private set; }
 
@@ -104,18 +108,19 @@ public sealed partial class ConversationItemViewModel : ObservableObject, ILocal
     private string BuildSubtitle()
     {
         var loc = LocalizationService.Instance;
+        var protocolTag = Protocol.ToShortTag();
         if (IsTeamChat)
         {
-            return loc.Format("Chat.TeamSubtitle", ChannelId);
+            return $"{loc.Format("Chat.TeamSubtitle", ChannelId)} | {protocolTag}";
         }
 
         if (IsBroadcast)
         {
-            return loc.Format("Common.ChannelFormat", ChannelId);
+            return $"{loc.Format("Common.ChannelFormat", ChannelId)} | {protocolTag}";
         }
 
         var idText = PeerId.HasValue ? $"0x{PeerId.Value:X8}" : loc.GetString("Common.Unknown");
-        return loc.Format("Chat.ConversationSubtitle", idText, ChannelId);
+        return $"{loc.Format("Chat.ConversationSubtitle", idText, ChannelId)} | {protocolTag}";
     }
 
     public void RefreshLocalization()

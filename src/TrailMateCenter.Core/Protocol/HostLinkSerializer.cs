@@ -179,7 +179,7 @@ public static class HostLinkSerializer
                     status = status with { LinkState = (HostLinkLinkState)valueSpan[0] };
                     break;
                 case HostLinkStatusKey.MeshProtocol:
-                    status = status with { MeshProtocol = valueSpan[0] };
+                    status = status with { MeshProtocol = MeshProtocolKindHelpers.FromWire(valueSpan[0]) };
                     break;
                 case HostLinkStatusKey.Region:
                     status = status with { Region = valueSpan[0] };

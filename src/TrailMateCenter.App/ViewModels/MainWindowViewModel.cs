@@ -100,6 +100,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     private bool _settingsLoaded;
     private DeviceInfo? _lastDeviceInfo;
     private StatusInfo? _lastStatusInfo;
+    private MeshProtocolKind _activeMeshProtocol = MeshProtocolKind.Unknown;
     private AprsIsStatus? _lastAprsStatus;
     private AprsGatewayStats? _lastAprsStats;
     private TeamStateEvent? _lastTeamState;
@@ -209,7 +210,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
 
         Map.EnableCluster = MapEnableCluster;
         Map.FollowLatest = MapFollowLatest;
-        Map.SetMqttVisibility(MapShowMqtt);
+        UpdateMapMqttVisibility();
         Map.SetGibsVisibility(MapShowGibs);
         Map.PropertyChanged += OnMapPropertyChanged;
 
@@ -495,7 +496,12 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     private int _unreadChatCount;
 
     public bool HasUnreadChat => UnreadChatCount > 0;
-    public bool CanUseExternalFeeds => !OfflineMode;
+    public MeshProtocolKind ActiveMeshProtocol => _activeMeshProtocol;
+    public bool IsMeshCoreMode => _activeMeshProtocol == MeshProtocolKind.MeshCore;
+    public bool IsMeshtasticMode => _activeMeshProtocol == MeshProtocolKind.Meshtastic;
+    public bool CanUseExternalFeeds => CanUseMeshtasticExternalFeeds();
+    public bool CanUseAprsGateway => CanUseMeshtasticExternalFeeds();
+    public bool CanUseMeshtasticMqtt => CanUseMeshtasticExternalFeeds();
     public bool CanContinueSelectedOfflineCacheRegion => CanBuildRegion(SelectedOfflineCacheRegion);
     public bool CanExportSelectedOfflineCacheRegion => SelectedOfflineCacheRegion is not null &&
                                                       !Map.IsOfflineCacheRunning &&
@@ -716,6 +722,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             _settings = _settings with { Mqtt = mqttSettings };
             LoadMqttSources(mqttSettings.Sources);
             _meshtasticMqtt.ApplySettings(BuildEffectiveMqttSettings(mqttSettings));
+            UpdateMapMqttVisibility();
 
             var cacheRegions = await _sqliteStore.LoadMapCacheRegionsAsync(CancellationToken.None);
             LoadOfflineCacheRegions(cacheRegions);
@@ -870,8 +877,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         _settings = newSettings with { Mqtt = mqttSettings };
         await _settingsStore.SaveAsync(newSettings, CancellationToken.None);
         await _sqliteStore.SaveMqttSourcesAsync(mqttSettings.Sources, CancellationToken.None);
-        _aprsGateway.ApplySettings(BuildEffectiveAprsSettings(newSettings.Aprs));
-        _meshtasticMqtt.ApplySettings(BuildEffectiveMqttSettings(mqttSettings));
+        ApplyExternalFeedRuntimeState();
         Map.UpdateContourSettings(newSettings.Contours);
     }
 
@@ -960,16 +966,26 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         };
     }
 
+    private bool CanUseMeshtasticExternalFeeds()
+    {
+        return !OfflineMode && _activeMeshProtocol != MeshProtocolKind.MeshCore;
+    }
+
+    private string GetActiveMeshProtocolTag()
+    {
+        return _activeMeshProtocol.ToShortTag();
+    }
+
     private AprsSettings BuildEffectiveAprsSettings(AprsSettings settings)
     {
-        return OfflineMode
+        return !CanUseMeshtasticExternalFeeds()
             ? settings with { Enabled = false }
             : settings;
     }
 
     private MeshtasticMqttSettings BuildEffectiveMqttSettings(MeshtasticMqttSettings settings)
     {
-        if (!OfflineMode)
+        if (CanUseMeshtasticExternalFeeds())
             return settings;
 
         return settings with
@@ -978,6 +994,21 @@ public sealed partial class MainWindowViewModel : ViewModelBase
                 .Select(source => source with { Enabled = false })
                 .ToList(),
         };
+    }
+
+    private void UpdateMapMqttVisibility()
+    {
+        Map.SetMqttVisibility(CanUseMeshtasticExternalFeeds() && MapShowMqtt);
+    }
+
+    private void ApplyExternalFeedRuntimeState()
+    {
+        if (!_settingsLoaded)
+            return;
+
+        _aprsGateway.ApplySettings(BuildEffectiveAprsSettings(_settings.Aprs));
+        _meshtasticMqtt.ApplySettings(BuildEffectiveMqttSettings(BuildMqttSettings()));
+        UpdateMapMqttVisibility();
     }
 
     private async Task<MeshtasticMqttSettings> LoadMqttSettingsAsync(CancellationToken cancellationToken)
@@ -2065,7 +2096,8 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         await _client.SendMessageAsync(request, CancellationToken.None);
         QuickMessageText = string.Empty;
 
-        var conversation = Conversations.FirstOrDefault(c => c.PeerId == SelectedSubject.Id);
+        var conversation = Conversations.FirstOrDefault(c => c.PeerId == SelectedSubject.Id && c.Protocol == _activeMeshProtocol)
+            ?? Conversations.FirstOrDefault(c => c.PeerId == SelectedSubject.Id);
         if (conversation is not null)
         {
             SelectedConversation = conversation;
@@ -2115,7 +2147,8 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             return;
 
         Target = $"0x{SelectedSubject.Id:X8}";
-        var conversation = Conversations.FirstOrDefault(c => c.PeerId == SelectedSubject.Id);
+        var conversation = Conversations.FirstOrDefault(c => c.PeerId == SelectedSubject.Id && c.Protocol == _activeMeshProtocol)
+            ?? Conversations.FirstOrDefault(c => c.PeerId == SelectedSubject.Id);
         if (conversation is not null)
         {
             SelectedConversation = conversation;
@@ -2252,19 +2285,20 @@ public sealed partial class MainWindowViewModel : ViewModelBase
 
     partial void OnOfflineModeChanged(bool value)
     {
-        Map.SetMqttVisibility(!value && MapShowMqtt);
+        UpdateMapMqttVisibility();
         OnPropertyChanged(nameof(CanUseExternalFeeds));
+        OnPropertyChanged(nameof(CanUseAprsGateway));
+        OnPropertyChanged(nameof(CanUseMeshtasticMqtt));
 
         if (!_settingsLoaded)
             return;
 
-        _aprsGateway.ApplySettings(BuildEffectiveAprsSettings(_settings.Aprs));
-        _meshtasticMqtt.ApplySettings(BuildEffectiveMqttSettings(BuildMqttSettings()));
+        ApplyExternalFeedRuntimeState();
     }
 
     partial void OnMapShowMqttChanged(bool value)
     {
-        Map.SetMqttVisibility(!OfflineMode && value);
+        UpdateMapMqttVisibility();
     }
 
     partial void OnMapShowGibsChanged(bool value)
@@ -2329,6 +2363,14 @@ public sealed partial class MainWindowViewModel : ViewModelBase
                 _lastTeamState = null;
                 _teamStateSeenInCurrentConnection = false;
                 RebuildTeamLists();
+                _activeMeshProtocol = MeshProtocolKind.Unknown;
+                OnPropertyChanged(nameof(ActiveMeshProtocol));
+                OnPropertyChanged(nameof(IsMeshCoreMode));
+                OnPropertyChanged(nameof(IsMeshtasticMode));
+                OnPropertyChanged(nameof(CanUseExternalFeeds));
+                OnPropertyChanged(nameof(CanUseAprsGateway));
+                OnPropertyChanged(nameof(CanUseMeshtasticMqtt));
+                ApplyExternalFeedRuntimeState();
             }
 
             var loc = LocalizationService.Instance;
@@ -2510,11 +2552,25 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         Dispatcher.UIThread.Post(() =>
         {
             _lastStatusInfo = info;
+            var protocolChanged = _activeMeshProtocol != info.MeshProtocol;
+            _activeMeshProtocol = info.MeshProtocol;
             var loc = LocalizationService.Instance;
             var batteryText = info.BatteryPercent.HasValue ? $"{info.BatteryPercent}%" : loc.GetString("Common.Unknown");
             var chargingText = info.IsCharging ? loc.GetString("Common.Yes") : loc.GetString("Common.No");
             var dutyText = info.DutyCycleEnabled ? loc.GetString("Common.On") : loc.GetString("Common.Off");
-            StatusPanel = loc.Format("Status.Device.Panel", batteryText, chargingText, info.LinkState, info.Channel, dutyText, info.LastError);
+            var protocolTag = GetActiveMeshProtocolTag();
+            StatusPanel = loc.Format("Status.Device.Panel", batteryText, chargingText, info.LinkState, protocolTag, info.Channel, dutyText, info.LastError);
+            if (protocolChanged)
+            {
+                OnPropertyChanged(nameof(ActiveMeshProtocol));
+                OnPropertyChanged(nameof(IsMeshCoreMode));
+                OnPropertyChanged(nameof(IsMeshtasticMode));
+                OnPropertyChanged(nameof(CanUseExternalFeeds));
+                OnPropertyChanged(nameof(CanUseAprsGateway));
+                OnPropertyChanged(nameof(CanUseMeshtasticMqtt));
+                ApplyExternalFeedRuntimeState();
+                RefreshConversationMessages();
+            }
         });
     }
 
@@ -2953,13 +3009,14 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     private ConversationItemViewModel UpsertConversation(MessageEntry entry)
     {
         EnsureChannelOption(entry.ChannelId);
+        var protocolTag = entry.Protocol.ToShortTag();
 
         if (entry.IsTeamChat)
         {
             var teamKey = string.IsNullOrWhiteSpace(entry.TeamConversationKey)
                 ? "DEFAULT"
                 : entry.TeamConversationKey;
-            var teamConversationId = $"TEAM:{teamKey}";
+            var teamConversationId = $"{protocolTag}:TEAM:{teamKey}";
             var teamConversation = Conversations.FirstOrDefault(c => c.Key == teamConversationId);
             if (teamConversation is null)
             {
@@ -2968,6 +3025,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
                     isBroadcast: false,
                     peerId: null,
                     channelId: entry.ChannelId,
+                    protocol: entry.Protocol,
                     isTeamChat: true,
                     teamConversationKey: teamKey);
             }
@@ -2988,12 +3046,14 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             ? (uint?)null
             : entry.Direction == MessageDirection.Outgoing ? entry.ToId : entry.FromId;
         var channelId = entry.ChannelId;
-        var key = isBroadcast ? $"BROADCAST:{channelId}" : $"DM:{peerId?.ToString("X8")}";
+        var key = isBroadcast
+            ? $"{protocolTag}:BROADCAST:{channelId}"
+            : $"{protocolTag}:DM:{peerId?.ToString("X8")}";
 
         var existing = Conversations.FirstOrDefault(c => c.Key == key);
         if (existing is null)
         {
-            existing = new ConversationItemViewModel(key, isBroadcast, peerId, channelId);
+            existing = new ConversationItemViewModel(key, isBroadcast, peerId, channelId, protocol: entry.Protocol);
         }
 
         var label = peerId.HasValue ? ResolvePeerLabel(peerId.Value) : null;
@@ -3247,7 +3307,8 @@ public sealed partial class MainWindowViewModel : ViewModelBase
                 var batteryText = _lastStatusInfo.BatteryPercent.HasValue ? $"{_lastStatusInfo.BatteryPercent}%" : loc.GetString("Common.Unknown");
                 var chargingText = _lastStatusInfo.IsCharging ? loc.GetString("Common.Yes") : loc.GetString("Common.No");
                 var dutyText = _lastStatusInfo.DutyCycleEnabled ? loc.GetString("Common.On") : loc.GetString("Common.Off");
-                StatusPanel = loc.Format("Status.Device.Panel", batteryText, chargingText, _lastStatusInfo.LinkState, _lastStatusInfo.Channel, dutyText, _lastStatusInfo.LastError);
+                var protocolTag = _lastStatusInfo.MeshProtocol.ToShortTag();
+                StatusPanel = loc.Format("Status.Device.Panel", batteryText, chargingText, _lastStatusInfo.LinkState, protocolTag, _lastStatusInfo.Channel, dutyText, _lastStatusInfo.LastError);
             }
 
             if (_lastAprsStatus is not null)
@@ -3492,6 +3553,9 @@ public sealed partial class MainWindowViewModel : ViewModelBase
 
     private static bool MatchesConversation(MessageItemViewModel message, ConversationItemViewModel conversation)
     {
+        if (message.Protocol != conversation.Protocol)
+            return false;
+
         if (conversation.IsTeamChat)
         {
             var teamKey = string.IsNullOrWhiteSpace(message.TeamConversationKey)

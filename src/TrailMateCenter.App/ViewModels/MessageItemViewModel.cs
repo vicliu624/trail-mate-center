@@ -6,6 +6,7 @@ using CommunityToolkit.Mvvm.Input;
 using TrailMateCenter.Services;
 using TrailMateCenter.Localization;
 using TrailMateCenter.Models;
+using TrailMateCenter.Protocol;
 
 namespace TrailMateCenter.ViewModels;
 
@@ -73,6 +74,9 @@ public sealed partial class MessageItemViewModel : ObservableObject, ILocalizati
 
     [ObservableProperty]
     private string _teamConversationKey = string.Empty;
+
+    [ObservableProperty]
+    private MeshProtocolKind _protocol = MeshProtocolKind.Unknown;
 
     [ObservableProperty]
     private MessageDeliveryStatus _status;
@@ -294,6 +298,7 @@ public sealed partial class MessageItemViewModel : ObservableObject, ILocalizati
         IsBroadcast = IsBroadcastDestination(entry.ToId);
         IsTeamChat = entry.IsTeamChat;
         TeamConversationKey = entry.TeamConversationKey ?? string.Empty;
+        Protocol = entry.Protocol;
         Text = entry.Text;
         Status = entry.Status;
         ErrorMessage = entry.ErrorMessage;

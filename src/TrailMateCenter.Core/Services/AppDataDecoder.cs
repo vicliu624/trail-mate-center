@@ -1,3 +1,4 @@
+using System.Buffers.Binary;
 using System.Text;
 using System.Globalization;
 using Google.Protobuf;
@@ -19,21 +20,47 @@ public sealed class AppDataDecoder
     public const uint WaypointPort = (uint)PortNum.WaypointApp;
     public const uint TelemetryPort = (uint)PortNum.TelemetryApp;
     public const uint MapReportPort = (uint)PortNum.MapReportApp;
+    private const byte MeshCoreControlMagic0 = 0x54; // 'T'
+    private const byte MeshCoreControlMagic1 = 0x4D; // 'M'
+    private const byte MeshCoreControlKindNodeInfo = 0x01;
+    private const byte MeshCoreNodeInfoTypeQuery = 0x01;
+    private const byte MeshCoreNodeInfoTypeInfo = 0x02;
+    private const int MeshCoreNodeInfoShortNameSize = 10;
+    private const int MeshCoreNodeInfoLongNameSize = 32;
+    private const int MeshCoreNodeInfoInfoPayloadSize = 4 + 1 + 1 + 4 + 4 + MeshCoreNodeInfoShortNameSize + MeshCoreNodeInfoLongNameSize;
 
-    public AppDataDecodeResult Decode(AppDataPacket packet)
+    public AppDataDecodeResult Decode(AppDataPacket packet, MeshProtocolKind protocol = MeshProtocolKind.Unknown)
     {
         var events = new List<TacticalEvent>();
         var positions = new List<PositionUpdate>();
         var nodeInfos = new List<NodeInfoUpdate>();
         var messages = new List<MessageEntry>();
 
+        if (protocol == MeshProtocolKind.MeshCore)
+        {
+            DecodeMeshCorePacket(packet, events, positions, nodeInfos, messages, protocol);
+            return new AppDataDecodeResult(packet, events, positions, nodeInfos, messages);
+        }
+
+        DecodeMeshtasticLikePacket(packet, events, positions, nodeInfos, messages, protocol);
+        return new AppDataDecodeResult(packet, events, positions, nodeInfos, messages);
+    }
+
+    private static void DecodeMeshtasticLikePacket(
+        AppDataPacket packet,
+        List<TacticalEvent> events,
+        List<PositionUpdate> positions,
+        List<NodeInfoUpdate> nodeInfos,
+        List<MessageEntry> messages,
+        MeshProtocolKind protocol)
+    {
         switch (packet.Portnum)
         {
             case TeamTrackPort:
                 DecodeTeamTrack(packet, events, positions);
                 break;
             case TeamChatPort:
-                DecodeTeamChat(packet, events, positions, messages);
+                DecodeTeamChat(packet, events, positions, messages, protocol);
                 break;
             case TeamMgmtPort:
                 DecodeTeamMgmt(packet, events);
@@ -65,8 +92,124 @@ public sealed class AppDataDecoder
                 events.Add(BuildOpaqueEvent(packet, TacticalEventKind.Unknown, title, $"payload {packet.Payload.Length} bytes"));
                 break;
         }
+    }
 
-        return new AppDataDecodeResult(packet, events, positions, nodeInfos, messages);
+    private static void DecodeMeshCorePacket(
+        AppDataPacket packet,
+        List<TacticalEvent> events,
+        List<PositionUpdate> positions,
+        List<NodeInfoUpdate> nodeInfos,
+        List<MessageEntry> messages,
+        MeshProtocolKind protocol)
+    {
+        switch (packet.Portnum)
+        {
+            case TeamTrackPort:
+                DecodeTeamTrack(packet, events, positions);
+                break;
+            case TeamChatPort:
+                DecodeTeamChat(packet, events, positions, messages, protocol);
+                break;
+            case TeamMgmtPort:
+                DecodeTeamMgmt(packet, events);
+                break;
+            case TeamPositionPort:
+                DecodeTeamPosition(packet, events, positions);
+                break;
+            case TeamWaypointPort:
+                DecodeTeamWaypoint(packet, events, positions);
+                break;
+            case NodeInfoPort:
+                if (!TryDecodeMeshCoreNodeInfoControl(packet, nodeInfos, events))
+                {
+                    events.Add(BuildOpaqueEvent(packet, TacticalEventKind.Unknown, "MeshCore NodeInfo", $"payload {packet.Payload.Length} bytes"));
+                }
+                break;
+            default:
+                var label = ResolvePortLabel(packet.Portnum);
+                var title = label is null
+                    ? $"MeshCore APP {packet.Portnum}"
+                    : $"MeshCore {label} (APP {packet.Portnum})";
+                events.Add(BuildOpaqueEvent(packet, TacticalEventKind.Unknown, title, $"payload {packet.Payload.Length} bytes"));
+                break;
+        }
+    }
+
+    private static bool TryDecodeMeshCoreNodeInfoControl(
+        AppDataPacket packet,
+        List<NodeInfoUpdate> nodeInfos,
+        List<TacticalEvent> events)
+    {
+        var payload = packet.Payload;
+        if (payload.Length < 4)
+            return false;
+        if (payload[0] != MeshCoreControlMagic0 || payload[1] != MeshCoreControlMagic1 || payload[2] != MeshCoreControlKindNodeInfo)
+            return false;
+
+        var type = payload[3];
+        if (type == MeshCoreNodeInfoTypeQuery)
+        {
+            events.Add(BuildOpaqueEvent(packet, TacticalEventKind.System, "MeshCore NodeInfo Query", "query received"));
+            return true;
+        }
+
+        if (type != MeshCoreNodeInfoTypeInfo)
+            return true;
+        if (payload.Length < MeshCoreNodeInfoInfoPayloadSize)
+            return true;
+
+        var role = payload[4];
+        var hops = payload[5];
+        var nodeId = BinaryPrimitives.ReadUInt32LittleEndian(payload.AsSpan(6, 4));
+        if (nodeId == 0)
+            nodeId = packet.From;
+
+        var timestampS = BinaryPrimitives.ReadUInt32LittleEndian(payload.AsSpan(10, 4));
+        var lastHeard = timestampS != 0
+            ? DateTimeOffset.FromUnixTimeSeconds(timestampS)
+            : DateTimeOffset.UtcNow;
+
+        var shortName = TryReadSanitizedAscii(payload.AsSpan(14, MeshCoreNodeInfoShortNameSize));
+        var longName = TryReadSanitizedAscii(payload.AsSpan(14 + MeshCoreNodeInfoShortNameSize, MeshCoreNodeInfoLongNameSize));
+
+        nodeInfos.Add(new NodeInfoUpdate(
+            nodeId,
+            shortName,
+            longName,
+            null,
+            packet.Channel,
+            lastHeard,
+            null,
+            null,
+            null));
+
+        events.Add(new TacticalEvent(
+            DateTimeOffset.UtcNow,
+            TacticalRules.GetDefaultSeverity(TacticalEventKind.System),
+            TacticalEventKind.System,
+            $"MeshCore Node · 0x{nodeId:X8}",
+            $"role {role} · hops {hops}",
+            nodeId,
+            $"0x{nodeId:X8}",
+            null,
+            null));
+        return true;
+    }
+
+    private static string? TryReadSanitizedAscii(ReadOnlySpan<byte> bytes)
+    {
+        var list = new List<byte>(bytes.Length);
+        foreach (var b in bytes)
+        {
+            if (b == 0)
+                break;
+            if (b >= 0x20 && b <= 0x7E)
+                list.Add(b);
+        }
+
+        if (list.Count == 0)
+            return null;
+        return Encoding.ASCII.GetString(list.ToArray());
     }
 
     private static void DecodeTeamTrack(AppDataPacket packet, List<TacticalEvent> events, List<PositionUpdate> positions)
@@ -117,7 +260,8 @@ public sealed class AppDataDecoder
         AppDataPacket packet,
         List<TacticalEvent> events,
         List<PositionUpdate> positions,
-        List<MessageEntry> messages)
+        List<MessageEntry> messages,
+        MeshProtocolKind protocol)
     {
         var reader = new HostLinkSpanReader(packet.Payload);
         if (!reader.TryReadByte(out var version) || version != 1)
@@ -142,7 +286,7 @@ public sealed class AppDataDecoder
         {
             case 1:
                 var text = Encoding.UTF8.GetString(reader.Remaining);
-                AddTeamChatMessage(packet, messages, sender, msgId, when, text);
+                AddTeamChatMessage(packet, messages, sender, msgId, when, text, protocol: protocol);
                 events.Add(new TacticalEvent(
                     when,
                     TacticalRules.GetDefaultSeverity(TacticalEventKind.ChatText),
@@ -155,10 +299,10 @@ public sealed class AppDataDecoder
                     null));
                 break;
             case 2:
-                DecodeChatLocation(packet, sender, msgId, when, reader, events, positions, messages);
+                DecodeChatLocation(packet, sender, msgId, when, reader, events, positions, messages, protocol);
                 break;
             case 3:
-                DecodeChatCommand(packet, sender, msgId, when, reader, events, messages);
+                DecodeChatCommand(packet, sender, msgId, when, reader, events, messages, protocol);
                 break;
             default:
                 events.Add(BuildOpaqueEvent(packet, TacticalEventKind.ChatText, "Team Chat", $"未知类型 {type}"));
@@ -177,7 +321,8 @@ public sealed class AppDataDecoder
         HostLinkSpanReader reader,
         List<TacticalEvent> events,
         List<PositionUpdate> positions,
-        List<MessageEntry> messages)
+        List<MessageEntry> messages,
+        MeshProtocolKind protocol)
     {
         if (!reader.TryReadInt32(out var latE7) ||
             !reader.TryReadInt32(out var lonE7) ||
@@ -219,7 +364,7 @@ public sealed class AppDataDecoder
         var detail = string.IsNullOrWhiteSpace(label)
             ? $"精度 {accM}m · 来源 {sourceLabel} (raw={source})"
             : $"{label} · 精度 {accM}m · 来源 {sourceLabel} (raw={source})";
-        AddTeamChatMessage(packet, messages, from, msgId, ts, $"[位置] {detail}", lat, lon, altM);
+        AddTeamChatMessage(packet, messages, from, msgId, ts, $"[位置] {detail}", lat, lon, altM, protocol);
 
         events.Add(new TacticalEvent(
             ts,
@@ -240,7 +385,8 @@ public sealed class AppDataDecoder
         DateTimeOffset when,
         HostLinkSpanReader reader,
         List<TacticalEvent> events,
-        List<MessageEntry> messages)
+        List<MessageEntry> messages,
+        MeshProtocolKind protocol)
     {
         if (!reader.TryReadByte(out var cmdType) ||
             !reader.TryReadInt32(out var latE7) ||
@@ -269,7 +415,7 @@ public sealed class AppDataDecoder
             _ => $"Cmd{cmdType}",
         };
         var detail = $"半径 {radiusM}m · 优先级 {priority}" + (string.IsNullOrWhiteSpace(note) ? string.Empty : $" · {note}");
-        AddTeamChatMessage(packet, messages, from, msgId, when, $"[指令] {cmdName} · {detail}", lat, lon);
+        AddTeamChatMessage(packet, messages, from, msgId, when, $"[指令] {cmdName} · {detail}", lat, lon, protocol: protocol);
 
         events.Add(new TacticalEvent(
             when,
@@ -292,7 +438,8 @@ public sealed class AppDataDecoder
         string text,
         double? latitude = null,
         double? longitude = null,
-        double? altitude = null)
+        double? altitude = null,
+        MeshProtocolKind protocol = MeshProtocolKind.Unknown)
     {
         var isBroadcast = packet.To == 0 || packet.To == uint.MaxValue;
         var teamConversationKey = BuildTeamConversationKey(packet);
@@ -321,6 +468,7 @@ public sealed class AppDataDecoder
             Altitude = altitude,
             IsTeamChat = true,
             TeamConversationKey = teamConversationKey,
+            Protocol = protocol,
         });
     }
 

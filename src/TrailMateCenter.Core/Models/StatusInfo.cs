@@ -7,7 +7,7 @@ public sealed record StatusInfo
     public int? BatteryPercent { get; init; }
     public bool IsCharging { get; init; }
     public HostLinkLinkState LinkState { get; init; } = HostLinkLinkState.Waiting;
-    public byte MeshProtocol { get; init; }
+    public MeshProtocolKind MeshProtocol { get; init; } = MeshProtocolKind.Unknown;
     public byte Region { get; init; }
     public byte Channel { get; init; }
     public bool DutyCycleEnabled { get; init; }

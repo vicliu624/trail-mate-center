@@ -57,6 +57,36 @@ public enum HostLinkAppDataFlags : byte
     MoreChunks = 1 << 3,
 }
 
+public enum MeshProtocolKind : byte
+{
+    Unknown = 0,
+    Meshtastic = 1,
+    MeshCore = 2,
+}
+
+public static class MeshProtocolKindHelpers
+{
+    public static MeshProtocolKind FromWire(byte value)
+    {
+        return value switch
+        {
+            1 => MeshProtocolKind.Meshtastic,
+            2 => MeshProtocolKind.MeshCore,
+            _ => MeshProtocolKind.Unknown,
+        };
+    }
+
+    public static string ToShortTag(this MeshProtocolKind protocol)
+    {
+        return protocol switch
+        {
+            MeshProtocolKind.Meshtastic => "MT",
+            MeshProtocolKind.MeshCore => "MC",
+            _ => "UNK",
+        };
+    }
+}
+
 public enum HostLinkConfigKey : byte
 {
     MeshProtocol = 1,
