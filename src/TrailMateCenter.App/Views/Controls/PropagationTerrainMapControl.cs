@@ -130,6 +130,11 @@ public sealed class PropagationTerrainMapControl : Control
         var scene = Scene;
         var bounds = Bounds;
         var rect = new Rect(0, 0, bounds.Width, bounds.Height);
+        if (rect.Width <= 0 || rect.Height <= 0)
+            return;
+
+        using var clipScope = context.PushClip(rect);
+
         var overlayOpacity = Math.Clamp(OverlayOpacity, 0, 1);
         var showLandcoverLayer = string.Equals(ActiveLayerKey, "landcover", StringComparison.Ordinal);
         var projectionAvailable = scene is not null && (!ShouldUseViewportProjection(scene) || TryGetViewportState(rect.Size, out _));
@@ -233,6 +238,8 @@ public sealed class PropagationTerrainMapControl : Control
                 var alpha = (byte)Math.Round(overlayOpacity * 160);
                 var brush = new SolidColorBrush(Color.FromArgb(alpha, terrainColor.R, terrainColor.G, terrainColor.B));
                 var cellRect = ProjectSceneRect(rect, scene, minX + (col * cellWidthM), minZ + (row * cellHeightM), cellWidthM, cellHeightM);
+                if (!IsVisibleRect(rect, cellRect))
+                    continue;
                 context.DrawRectangle(brush, null, cellRect);
             }
         }
@@ -258,6 +265,8 @@ public sealed class PropagationTerrainMapControl : Control
                 var alpha = (byte)Math.Round(overlayOpacity * 176);
                 var brush = new SolidColorBrush(Color.FromArgb(alpha, landcoverColor.R, landcoverColor.G, landcoverColor.B));
                 var cellRect = ProjectSceneRect(rect, scene, minX + (col * cellWidthM), minZ + (row * cellHeightM), cellWidthM, cellHeightM);
+                if (!IsVisibleRect(rect, cellRect))
+                    continue;
                 context.DrawRectangle(brush, null, cellRect);
             }
         }
@@ -388,6 +397,8 @@ public sealed class PropagationTerrainMapControl : Control
                 cell.Z - (cell.HeightM / 2d),
                 cell.WidthM,
                 cell.HeightM);
+            if (!IsVisibleRect(rect, cellRect))
+                continue;
             context.DrawRectangle(brush, null, cellRect);
         }
     }
@@ -426,6 +437,22 @@ public sealed class PropagationTerrainMapControl : Control
     private static Color ResolveLandcoverColor(PropagationLandcoverClass landcoverClass)
     {
         return Color.Parse(PropagationLandcoverPresentation.ResolveAccentColorHex(landcoverClass));
+    }
+
+    private static bool IsVisibleRect(Rect viewportRect, Rect candidateRect)
+    {
+        if (!double.IsFinite(candidateRect.X) ||
+            !double.IsFinite(candidateRect.Y) ||
+            !double.IsFinite(candidateRect.Width) ||
+            !double.IsFinite(candidateRect.Height))
+        {
+            return false;
+        }
+
+        if (candidateRect.Width <= 0 || candidateRect.Height <= 0)
+            return false;
+
+        return candidateRect.Intersects(viewportRect);
     }
 
     private Point ProjectScene(Rect rect, PropagationTerrainMapSceneViewModel scene, double x, double z)

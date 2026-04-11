@@ -165,11 +165,11 @@
               </ItemsControl>
             </StackPanel>
           </StackPanel>
-          <Border Grid.Column="1" Grid.RowSpan="2" Margin="8,0" Background="#80111B2A" BorderBrush="#56718E" BorderThickness="1" CornerRadius="6">
-            <Grid Margin="12" RowDefinitions="*,Auto">
+          <Border Grid.Column="1" Grid.RowSpan="2" Margin="8,0" Background="#80111B2A" BorderBrush="#56718E" BorderThickness="1" CornerRadius="6" ClipToBounds="True">
+            <Grid Margin="12" RowDefinitions="*,Auto" ClipToBounds="True">
               <Border Background="#25131E2B" CornerRadius="8"/>
               <mapsui:MapControl x:Name="PropagationMapControl" Map="{Binding #PropagationRoot.DataContext.Map.Map}" IsVisible="{Binding ShowReferenceBasemap}"/>
-              <controls:PropagationTerrainMapControl x:Name="PropagationTerrainOverlay" Scene="{Binding TerrainScene}" ActiveLayerKey="{Binding SelectedLayerKey}" OverlayOpacity="{Binding TerrainOverlayOpacity}" IsHitTestVisible="False"/>
+              <controls:PropagationTerrainMapControl x:Name="PropagationTerrainOverlay" Scene="{Binding TerrainScene}" ActiveLayerKey="{Binding SelectedLayerKey}" OverlayOpacity="{Binding TerrainOverlayOpacity}" IsHitTestVisible="False" ClipToBounds="True"/>
               <Border IsHitTestVisible="False" Background="{StaticResource MapNoiseBrush}" Opacity="0.04" CornerRadius="8"/>
               <Border IsHitTestVisible="False" Background="{StaticResource MapVignette}" Opacity="0.16" CornerRadius="8"/>
               <Border HorizontalAlignment="Left" VerticalAlignment="Top" Margin="10" Background="#B41A2839" BorderBrush="#5E7A9A" BorderThickness="1" CornerRadius="6" Padding="8">
