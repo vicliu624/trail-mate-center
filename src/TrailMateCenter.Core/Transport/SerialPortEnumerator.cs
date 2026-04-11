@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.IO.Ports;
 using System.Text.RegularExpressions;
 using System.Runtime.Versioning;
@@ -76,6 +77,9 @@ public sealed class SerialPortEnumerator : ISerialPortEnumerator
     [SupportedOSPlatform("windows")]
     private static void TryHydrateWindowsDetails(List<SerialPortInfo> ports)
     {
+        if (!ShouldUseWmi())
+            return;
+
         try
         {
             var lookup = ports.ToDictionary(p => p.PortName, StringComparer.OrdinalIgnoreCase);
@@ -112,6 +116,9 @@ public sealed class SerialPortEnumerator : ISerialPortEnumerator
     [SupportedOSPlatform("windows")]
     private static void TryHydrateFromSerialPort(Dictionary<string, SerialPortInfo> lookup)
     {
+        if (!ShouldUseWmi())
+            return;
+
         try
         {
             using var searcher = new System.Management.ManagementObjectSearcher(
@@ -154,5 +161,31 @@ public sealed class SerialPortEnumerator : ISerialPortEnumerator
     {
         var match = Regex.Match(input, $"{key}_([0-9A-Fa-f]{{4}})");
         return match.Success ? match.Groups[1].Value : null;
+    }
+
+    private static bool ShouldUseWmi()
+    {
+        if (!OperatingSystem.IsWindows())
+            return false;
+
+        var env = Environment.GetEnvironmentVariable("TRAILMATE_SERIALPORT_WMI");
+        if (string.IsNullOrWhiteSpace(env))
+        {
+            return !Debugger.IsAttached;
+        }
+
+        if (bool.TryParse(env, out var parsed))
+            return parsed;
+
+        return env.Trim() switch
+        {
+            "1" => true,
+            "yes" => true,
+            "on" => true,
+            "0" => false,
+            "no" => false,
+            "off" => false,
+            _ => !Debugger.IsAttached,
+        };
     }
 }
