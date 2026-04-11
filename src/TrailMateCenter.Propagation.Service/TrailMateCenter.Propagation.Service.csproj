@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Protobuf Include="..\TrailMateCenter.Propagation.Client\Protos\propagation.proto" GrpcServices="Server" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Grpc.AspNetCore" Version="2.66.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\TrailMateCenter.Propagation.Contracts\TrailMateCenter.Propagation.Contracts.csproj" />
+    <ProjectReference Include="..\TrailMateCenter.Propagation.Engine\TrailMateCenter.Propagation.Engine.csproj" />
+  </ItemGroup>
+</Project>

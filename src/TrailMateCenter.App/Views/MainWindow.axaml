@@ -80,6 +80,10 @@
                 <views:DashboardView/>
             </TabItem>
 
+            <TabItem Header="{DynamicResource Ui.Tab.Propagation}">
+                <views:PropagationView/>
+            </TabItem>
+
             <TabItem>
                 <TabItem.Header>
                     <StackPanel Orientation="Horizontal" Spacing="4">

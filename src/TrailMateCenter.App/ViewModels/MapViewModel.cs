@@ -89,7 +89,7 @@ public sealed class MapViewModel : INotifyPropertyChanged
     private int _contourRefreshScheduled;
     private ITileSource? _osmTileSource;
     private ContourSettings _contourSettings = new();
-    private CancellationTokenSource? _contourDebounce;
+    private int _contourDebounceVersion;
     private int _currentZoom;
     private string _currentZoomText = string.Empty;
     private string _currentContourText = string.Empty;
@@ -990,17 +990,57 @@ public sealed class MapViewModel : INotifyPropertyChanged
 
     internal async Task<EarthdataTestResult> TestEarthdataCredentialsAsync()
     {
-        var viewport = Map.Navigator.Viewport;
-        if (viewport.Width <= 0 || viewport.Height <= 0)
+        if (!TryGetViewportLonLatBounds(out var bounds))
             return new EarthdataTestResult(EarthdataTestStatus.NoViewport);
 
-        var extent = GetViewportExtent(viewport);
-        var bounds = GetLonLatBounds(extent);
-        if (!IsFinite(bounds.West) || !IsFinite(bounds.South) || !IsFinite(bounds.East) || !IsFinite(bounds.North))
-            return new EarthdataTestResult(EarthdataTestStatus.Error, "Invalid viewport bounds");
-        bounds = ClampBounds(bounds);
         return await _contourService.TestCredentialsAsync(bounds, CancellationToken.None);
     }
+
+    internal bool TryGetViewportWorldBounds(out (double MinX, double MinZ, double MaxX, double MaxZ) bounds)
+    {
+        var viewport = Map.Navigator.Viewport;
+        if (viewport.Width <= 0 || viewport.Height <= 0)
+        {
+            bounds = default;
+            return false;
+        }
+
+        var extent = GetViewportExtent(viewport);
+        if (!IsFinite(extent.MinX) || !IsFinite(extent.MinY) || !IsFinite(extent.MaxX) || !IsFinite(extent.MaxY))
+        {
+            bounds = default;
+            return false;
+        }
+
+        bounds = (
+            Math.Min(extent.MinX, extent.MaxX),
+            Math.Min(extent.MinY, extent.MaxY),
+            Math.Max(extent.MinX, extent.MaxX),
+            Math.Max(extent.MinY, extent.MaxY));
+        return true;
+    }
+
+    internal bool TryGetViewportLonLatBounds(out (double West, double South, double East, double North) bounds)
+    {
+        if (!TryGetViewportWorldBounds(out var worldBounds))
+        {
+            bounds = default;
+            return false;
+        }
+
+        var extent = new MRect(worldBounds.MinX, worldBounds.MinZ, worldBounds.MaxX, worldBounds.MaxZ);
+        bounds = GetLonLatBounds(extent);
+        if (!IsFinite(bounds.West) || !IsFinite(bounds.South) || !IsFinite(bounds.East) || !IsFinite(bounds.North))
+        {
+            bounds = default;
+            return false;
+        }
+
+        bounds = ClampBounds(bounds);
+        return true;
+    }
+
+    internal ContourSettings GetContourSettingsSnapshot() => _contourSettings with { };
 
     private void RefreshLayers()
     {
@@ -1126,9 +1166,7 @@ public sealed class MapViewModel : INotifyPropertyChanged
         if (_osmTileSource is null)
             return;
 
-        _contourDebounce?.Cancel();
-        var cts = new CancellationTokenSource();
-        _contourDebounce = cts;
+        var scheduledVersion = Interlocked.Increment(ref _contourDebounceVersion);
 
         var viewport = Map.Navigator.Viewport;
         if (viewport.Width <= 0 || viewport.Height <= 0)
@@ -1139,14 +1177,9 @@ public sealed class MapViewModel : INotifyPropertyChanged
 
         _ = Task.Run(async () =>
         {
-            try
-            {
-                await Task.Delay(350, cts.Token);
-            }
-            catch (OperationCanceledException)
-            {
+            await Task.Delay(350).ConfigureAwait(false);
+            if (scheduledVersion != Volatile.Read(ref _contourDebounceVersion))
                 return;
-            }
 
             var zoom = GetZoomFromResolution(resolution);
             var spec = GetContourSpec(zoom, allowUltraFine);

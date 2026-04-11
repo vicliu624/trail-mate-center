@@ -9,6 +9,7 @@ using System;
 using System.Linq;
 using System.Threading;
 using TrailMateCenter.Localization;
+using TrailMateCenter.Propagation.Engine;
 using TrailMateCenter.Services;
 using TrailMateCenter.Styling;
 using TrailMateCenter.Storage;
@@ -63,6 +64,16 @@ public partial class App : Application
     private static IServiceProvider ConfigureServices()
     {
         var services = new ServiceCollection();
+        var usePropagationMock = IsEnabledEnvironmentVariable("TRAILMATE_PROPAGATION_USE_MOCK");
+        var useSimulationMock = ResolveFeatureToggle(
+            "TRAILMATE_PROPAGATION_SIMULATION_USE_MOCK",
+            usePropagationMock);
+        var useUnityBridgeMock = ResolveFeatureToggle(
+            "TRAILMATE_PROPAGATION_UNITY_BRIDGE_USE_MOCK",
+            usePropagationMock);
+        var useUnityProcessManagerMock = ResolveFeatureToggle(
+            "TRAILMATE_PROPAGATION_UNITY_PROCESS_USE_MOCK",
+            usePropagationMock || useUnityBridgeMock);
 
         services.AddLogging(builder =>
         {
@@ -74,6 +85,9 @@ public partial class App : Application
 
         services.AddSingleton<LogStore>();
         services.AddSingleton<SessionStore>();
+        services.AddSingleton<ApproximateLocationService>();
+        services.AddSingleton<PropagationServiceProcessManager>();
+        services.AddSingleton<IPropagationSolver, FormalPropagationSolver>();
         services.AddSingleton(sp => new SqliteStore(SqliteStore.GetDefaultPath()));
         services.AddSingleton<PersistenceService>();
         services.AddSingleton<ExportService>();
@@ -83,10 +97,51 @@ public partial class App : Application
         services.AddSingleton<AprsIsClient>();
         services.AddSingleton<AprsGatewayService>();
         services.AddSingleton<MeshtasticMqttClient>();
+        if (useSimulationMock)
+            services.AddSingleton<IPropagationSimulationService, FakePropagationSimulationService>();
+        else
+            services.AddSingleton<IPropagationSimulationService, InProcessPropagationSimulationService>();
+
+        if (useUnityBridgeMock)
+            services.AddSingleton<IPropagationUnityBridge, FakePropagationUnityBridge>();
+        else
+            services.AddSingleton<IPropagationUnityBridge, UnityProcessPropagationBridge>();
+
+        if (useUnityProcessManagerMock)
+            services.AddSingleton<IPropagationUnityProcessManager, FakePropagationUnityProcessManager>();
+        else
+            services.AddSingleton<IPropagationUnityProcessManager, UnityProcessManager>();
         services.AddSingleton<MainWindow>();
         services.AddSingleton<MainWindowViewModel>();
 
         return services.BuildServiceProvider();
+    }
+
+    private static bool IsEnabledEnvironmentVariable(string name)
+    {
+        var value = Environment.GetEnvironmentVariable(name);
+        if (string.IsNullOrWhiteSpace(value))
+            return false;
+
+        if (bool.TryParse(value, out var parsed))
+            return parsed;
+
+        return value.Trim() switch
+        {
+            "1" => true,
+            "yes" => true,
+            "on" => true,
+            _ => false,
+        };
+    }
+
+    private static bool ResolveFeatureToggle(string environmentName, bool fallback)
+    {
+        var value = Environment.GetEnvironmentVariable(environmentName);
+        if (string.IsNullOrWhiteSpace(value))
+            return fallback;
+
+        return IsEnabledEnvironmentVariable(environmentName);
     }
 
     private void DisableAvaloniaDataAnnotationValidation()

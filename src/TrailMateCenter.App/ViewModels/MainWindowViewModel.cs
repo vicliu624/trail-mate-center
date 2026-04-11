@@ -24,10 +24,11 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     private const byte TeamStateFlagPendingJoin = 1 << 1;
     private const byte TeamStateFlagHasTeamId = 1 << 4;
     private const int DashboardTabIndex = 0;
-    private const int ChatTabIndex = 1;
-    private const int LogsTabIndex = 3;
-    private const int EventsTabIndex = 4;
-    private const int ExportTabIndex = 6;
+    private const int PropagationTabIndex = 1;
+    private const int ChatTabIndex = 2;
+    private const int LogsTabIndex = 4;
+    private const int EventsTabIndex = 5;
+    private const int ExportTabIndex = 7;
     private static readonly string[] LocationMessageKeywords =
     [
         "shared their position",
@@ -85,6 +86,10 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     private readonly SqliteStore _sqliteStore;
     private readonly SettingsStore _settingsStore;
     private readonly SessionStore _sessionStore;
+    private readonly ApproximateLocationService _approximateLocationService;
+    private readonly IPropagationUnityProcessManager _propagationUnityProcessManager;
+    private readonly bool _keepPropagationUnityAlive;
+    private readonly bool _autoAttachExternalUnity;
     private readonly ILogger<MainWindowViewModel> _logger;
     private AppSettings _settings = new();
     private readonly DispatcherTimer _presenceTimer;
@@ -111,11 +116,12 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     private object[] _earthdataStatusArgs = Array.Empty<object>();
     private string? _earthdataStatusDetail;
     private bool _earthdataTestBusy;
-    private CancellationTokenSource? _settingsSaveDebounce;
+    private int _settingsSaveDebounceVersion;
     private bool _eventsHistoryLoadTriggered;
     private bool _eventsHistoryLoadInProgress;
     private bool _logsHistoryLoadTriggered;
     private bool _logsHistoryLoadInProgress;
+    private bool _initialMapLocationResolved;
 
     public MainWindowViewModel(
         HostLinkClient client,
@@ -128,6 +134,11 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         LogStore logStore,
         SessionStore sessionStore,
         ExportService exportService,
+        ApproximateLocationService approximateLocationService,
+        PropagationServiceProcessManager propagationServiceProcessManager,
+        IPropagationSimulationService propagationSimulationService,
+        IPropagationUnityBridge propagationUnityBridge,
+        IPropagationUnityProcessManager propagationUnityProcessManager,
         ILogger<MainWindowViewModel> logger)
     {
         _client = client;
@@ -138,9 +149,15 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         _sqliteStore = sqliteStore;
         _settingsStore = settingsStore;
         _sessionStore = sessionStore;
+        _approximateLocationService = approximateLocationService;
+        _propagationUnityProcessManager = propagationUnityProcessManager;
+        _keepPropagationUnityAlive = ParseEnvironmentFlag("TRAILMATE_PROPAGATION_UNITY_KEEPALIVE", defaultValue: false);
+        _autoAttachExternalUnity = ParseEnvironmentFlag("TRAILMATE_PROPAGATION_UNITY_AUTO_ATTACH", defaultValue: false);
         _logger = logger;
 
         Config = new ConfigViewModel(_client, logger);
+        Propagation = new PropagationViewModel(propagationSimulationService, logStore, propagationServiceProcessManager, propagationUnityBridge);
+        Propagation.AttachMap(Map);
         Logs = new LogsViewModel(logStore);
         Events = new EventsViewModel(sessionStore);
         RawFrames = new RawFramesViewModel(sessionStore);
@@ -182,6 +199,15 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         _meshtasticMqtt.TacticalEventReceived += OnMqttTacticalEventReceived;
         _aprsGateway.StatsChanged += OnAprsStatsChanged;
         _aprsClient.StatusChanged += OnAprsStatusChanged;
+        _propagationUnityProcessManager.ProcessStateChanged += OnPropagationUnityProcessStateChanged;
+
+        Propagation.ApplyUnityProcessState(new PropagationUnityProcessStateChangedEventArgs
+        {
+            ProcessState = _propagationUnityProcessManager.ProcessState,
+            ProcessId = _propagationUnityProcessManager.ProcessId,
+            Message = "Unity process manager initialized.",
+            TimestampUtc = DateTimeOffset.UtcNow,
+        });
 
         var loc = LocalizationService.Instance;
         ConnectionStateText = loc.GetString("Status.Connection.Disconnected");
@@ -213,6 +239,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         UpdateMapMqttVisibility();
         Map.SetGibsVisibility(MapShowGibs);
         Map.PropertyChanged += OnMapPropertyChanged;
+        _ = EnsureInitialMapLocationAsync();
 
         _presenceTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(5) };
         _presenceTimer.Tick += (_, _) => RefreshSubjectStatuses();
@@ -260,6 +287,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     public MapViewModel Map { get; } = new();
 
     public ConfigViewModel Config { get; }
+    public PropagationViewModel Propagation { get; }
     public LogsViewModel Logs { get; }
     public EventsViewModel Events { get; }
     public RawFramesViewModel RawFrames { get; }
@@ -583,20 +611,13 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         if (!_settingsLoaded)
             return;
 
-        _settingsSaveDebounce?.Cancel();
-        var cts = new CancellationTokenSource();
-        _settingsSaveDebounce = cts;
+        var scheduledVersion = Interlocked.Increment(ref _settingsSaveDebounceVersion);
 
         _ = Task.Run(async () =>
         {
-            try
-            {
-                await Task.Delay(800, cts.Token);
-            }
-            catch (OperationCanceledException)
-            {
+            await Task.Delay(800).ConfigureAwait(false);
+            if (scheduledVersion != Volatile.Read(ref _settingsSaveDebounceVersion))
                 return;
-            }
 
             Dispatcher.UIThread.Post(async () =>
             {
@@ -1289,18 +1310,26 @@ public sealed partial class MainWindowViewModel : ViewModelBase
 
             if (result.Success)
             {
-                OfflineCacheExportStatusText = loc.Format(
-                    "Status.OfflineCache.ExportDone",
-                    result.CopiedTiles,
-                    result.SourceTiles,
-                    result.SkippedTiles);
+                OfflineCacheExportStatusText = result.UnreadableEntries > 0
+                    ? loc.Format(
+                        "Status.OfflineCache.ExportDoneWithUnreadable",
+                        result.CopiedTiles,
+                        result.SourceTiles,
+                        result.SkippedTiles,
+                        result.UnreadableEntries)
+                    : loc.Format(
+                        "Status.OfflineCache.ExportDone",
+                        result.CopiedTiles,
+                        result.SourceTiles,
+                        result.SkippedTiles);
                 _logger.LogInformation(
-                    "Offline cache region '{RegionName}' exported to '{TargetRoot}'. copied={Copied}, source={Source}, skipped={Skipped}",
+                    "Offline cache region '{RegionName}' exported to '{TargetRoot}'. copied={Copied}, source={Source}, skipped={Skipped}, unreadable={Unreadable}",
                     region.Name,
                     result.TargetMapRoot,
                     result.CopiedTiles,
                     result.SourceTiles,
-                    result.SkippedTiles);
+                    result.SkippedTiles,
+                    result.UnreadableEntries);
             }
             else
             {
@@ -1414,7 +1443,8 @@ public sealed partial class MainWindowViewModel : ViewModelBase
                 mapsRoot,
                 stats.SourceTiles,
                 stats.CopiedTiles,
-                stats.SkippedTiles);
+                stats.SkippedTiles,
+                stats.UnreadableEntries);
         }
         catch (OperationCanceledException)
         {
@@ -1542,26 +1572,45 @@ public sealed partial class MainWindowViewModel : ViewModelBase
                 continue;
 
             string? targetXRoot = null;
-            foreach (var sourceFile in Directory.EnumerateFiles(sourceXRoot, searchPattern, SearchOption.TopDirectoryOnly))
+            string[] sourceFiles;
+            try
             {
-                var fileName = Path.GetFileNameWithoutExtension(sourceFile);
-                if (!int.TryParse(fileName, NumberStyles.Integer, CultureInfo.InvariantCulture, out var y))
-                    continue;
-                if (y < range.MinY || y > range.MaxY)
-                    continue;
+                sourceFiles = Directory.GetFiles(sourceXRoot, searchPattern, SearchOption.TopDirectoryOnly);
+            }
+            catch (Exception ex) when (IsSkippableFileSystemException(ex))
+            {
+                stats.UnreadableEntries++;
+                continue;
+            }
 
-                stats.SourceTiles++;
-                targetXRoot ??= Path.Combine(targetZoomRoot, xText);
-                Directory.CreateDirectory(targetXRoot);
-                var targetFile = Path.Combine(targetXRoot, $"{y}.{extension}");
-                if (File.Exists(targetFile) && IsSameSizeTile(sourceFile, targetFile))
+            foreach (var sourceFile in sourceFiles)
+            {
+                try
                 {
-                    stats.SkippedTiles++;
-                    continue;
-                }
+                    var fileName = Path.GetFileNameWithoutExtension(sourceFile);
+                    if (!int.TryParse(fileName, NumberStyles.Integer, CultureInfo.InvariantCulture, out var y))
+                        continue;
+                    if (y < range.MinY || y > range.MaxY)
+                        continue;
 
-                File.Copy(sourceFile, targetFile, overwrite: true);
-                stats.CopiedTiles++;
+                    stats.SourceTiles++;
+                    targetXRoot ??= Path.Combine(targetZoomRoot, xText);
+                    Directory.CreateDirectory(targetXRoot);
+                    var targetFile = Path.Combine(targetXRoot, $"{y}.{extension}");
+                    if (File.Exists(targetFile) && IsSameSizeTile(sourceFile, targetFile))
+                    {
+                        stats.SkippedTiles++;
+                        continue;
+                    }
+
+                    File.Copy(sourceFile, targetFile, overwrite: true);
+                    stats.CopiedTiles++;
+                }
+                catch (Exception ex) when (IsSkippableFileSystemException(ex))
+                {
+                    stats.UnreadableEntries++;
+                    stats.SkippedTiles++;
+                }
             }
         }
     }
@@ -1874,14 +1923,31 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             if (!Directory.Exists(xDir))
                 continue;
 
-            foreach (var file in Directory.EnumerateFiles(xDir, searchPattern, SearchOption.TopDirectoryOnly))
+            string[] files;
+            try
             {
-                var fileName = Path.GetFileNameWithoutExtension(file);
-                if (!int.TryParse(fileName, NumberStyles.Integer, CultureInfo.InvariantCulture, out var y))
+                files = Directory.GetFiles(xDir, searchPattern, SearchOption.TopDirectoryOnly);
+            }
+            catch (Exception ex) when (IsSkippableFileSystemException(ex))
+            {
+                continue;
+            }
+
+            foreach (var file in files)
+            {
+                try
+                {
+                    var fileName = Path.GetFileNameWithoutExtension(file);
+                    if (!int.TryParse(fileName, NumberStyles.Integer, CultureInfo.InvariantCulture, out var y))
+                        continue;
+                    if (y < range.MinY || y > range.MaxY)
+                        continue;
+                    count++;
+                }
+                catch (Exception ex) when (IsSkippableFileSystemException(ex))
+                {
                     continue;
-                if (y < range.MinY || y > range.MaxY)
-                    continue;
-                count++;
+                }
             }
         }
 
@@ -1970,13 +2036,15 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         long SourceTiles,
         long CopiedTiles,
         long SkippedTiles,
+        long UnreadableEntries,
         string? ErrorMessage)
     {
         public static OfflineCacheRegionExportResult Ok(
             string targetMapRoot,
             long sourceTiles,
             long copiedTiles,
-            long skippedTiles)
+            long skippedTiles,
+            long unreadableEntries)
         {
             return new OfflineCacheRegionExportResult(
                 Success: true,
@@ -1984,6 +2052,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
                 SourceTiles: sourceTiles,
                 CopiedTiles: copiedTiles,
                 SkippedTiles: skippedTiles,
+                UnreadableEntries: unreadableEntries,
                 ErrorMessage: null);
         }
 
@@ -1995,6 +2064,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
                 SourceTiles: 0,
                 CopiedTiles: 0,
                 SkippedTiles: 0,
+                UnreadableEntries: 0,
                 ErrorMessage: errorMessage);
         }
     }
@@ -2004,6 +2074,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         public long SourceTiles { get; set; }
         public long CopiedTiles { get; set; }
         public long SkippedTiles { get; set; }
+        public long UnreadableEntries { get; set; }
     }
 
     private async Task DisconnectAsync()
@@ -2198,12 +2269,113 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             ClearConversationUnread(SelectedConversation);
         }
 
+        if (value == PropagationTabIndex)
+        {
+            _ = EnsureInitialMapLocationAsync();
+        }
+
         _ = LoadDeferredHistoryForTabAsync(value);
+    }
+
+    private async Task EnsureInitialMapLocationAsync()
+    {
+        if (_initialMapLocationResolved)
+            return;
+
+        try
+        {
+            var location = await _approximateLocationService.ResolveAsync(CancellationToken.None);
+            if (location is null)
+                return;
+
+            Map.FocusOn(location.Latitude, location.Longitude, minZoomLevel: 12);
+            _initialMapLocationResolved = true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogInformation(ex, "Failed to resolve initial map location.");
+        }
     }
 
     partial void OnUnreadChatCountChanged(int value)
     {
         OnPropertyChanged(nameof(HasUnreadChat));
+    }
+
+    private async Task EnsurePropagationUnityRuntimeAsync()
+    {
+        try
+        {
+            var snapshot = await _propagationUnityProcessManager.EnsureStartedAsync(CancellationToken.None);
+            Propagation.ApplyUnityProcessSnapshot(snapshot);
+            if (snapshot.IsManagedExternally && !_autoAttachExternalUnity)
+            {
+                Propagation.ApplyUnityProcessState(new PropagationUnityProcessStateChangedEventArgs
+                {
+                    ProcessState = PropagationUnityProcessState.ExternalManaged,
+                    ProcessId = null,
+                    Message = "External Unity process mode: waiting for bridge endpoint.",
+                    TimestampUtc = DateTimeOffset.UtcNow,
+                });
+                return;
+            }
+            try
+            {
+                await Propagation.EnsureUnityViewportAttachedAsync(CancellationToken.None);
+            }
+            catch (Exception ex) when (snapshot.IsManagedExternally)
+            {
+                _logger.LogInformation(ex, "Unity bridge not reachable yet in external managed mode.");
+                Propagation.ApplyUnityProcessState(new PropagationUnityProcessStateChangedEventArgs
+                {
+                    ProcessState = PropagationUnityProcessState.ExternalManaged,
+                    ProcessId = null,
+                    Message = "External Unity process mode: waiting for bridge endpoint.",
+                    TimestampUtc = DateTimeOffset.UtcNow,
+                });
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to ensure Unity runtime when opening propagation tab.");
+            Propagation.ApplyUnityProcessState(new PropagationUnityProcessStateChangedEventArgs
+            {
+                ProcessState = PropagationUnityProcessState.Faulted,
+                ProcessId = _propagationUnityProcessManager.ProcessId,
+                Message = $"Unity runtime start failed: {ex.Message}",
+                TimestampUtc = DateTimeOffset.UtcNow,
+            });
+        }
+    }
+
+    private static bool IsSkippableFileSystemException(Exception ex)
+    {
+        return ex is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException or PathTooLongException;
+    }
+
+    private async Task StopPropagationUnityRuntimeAsync()
+    {
+        try
+        {
+            await Propagation.DisconnectUnityBridgeAsync(CancellationToken.None);
+            await _propagationUnityProcessManager.StopAsync(CancellationToken.None);
+            Propagation.ApplyUnityProcessState(new PropagationUnityProcessStateChangedEventArgs
+            {
+                ProcessState = _propagationUnityProcessManager.ProcessState,
+                ProcessId = _propagationUnityProcessManager.ProcessId,
+                Message = "Unity runtime stopped by tab lifecycle.",
+                TimestampUtc = DateTimeOffset.UtcNow,
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to stop Unity runtime when leaving propagation tab.");
+        }
+    }
+
+    private void OnPropagationUnityProcessStateChanged(object? sender, PropagationUnityProcessStateChangedEventArgs e)
+    {
+        Dispatcher.UIThread.Post(() => Propagation.ApplyUnityProcessState(e));
     }
 
     partial void OnAutoConnectOnDetectChanged(bool value)
@@ -3375,6 +3547,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             Events.RefreshLocalization();
             Map.RefreshLocalization();
             Config.RefreshLocalization();
+            Propagation.RefreshLocalization();
             Logs.RefreshLocalization();
             Export.RefreshLocalization();
 
@@ -3643,6 +3816,26 @@ public sealed partial class MainWindowViewModel : ViewModelBase
                name.Contains("serial", StringComparison.Ordinal) ||
                name.Contains("uart", StringComparison.Ordinal) ||
                name.Contains("acm", StringComparison.Ordinal);
+    }
+
+    private static bool ParseEnvironmentFlag(string name, bool defaultValue)
+    {
+        var value = Environment.GetEnvironmentVariable(name);
+        if (string.IsNullOrWhiteSpace(value))
+            return defaultValue;
+        if (bool.TryParse(value, out var parsed))
+            return parsed;
+
+        return value.Trim() switch
+        {
+            "1" => true,
+            "yes" => true,
+            "on" => true,
+            "0" => false,
+            "no" => false,
+            "off" => false,
+            _ => defaultValue,
+        };
     }
 
     private void LoadSeverityRules(Dictionary<TacticalEventKind, TacticalSeverity> overrides)

@@ -1,0 +1,590 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:TrailMateCenter.ViewModels"
+             xmlns:controls="using:TrailMateCenter.Views.Controls"
+             xmlns:mapsui="using:Mapsui.UI.Avalonia"
+             x:Name="PropagationRoot"
+             x:Class="TrailMateCenter.Views.PropagationView"
+             x:DataType="vm:MainWindowViewModel">
+  <Grid RowDefinitions="68,*,260" ColumnDefinitions="300,*,340,220">
+    <Border Grid.Row="0" Grid.ColumnSpan="4" Background="{DynamicResource TopBarGradient}" BorderBrush="{DynamicResource PanelBorder}" BorderThickness="0,0,0,1" Classes="panel">
+      <Grid ColumnDefinitions="Auto,*,Auto" Margin="8,0">
+        <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+          <TextBlock Text="{DynamicResource Ui.Tab.Propagation}" Foreground="{DynamicResource TextPrimary}" FontWeight="Bold" Margin="4,0,8,0"/>
+          <Button Content="{DynamicResource Ui.Propagation.Mode.Coverage}" Command="{Binding Propagation.SetCoverageModeCommand}" MinWidth="110"/>
+          <Button Content="{DynamicResource Ui.Propagation.Mode.Interference}" Command="{Binding Propagation.SetInterferenceModeCommand}" MinWidth="128"/>
+          <Button Content="{DynamicResource Ui.Propagation.Mode.Relay}" Command="{Binding Propagation.SetRelayModeCommand}" MinWidth="126"/>
+          <Button Content="{DynamicResource Ui.Propagation.Mode.Advanced}" Command="{Binding Propagation.SetAdvancedModeCommand}" MinWidth="128"/>
+          <Button Content="{DynamicResource Ui.Propagation.Mode.Calibration}" Command="{Binding Propagation.SetCalibrationModeCommand}" MinWidth="138"/>
+        </StackPanel>
+        <StackPanel Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="2">
+          <TextBlock Text="{Binding Propagation.SelectedModeText}" Foreground="{DynamicResource Accent}" HorizontalAlignment="Center" FontWeight="Bold"/>
+          <TextBlock Text="{Binding Propagation.ModeHintText}" Foreground="{DynamicResource TextDim}" FontSize="11" HorizontalAlignment="Center"/>
+        </StackPanel>
+        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+          <Button Content="{DynamicResource Ui.Propagation.Button.Run}" Command="{Binding Propagation.RunSimulationCommand}" Classes="primary"/>
+          <Button Content="{Binding Propagation.PauseButtonText}" Command="{Binding Propagation.PauseSimulationCommand}"/>
+          <Button Content="{DynamicResource Ui.Propagation.Button.Cancel}" Command="{Binding Propagation.CancelSimulationCommand}"/>
+          <Button Content="{DynamicResource Ui.Propagation.Button.Export}" Command="{Binding Propagation.ExportResultCommand}"/>
+        </StackPanel>
+      </Grid>
+    </Border>
+
+    <Border Grid.Row="1" Grid.RowSpan="2" Grid.Column="0" Background="{DynamicResource PanelBg2}" BorderBrush="{DynamicResource PanelBorder}" BorderThickness="0,0,1,0" Classes="panel">
+      <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="10" Spacing="10" DataContext="{Binding Propagation.ControlPanel}">
+          <TextBlock Text="{DynamicResource Ui.Propagation.Section.ScenarioEditor}" Foreground="{DynamicResource TextPrimary}" FontWeight="Bold"/>
+          <Border Background="{DynamicResource PanelBg}" BorderBrush="{DynamicResource PanelBorder}" BorderThickness="1" Padding="8" CornerRadius="6">
+            <StackPanel Spacing="6">
+              <TextBlock Text="{DynamicResource Ui.Propagation.Section.Scenario}" Foreground="{DynamicResource TextDim}" FontWeight="SemiBold"/>
+              <TextBlock Text="{Binding ScenarioSummary}" Foreground="{DynamicResource Accent}" FontWeight="SemiBold"/>
+              <TextBlock Text="{Binding DirtySummary}" Foreground="{DynamicResource TextDim}" FontSize="11" TextWrapping="Wrap"/>
+              <TextBlock Text="{Binding AdvancedSummary}" Foreground="{DynamicResource AccentInfo}" FontSize="11" TextWrapping="Wrap"/>
+              <Border Background="{DynamicResource SurfaceDark}" BorderBrush="{DynamicResource PanelBorder}" BorderThickness="1" Padding="6" CornerRadius="4" Margin="0,4,0,0">
+                <StackPanel Spacing="3">
+                  <TextBlock Text="{DynamicResource Ui.Propagation.ScenarioSites.Title}" Foreground="{DynamicResource TextDim}" FontWeight="SemiBold" FontSize="11"/>
+                  <TextBlock Text="{Binding ScenarioSiteSummary}" Foreground="{DynamicResource TextPrimary}" FontSize="11" TextWrapping="Wrap"/>
+                  <TextBlock Text="{Binding ScenarioSiteHint}" Foreground="{DynamicResource TextDim}" FontSize="10" TextWrapping="Wrap"/>
+                  <Button Content="{DynamicResource Ui.Propagation.ScenarioSites.Clear}" Command="{Binding ClearScenarioSitesCommand}" HorizontalAlignment="Left" Margin="0,4,0,0"/>
+                </StackPanel>
+              </Border>
+            </StackPanel>
+          </Border>
+          <Border Background="{DynamicResource PanelBg}" BorderBrush="{DynamicResource PanelBorder}" BorderThickness="1" Padding="8" CornerRadius="6">
+            <StackPanel Spacing="6">
+              <TextBlock Text="{DynamicResource Ui.Propagation.Section.RadioProfiles}" Foreground="{DynamicResource TextDim}" FontWeight="SemiBold"/>
+              <TextBlock Text="{DynamicResource Ui.Propagation.RadioProfiles.DefaultHint}" Foreground="{DynamicResource TextDim}" FontSize="10" TextWrapping="Wrap"/>
+              <Grid ColumnDefinitions="136,*" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="6" ColumnSpacing="6">
+                <TextBlock Grid.Row="0" Text="{DynamicResource Ui.Propagation.Frequency}" VerticalAlignment="Center" Foreground="{DynamicResource TextPrimary}"/>
+                <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding FrequencyMHz}"/>
+                <TextBlock Grid.Row="1" Text="{DynamicResource Ui.Propagation.TxPower}" VerticalAlignment="Center" Foreground="{DynamicResource TextPrimary}"/>
+                <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding TxPowerDbm}"/>
+                <TextBlock Grid.Row="2" Text="{DynamicResource Ui.Propagation.SpreadingFactor}" VerticalAlignment="Center" Foreground="{DynamicResource TextPrimary}"/>
+                <ComboBox Grid.Row="2" Grid.Column="1" SelectedItem="{Binding SpreadingFactor}">
+                  <x:String>SF7</x:String><x:String>SF8</x:String><x:String>SF9</x:String><x:String>SF10</x:String><x:String>SF11</x:String><x:String>SF12</x:String>
+                </ComboBox>
+                <TextBlock Grid.Row="3" Text="{DynamicResource Ui.Propagation.EnvironmentLoss}" VerticalAlignment="Center" Foreground="{DynamicResource TextPrimary}"/>
+                <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding EnvironmentLossDb}"/>
+              </Grid>
+            </StackPanel>
+          </Border>
+          <Border Background="{DynamicResource PanelBg}" BorderBrush="{DynamicResource PanelBorder}" BorderThickness="1" Padding="8" CornerRadius="6">
+            <StackPanel Spacing="6">
+              <TextBlock Text="{DynamicResource Ui.Propagation.Section.EnvironmentModels}" Foreground="{DynamicResource TextDim}" FontWeight="SemiBold"/>
+              <Grid ColumnDefinitions="136,*" RowDefinitions="Auto,Auto,Auto" RowSpacing="6" ColumnSpacing="6">
+                <TextBlock Grid.Row="0" Text="{DynamicResource Ui.Propagation.VegetationSparse}" VerticalAlignment="Center" Foreground="{DynamicResource TextPrimary}"/>
+                <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding VegetationAlphaSparse}"/>
+                <TextBlock Grid.Row="1" Text="{DynamicResource Ui.Propagation.VegetationDense}" VerticalAlignment="Center" Foreground="{DynamicResource TextPrimary}"/>
+                <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding VegetationAlphaDense}"/>
+                <TextBlock Grid.Row="2" Text="{DynamicResource Ui.Propagation.ReflectionCoeff}" VerticalAlignment="Center" Foreground="{DynamicResource TextPrimary}"/>
+                <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding ReflectionCoeff}"/>
+              </Grid>
+            </StackPanel>
+          </Border>
+          <Border Background="{DynamicResource PanelBg}" BorderBrush="{DynamicResource PanelBorder}" BorderThickness="1" Padding="8" CornerRadius="6">
+            <StackPanel Spacing="6">
+              <TextBlock Text="{DynamicResource Ui.Propagation.Section.Uncertainty}" Foreground="{DynamicResource TextDim}" FontWeight="SemiBold"/>
+              <Grid ColumnDefinitions="136,*" RowDefinitions="Auto,Auto" RowSpacing="6" ColumnSpacing="6">
+                <TextBlock Grid.Row="0" Text="{DynamicResource Ui.Propagation.ShadowSigma}" VerticalAlignment="Center" Foreground="{DynamicResource TextPrimary}"/>
+                <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding ShadowSigmaDb}"/>
+                <CheckBox Grid.Row="1" Grid.ColumnSpan="2" Content="{DynamicResource Ui.Propagation.UseMonteCarlo}" IsChecked="{Binding UseMonteCarlo}" Foreground="{DynamicResource TextPrimary}"/>
+              </Grid>
+              <Grid ColumnDefinitions="136,*" ColumnSpacing="6">
+                <TextBlock Text="{DynamicResource Ui.Propagation.MonteCarloIterations}" VerticalAlignment="Center" Foreground="{DynamicResource TextPrimary}"/>
+                <TextBox Grid.Column="1" Text="{Binding MonteCarloIterations}"/>
+              </Grid>
+            </StackPanel>
+          </Border>
+          <Border Background="{DynamicResource PanelBg}" BorderBrush="{DynamicResource PanelBorder}" BorderThickness="1" Padding="8" CornerRadius="6">
+            <StackPanel Spacing="6">
+              <TextBlock Text="{DynamicResource Ui.Propagation.Section.Optimization}" Foreground="{DynamicResource TextDim}" FontWeight="SemiBold"/>
+              <Grid ColumnDefinitions="136,*" ColumnSpacing="6">
+                <TextBlock Text="{DynamicResource Ui.Propagation.OptimizationAlgorithm}" VerticalAlignment="Center" Foreground="{DynamicResource TextPrimary}"/>
+                <ComboBox Grid.Column="1" SelectedItem="{Binding SelectedOptimizationAlgorithm}">
+                  <x:String>Greedy</x:String><x:String>Genetic</x:String><x:String>SimulatedAnnealing</x:String>
+                </ComboBox>
+              </Grid>
+              <Button Content="{DynamicResource Ui.Propagation.Button.Optimize}" Command="{Binding OptimizeRelaysCommand}"/>
+            </StackPanel>
+          </Border>
+          <Border Background="{DynamicResource PanelBg}" BorderBrush="{DynamicResource PanelBorder}" BorderThickness="1" Padding="8" CornerRadius="6">
+            <StackPanel Spacing="6">
+              <TextBlock Text="{DynamicResource Ui.Propagation.Section.Execution}" Foreground="{DynamicResource TextDim}" FontWeight="SemiBold"/>
+              <TextBlock Text="{Binding ExecutionSummary}" Foreground="{DynamicResource Accent}" FontWeight="SemiBold"/>
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <Button Content="{DynamicResource Ui.Propagation.Button.Run}" Command="{Binding RunSimulationCommand}" Classes="primary"/>
+                <Button Content="{DynamicResource Ui.Propagation.Button.Pause}" Command="{Binding PauseSimulationCommand}"/>
+                <Button Content="{DynamicResource Ui.Propagation.Button.Cancel}" Command="{Binding CancelSimulationCommand}"/>
+              </StackPanel>
+              <Button Content="{DynamicResource Ui.Propagation.Button.Interference}" Command="{Binding AnalyzeInterferenceCommand}"/>
+              <Button Content="{DynamicResource Ui.Propagation.Button.MonteCarlo}" Command="{Binding RunMonteCarloCommand}"/>
+              <Button Content="{DynamicResource Ui.Propagation.Button.Export}" Command="{Binding ExportResultCommand}"/>
+            </StackPanel>
+          </Border>
+        </StackPanel>
+      </ScrollViewer>
+    </Border>
+
+    <Border Grid.Row="1" Grid.Column="1" Background="{DynamicResource SurfaceDark}" BorderBrush="{DynamicResource PanelBorder}" BorderThickness="1" Classes="panel">
+      <Grid DataContext="{Binding Propagation.MapWorkbench}">
+        <Border Background="{StaticResource MapNoiseBrush}" Opacity="0.06"/>
+        <Border Background="{StaticResource MapVignette}" Opacity="0.22"/>
+        <Grid Margin="12" RowDefinitions="*,Auto" ColumnDefinitions="250,*,240">
+          <StackPanel Grid.RowSpan="2" Spacing="8">
+            <Border Background="#A51A2839" BorderBrush="#5E7A9A" BorderThickness="1" CornerRadius="6" Padding="8">
+              <StackPanel Spacing="4">
+                <TextBlock Text="{Binding LegendTitle}" Foreground="{DynamicResource TextPrimary}" FontWeight="SemiBold"/>
+                <ItemsControl ItemsSource="{Binding LegendItems}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:PropagationLegendItemViewModel">
+                      <TextBlock Text="{Binding Label}" Foreground="{Binding ColorHex}"/>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </StackPanel>
+            </Border>
+            <StackPanel Spacing="8">
+              <TextBlock Text="{DynamicResource Ui.Propagation.Workbench.AnalyticalLayers}" Foreground="{DynamicResource TextPrimary}" FontWeight="Bold"/>
+              <ComboBox ItemsSource="{Binding LayerOptions}" SelectedItem="{Binding SelectedLayerOption}" DisplayMemberBinding="{Binding Label}"/>
+              <StackPanel Spacing="4" Margin="0,0,0,4">
+                <TextBlock Text="{DynamicResource Ui.Propagation.Workbench.OverlayOpacity}" Foreground="{DynamicResource TextDim}" FontSize="11"/>
+                <Slider Minimum="0.05" Maximum="1" Value="{Binding TerrainOverlayOpacity}"/>
+              </StackPanel>
+              <ItemsControl ItemsSource="{Binding AnalyticalLayers}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:PropagationAnalyticalLayerItemViewModel">
+                    <Border Background="#90213246" BorderBrush="{Binding AccentColor}" BorderThickness="1" CornerRadius="6" Padding="8" Margin="0,0,0,6">
+                      <StackPanel Spacing="2">
+                        <TextBlock Text="{Binding Title}" Foreground="{DynamicResource TextPrimary}" FontWeight="SemiBold"/>
+                        <TextBlock Text="{Binding Summary}" Foreground="{DynamicResource TextDim}" FontSize="11" TextWrapping="Wrap"/>
+                        <TextBlock Text="{Binding ValueText}" Foreground="{Binding AccentColor}" FontWeight="Bold"/>
+                      </StackPanel>
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </StackPanel>
+          </StackPanel>
+          <Border Grid.Column="1" Grid.RowSpan="2" Margin="8,0" Background="#80111B2A" BorderBrush="#56718E" BorderThickness="1" CornerRadius="6">
+            <Grid Margin="12" RowDefinitions="*,Auto">
+              <Border Background="#25131E2B" CornerRadius="8"/>
+              <mapsui:MapControl x:Name="PropagationMapControl" Map="{Binding #PropagationRoot.DataContext.Map.Map}" IsVisible="{Binding ShowReferenceBasemap}"/>
+              <controls:PropagationTerrainMapControl x:Name="PropagationTerrainOverlay" Scene="{Binding TerrainScene}" ActiveLayerKey="{Binding SelectedLayerKey}" OverlayOpacity="{Binding TerrainOverlayOpacity}" IsHitTestVisible="False"/>
+              <Border IsHitTestVisible="False" Background="{StaticResource MapNoiseBrush}" Opacity="0.04" CornerRadius="8"/>
+              <Border IsHitTestVisible="False" Background="{StaticResource MapVignette}" Opacity="0.16" CornerRadius="8"/>
+              <Border HorizontalAlignment="Left" VerticalAlignment="Top" Margin="10" Background="#B41A2839" BorderBrush="#5E7A9A" BorderThickness="1" CornerRadius="6" Padding="8">
+                <StackPanel Spacing="3" MaxWidth="280">
+                  <TextBlock Text="{DynamicResource Ui.Propagation.Workbench.Title}" Foreground="{DynamicResource TextPrimary}" FontSize="20" FontWeight="Bold"/>
+                  <TextBlock Text="{Binding LayerSummary}" Foreground="{DynamicResource AccentInfo}" FontSize="12"/>
+                </StackPanel>
+              </Border>
+              <Border HorizontalAlignment="Right" VerticalAlignment="Top" Margin="10" Background="#B41A2839" BorderBrush="#5E7A9A" BorderThickness="1" CornerRadius="6" Padding="8" MaxWidth="280">
+                <StackPanel Spacing="4">
+                  <TextBlock Text="{DynamicResource Ui.Propagation.Workbench.Focus}" Foreground="{DynamicResource TextPrimary}" FontWeight="SemiBold"/>
+                  <TextBlock Text="{Binding WorkbenchTitle}" Foreground="{DynamicResource Accent}" FontWeight="SemiBold"/>
+                  <TextBlock Text="{Binding WorkbenchHint}" Foreground="{DynamicResource TextDim}" FontSize="11" TextWrapping="Wrap"/>
+                  <TextBlock Text="{Binding ModeOverlaySummary}" Foreground="{DynamicResource TextPrimary}" FontSize="11" TextWrapping="Wrap"/>
+                </StackPanel>
+              </Border>
+              <Border HorizontalAlignment="Center"
+                      VerticalAlignment="Top"
+                      Margin="0,10,0,0"
+                      Padding="10,8"
+                      MaxWidth="520"
+                      Background="#C04A231B"
+                      BorderBrush="{DynamicResource AccentWarn}"
+                      BorderThickness="1"
+                      CornerRadius="6"
+                      IsVisible="{Binding #PropagationRoot.DataContext.Propagation.TaskRail.HasSimulationIssue}">
+                <StackPanel Spacing="3">
+                  <TextBlock Text="{DynamicResource Ui.Propagation.Diagnostics}" Foreground="{DynamicResource AccentWarn}" FontWeight="Bold"/>
+                  <TextBlock Text="{Binding #PropagationRoot.DataContext.Propagation.TaskRail.SimulationIssueTitle}" Foreground="{DynamicResource TextPrimary}" FontWeight="SemiBold" TextWrapping="Wrap"/>
+                  <TextBlock Text="{Binding #PropagationRoot.DataContext.Propagation.TaskRail.SimulationIssueAction}" Foreground="{DynamicResource AccentInfo}" FontSize="11" TextWrapping="Wrap"/>
+                </StackPanel>
+              </Border>
+              <Border HorizontalAlignment="Center"
+                      VerticalAlignment="Center"
+                      Width="360"
+                      Padding="14"
+                      Background="#DC162231"
+                      BorderBrush="#FF8C42"
+                      BorderThickness="1"
+                      CornerRadius="8"
+                      IsVisible="{Binding #PropagationRoot.DataContext.Propagation.IsPendingSiteDialogVisible}">
+                <StackPanel Spacing="8" DataContext="{Binding #PropagationRoot.DataContext.Propagation}">
+                  <TextBlock Text="{Binding PendingSiteDialogTitle}" Foreground="{DynamicResource TextPrimary}" FontWeight="Bold" FontSize="16"/>
+                  <TextBlock Text="{Binding PendingSiteCoordinateText}" Foreground="{DynamicResource AccentInfo}" FontSize="11"/>
+                  <TextBlock Text="{DynamicResource Ui.Propagation.SiteDialog.RadioHint}" Foreground="{DynamicResource TextDim}" FontSize="10" TextWrapping="Wrap"/>
+                  <Grid ColumnDefinitions="118,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="8" ColumnSpacing="8">
+                    <TextBlock Grid.Row="0" Text="{DynamicResource Ui.Propagation.SiteDialog.Role}" VerticalAlignment="Center" Foreground="{DynamicResource TextDim}"/>
+                    <ComboBox Grid.Row="0" Grid.Column="1"
+                              ItemsSource="{Binding ScenarioSiteRoleOptions}"
+                              SelectedItem="{Binding SelectedPendingSiteRole}"
+                              DisplayMemberBinding="{Binding Label}"/>
+                    <TextBlock Grid.Row="1" Text="{DynamicResource Ui.Propagation.SiteDialog.Label}" VerticalAlignment="Center" Foreground="{DynamicResource TextDim}"/>
+                    <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding PendingSiteLabel}"/>
+                    <TextBlock Grid.Row="2" Text="{DynamicResource Ui.Propagation.SiteDialog.Color}" VerticalAlignment="Center" Foreground="{DynamicResource TextDim}"/>
+                    <ComboBox Grid.Row="2" Grid.Column="1"
+                              ItemsSource="{Binding ScenarioSiteColorOptions}"
+                              SelectedItem="{Binding SelectedPendingSiteColor}"
+                              DisplayMemberBinding="{Binding Label}"/>
+                    <TextBlock Grid.Row="3" Text="{DynamicResource Ui.Propagation.SiteDialog.AntennaHeight}" VerticalAlignment="Center" Foreground="{DynamicResource TextDim}"/>
+                    <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding PendingSiteAntennaHeightM}"/>
+                    <TextBlock Grid.Row="4" Text="{DynamicResource Ui.Propagation.Frequency}" VerticalAlignment="Center" Foreground="{DynamicResource TextDim}"/>
+                    <TextBox Grid.Row="4" Grid.Column="1" Text="{Binding PendingSiteFrequencyMHz}"/>
+                    <TextBlock Grid.Row="5" Text="{DynamicResource Ui.Propagation.TxPower}" VerticalAlignment="Center" Foreground="{DynamicResource TextDim}"/>
+                    <TextBox Grid.Row="5" Grid.Column="1" Text="{Binding PendingSiteTxPowerDbm}"/>
+                    <TextBlock Grid.Row="6" Text="{DynamicResource Ui.Propagation.SpreadingFactor}" VerticalAlignment="Center" Foreground="{DynamicResource TextDim}"/>
+                    <ComboBox Grid.Row="6" Grid.Column="1" SelectedItem="{Binding PendingSiteSpreadingFactor}">
+                      <x:String>SF7</x:String><x:String>SF8</x:String><x:String>SF9</x:String><x:String>SF10</x:String><x:String>SF11</x:String><x:String>SF12</x:String>
+                    </ComboBox>
+                  </Grid>
+                  <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="6">
+                    <Button Content="{DynamicResource Ui.Propagation.SiteDialog.Cancel}" Command="{Binding CancelPendingSiteCommand}"/>
+                    <Button Content="{Binding PendingSiteConfirmText}" Command="{Binding ConfirmPendingSiteCommand}" Classes="primary"/>
+                  </StackPanel>
+                </StackPanel>
+              </Border>
+              <Border HorizontalAlignment="Center"
+                      VerticalAlignment="Center"
+                      Width="320"
+                      Padding="14"
+                      Background="#DE2A1717"
+                      BorderBrush="{DynamicResource AccentDanger}"
+                      BorderThickness="1"
+                      CornerRadius="8"
+                      IsVisible="{Binding #PropagationRoot.DataContext.Propagation.IsDeleteSiteDialogVisible}">
+                <StackPanel Spacing="8" DataContext="{Binding #PropagationRoot.DataContext.Propagation}">
+                  <TextBlock Text="{Binding DeleteSiteDialogTitle}" Foreground="{DynamicResource TextPrimary}" FontWeight="Bold" FontSize="16"/>
+                  <TextBlock Text="{Binding DeleteSiteDialogMessage}" Foreground="{DynamicResource TextDim}" TextWrapping="Wrap"/>
+                  <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="6">
+                    <Button Content="{DynamicResource Ui.Propagation.DeleteDialog.Cancel}" Command="{Binding CancelDeleteSiteCommand}"/>
+                    <Button Content="{DynamicResource Ui.Propagation.DeleteDialog.Confirm}" Command="{Binding ConfirmDeleteSiteCommand}"/>
+                  </StackPanel>
+                </StackPanel>
+              </Border>
+              <Grid Grid.Row="1" ColumnDefinitions="*,*" Margin="0,12,0,0">
+                <Border Background="#A51A2839" BorderBrush="#5E7A9A" BorderThickness="1" CornerRadius="6" Padding="8" Margin="0,0,6,0">
+                  <StackPanel Spacing="4"><TextBlock Text="{DynamicResource Ui.Propagation.Workbench.Probe}" Foreground="{DynamicResource TextPrimary}" FontWeight="SemiBold"/><TextBlock Text="{Binding ProbeSummary}" Foreground="{DynamicResource TextDim}" FontSize="11" TextWrapping="Wrap"/></StackPanel>
+                </Border>
+                <Border Grid.Column="1" Background="#A51A2839" BorderBrush="#5E7A9A" BorderThickness="1" CornerRadius="6" Padding="8">
+                  <StackPanel Spacing="4"><TextBlock Text="{DynamicResource Ui.Propagation.Workbench.ReliabilityEnvelope}" Foreground="{DynamicResource TextPrimary}" FontWeight="SemiBold"/><TextBlock Text="{Binding ReliabilitySummary}" Foreground="#9AD94C" FontWeight="SemiBold"/><TextBlock Text="{Binding CoverageAreaSummary}" Foreground="{DynamicResource TextDim}" FontSize="11"/><TextBlock Text="{Binding WarningSummary}" Foreground="{DynamicResource AccentWarn}" FontSize="10" TextWrapping="Wrap"/></StackPanel>
+                </Border>
+              </Grid>
+            </Grid>
+          </Border>
+          <StackPanel Grid.Column="2" Grid.RowSpan="2" Spacing="8">
+            <TextBlock Text="{DynamicResource Ui.Propagation.Workbench.EvidenceHooks}" Foreground="{DynamicResource TextPrimary}" FontWeight="Bold"/>
+            <Border Background="#90213246" BorderBrush="#56718E" BorderThickness="1" CornerRadius="6" Padding="8"><StackPanel Spacing="4"><TextBlock Text="{DynamicResource Ui.Propagation.Workbench.SelectedLayer}" Foreground="{DynamicResource TextDim}" FontSize="11"/><TextBlock Text="{Binding LayerSummary}" Foreground="{DynamicResource TextPrimary}" FontWeight="SemiBold" TextWrapping="Wrap"/></StackPanel></Border>
+            <Border Background="#90213246" BorderBrush="#56718E" BorderThickness="1" CornerRadius="6" Padding="8"><StackPanel Spacing="4"><TextBlock Text="{DynamicResource Ui.Propagation.Workbench.CurrentInterpretation}" Foreground="{DynamicResource TextDim}" FontSize="11"/><TextBlock Text="{Binding ModeOverlaySummary}" Foreground="{DynamicResource TextPrimary}" TextWrapping="Wrap"/></StackPanel></Border>
+            <Border Background="#90213246" BorderBrush="#56718E" BorderThickness="1" CornerRadius="6" Padding="8"><StackPanel Spacing="4"><TextBlock Text="{DynamicResource Ui.Propagation.Workbench.RidgeEvidence}" Foreground="{DynamicResource TextDim}" FontSize="11"/><TextBlock Text="{Binding RidgeSummary}" Foreground="{DynamicResource TextPrimary}" TextWrapping="Wrap"/></StackPanel></Border>
+            <Border Background="#90213246" BorderBrush="#56718E" BorderThickness="1" CornerRadius="6" Padding="8"><StackPanel Spacing="4"><TextBlock Text="{DynamicResource Ui.Propagation.Workbench.SpatialAlignment}" Foreground="{DynamicResource TextDim}" FontSize="11"/><TextBlock Text="{Binding AlignmentSummary}" Foreground="{DynamicResource TextPrimary}" TextWrapping="Wrap"/></StackPanel></Border>
+          </StackPanel>
+        </Grid>
+      </Grid>
+    </Border>
+
+    <Border Grid.Row="1" Grid.Column="2" Background="{DynamicResource PanelBg2}" BorderBrush="{DynamicResource PanelBorder}" BorderThickness="1,0,0,0" Classes="panel">
+      <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="10" Spacing="8" DataContext="{Binding Propagation.AnalysisPanel}">
+          <TextBlock Text="{DynamicResource Ui.Propagation.AnalysisExplainability}" Foreground="{DynamicResource TextPrimary}" FontWeight="Bold"/>
+          <Border Background="{DynamicResource PanelBg}" BorderBrush="{DynamicResource PanelBorder}" BorderThickness="1" Padding="8" CornerRadius="6">
+            <StackPanel Spacing="6">
+              <TextBlock Text="{DynamicResource Ui.Propagation.LinkCard}" Foreground="{DynamicResource TextDim}" FontWeight="SemiBold"/>
+              <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto,Auto,Auto" RowSpacing="4">
+                <TextBlock Text="{DynamicResource Ui.Propagation.Downlink}" Foreground="{DynamicResource TextPrimary}"/><TextBlock Grid.Column="1" Text="{Binding DownlinkRssiDbm, StringFormat='{}{0:F1} dBm'}" Foreground="{DynamicResource Accent}"/>
+                <TextBlock Grid.Row="1" Text="{DynamicResource Ui.Propagation.Uplink}" Foreground="{DynamicResource TextPrimary}"/><TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding UplinkRssiDbm, StringFormat='{}{0:F1} dBm'}" Foreground="{DynamicResource Accent}"/>
+                <TextBlock Grid.Row="2" Text="{DynamicResource Ui.Propagation.DownlinkMargin}" Foreground="{DynamicResource TextPrimary}"/><TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding DownlinkMarginDb, StringFormat='{}{0:F1} dB'}" Foreground="{DynamicResource TextPrimary}"/>
+                <TextBlock Grid.Row="3" Text="{DynamicResource Ui.Propagation.UplinkMargin}" Foreground="{DynamicResource TextPrimary}"/><TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding UplinkMarginDb, StringFormat='{}{0:F1} dB'}" Foreground="{DynamicResource TextPrimary}"/>
+                <TextBlock Grid.Row="4" Text="{DynamicResource Ui.Propagation.LinkFeasible}" Foreground="{DynamicResource TextPrimary}"/><TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding IsLinkFeasible}" Foreground="{DynamicResource TextPrimary}"/>
+              </Grid>
+            </StackPanel>
+          </Border>
+          <Border Background="{DynamicResource PanelBg}" BorderBrush="{DynamicResource PanelBorder}" BorderThickness="1" Padding="8" CornerRadius="6">
+            <StackPanel Spacing="6">
+              <TextBlock Text="{DynamicResource Ui.Propagation.LossBreakdown}" Foreground="{DynamicResource TextDim}" FontWeight="SemiBold"/>
+              <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="4">
+                <TextBlock Text="FSPL" Foreground="{DynamicResource TextPrimary}"/><TextBlock Grid.Column="1" Text="{Binding FsplDb, StringFormat='{}{0:F1} dB'}" Foreground="{DynamicResource TextPrimary}"/>
+                <TextBlock Grid.Row="1" Text="Diffraction" Foreground="{DynamicResource TextPrimary}"/><TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding DiffractionLossDb, StringFormat='{}{0:F1} dB'}" Foreground="{DynamicResource TextPrimary}"/>
+                <TextBlock Grid.Row="2" Text="Vegetation" Foreground="{DynamicResource TextPrimary}"/><TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding VegetationLossDb, StringFormat='{}{0:F1} dB'}" Foreground="{DynamicResource TextPrimary}"/>
+                <TextBlock Grid.Row="3" Text="Reflection" Foreground="{DynamicResource TextPrimary}"/><TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding ReflectionLossDb, StringFormat='{}{0:F1} dB'}" Foreground="{DynamicResource TextPrimary}"/>
+                <TextBlock Grid.Row="4" Text="Shadow" Foreground="{DynamicResource TextPrimary}"/><TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding ShadowLossDb, StringFormat='{}{0:F1} dB'}" Foreground="{DynamicResource TextPrimary}"/>
+                <TextBlock Grid.Row="5" Text="Terrain / LOS" Foreground="{DynamicResource TextPrimary}"/><TextBlock Grid.Row="5" Grid.Column="1" Text="{Binding TerrainSummary}" Foreground="{DynamicResource TextPrimary}"/>
+                <TextBlock Grid.Row="6" Text="Fresnel / Multipath" Foreground="{DynamicResource TextPrimary}"/><TextBlock Grid.Row="6" Grid.Column="1" Text="{Binding FresnelSummary}" Foreground="{DynamicResource TextPrimary}"/>
+              </Grid>
+            </StackPanel>
+          </Border>
+          <Border Background="{DynamicResource PanelBg}" BorderBrush="{DynamicResource PanelBorder}" BorderThickness="1" Padding="8" CornerRadius="6">
+            <StackPanel Spacing="6">
+              <TextBlock Text="{DynamicResource Ui.Propagation.Analysis.LandcoverBreakdown}" Foreground="{DynamicResource TextDim}" FontWeight="SemiBold"/>
+              <TextBlock Text="{Binding SelectedLandcoverPathRoute}" Foreground="{DynamicResource TextPrimary}" FontWeight="SemiBold" TextWrapping="Wrap"/>
+              <TextBlock Text="{Binding SelectedLandcoverPathSummary}" Foreground="{DynamicResource AccentInfo}" FontSize="11" TextWrapping="Wrap"/>
+              <ItemsControl ItemsSource="{Binding SelectedLandcoverPathItems}" IsVisible="{Binding HasSelectedLandcoverPath}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:PropagationAnalyticalLayerItemViewModel">
+                    <Border Background="{DynamicResource SurfaceDark}" BorderBrush="{Binding AccentColor}" BorderThickness="1" CornerRadius="6" Padding="8" Margin="0,0,0,6">
+                      <StackPanel Spacing="2">
+                        <TextBlock Text="{Binding Title}" Foreground="{DynamicResource TextPrimary}" FontWeight="SemiBold"/>
+                        <TextBlock Text="{Binding Summary}" Foreground="{DynamicResource TextDim}" FontSize="11" TextWrapping="Wrap"/>
+                        <TextBlock Text="{Binding ValueText}" Foreground="{Binding AccentColor}" FontWeight="Bold"/>
+                      </StackPanel>
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+              <TextBlock Text="{Binding SelectedLandcoverPathHint}" Foreground="{DynamicResource TextDim}" FontSize="10" TextWrapping="Wrap"/>
+            </StackPanel>
+          </Border>
+          <Border Background="{DynamicResource PanelBg}" BorderBrush="{DynamicResource PanelBorder}" BorderThickness="1" Padding="8" CornerRadius="6">
+            <StackPanel Spacing="6">
+              <TextBlock Text="{DynamicResource Ui.Propagation.Analysis.ReliabilityNetwork}" Foreground="{DynamicResource TextDim}" FontWeight="SemiBold"/>
+              <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="4">
+                <TextBlock Text="{DynamicResource Ui.Propagation.Analysis.Reliable95}" Foreground="{DynamicResource TextPrimary}"/><TextBlock Grid.Column="1" Text="{Binding Reliability95, StringFormat='{}{0:F0}%'}" Foreground="#9AD94C"/>
+                <TextBlock Grid.Row="1" Text="{DynamicResource Ui.Propagation.Analysis.Reliable80}" Foreground="{DynamicResource TextPrimary}"/><TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding Reliability80, StringFormat='{}{0:F0}%'}" Foreground="#F0D14A"/>
+                <TextBlock Grid.Row="2" Text="{DynamicResource Ui.Propagation.Sinr}" Foreground="{DynamicResource TextPrimary}"/><TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding SinrDb, StringFormat='{}{0:F1} dB'}" Foreground="{DynamicResource TextPrimary}"/>
+                <TextBlock Grid.Row="3" Text="{DynamicResource Ui.Propagation.ConflictRate}" Foreground="{DynamicResource TextPrimary}"/><TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding ConflictRate, StringFormat='{}{0:F1}%'}" Foreground="{DynamicResource TextPrimary}"/>
+                <TextBlock Grid.Row="4" Text="{DynamicResource Ui.Propagation.MaxCapacity}" Foreground="{DynamicResource TextPrimary}"/><TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding MaxCapacity}" Foreground="{DynamicResource TextPrimary}"/>
+                <TextBlock Grid.Row="5" Text="{DynamicResource Ui.Propagation.Analysis.AlohaOccupancy}" Foreground="{DynamicResource TextPrimary}"/><TextBlock Grid.Row="5" Grid.Column="1" Text="{Binding NetworkLoadSummary}" Foreground="{DynamicResource TextPrimary}"/>
+                <TextBlock Grid.Row="6" Text="{DynamicResource Ui.Propagation.Analysis.ReflectionRelay}" Foreground="{DynamicResource TextPrimary}"/><TextBlock Grid.Row="6" Grid.Column="1" Text="{Binding ReflectionSummary}" Foreground="{DynamicResource TextPrimary}"/>
+              </Grid>
+            </StackPanel>
+          </Border>
+          <Border Background="{DynamicResource PanelBg}" BorderBrush="{DynamicResource PanelBorder}" BorderThickness="1" Padding="8" CornerRadius="6">
+            <StackPanel Spacing="6">
+              <TextBlock Text="{DynamicResource Ui.Propagation.Analysis.RelayOptimization}" Foreground="{DynamicResource TextDim}" FontWeight="SemiBold"/>
+              <TextBlock Text="{Binding OptimizationSummary}" Foreground="{DynamicResource AccentInfo}" TextWrapping="Wrap"/>
+              <ItemsControl ItemsSource="{Binding RelayPlans}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:PropagationRelayPlanSummaryItemViewModel">
+                    <Border Background="{DynamicResource SurfaceDark}" BorderBrush="{DynamicResource PanelBorder}" BorderThickness="1" CornerRadius="6" Padding="8" Margin="0,0,0,6">
+                      <StackPanel Spacing="3">
+                        <TextBlock Text="{Binding PlanId}" Foreground="{DynamicResource TextPrimary}" FontWeight="SemiBold"/>
+                        <TextBlock Text="{Binding ScoreText, StringFormat='{}{0}'}" Foreground="{DynamicResource Accent}"/>
+                        <TextBlock Text="{Binding GainText}" Foreground="{DynamicResource TextPrimary}" FontSize="11" TextWrapping="Wrap"/>
+                        <TextBlock Text="{Binding PenaltyText}" Foreground="{DynamicResource AccentWarn}" FontSize="11" TextWrapping="Wrap"/>
+                        <TextBlock Text="{Binding SitesText, StringFormat='{}{0}'}" Foreground="{DynamicResource TextDim}" FontSize="11" TextWrapping="Wrap"/>
+                        <TextBlock Text="{Binding Explanation}" Foreground="{DynamicResource TextDim}" FontSize="11" TextWrapping="Wrap"/>
+                      </StackPanel>
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </StackPanel>
+          </Border>
+          <Border Background="{DynamicResource PanelBg}" BorderBrush="{DynamicResource PanelBorder}" BorderThickness="1" Padding="8" CornerRadius="6">
+            <StackPanel Spacing="6">
+              <TextBlock Text="{DynamicResource Ui.Propagation.KnowledgeCoverage}" Foreground="{DynamicResource TextDim}" FontWeight="SemiBold"/>
+              <ItemsControl ItemsSource="{Binding TopicCoverage}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:PropagationTopicCoverageItemViewModel">
+                    <Border Background="{DynamicResource SurfaceDark}" BorderBrush="{Binding AccentColor}" BorderThickness="1" CornerRadius="6" Padding="8" Margin="0,0,0,6">
+                      <StackPanel Spacing="2">
+                        <TextBlock Text="{Binding Topic}" Foreground="{DynamicResource TextPrimary}" FontWeight="SemiBold"/>
+                        <TextBlock Text="{Binding Status}" Foreground="{Binding AccentColor}" FontWeight="Bold"/>
+                        <TextBlock Text="{Binding Summary}" Foreground="{DynamicResource TextDim}" FontSize="11" TextWrapping="Wrap"/>
+                      </StackPanel>
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </StackPanel>
+          </Border>
+          <Border Background="{DynamicResource PanelBg}" BorderBrush="{DynamicResource PanelBorder}" BorderThickness="1" Padding="8" CornerRadius="6">
+            <StackPanel Spacing="6">
+              <TextBlock Text="{DynamicResource Ui.Propagation.AssumptionsValidity}" Foreground="{DynamicResource TextDim}" FontWeight="SemiBold"/>
+              <TextBlock Text="{Binding AssumptionFlagsText, StringFormat='{}{0}'}" Foreground="{DynamicResource TextPrimary}" FontSize="11" TextWrapping="Wrap"/>
+              <TextBlock Text="{Binding ValidityWarningsText, StringFormat='{}{0}'}" Foreground="{DynamicResource AccentWarn}" FontSize="11" TextWrapping="Wrap"/>
+              <TextBlock Text="{Binding OutputLayerUrisText, StringFormat='{}{0}'}" Foreground="{DynamicResource TextDim}" FontSize="10" TextWrapping="Wrap"/>
+            </StackPanel>
+          </Border>
+        </StackPanel>
+      </ScrollViewer>
+    </Border>
+
+    <Border Grid.Row="1" Grid.Column="3" Background="{DynamicResource PanelBg2}" BorderBrush="{DynamicResource PanelBorder}" BorderThickness="1,0,0,0" Classes="panel">
+      <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="10" Spacing="8" DataContext="{Binding Propagation.TaskRail}">
+          <TextBlock Text="{DynamicResource Ui.Propagation.TaskEvidenceRail}" Foreground="{DynamicResource TextPrimary}" FontWeight="Bold"/>
+          <Border Background="{DynamicResource PanelBg}" BorderBrush="{DynamicResource PanelBorder}" BorderThickness="1" Padding="8" CornerRadius="6">
+            <StackPanel Spacing="4">
+              <TextBlock Text="{DynamicResource Ui.Propagation.KnowledgeStatus}" Foreground="{DynamicResource TextDim}" FontWeight="SemiBold"/>
+              <TextBlock Text="{Binding KnowledgeStatusSummary}" Foreground="{DynamicResource AccentInfo}" TextWrapping="Wrap"/>
+            </StackPanel>
+          </Border>
+          <Border Background="{DynamicResource PanelBg}" BorderBrush="{DynamicResource PanelBorder}" BorderThickness="1" Padding="8" CornerRadius="6">
+            <StackPanel Spacing="4">
+              <TextBlock Text="{DynamicResource Ui.Propagation.RunStatus}" Foreground="{DynamicResource TextDim}" FontWeight="SemiBold"/>
+              <TextBlock Text="{Binding SelectedRunIdText, StringFormat='{}{0}'}" Foreground="{DynamicResource TextPrimary}" TextWrapping="Wrap"/>
+              <TextBlock Text="{Binding SelectedRunStatusText, StringFormat='{}{0}'}" Foreground="{DynamicResource Accent}"/>
+              <TextBlock Text="{Binding CurrentStageText, StringFormat='{}{0}'}" Foreground="{DynamicResource TextDim}" FontSize="11"/>
+              <TextBlock Text="{Binding SimulationStateText, StringFormat='{}{0}'}" Foreground="{DynamicResource TextDim}" FontSize="11"/>
+              <TextBlock Text="{Binding SimulationMessage}" Foreground="{DynamicResource TextDim}" FontSize="11" TextWrapping="Wrap"/>
+            </StackPanel>
+          </Border>
+          <Border Background="{DynamicResource PanelBg}" BorderBrush="{DynamicResource AccentWarn}" BorderThickness="1" Padding="8" CornerRadius="6" IsVisible="{Binding HasSimulationIssue}">
+            <StackPanel Spacing="4">
+              <TextBlock Text="{DynamicResource Ui.Propagation.Diagnostics}" Foreground="{DynamicResource AccentWarn}" FontWeight="Bold"/>
+              <TextBlock Text="{Binding SimulationIssueTitle}" Foreground="{DynamicResource TextPrimary}" FontWeight="SemiBold" TextWrapping="Wrap"/>
+              <TextBlock Text="{Binding SimulationIssueAction}" Foreground="{DynamicResource AccentInfo}" FontSize="11" TextWrapping="Wrap"/>
+              <TextBlock Text="{Binding SimulationIssueDetail}" Foreground="{DynamicResource TextDim}" FontSize="11" TextWrapping="Wrap"/>
+            </StackPanel>
+          </Border>
+          <Border Background="{DynamicResource PanelBg}" BorderBrush="{DynamicResource PanelBorder}" BorderThickness="1" Padding="8" CornerRadius="6">
+            <StackPanel Spacing="4">
+              <TextBlock Text="{DynamicResource Ui.Propagation.Provenance}" Foreground="{DynamicResource TextDim}" FontWeight="SemiBold"/>
+              <TextBlock Text="{Binding DataVersionTag, StringFormat='{}{0}'}" Foreground="{DynamicResource TextPrimary}" FontSize="11"/>
+              <TextBlock Text="{Binding ModelVersionTag, StringFormat='{}{0}'}" Foreground="{DynamicResource TextPrimary}" FontSize="11"/>
+              <TextBlock Text="{Binding ParameterHashTag, StringFormat='{}{0}'}" Foreground="{DynamicResource TextPrimary}" FontSize="11" TextWrapping="Wrap"/>
+            </StackPanel>
+          </Border>
+          <Border Background="{DynamicResource PanelBg}" BorderBrush="{DynamicResource PanelBorder}" BorderThickness="1" Padding="8" CornerRadius="6">
+            <StackPanel Spacing="4">
+              <TextBlock Text="{DynamicResource Ui.Propagation.Evidence}" Foreground="{DynamicResource TextDim}" FontWeight="SemiBold"/>
+              <TextBlock Text="{Binding AssumptionFlagsText, StringFormat='{}{0}'}" Foreground="{DynamicResource TextPrimary}" FontSize="11" TextWrapping="Wrap"/>
+              <TextBlock Text="{Binding ValidityWarningsText, StringFormat='{}{0}'}" Foreground="{DynamicResource AccentWarn}" FontSize="11" TextWrapping="Wrap"/>
+              <TextBlock Text="{Binding OutputLayerUrisText, StringFormat='{}{0}'}" Foreground="{DynamicResource TextDim}" FontSize="10" TextWrapping="Wrap"/>
+            </StackPanel>
+          </Border>
+          <Border Background="{DynamicResource PanelBg}" BorderBrush="{DynamicResource PanelBorder}" BorderThickness="1" Padding="8" CornerRadius="6">
+            <StackPanel Spacing="6">
+              <TextBlock Text="{DynamicResource Ui.Propagation.EvidenceChecklist}" Foreground="{DynamicResource TextDim}" FontWeight="SemiBold"/>
+              <ItemsControl ItemsSource="{Binding EvidenceChecklist}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:PropagationTopicCoverageItemViewModel">
+                    <Border Background="{DynamicResource SurfaceDark}" BorderBrush="{Binding AccentColor}" BorderThickness="1" CornerRadius="6" Padding="8" Margin="0,0,0,6">
+                      <StackPanel Spacing="2">
+                        <TextBlock Text="{Binding Topic}" Foreground="{DynamicResource TextPrimary}" FontWeight="SemiBold"/>
+                        <TextBlock Text="{Binding Status}" Foreground="{Binding AccentColor}" FontWeight="Bold"/>
+                        <TextBlock Text="{Binding Summary}" Foreground="{DynamicResource TextDim}" FontSize="11" TextWrapping="Wrap"/>
+                      </StackPanel>
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </StackPanel>
+          </Border>
+        </StackPanel>
+      </ScrollViewer>
+    </Border>
+
+    <Border Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="3" Background="{DynamicResource PanelBg}" BorderBrush="{DynamicResource PanelBorder}" BorderThickness="1,1,1,0" Classes="panel">
+      <TabControl DataContext="{Binding Propagation.InvestigationStrip}">
+        <TabItem Header="{DynamicResource Ui.Propagation.Tab.Profile}">
+          <Grid RowDefinitions="Auto,*,Auto" Margin="8">
+            <Border Background="{DynamicResource SurfaceDark}" BorderBrush="{DynamicResource PanelBorder}" BorderThickness="1" CornerRadius="6" Padding="8">
+              <StackPanel Spacing="6">
+                <TextBlock Text="{DynamicResource Ui.Propagation.Profile.Title}" Foreground="{DynamicResource TextDim}" FontWeight="SemiBold"/>
+                <TextBlock Text="{Binding ProfileDistanceKm, StringFormat='{}{0:F2} km'}" Foreground="{DynamicResource TextPrimary}"/>
+                <TextBlock Text="{Binding ProfileFresnelRadiusM, StringFormat='{}{0:F2} m'}" Foreground="{DynamicResource TextPrimary}"/>
+                <TextBlock Text="{Binding ProfileMarginDb, StringFormat='{}{0:F1} dB'}" Foreground="{DynamicResource TextPrimary}"/>
+                <TextBlock Text="{Binding ProfileMainObstacleLabel, StringFormat='{}{0}'}" Foreground="{DynamicResource TextPrimary}"/>
+                <TextBlock Text="{Binding ProfileMainObstacleV, StringFormat='v: {0:F2}'}" Foreground="{DynamicResource TextPrimary}"/>
+                <TextBlock Text="{Binding ProfileMainObstacleLdDb, StringFormat='Ld: {0:F2} dB'}" Foreground="{DynamicResource TextPrimary}"/>
+              </StackPanel>
+            </Border>
+            <Border Grid.Row="1" Background="{DynamicResource SurfaceDark}" BorderBrush="{DynamicResource PanelBorder}" BorderThickness="1" CornerRadius="6" Padding="8" Margin="0,8,0,0">
+              <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <ItemsControl ItemsSource="{Binding ProfileSamples}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:PropagationProfileSampleItemViewModel">
+                      <Grid ColumnDefinitions="70,90,90,90,80,100,70" Margin="0,0,0,6">
+                        <TextBlock Text="{Binding DistanceText}" Foreground="{DynamicResource TextPrimary}"/>
+                        <TextBlock Grid.Column="1" Text="{Binding TerrainText}" Foreground="{DynamicResource TextPrimary}"/>
+                        <TextBlock Grid.Column="2" Text="{Binding LosText}" Foreground="{DynamicResource TextPrimary}"/>
+                        <TextBlock Grid.Column="3" Text="{Binding ClearanceText}" Foreground="{Binding AccentColor}"/>
+                        <TextBlock Grid.Column="4" Text="{Binding FresnelText}" Foreground="{DynamicResource TextDim}"/>
+                        <TextBlock Grid.Column="5" Text="{Binding SurfaceText}" Foreground="{DynamicResource TextDim}"/>
+                        <TextBlock Grid.Column="6" Text="{Binding StateText}" Foreground="{Binding AccentColor}" HorizontalAlignment="Right"/>
+                      </Grid>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </ScrollViewer>
+            </Border>
+            <Grid Grid.Row="2" ColumnDefinitions="*,*,*" Margin="0,8,0,0">
+              <TextBlock Text="{Binding ProfileDistanceKm, StringFormat='{}{0:F2} km'}" Foreground="{DynamicResource TextPrimary}"/>
+              <TextBlock Grid.Column="1" Text="{Binding ProfileFresnelRadiusM, StringFormat='{}{0:F2} m'}" Foreground="{DynamicResource TextPrimary}" HorizontalAlignment="Center"/>
+              <TextBlock Grid.Column="2" Text="{Binding ProfileMarginDb, StringFormat='{}{0:F1} dB'}" Foreground="{DynamicResource TextPrimary}" HorizontalAlignment="Right"/>
+            </Grid>
+          </Grid>
+        </TabItem>
+        <TabItem Header="{DynamicResource Ui.Propagation.Tab.Metrics}">
+          <Grid Margin="8" ColumnDefinitions="*,*,*,*">
+            <Border Background="{DynamicResource SurfaceDark}" BorderBrush="{DynamicResource PanelBorder}" BorderThickness="1" CornerRadius="6" Padding="8" Margin="0,0,6,0"><StackPanel><TextBlock Text="{DynamicResource Ui.Propagation.Metrics.ProfileMargin}" Foreground="{DynamicResource TextDim}"/><TextBlock Text="{Binding ProfileMarginDb, StringFormat='{}{0:F1} dB'}" Foreground="{DynamicResource Accent}" FontWeight="Bold"/></StackPanel></Border>
+            <Border Grid.Column="1" Background="{DynamicResource SurfaceDark}" BorderBrush="{DynamicResource PanelBorder}" BorderThickness="1" CornerRadius="6" Padding="8" Margin="0,0,6,0"><StackPanel><TextBlock Text="{DynamicResource Ui.Propagation.Metrics.ObstacleV}" Foreground="{DynamicResource TextDim}"/><TextBlock Text="{Binding ProfileMainObstacleV, StringFormat='{}{0:F2}'}" Foreground="{DynamicResource Accent}" FontWeight="Bold"/></StackPanel></Border>
+            <Border Grid.Column="2" Background="{DynamicResource SurfaceDark}" BorderBrush="{DynamicResource PanelBorder}" BorderThickness="1" CornerRadius="6" Padding="8" Margin="0,0,6,0"><StackPanel><TextBlock Text="{DynamicResource Ui.Propagation.Metrics.ObstacleLd}" Foreground="{DynamicResource TextDim}"/><TextBlock Text="{Binding ProfileMainObstacleLdDb, StringFormat='{}{0:F2} dB'}" Foreground="{DynamicResource Accent}" FontWeight="Bold"/></StackPanel></Border>
+            <Border Grid.Column="3" Background="{DynamicResource SurfaceDark}" BorderBrush="{DynamicResource PanelBorder}" BorderThickness="1" CornerRadius="6" Padding="8"><StackPanel><TextBlock Text="Distance" Foreground="{DynamicResource TextDim}"/><TextBlock Text="{Binding ProfileDistanceKm, StringFormat='{}{0:F2} km'}" Foreground="{DynamicResource Accent}" FontWeight="Bold"/></StackPanel></Border>
+          </Grid>
+        </TabItem>
+        <TabItem Header="{DynamicResource Ui.Propagation.Tab.Compare}">
+          <StackPanel Margin="8" Spacing="8">
+            <TextBlock Text="{DynamicResource Ui.Propagation.Compare.Title}" Foreground="{DynamicResource TextPrimary}" FontWeight="Bold"/>
+            <TextBlock Text="{Binding ComparisonReferenceRunId, StringFormat='{}{0}'}" Foreground="{DynamicResource TextPrimary}"/>
+            <TextBlock Text="{Binding ComparisonCoverageDeltaText, StringFormat='{}{0}'}" Foreground="{DynamicResource TextPrimary}"/>
+            <TextBlock Text="{Binding ComparisonSinrDeltaText, StringFormat='{}{0}'}" Foreground="{DynamicResource TextPrimary}"/>
+            <TextBlock Text="{Binding ComparisonMarginDeltaText, StringFormat='{}{0}'}" Foreground="{DynamicResource TextPrimary}"/>
+          </StackPanel>
+        </TabItem>
+        <TabItem Header="{DynamicResource Ui.Propagation.Tab.Tasks}">
+          <Grid Margin="8" RowDefinitions="Auto,*">
+            <Grid ColumnDefinitions="160,120,90,150,90,80,80">
+              <TextBlock Text="{DynamicResource Ui.Propagation.Tasks.RunId}" Foreground="{DynamicResource TextDim}" FontWeight="SemiBold"/>
+              <TextBlock Grid.Column="1" Text="{DynamicResource Ui.Propagation.Tasks.Mode}" Foreground="{DynamicResource TextDim}" FontWeight="SemiBold"/>
+              <TextBlock Grid.Column="2" Text="{DynamicResource Ui.Propagation.Tasks.State}" Foreground="{DynamicResource TextDim}" FontWeight="SemiBold"/>
+              <TextBlock Grid.Column="3" Text="{DynamicResource Ui.Propagation.Tasks.Stage}" Foreground="{DynamicResource TextDim}" FontWeight="SemiBold"/>
+              <TextBlock Grid.Column="4" Text="{DynamicResource Ui.Propagation.Tasks.Progress}" Foreground="{DynamicResource TextDim}" FontWeight="SemiBold"/>
+              <TextBlock Grid.Column="5" Text="{DynamicResource Ui.Propagation.Tasks.Cache}" Foreground="{DynamicResource TextDim}" FontWeight="SemiBold"/>
+              <TextBlock Grid.Column="6" Text="{DynamicResource Ui.Propagation.Tasks.Duration}" Foreground="{DynamicResource TextDim}" FontWeight="SemiBold"/>
+            </Grid>
+            <ListBox Grid.Row="1" ItemsSource="{Binding ActiveTasks}" SelectedItem="{Binding SelectedTask}" Margin="0,6,0,0" Background="{DynamicResource PanelBg2}" BorderBrush="{DynamicResource PanelBorder}" BorderThickness="1">
+              <ListBox.ItemTemplate>
+                <DataTemplate x:DataType="vm:PropagationTaskItemViewModel">
+                  <Grid ColumnDefinitions="160,120,90,150,90,80,80" Margin="0,3">
+                    <TextBlock Text="{Binding RunId}" Foreground="{DynamicResource TextPrimary}" TextTrimming="CharacterEllipsis"/>
+                    <TextBlock Grid.Column="1" Text="{Binding ModeText}" Foreground="{DynamicResource TextDim}" TextTrimming="CharacterEllipsis"/>
+                    <TextBlock Grid.Column="2" Text="{Binding StateText}" Foreground="{DynamicResource TextDim}" HorizontalAlignment="Center"/>
+                    <TextBlock Grid.Column="3" Text="{Binding StageText}" Foreground="{DynamicResource TextDim}" TextTrimming="CharacterEllipsis"/>
+                    <ProgressBar Grid.Column="4" Value="{Binding ProgressPercent}" Minimum="0" Maximum="100" Height="14" VerticalAlignment="Center"/>
+                    <TextBlock Grid.Column="5" Text="{Binding CacheText}" Foreground="{DynamicResource TextDim}" HorizontalAlignment="Center" FontSize="10"/>
+                    <TextBlock Grid.Column="6" Text="{Binding DurationText}" Foreground="{DynamicResource TextDim}" HorizontalAlignment="Right"/>
+                  </Grid>
+                </DataTemplate>
+              </ListBox.ItemTemplate>
+            </ListBox>
+          </Grid>
+        </TabItem>
+        <TabItem Header="{DynamicResource Ui.Propagation.Tab.Evidence}">
+          <StackPanel Margin="8" Spacing="6">
+            <TextBlock Text="{Binding CalibrationSnapshotSummary, StringFormat='{}{0}'}" Foreground="{DynamicResource TextPrimary}"/>
+            <TextBlock Text="{Binding CalibrationAssumptionSummary, StringFormat='Assumptions: {0}'}" Foreground="{DynamicResource TextPrimary}" TextWrapping="Wrap"/>
+            <TextBlock Text="{Binding CalibrationRiskSummary, StringFormat='Warnings: {0}'}" Foreground="{DynamicResource AccentWarn}" TextWrapping="Wrap"/>
+            <TextBlock Text="{Binding UncertaintySummary, StringFormat='{}{0}'}" Foreground="{DynamicResource TextPrimary}" TextWrapping="Wrap"/>
+            <TextBlock Text="{Binding AlignmentSummary, StringFormat='{}{0}'}" Foreground="{DynamicResource TextPrimary}" TextWrapping="Wrap"/>
+            <TextBlock Text="{Binding CandidateSummary, StringFormat='{}{0}'}" Foreground="{DynamicResource TextPrimary}" TextWrapping="Wrap"/>
+          </StackPanel>
+        </TabItem>
+        <TabItem Header="{DynamicResource Ui.Propagation.Tab.Calibration}">
+          <StackPanel Margin="8" Spacing="6">
+            <TextBlock Text="{DynamicResource Ui.Propagation.Calibration.Title}" Foreground="{DynamicResource TextPrimary}" FontWeight="Bold"/>
+            <TextBlock Text="{Binding CalibrationSnapshotSummary, StringFormat='{}{0}'}" Foreground="{DynamicResource TextPrimary}" TextWrapping="Wrap"/>
+            <TextBlock Text="{Binding CalibrationAssumptionSummary, StringFormat='{}{0}'}" Foreground="{DynamicResource TextPrimary}" TextWrapping="Wrap"/>
+            <TextBlock Text="{Binding CalibrationRiskSummary, StringFormat='{}{0}'}" Foreground="{DynamicResource AccentWarn}" TextWrapping="Wrap"/>
+            <TextBlock Text="{Binding UncertaintySummary, StringFormat='{}{0}'}" Foreground="{DynamicResource TextPrimary}" TextWrapping="Wrap"/>
+            <ItemsControl ItemsSource="{Binding ParameterAdjustments}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:PropagationParameterAdjustmentItemViewModel">
+                  <Grid ColumnDefinitions="140,120,120,*" Margin="0,0,0,6">
+                    <TextBlock Text="{Binding Name}" Foreground="{DynamicResource TextPrimary}"/>
+                    <TextBlock Grid.Column="1" Text="{Binding BeforeText, StringFormat='{}{0}'}" Foreground="{DynamicResource TextDim}"/>
+                    <TextBlock Grid.Column="2" Text="{Binding AfterText, StringFormat='{}{0}'}" Foreground="{DynamicResource Accent}"/>
+                    <TextBlock Grid.Column="3" Text="{Binding DeltaText, StringFormat='{}{0}'}" Foreground="{DynamicResource AccentInfo}" HorizontalAlignment="Right"/>
+                  </Grid>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+        </TabItem>
+      </TabControl>
+    </Border>
+  </Grid>
+</UserControl>

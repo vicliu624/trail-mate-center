@@ -36,5 +36,10 @@
 
   <ItemGroup>
     <ProjectReference Include="..\\TrailMateCenter.Core\\TrailMateCenter.Core.csproj" />
+    <ProjectReference Include="..\\TrailMateCenter.Propagation.Contracts\\TrailMateCenter.Propagation.Contracts.csproj" />
+    <ProjectReference Include="..\\TrailMateCenter.Propagation.Client\\TrailMateCenter.Propagation.Client.csproj" />
+    <ProjectReference Include="..\\TrailMateCenter.Propagation.Engine\\TrailMateCenter.Propagation.Engine.csproj" />
+    <ProjectReference Include="..\\TrailMateCenter.Propagation.UnityBridge\\TrailMateCenter.Propagation.UnityBridge.csproj" />
+    <ProjectReference Include="..\\TrailMateCenter.Propagation.Adapters.Mock\\TrailMateCenter.Propagation.Adapters.Mock.csproj" />
   </ItemGroup>
 </Project>

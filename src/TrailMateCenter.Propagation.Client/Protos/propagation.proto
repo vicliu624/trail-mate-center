@@ -1,0 +1,433 @@
+syntax = "proto3";
+
+package propagation.v1;
+option csharp_namespace = "TrailMateCenter.Propagation.Grpc";
+
+import "google/protobuf/timestamp.proto";
+
+service PropagationService {
+  rpc StartSimulation(StartSimulationRequest) returns (StartSimulationResponse);
+  rpc StreamSimulationUpdates(StreamSimulationUpdatesRequest) returns (stream SimulationUpdateEvent);
+  rpc GetSimulationResult(GetSimulationResultRequest) returns (SimulationResultResponse);
+  rpc PauseSimulation(PauseSimulationRequest) returns (OperationAck);
+  rpc ResumeSimulation(ResumeSimulationRequest) returns (OperationAck);
+  rpc CancelJob(CancelJobRequest) returns (CancelJobResponse);
+  rpc ExportResult(ExportResultRequest) returns (ExportResultResponse);
+}
+
+enum JobState {
+  JOB_STATE_UNSPECIFIED = 0;
+  JOB_STATE_QUEUED = 1;
+  JOB_STATE_RUNNING = 2;
+  JOB_STATE_PAUSED = 3;
+  JOB_STATE_COMPLETED = 4;
+  JOB_STATE_FAILED = 5;
+  JOB_STATE_CANCELED = 6;
+}
+
+enum PropagationMode {
+  MODE_UNSPECIFIED = 0;
+  MODE_COVERAGE_MAP = 1;
+  MODE_INTERFERENCE_ANALYSIS = 2;
+  MODE_RELAY_OPTIMIZATION = 3;
+  MODE_ADVANCED_MODELING = 4;
+}
+
+message StartSimulationRequest {
+  string request_id = 1;
+  PropagationMode mode = 2;
+  string source_run_id = 3;
+  RadioProfile radio_profile = 4;
+  ModelProfile model_profile = 5;
+  DatasetSelector dataset_selector = 6;
+  string optimization_algorithm = 7;
+  string scenario_preset_name = 8;
+}
+
+message StartSimulationResponse {
+  string run_id = 1;
+  JobState initial_state = 2;
+}
+
+message StreamSimulationUpdatesRequest {
+  string run_id = 1;
+}
+
+message SimulationUpdateEvent {
+  string run_id = 1;
+  JobState state = 2;
+  double progress_pct = 3;
+  string stage = 4;
+  bool cache_hit = 5;
+  string message = 6;
+  google.protobuf.Timestamp timestamp_utc = 7;
+}
+
+message GetSimulationResultRequest {
+  string run_id = 1;
+}
+
+message SimulationResultResponse {
+  RunMeta run_meta = 1;
+  InputBundle input_bundle = 2;
+  ModelOutputs model_outputs = 3;
+  AnalysisOutputs analysis_outputs = 4;
+  Provenance provenance = 5;
+  QualityFlags quality_flags = 6;
+  SceneGeometry scene_geometry = 7;
+}
+
+message RunMeta {
+  string run_id = 1;
+  JobState status = 2;
+  google.protobuf.Timestamp started_at_utc = 3;
+  google.protobuf.Timestamp finished_at_utc = 4;
+  int64 duration_ms = 5;
+  double progress_pct = 6;
+  bool cache_hit = 7;
+}
+
+message InputBundle {
+  string aoi_id = 1;
+  string node_set_version = 2;
+  string parameter_set_version = 3;
+}
+
+message ModelOutputs {
+  string mean_coverage_raster_uri = 1;
+  string reliability_95_raster_uri = 2;
+  string reliability_80_raster_uri = 3;
+  string interference_raster_uri = 4;
+  string capacity_raster_uri = 5;
+  repeated RasterLayerMetadata raster_layers = 6;
+}
+
+message RasterLayerMetadata {
+  string layer_id = 1;
+  string raster_uri = 2;
+  RasterBounds bounds = 3;
+  string crs = 4;
+  double min_value = 5;
+  double max_value = 6;
+  bool has_min_max = 7;
+  double no_data_value = 8;
+  bool has_no_data = 9;
+  double value_scale = 10;
+  double value_offset = 11;
+  bool has_value_transform = 12;
+  string unit = 13;
+  string palette = 14;
+  string tile_template_uri = 15;
+  int32 min_zoom = 16;
+  int32 max_zoom = 17;
+  int32 tile_size = 18;
+  bool has_tile_schema = 19;
+  repeated double class_breaks = 20;
+}
+
+message RasterBounds {
+  double min_x = 1;
+  double min_z = 2;
+  double max_x = 3;
+  double max_z = 4;
+}
+
+message AnalysisOutputs {
+  LinkOutput link = 1;
+  TerrainOutput terrain = 2;
+  TerrainMapOutput terrain_map = 3;
+  ReliabilityOutput reliability = 4;
+  LossBreakdownOutput loss_breakdown = 5;
+  FresnelOutput fresnel = 6;
+  CoverageProbabilityOutput coverage_probability = 7;
+  NetworkOutput network = 8;
+  ProfileOutput profile = 9;
+  OptimizationOutput optimization = 10;
+  ReflectionOutput reflection = 11;
+  UncertaintyOutput uncertainty = 12;
+  CalibrationOutput calibration = 13;
+  SpatialAlignmentOutput spatial_alignment = 14;
+}
+
+message LinkOutput {
+  double downlink_rssi_dbm = 1;
+  double uplink_rssi_dbm = 2;
+  double downlink_margin_db = 3;
+  double uplink_margin_db = 4;
+  bool link_feasible = 5;
+  string margin_guardrail = 6;
+}
+
+message TerrainOutput {
+  bool is_line_of_sight = 1;
+  string path_state = 2;
+  string dominant_obstruction_label = 3;
+  double dominant_obstruction_distance_km = 4;
+  double dominant_obstruction_height_m = 5;
+  double obstruction_above_los_m = 6;
+  double sample_step_m = 7;
+}
+
+enum LandcoverClass {
+  LANDCOVER_CLASS_BARE_GROUND = 0;
+  LANDCOVER_CLASS_SPARSE_FOREST = 1;
+  LANDCOVER_CLASS_DENSE_FOREST = 2;
+  LANDCOVER_CLASS_WATER = 3;
+}
+
+message TerrainMapOutput {
+  string crs = 1;
+  double width_m = 2;
+  double height_m = 3;
+  double sample_step_m = 4;
+  int32 columns = 5;
+  int32 rows = 6;
+  double min_elevation_m = 7;
+  double max_elevation_m = 8;
+  repeated double elevation_samples = 9;
+  repeated ScenePolyline contour_lines = 10;
+  repeated ScenePoint sites = 11;
+  repeated LandcoverClass landcover_samples = 12;
+}
+
+message ReliabilityOutput {
+  double p95 = 1;
+  double p80 = 2;
+  string confidence_note = 3;
+}
+
+message LossBreakdownOutput {
+  double fspl_db = 1;
+  double diffraction_db = 2;
+  double fresnel_db = 3;
+  double vegetation_db = 4;
+  double reflection_db = 5;
+  double shadow_db = 6;
+  double environment_db = 7;
+  double total_db = 8;
+}
+
+message FresnelOutput {
+  double radius_m = 1;
+  double clearance_ratio = 2;
+  double minimum_clearance_m = 3;
+  double additional_loss_db = 4;
+  string risk_level = 5;
+}
+
+message CoverageProbabilityOutput {
+  double area_p95_km2 = 1;
+  double area_p80_km2 = 2;
+  double threshold_rssi_dbm = 3;
+  double reliable_reach_km = 4;
+}
+
+message NetworkOutput {
+  double sinr_db = 1;
+  double conflict_rate = 2;
+  int32 max_capacity_nodes = 3;
+  double aloha_load_percent = 4;
+  double channel_occupancy_percent = 5;
+  double airtime_ms = 6;
+}
+
+message ProfileOutput {
+  double distance_km = 1;
+  double fresnel_radius_m = 2;
+  double margin_db = 3;
+  MainObstacle main_obstacle = 4;
+  repeated ProfileSample samples = 5;
+}
+
+message MainObstacle {
+  string label = 1;
+  double v = 2;
+  double ld_db = 3;
+}
+
+message OptimizationOutput {
+  string algorithm = 1;
+  int32 candidate_count = 2;
+  string constraint_summary = 3;
+  string recommended_plan_id = 4;
+  repeated RelayPlan top_plans = 5;
+}
+
+message RelayPlan {
+  string plan_id = 1;
+  double score = 2;
+  double coverage_gain = 3;
+  double reliability_gain = 4;
+  double blind_area_penalty = 5;
+  double interference_penalty = 6;
+  double cost_penalty = 7;
+  string explanation = 8;
+  repeated string site_ids = 9;
+}
+
+message ReflectionOutput {
+  bool enabled = 1;
+  double reflection_coefficient = 2;
+  double relative_gain_db = 3;
+  double excess_delay_ns = 4;
+  string multipath_risk = 5;
+}
+
+message UncertaintyOutput {
+  int32 iterations = 1;
+  double ci_lower = 2;
+  double ci_upper = 3;
+  double stability_index = 4;
+  double margin_p10_db = 5;
+  double margin_p50_db = 6;
+  double margin_p90_db = 7;
+  string sensitivity_summary = 8;
+}
+
+message CalibrationOutput {
+  int32 training_sample_count = 1;
+  int32 validation_sample_count = 2;
+  double mae_before = 3;
+  double mae_after = 4;
+  double mae_delta = 5;
+  double rmse_before = 6;
+  double rmse_after = 7;
+  double rmse_delta = 8;
+  double validation_mae_after = 9;
+  double validation_rmse_after = 10;
+  repeated ParameterAdjustment parameter_adjustments = 11;
+  string calibration_run_id = 12;
+}
+
+message SpatialAlignmentOutput {
+  string target_crs = 1;
+  string dem_resampling_method = 2;
+  string landcover_resampling_method = 3;
+  double dem_resolution_m = 4;
+  double landcover_resolution_m = 5;
+  double horizontal_offset_m = 6;
+  double vertical_offset_m = 7;
+  double alignment_score = 8;
+  string status = 9;
+}
+
+message ParameterAdjustment {
+  string name = 1;
+  double before = 2;
+  double after = 3;
+  string unit = 4;
+}
+
+message ProfileSample {
+  int32 index = 1;
+  double distance_km = 2;
+  double terrain_elevation_m = 3;
+  double los_height_m = 4;
+  double fresnel_radius_m = 5;
+  bool is_blocked = 6;
+  string surface_type = 7;
+}
+
+message Provenance {
+  DatasetBundle dataset_bundle = 1;
+  string model_version = 2;
+  string git_commit = 3;
+  string parameter_hash = 4;
+}
+
+message DatasetBundle {
+  string dem_version = 1;
+  string landcover_version = 2;
+  string surface_version = 3;
+}
+
+message QualityFlags {
+  repeated string assumption_flags = 1;
+  repeated string validity_warnings = 2;
+}
+
+message SceneGeometry {
+  repeated ScenePoint relay_candidates = 1;
+  repeated ScenePoint relay_recommendations = 2;
+  repeated ScenePoint profile_obstacles = 3;
+  repeated ScenePolyline profile_lines = 4;
+  repeated ScenePolyline ridge_lines = 5;
+}
+
+message ScenePoint {
+  string id = 1;
+  string label = 2;
+  double x = 3;
+  double z = 4;
+  bool has_y = 5;
+  double y = 6;
+  bool has_score = 7;
+  double score = 8;
+}
+
+message ScenePolyline {
+  string id = 1;
+  repeated ScenePolylinePoint points = 2;
+}
+
+message ScenePolylinePoint {
+  double x = 1;
+  double z = 2;
+  bool has_y = 3;
+  double y = 4;
+}
+
+message RadioProfile {
+  double frequency_mhz = 1;
+  double tx_power_dbm = 2;
+  string uplink_sf = 3;
+  string downlink_sf = 4;
+}
+
+message ModelProfile {
+  double environment_loss_db = 1;
+  double veg_alpha_sparse = 2;
+  double veg_alpha_dense = 3;
+  double shadow_sigma_db = 4;
+  double reflection_coeff = 5;
+  bool enable_monte_carlo = 6;
+  int32 monte_carlo_iterations = 7;
+}
+
+message DatasetSelector {
+  string dem_version = 1;
+  string landcover_version = 2;
+  string surface_version = 3;
+}
+
+message PauseSimulationRequest {
+  string run_id = 1;
+}
+
+message ResumeSimulationRequest {
+  string run_id = 1;
+}
+
+message OperationAck {
+  bool success = 1;
+  string message = 2;
+}
+
+message CancelJobRequest {
+  string job_id = 1;
+}
+
+message CancelJobResponse {
+  bool canceled = 1;
+}
+
+message ExportResultRequest {
+  string run_id = 1;
+  string output_directory = 2;
+}
+
+message ExportResultResponse {
+  string run_id = 1;
+  string export_path = 2;
+  google.protobuf.Timestamp exported_at_utc = 3;
+}
