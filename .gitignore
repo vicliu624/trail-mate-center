@@ -28,6 +28,7 @@ BenchmarkDotNet.Artifacts/
 !src/TrailMateCenter.App/**
 src/TrailMateCenter.App/bin/
 src/TrailMateCenter.App/obj/
+src/TrailMateCenter.App/artifacts/
 *.dylib
 *.so
 *.so.*

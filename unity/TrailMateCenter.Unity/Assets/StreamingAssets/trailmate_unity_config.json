@@ -1,0 +1,77 @@
+{
+  "bridge": {
+    "transport": "namedpipe",
+    "pipeName": "TrailMateCenter.Propagation.Bridge",
+    "tcpHost": "127.0.0.1",
+    "tcpPort": 51110,
+    "viewportId": "propagation-main-slot"
+  },
+  "terrain": {
+    "heightmapPath": "",
+    "heightmapResolution": 513,
+    "sizeX": 3000,
+    "sizeZ": 3000,
+    "heightScale": 600,
+    "offsetY": 0
+  },
+  "layers": {
+    "defaultOverlayHeight": 2.5,
+    "palette": "default",
+    "overlayResolution": 256,
+    "conformToTerrain": true,
+    "terrainOffset": 1.5,
+    "enableTiledRaster": true,
+    "tileRefreshIntervalSeconds": 0.4,
+    "tileConformingResolution": 24,
+    "maxActiveTiles": 160,
+    "allowLayerStacking": true,
+    "showLegend": true,
+    "showEvidenceCards": true,
+    "rasterConversion": {
+      "enable": false,
+      "gdalTranslatePath": "gdal_translate",
+      "gdalInfoPath": "gdalinfo",
+      "gdalWarpPath": "gdalwarp",
+      "outputFormat": "png",
+      "cacheDirectory": "",
+      "timeoutMs": 10000,
+      "enableReprojection": true,
+      "targetCrs": "LOCAL_TERRAIN_M",
+      "preferredBand": 1,
+      "autoScaleToByte": true,
+      "maxTextureSize": 4096,
+      "generateMipMaps": true
+    }
+  },
+  "geoReference": {
+    "terrainCrs": "LOCAL_TERRAIN_M",
+    "terrainMinX": 0.0,
+    "terrainMinZ": 0.0,
+    "terrainMaxX": 3000.0,
+    "terrainMaxZ": 3000.0,
+    "enableAoiBoundaryMask": false,
+    "aoiMinX": 0.0,
+    "aoiMinZ": 0.0,
+    "aoiMaxX": 3000.0,
+    "aoiMaxZ": 3000.0
+  },
+  "performance": {
+    "textureCacheCapacity": 24,
+    "overlayMeshLodNear": 256,
+    "overlayMeshLodFar": 96,
+    "overlayMeshLodDistance": 1800.0,
+    "enableProgressiveLayerLoading": true
+  },
+  "camera": {
+    "startPosition": { "x": 1200, "y": 1800, "z": 900 },
+    "startRotation": { "pitch": 20, "yaw": 45, "roll": 0 },
+    "fov": 55
+  },
+  "diagnostics": {
+    "intervalMs": 1000
+  },
+  "interaction": {
+    "profileLineModifier": "LeftShift",
+    "profileLineColor": "#66C6FF"
+  }
+}
