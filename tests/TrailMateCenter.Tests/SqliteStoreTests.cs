@@ -1,3 +1,4 @@
+using Microsoft.Data.Sqlite;
 using TrailMateCenter.Models;
 using TrailMateCenter.Storage;
 using Xunit;
@@ -40,6 +41,7 @@ public sealed class SqliteStoreTests
         }
         finally
         {
+            SqliteConnection.ClearAllPools();
             if (Directory.Exists(root))
             {
                 Directory.Delete(root, recursive: true);

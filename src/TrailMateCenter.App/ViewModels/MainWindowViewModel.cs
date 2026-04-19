@@ -1310,24 +1310,30 @@ public sealed partial class MainWindowViewModel : ViewModelBase
 
             if (result.Success)
             {
-                OfflineCacheExportStatusText = result.UnreadableEntries > 0
-                    ? loc.Format(
-                        "Status.OfflineCache.ExportDoneWithUnreadable",
-                        result.CopiedTiles,
-                        result.SourceTiles,
-                        result.SkippedTiles,
-                        result.UnreadableEntries)
-                    : loc.Format(
-                        "Status.OfflineCache.ExportDone",
-                        result.CopiedTiles,
-                        result.SourceTiles,
-                        result.SkippedTiles);
+                var statusText = loc.Format(
+                    "Status.OfflineCache.ExportDone",
+                    result.CopiedTiles,
+                    result.SourceTiles,
+                    result.SkippedTiles);
+                if (result.UnreadableEntries > 0)
+                {
+                    statusText = $"{statusText} {loc.Format("Status.OfflineCache.ExportUnreadableEntries", result.UnreadableEntries)}";
+                }
+
+                if (result.MissingSourceTiles > 0)
+                {
+                    statusText = $"{statusText} {loc.Format("Status.OfflineCache.ExportSourceIncomplete", result.MissingSourceTiles, result.ExpectedTiles)}";
+                }
+
+                OfflineCacheExportStatusText = statusText;
                 _logger.LogInformation(
-                    "Offline cache region '{RegionName}' exported to '{TargetRoot}'. copied={Copied}, source={Source}, skipped={Skipped}, unreadable={Unreadable}",
+                    "Offline cache region '{RegionName}' exported to '{TargetRoot}'. copied={Copied}, source={Source}, expected={Expected}, missing={Missing}, skipped={Skipped}, unreadable={Unreadable}",
                     region.Name,
                     result.TargetMapRoot,
                     result.CopiedTiles,
                     result.SourceTiles,
+                    result.ExpectedTiles,
+                    result.MissingSourceTiles,
                     result.SkippedTiles,
                     result.UnreadableEntries);
             }
@@ -1441,6 +1447,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
 
             return OfflineCacheRegionExportResult.Ok(
                 mapsRoot,
+                stats.ExpectedTiles,
                 stats.SourceTiles,
                 stats.CopiedTiles,
                 stats.SkippedTiles,
@@ -1499,6 +1506,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             if (range.IsEmpty)
                 continue;
 
+            stats.ExpectedTiles += range.TileCount;
             CopyTilesInRange(sourceRoot, targetRoot, extension, zoom, range, stats, cancellationToken);
         }
     }
@@ -1526,6 +1534,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
 
             var profileSourceRoot = Path.Combine(contourRoot, profile);
             var profileTargetRoot = Path.Combine(targetRoot, profile);
+            stats.ExpectedTiles += range.TileCount;
             CopyTilesInRange(profileSourceRoot, profileTargetRoot, "png", zoom, range, stats, cancellationToken);
         }
     }
@@ -2033,14 +2042,18 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     public readonly record struct OfflineCacheRegionExportResult(
         bool Success,
         string TargetMapRoot,
+        long ExpectedTiles,
         long SourceTiles,
         long CopiedTiles,
         long SkippedTiles,
         long UnreadableEntries,
         string? ErrorMessage)
     {
+        public long MissingSourceTiles => Math.Max(0, ExpectedTiles - SourceTiles);
+
         public static OfflineCacheRegionExportResult Ok(
             string targetMapRoot,
+            long expectedTiles,
             long sourceTiles,
             long copiedTiles,
             long skippedTiles,
@@ -2049,6 +2062,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             return new OfflineCacheRegionExportResult(
                 Success: true,
                 TargetMapRoot: targetMapRoot,
+                ExpectedTiles: expectedTiles,
                 SourceTiles: sourceTiles,
                 CopiedTiles: copiedTiles,
                 SkippedTiles: skippedTiles,
@@ -2061,6 +2075,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             return new OfflineCacheRegionExportResult(
                 Success: false,
                 TargetMapRoot: string.Empty,
+                ExpectedTiles: 0,
                 SourceTiles: 0,
                 CopiedTiles: 0,
                 SkippedTiles: 0,
@@ -2071,6 +2086,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
 
     private sealed class ExportCopyStats
     {
+        public long ExpectedTiles { get; set; }
         public long SourceTiles { get; set; }
         public long CopiedTiles { get; set; }
         public long SkippedTiles { get; set; }

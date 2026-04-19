@@ -2163,39 +2163,39 @@ public sealed partial class PropagationViewModel : ViewModelBase, ILocalizationA
             switch (e.EventType)
             {
                 case "interaction_measurement_completed":
-                {
-                    var distance = ReadJsonDouble(data, "distance_m");
-                    if (distance.HasValue)
-                        UnityProfileLineText = $"Measurement: {distance.Value:F1} m";
-                    break;
-                }
+                    {
+                        var distance = ReadJsonDouble(data, "distance_m");
+                        if (distance.HasValue)
+                            UnityProfileLineText = $"Measurement: {distance.Value:F1} m";
+                        break;
+                    }
                 case "interaction_annotation_added":
-                {
-                    var id = ReadJsonString(data, "id");
-                    var x = ReadJsonDouble(data, "x");
-                    var y = ReadJsonDouble(data, "y");
-                    if (!string.IsNullOrWhiteSpace(id) && x.HasValue && y.HasValue)
-                        UnitySelectedPointText = $"{id} @ x={x.Value:F1}, y={y.Value:F1}";
-                    break;
-                }
+                    {
+                        var id = ReadJsonString(data, "id");
+                        var x = ReadJsonDouble(data, "x");
+                        var y = ReadJsonDouble(data, "y");
+                        if (!string.IsNullOrWhiteSpace(id) && x.HasValue && y.HasValue)
+                            UnitySelectedPointText = $"{id} @ x={x.Value:F1}, y={y.Value:F1}";
+                        break;
+                    }
                 case "interaction_hotspot_stats":
-                {
-                    var avg = ReadJsonDouble(data, "elevation_avg");
-                    var min = ReadJsonDouble(data, "elevation_min");
-                    var max = ReadJsonDouble(data, "elevation_max");
-                    if (avg.HasValue && min.HasValue && max.HasValue)
-                        UnityBridgeTelemetryText = $"hotspot elev avg={avg.Value:F1}m min={min.Value:F1}m max={max.Value:F1}m";
-                    break;
-                }
+                    {
+                        var avg = ReadJsonDouble(data, "elevation_avg");
+                        var min = ReadJsonDouble(data, "elevation_min");
+                        var max = ReadJsonDouble(data, "elevation_max");
+                        if (avg.HasValue && min.HasValue && max.HasValue)
+                            UnityBridgeTelemetryText = $"hotspot elev avg={avg.Value:F1}m min={min.Value:F1}m max={max.Value:F1}m";
+                        break;
+                    }
                 case "interaction_profile_curve_summary":
-                {
-                    var distance = ReadJsonDouble(data, "distance_m");
-                    var min = ReadJsonDouble(data, "elevation_min");
-                    var max = ReadJsonDouble(data, "elevation_max");
-                    if (distance.HasValue && min.HasValue && max.HasValue)
-                        UnityProfileLineText = $"Profile {distance.Value:F1} m, elev {min.Value:F1}-{max.Value:F1} m";
-                    break;
-                }
+                    {
+                        var distance = ReadJsonDouble(data, "distance_m");
+                        var min = ReadJsonDouble(data, "elevation_min");
+                        var max = ReadJsonDouble(data, "elevation_max");
+                        if (distance.HasValue && min.HasValue && max.HasValue)
+                            UnityProfileLineText = $"Profile {distance.Value:F1} m, elev {min.Value:F1}-{max.Value:F1} m";
+                        break;
+                    }
             }
         }
         catch

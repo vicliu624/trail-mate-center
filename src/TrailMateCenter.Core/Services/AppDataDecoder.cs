@@ -814,86 +814,86 @@ public sealed class AppDataDecoder
         switch (telemetry.VariantCase)
         {
             case Telemetry.VariantOneofCase.DeviceMetrics:
-            {
-                var m = telemetry.DeviceMetrics;
-                AddIf(parts, m.HasBatteryLevel, $"电量 {m.BatteryLevel}%");
-                AddIf(parts, m.HasVoltage, $"电压 {Fmt(m.Voltage)}V");
-                AddIf(parts, m.HasChannelUtilization, $"信道占用 {Fmt(m.ChannelUtilization)}%");
-                AddIf(parts, m.HasAirUtilTx, $"发射占空 {Fmt(m.AirUtilTx)}%");
-                AddIf(parts, m.HasUptimeSeconds, $"运行 {FormatUptime(m.UptimeSeconds)}");
-                return string.Join(" · ", parts);
-            }
+                {
+                    var m = telemetry.DeviceMetrics;
+                    AddIf(parts, m.HasBatteryLevel, $"电量 {m.BatteryLevel}%");
+                    AddIf(parts, m.HasVoltage, $"电压 {Fmt(m.Voltage)}V");
+                    AddIf(parts, m.HasChannelUtilization, $"信道占用 {Fmt(m.ChannelUtilization)}%");
+                    AddIf(parts, m.HasAirUtilTx, $"发射占空 {Fmt(m.AirUtilTx)}%");
+                    AddIf(parts, m.HasUptimeSeconds, $"运行 {FormatUptime(m.UptimeSeconds)}");
+                    return string.Join(" · ", parts);
+                }
             case Telemetry.VariantOneofCase.EnvironmentMetrics:
-            {
-                var m = telemetry.EnvironmentMetrics;
-                AddIf(parts, m.HasTemperature, $"温度 {Fmt(m.Temperature)}°C");
-                AddIf(parts, m.HasRelativeHumidity, $"湿度 {Fmt(m.RelativeHumidity)}%");
-                AddIf(parts, m.HasBarometricPressure, $"气压 {Fmt(m.BarometricPressure)}hPa");
-                AddIf(parts, m.HasGasResistance, $"气阻 {Fmt(m.GasResistance)}MΩ");
-                AddIf(parts, m.HasVoltage, $"电压 {Fmt(m.Voltage)}V");
-                AddIf(parts, m.HasCurrent, $"电流 {Fmt(m.Current)}A");
-                AddIf(parts, m.HasIaq, $"IAQ {m.Iaq}");
-                AddIf(parts, m.HasLux, $"照度 {Fmt(m.Lux)}lx");
-                AddIf(parts, m.HasUvLux, $"UV {Fmt(m.UvLux)}lx");
-                AddIf(parts, m.HasWindSpeed, $"风速 {Fmt(m.WindSpeed)}m/s");
-                AddIf(parts, m.HasWindDirection, $"风向 {m.WindDirection}°");
-                AddIf(parts, m.HasRainfall1H, $"雨量1h {Fmt(m.Rainfall1H)}mm");
-                AddIf(parts, m.HasRainfall24H, $"雨量24h {Fmt(m.Rainfall24H)}mm");
-                AddIf(parts, m.HasSoilMoisture, $"土壤湿度 {m.SoilMoisture}%");
-                AddIf(parts, m.HasSoilTemperature, $"土壤温度 {Fmt(m.SoilTemperature)}°C");
-                return string.Join(" · ", parts);
-            }
+                {
+                    var m = telemetry.EnvironmentMetrics;
+                    AddIf(parts, m.HasTemperature, $"温度 {Fmt(m.Temperature)}°C");
+                    AddIf(parts, m.HasRelativeHumidity, $"湿度 {Fmt(m.RelativeHumidity)}%");
+                    AddIf(parts, m.HasBarometricPressure, $"气压 {Fmt(m.BarometricPressure)}hPa");
+                    AddIf(parts, m.HasGasResistance, $"气阻 {Fmt(m.GasResistance)}MΩ");
+                    AddIf(parts, m.HasVoltage, $"电压 {Fmt(m.Voltage)}V");
+                    AddIf(parts, m.HasCurrent, $"电流 {Fmt(m.Current)}A");
+                    AddIf(parts, m.HasIaq, $"IAQ {m.Iaq}");
+                    AddIf(parts, m.HasLux, $"照度 {Fmt(m.Lux)}lx");
+                    AddIf(parts, m.HasUvLux, $"UV {Fmt(m.UvLux)}lx");
+                    AddIf(parts, m.HasWindSpeed, $"风速 {Fmt(m.WindSpeed)}m/s");
+                    AddIf(parts, m.HasWindDirection, $"风向 {m.WindDirection}°");
+                    AddIf(parts, m.HasRainfall1H, $"雨量1h {Fmt(m.Rainfall1H)}mm");
+                    AddIf(parts, m.HasRainfall24H, $"雨量24h {Fmt(m.Rainfall24H)}mm");
+                    AddIf(parts, m.HasSoilMoisture, $"土壤湿度 {m.SoilMoisture}%");
+                    AddIf(parts, m.HasSoilTemperature, $"土壤温度 {Fmt(m.SoilTemperature)}°C");
+                    return string.Join(" · ", parts);
+                }
             case Telemetry.VariantOneofCase.AirQualityMetrics:
-            {
-                var m = telemetry.AirQualityMetrics;
-                AddIf(parts, m.HasPm25Standard, $"PM2.5 {m.Pm25Standard}μg/m³");
-                AddIf(parts, m.HasPm10Standard, $"PM10 {m.Pm10Standard}μg/m³");
-                AddIf(parts, m.HasPm100Standard, $"PM100 {m.Pm100Standard}μg/m³");
-                AddIf(parts, m.HasCo2, $"CO2 {m.Co2}ppm");
-                AddIf(parts, m.HasPmTemperature, $"温度 {Fmt(m.PmTemperature)}°C");
-                AddIf(parts, m.HasPmHumidity, $"湿度 {Fmt(m.PmHumidity)}%");
-                AddIf(parts, m.HasPmVocIdx, $"VOC {Fmt(m.PmVocIdx)}");
-                AddIf(parts, m.HasPmNoxIdx, $"NOx {Fmt(m.PmNoxIdx)}");
-                return string.Join(" · ", parts);
-            }
+                {
+                    var m = telemetry.AirQualityMetrics;
+                    AddIf(parts, m.HasPm25Standard, $"PM2.5 {m.Pm25Standard}μg/m³");
+                    AddIf(parts, m.HasPm10Standard, $"PM10 {m.Pm10Standard}μg/m³");
+                    AddIf(parts, m.HasPm100Standard, $"PM100 {m.Pm100Standard}μg/m³");
+                    AddIf(parts, m.HasCo2, $"CO2 {m.Co2}ppm");
+                    AddIf(parts, m.HasPmTemperature, $"温度 {Fmt(m.PmTemperature)}°C");
+                    AddIf(parts, m.HasPmHumidity, $"湿度 {Fmt(m.PmHumidity)}%");
+                    AddIf(parts, m.HasPmVocIdx, $"VOC {Fmt(m.PmVocIdx)}");
+                    AddIf(parts, m.HasPmNoxIdx, $"NOx {Fmt(m.PmNoxIdx)}");
+                    return string.Join(" · ", parts);
+                }
             case Telemetry.VariantOneofCase.PowerMetrics:
-            {
-                var m = telemetry.PowerMetrics;
-                AddIf(parts, m.HasCh1Voltage, $"CH1 {Fmt(m.Ch1Voltage)}V");
-                AddIf(parts, m.HasCh1Current, $"CH1 {Fmt(m.Ch1Current)}A");
-                AddIf(parts, m.HasCh2Voltage, $"CH2 {Fmt(m.Ch2Voltage)}V");
-                AddIf(parts, m.HasCh2Current, $"CH2 {Fmt(m.Ch2Current)}A");
-                return string.Join(" · ", parts);
-            }
+                {
+                    var m = telemetry.PowerMetrics;
+                    AddIf(parts, m.HasCh1Voltage, $"CH1 {Fmt(m.Ch1Voltage)}V");
+                    AddIf(parts, m.HasCh1Current, $"CH1 {Fmt(m.Ch1Current)}A");
+                    AddIf(parts, m.HasCh2Voltage, $"CH2 {Fmt(m.Ch2Voltage)}V");
+                    AddIf(parts, m.HasCh2Current, $"CH2 {Fmt(m.Ch2Current)}A");
+                    return string.Join(" · ", parts);
+                }
             case Telemetry.VariantOneofCase.LocalStats:
-            {
-                var m = telemetry.LocalStats;
-                if (m.UptimeSeconds > 0) parts.Add($"运行 {FormatUptime(m.UptimeSeconds)}");
-                if (m.ChannelUtilization > 0) parts.Add($"信道占用 {Fmt(m.ChannelUtilization)}%");
-                if (m.AirUtilTx > 0) parts.Add($"发射占空 {Fmt(m.AirUtilTx)}%");
-                if (m.NumPacketsTx > 0 || m.NumPacketsRx > 0) parts.Add($"TX {m.NumPacketsTx} / RX {m.NumPacketsRx}");
-                if (m.NumPacketsRxBad > 0) parts.Add($"RX坏包 {m.NumPacketsRxBad}");
-                if (m.NoiseFloor != 0) parts.Add($"噪声 {m.NoiseFloor}dBm");
-                return string.Join(" · ", parts);
-            }
+                {
+                    var m = telemetry.LocalStats;
+                    if (m.UptimeSeconds > 0) parts.Add($"运行 {FormatUptime(m.UptimeSeconds)}");
+                    if (m.ChannelUtilization > 0) parts.Add($"信道占用 {Fmt(m.ChannelUtilization)}%");
+                    if (m.AirUtilTx > 0) parts.Add($"发射占空 {Fmt(m.AirUtilTx)}%");
+                    if (m.NumPacketsTx > 0 || m.NumPacketsRx > 0) parts.Add($"TX {m.NumPacketsTx} / RX {m.NumPacketsRx}");
+                    if (m.NumPacketsRxBad > 0) parts.Add($"RX坏包 {m.NumPacketsRxBad}");
+                    if (m.NoiseFloor != 0) parts.Add($"噪声 {m.NoiseFloor}dBm");
+                    return string.Join(" · ", parts);
+                }
             case Telemetry.VariantOneofCase.HealthMetrics:
-            {
-                var m = telemetry.HealthMetrics;
-                AddIf(parts, m.HasHeartBpm, $"心率 {m.HeartBpm}bpm");
-                AddIf(parts, m.HasSpO2, $"血氧 {m.SpO2}%");
-                AddIf(parts, m.HasTemperature, $"体温 {Fmt(m.Temperature)}°C");
-                return string.Join(" · ", parts);
-            }
+                {
+                    var m = telemetry.HealthMetrics;
+                    AddIf(parts, m.HasHeartBpm, $"心率 {m.HeartBpm}bpm");
+                    AddIf(parts, m.HasSpO2, $"血氧 {m.SpO2}%");
+                    AddIf(parts, m.HasTemperature, $"体温 {Fmt(m.Temperature)}°C");
+                    return string.Join(" · ", parts);
+                }
             case Telemetry.VariantOneofCase.HostMetrics:
-            {
-                var m = telemetry.HostMetrics;
-                if (m.UptimeSeconds > 0) parts.Add($"运行 {FormatUptime(m.UptimeSeconds)}");
-                if (m.FreememBytes > 0) parts.Add($"空闲内存 {FormatBytes(m.FreememBytes)}");
-                if (m.Diskfree1Bytes > 0) parts.Add($"/ 可用 {FormatBytes(m.Diskfree1Bytes)}");
-                if (m.Load1 > 0) parts.Add($"负载1 {m.Load1 / 100f:F2}");
-                if (!string.IsNullOrWhiteSpace(m.UserString)) parts.Add(m.UserString);
-                return string.Join(" · ", parts);
-            }
+                {
+                    var m = telemetry.HostMetrics;
+                    if (m.UptimeSeconds > 0) parts.Add($"运行 {FormatUptime(m.UptimeSeconds)}");
+                    if (m.FreememBytes > 0) parts.Add($"空闲内存 {FormatBytes(m.FreememBytes)}");
+                    if (m.Diskfree1Bytes > 0) parts.Add($"/ 可用 {FormatBytes(m.Diskfree1Bytes)}");
+                    if (m.Load1 > 0) parts.Add($"负载1 {m.Load1 / 100f:F2}");
+                    if (!string.IsNullOrWhiteSpace(m.UserString)) parts.Add(m.UserString);
+                    return string.Join(" · ", parts);
+                }
             default:
                 return string.Empty;
         }

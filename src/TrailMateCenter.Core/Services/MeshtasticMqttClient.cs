@@ -506,20 +506,20 @@ public sealed class MeshtasticMqttClient : IAsyncDisposable
         switch (proxy.PayloadVariantCase)
         {
             case MqttClientProxyMessage.PayloadVariantOneofCase.Data:
-            {
-                var data = proxy.Data;
-                if (data is null || data.Length == 0)
-                    return PayloadProcessOutcome.Decoded;
-                return ProcessPayload(runtime, proxy.Topic, data.Span);
-            }
-            case MqttClientProxyMessage.PayloadVariantOneofCase.Text:
-            {
-                if (!string.IsNullOrWhiteSpace(proxy.Text))
                 {
-                    _logger.LogDebug("Meshtastic MQTT proxy text on {Topic}: {Text}", proxy.Topic, proxy.Text);
+                    var data = proxy.Data;
+                    if (data is null || data.Length == 0)
+                        return PayloadProcessOutcome.Decoded;
+                    return ProcessPayload(runtime, proxy.Topic, data.Span);
                 }
-                return PayloadProcessOutcome.Decoded;
-            }
+            case MqttClientProxyMessage.PayloadVariantOneofCase.Text:
+                {
+                    if (!string.IsNullOrWhiteSpace(proxy.Text))
+                    {
+                        _logger.LogDebug("Meshtastic MQTT proxy text on {Topic}: {Text}", proxy.Topic, proxy.Text);
+                    }
+                    return PayloadProcessOutcome.Decoded;
+                }
             default:
                 return PayloadProcessOutcome.Unhandled;
         }

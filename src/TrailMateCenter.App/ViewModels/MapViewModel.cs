@@ -22,6 +22,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Globalization;
 using System.Linq;
+using System.Net;
 using System.Net.Http.Headers;
 using System.Threading;
 using System.Xml.Linq;
@@ -58,6 +59,8 @@ public sealed class MapViewModel : INotifyPropertyChanged
 {
     private const string NodeIdField = "tmc_node_id";
     private const string OfflineRouteIdField = "tmc_offline_route_id";
+    private const int OfflineTileDownloadMaxAttempts = 3;
+    private const int OfflineTileDownloadConcurrency = 6;
     private const double WaypointPulsePeriodMilliseconds = 680;
     private const double WaypointPulseMinScale = 0.85;
     private const double WaypointPulseMaxScale = 1.75;
@@ -1480,7 +1483,7 @@ public sealed class MapViewModel : INotifyPropertyChanged
 
         await Parallel.ForEachAsync(
             tiles,
-            new ParallelOptions { MaxDegreeOfParallelism = 6, CancellationToken = cancellationToken },
+            new ParallelOptions { MaxDegreeOfParallelism = OfflineTileDownloadConcurrency, CancellationToken = cancellationToken },
             async (coordinate, token) =>
             {
                 var result = await EnsureBaseTileCachedAsync(source, zoom, coordinate.X, coordinate.Y, token);
@@ -1516,41 +1519,149 @@ public sealed class MapViewModel : INotifyPropertyChanged
 
         var outputPath = Path.Combine(targetDir, $"{y}.{source.Extension}");
         if (File.Exists(outputPath))
-            return TileCacheWriteResult.Skipped;
+        {
+            if (IsHealthyCachedTile(outputPath))
+                return TileCacheWriteResult.Skipped;
+
+            TryDeleteTileFile(outputPath);
+        }
 
         var tmpPath = outputPath + ".tmp";
-        try
-        {
-            var url = source.BuildUrl(zoom, x, y);
-            using var response = await _offlineTileHttpClient.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
-            if (!response.IsSuccessStatusCode)
-                return TileCacheWriteResult.Failed;
+        var url = source.BuildUrl(zoom, x, y);
 
-            await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
-            await using (var file = new FileStream(tmpPath, FileMode.Create, FileAccess.Write, FileShare.None))
-            {
-                await stream.CopyToAsync(file, cancellationToken);
-            }
+        for (var attempt = 1; attempt <= OfflineTileDownloadMaxAttempts; attempt++)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
 
-            File.Move(tmpPath, outputPath, overwrite: true);
-            return TileCacheWriteResult.Downloaded;
-        }
-        catch
-        {
-            return TileCacheWriteResult.Failed;
-        }
-        finally
-        {
+            var shouldRetry = false;
             try
             {
-                if (File.Exists(tmpPath))
-                    File.Delete(tmpPath);
+                TryDeleteTileFile(tmpPath);
+
+                using var response = await _offlineTileHttpClient.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+                if (!response.IsSuccessStatusCode)
+                {
+                    shouldRetry = ShouldRetryTileDownload(response.StatusCode, attempt);
+                    if (!shouldRetry)
+                        return TileCacheWriteResult.Failed;
+                }
+                else if (HasUnexpectedTileContentType(response))
+                {
+                    shouldRetry = ShouldRetryTileDownload(attempt);
+                    if (!shouldRetry)
+                        return TileCacheWriteResult.Failed;
+                }
+                else
+                {
+                    await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
+                    await using (var file = new FileStream(tmpPath, FileMode.Create, FileAccess.Write, FileShare.None))
+                    {
+                        await stream.CopyToAsync(file, cancellationToken);
+                    }
+
+                    if (IsHealthyCachedTile(tmpPath))
+                    {
+                        File.Move(tmpPath, outputPath, overwrite: true);
+                        return TileCacheWriteResult.Downloaded;
+                    }
+
+                    shouldRetry = ShouldRetryTileDownload(attempt);
+                    if (!shouldRetry)
+                        return TileCacheWriteResult.Failed;
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
             }
             catch
             {
-                // Ignore cleanup errors.
+                shouldRetry = ShouldRetryTileDownload(attempt);
+                if (!shouldRetry)
+                    return TileCacheWriteResult.Failed;
             }
+            finally
+            {
+                TryDeleteTileFile(tmpPath);
+            }
+
+            await DelayBeforeTileRetryAsync(attempt, cancellationToken);
         }
+
+        return TileCacheWriteResult.Failed;
+    }
+
+    private static bool IsHealthyCachedTile(string path)
+    {
+        try
+        {
+            var info = new FileInfo(path);
+            return info.Exists && info.Length > 0;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private static void TryDeleteTileFile(string path)
+    {
+        try
+        {
+            if (File.Exists(path))
+                File.Delete(path);
+        }
+        catch
+        {
+            // Ignore cleanup errors.
+        }
+    }
+
+    private static bool HasUnexpectedTileContentType(HttpResponseMessage response)
+    {
+        var mediaType = response.Content.Headers.ContentType?.MediaType;
+        if (string.IsNullOrWhiteSpace(mediaType))
+            return false;
+
+        if (mediaType.StartsWith("image/", StringComparison.OrdinalIgnoreCase))
+            return false;
+
+        return !string.Equals(mediaType, "application/octet-stream", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool ShouldRetryTileDownload(HttpStatusCode statusCode, int attempt)
+    {
+        if (!ShouldRetryTileDownload(attempt))
+            return false;
+
+        return statusCode switch
+        {
+            HttpStatusCode.BadRequest => false,
+            HttpStatusCode.Unauthorized => false,
+            HttpStatusCode.Forbidden => false,
+            HttpStatusCode.NotFound => false,
+            _ => true,
+        };
+    }
+
+    private static bool ShouldRetryTileDownload(int attempt)
+    {
+        return attempt < OfflineTileDownloadMaxAttempts;
+    }
+
+    private static Task DelayBeforeTileRetryAsync(int attempt, CancellationToken cancellationToken)
+    {
+        if (!ShouldRetryTileDownload(attempt))
+            return Task.CompletedTask;
+
+        var delay = attempt switch
+        {
+            1 => TimeSpan.FromMilliseconds(350),
+            2 => TimeSpan.FromMilliseconds(900),
+            _ => TimeSpan.FromMilliseconds(1500),
+        };
+
+        return Task.Delay(delay, cancellationToken);
     }
 
     private void SetOfflineCacheStatus(string text)
@@ -2113,48 +2224,48 @@ public sealed class MapViewModel : INotifyPropertyChanged
         switch (source)
         {
             case Polygon polygon:
-            {
-                var shell = polygon.ExteriorRing;
-                if (shell is not null && !shell.IsEmpty)
                 {
-                    output.Add(new LineString(shell.Coordinates));
+                    var shell = polygon.ExteriorRing;
+                    if (shell is not null && !shell.IsEmpty)
+                    {
+                        output.Add(new LineString(shell.Coordinates));
+                    }
+                    return;
                 }
-                return;
-            }
             case MultiPolygon multiPolygon:
-            {
-                foreach (var child in multiPolygon.Geometries.OfType<Geometry>())
                 {
-                    CollectLineStringBoundaries(child, output);
+                    foreach (var child in multiPolygon.Geometries.OfType<Geometry>())
+                    {
+                        CollectLineStringBoundaries(child, output);
+                    }
+                    return;
                 }
-                return;
-            }
             case LinearRing ring:
-            {
-                output.Add(new LineString(ring.Coordinates));
-                return;
-            }
+                {
+                    output.Add(new LineString(ring.Coordinates));
+                    return;
+                }
             case LineString line:
-            {
-                output.Add(line);
-                return;
-            }
+                {
+                    output.Add(line);
+                    return;
+                }
             case MultiLineString multiLine:
-            {
-                foreach (var child in multiLine.Geometries.OfType<LineString>())
                 {
-                    output.Add(child);
+                    foreach (var child in multiLine.Geometries.OfType<LineString>())
+                    {
+                        output.Add(child);
+                    }
+                    return;
                 }
-                return;
-            }
             case GeometryCollection collection:
-            {
-                foreach (var child in collection.Geometries.OfType<Geometry>())
                 {
-                    CollectLineStringBoundaries(child, output);
+                    foreach (var child in collection.Geometries.OfType<Geometry>())
+                    {
+                        CollectLineStringBoundaries(child, output);
+                    }
+                    return;
                 }
-                return;
-            }
         }
     }
 
