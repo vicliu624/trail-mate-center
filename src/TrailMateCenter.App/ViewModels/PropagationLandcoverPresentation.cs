@@ -37,4 +37,26 @@ internal static class PropagationLandcoverPresentation
             _ => 3,
         };
     }
+
+    public static double ResolveInputCoefficientDbPerM(
+        PropagationLandcoverClass landcoverClass,
+        double vegetationAlphaSparse,
+        double vegetationAlphaDense)
+    {
+        return landcoverClass switch
+        {
+            PropagationLandcoverClass.SparseForest => Math.Max(0d, vegetationAlphaSparse),
+            PropagationLandcoverClass.DenseForest => Math.Max(0d, vegetationAlphaDense),
+            PropagationLandcoverClass.Water => 0.002d,
+            _ => 0d,
+        };
+    }
+
+    public static double ResolveEffectiveCoefficientDbPerM(
+        PropagationLandcoverClass landcoverClass,
+        double vegetationAlphaSparse,
+        double vegetationAlphaDense)
+    {
+        return PropagationLandcoverModel.ResolvePathLossDb(landcoverClass, 1d, vegetationAlphaSparse, vegetationAlphaDense);
+    }
 }

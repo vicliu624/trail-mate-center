@@ -39,6 +39,7 @@ public partial class PropagationView : UserControl
             _mapControl.PointerMoved += OnMapPointerMoved;
             _mapControl.PointerReleased += OnMapPointerReleased;
             _mapControl.PointerCaptureLost += OnMapPointerCaptureLost;
+            _mapControl.PointerExited += OnMapPointerExited;
         }
     }
 
@@ -69,9 +70,18 @@ public partial class PropagationView : UserControl
 
     private void OnMapPointerMoved(object? sender, PointerEventArgs e)
     {
-        if (_mapControl is null || !_isDraggingSite || string.IsNullOrWhiteSpace(_dragSiteId))
+        if (_mapControl is null)
+            return;
+
+        if (!_isDraggingSite || string.IsNullOrWhiteSpace(_dragSiteId))
         {
-            if (_mapControl is null || string.IsNullOrWhiteSpace(_dragSiteId) || _dragStartPosition is null)
+            if (DataContext is MainWindowViewModel hoverVm &&
+                TryResolveMapPosition(hoverVm, e.GetPosition(_mapControl), out var hoverX, out var hoverZ))
+            {
+                hoverVm.Propagation.MapWorkbench.UpdateHoverProbe(hoverX, hoverZ);
+            }
+
+            if (string.IsNullOrWhiteSpace(_dragSiteId) || _dragStartPosition is null)
                 return;
             if (DataContext is not MainWindowViewModel pendingVm)
                 return;
@@ -144,6 +154,12 @@ public partial class PropagationView : UserControl
         _isDraggingSite = false;
         _dragSiteId = null;
         _dragStartPosition = null;
+    }
+
+    private void OnMapPointerExited(object? sender, PointerEventArgs e)
+    {
+        if (DataContext is MainWindowViewModel vm)
+            vm.Propagation.MapWorkbench.ClearHoverProbe();
     }
 
     private void EnsureSiteContextMenu()
@@ -266,6 +282,8 @@ public partial class PropagationView : UserControl
     {
         x = 0d;
         z = 0d;
+        if (_terrainOverlay?.TryScreenToScene(position, out x, out z) == true)
+            return true;
         if (_mapControl?.Map?.Navigator?.Viewport is not { } viewport)
             return false;
 

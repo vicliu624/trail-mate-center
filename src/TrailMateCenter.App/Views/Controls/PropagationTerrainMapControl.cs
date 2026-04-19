@@ -174,6 +174,7 @@ public sealed class PropagationTerrainMapControl : Control
             DrawActiveLayerCoverage(context, rect, scene);
         if (!showLandcoverLayer)
             DrawSelectedSiteCoverage(context, rect, scene);
+        DrawCoverageGuides(context, rect, scene);
         DrawPolylines(context, rect, scene, scene.ContourLines, new Pen(new SolidColorBrush(Color.Parse("#C4D0E0"), 0.55), 1));
         DrawPolylines(context, rect, scene, scene.RidgeLines, new Pen(new SolidColorBrush(Color.Parse("#6BD6FF"), 0.95), 2));
         DrawPolylines(context, rect, scene, scene.ProfileLines, new Pen(new SolidColorBrush(Color.Parse("#4AA3FF")), 2, dashStyle: new DashStyle([6, 4], 0)));
@@ -387,9 +388,6 @@ public sealed class PropagationTerrainMapControl : Control
     {
         foreach (var cell in cells)
         {
-            var color = ResolveCoverageColor(cell.MarginDb);
-            var alpha = (byte)Math.Round(ResolveCoverageAlpha(cell.MarginDb) * Math.Clamp(opacityMultiplier, 0d, 1d));
-            var brush = new SolidColorBrush(Color.FromArgb(alpha, color.R, color.G, color.B));
             var cellRect = ProjectSceneRect(
                 rect,
                 Scene ?? PropagationTerrainMapSceneViewModel.Empty,
@@ -399,7 +397,46 @@ public sealed class PropagationTerrainMapControl : Control
                 cell.HeightM);
             if (!IsVisibleRect(rect, cellRect))
                 continue;
-            context.DrawRectangle(brush, null, cellRect);
+
+            DrawCoverageCell(context, cell, cellRect, opacityMultiplier);
+        }
+    }
+
+    private void DrawCoverageGuides(DrawingContext context, Rect rect, PropagationTerrainMapSceneViewModel scene)
+    {
+        if (scene.LinkEdgeLines.Count > 0)
+        {
+            DrawPolylines(
+                context,
+                rect,
+                scene,
+                scene.LinkEdgeLines,
+                new Pen(
+                    new SolidColorBrush(Color.Parse(PropagationCoveragePresentation.ResolveBoundaryColorHex(PropagationCoveragePresentation.LinkEdgeMarginDb)), 0.92),
+                    1.8));
+        }
+
+        if (scene.StableMarginLines.Count > 0)
+        {
+            DrawPolylines(
+                context,
+                rect,
+                scene,
+                scene.StableMarginLines,
+                new Pen(
+                    new SolidColorBrush(Color.Parse(PropagationCoveragePresentation.ResolveBoundaryColorHex(PropagationCoveragePresentation.StableMarginDb)), 0.9),
+                    1.6,
+                    dashStyle: new DashStyle([5, 3], 0)));
+        }
+
+        if (scene.SelectedPathLine is not null)
+        {
+            DrawPolylines(
+                context,
+                rect,
+                scene,
+                new[] { scene.SelectedPathLine },
+                new Pen(new SolidColorBrush(Color.Parse("#4AA3FF"), 0.95), 2, dashStyle: new DashStyle([8, 4], 0)));
         }
     }
 
@@ -437,6 +474,42 @@ public sealed class PropagationTerrainMapControl : Control
     private static Color ResolveLandcoverColor(PropagationLandcoverClass landcoverClass)
     {
         return Color.Parse(PropagationLandcoverPresentation.ResolveAccentColorHex(landcoverClass));
+    }
+
+    private static void DrawCoverageCell(
+        DrawingContext context,
+        PropagationCoverageCellViewModel cell,
+        Rect cellRect,
+        double opacityMultiplier)
+    {
+        var color = ResolveCoverageColor(cell);
+        var alpha = ResolveCoverageAlpha(cell, opacityMultiplier);
+        var brush = new SolidColorBrush(Color.FromArgb(alpha, color.R, color.G, color.B));
+
+        if (cell.Status == PropagationCoverageStatus.NoData)
+        {
+            var hatchColor = Color.Parse(PropagationCoveragePresentation.ResolveSecondaryColorHex(PropagationCoverageStatus.NoData));
+            context.DrawRectangle(
+                brush,
+                new Pen(new SolidColorBrush(Color.FromArgb((byte)Math.Min(255, alpha + 20), hatchColor.R, hatchColor.G, hatchColor.B)), 1),
+                cellRect);
+            DrawHatch(context, cellRect, hatchColor);
+            return;
+        }
+
+        context.DrawRectangle(brush, null, cellRect);
+    }
+
+    private static void DrawHatch(DrawingContext context, Rect rect, Color hatchColor)
+    {
+        var pen = new Pen(new SolidColorBrush(Color.FromArgb(180, hatchColor.R, hatchColor.G, hatchColor.B)), 1);
+        const double spacing = 8d;
+        var start = rect.X - rect.Height;
+        var end = rect.Right + rect.Height;
+        for (var x = start; x <= end; x += spacing)
+        {
+            context.DrawLine(pen, new Point(x, rect.Bottom), new Point(x + rect.Height, rect.Y));
+        }
     }
 
     private static bool IsVisibleRect(Rect viewportRect, Rect candidateRect)
@@ -622,40 +695,43 @@ public sealed class PropagationTerrainMapControl : Control
         return Color.Parse("#C7BBB0");
     }
 
-    private static Color ResolveCoverageColor(double marginDb)
+    private static Color ResolveCoverageColor(PropagationCoverageCellViewModel cell)
     {
-        var stops = new[]
+        if (!cell.IsComputed)
+            return Color.Parse(PropagationCoveragePresentation.ResolveFillColorHex(PropagationCoverageStatus.NoData));
+
+        var status = cell.Status;
+        var (low, high, minMargin, maxMargin) = status switch
         {
-            new CoverageStop(20d, Color.Parse("#7BEA49")),
-            new CoverageStop(10d, Color.Parse("#F0D14A")),
-            new CoverageStop(3d, Color.Parse("#F29A34")),
-            new CoverageStop(-4d, Color.Parse("#EA4F4F")),
-            new CoverageStop(-10d, Color.Parse("#B5BDC8")),
+            PropagationCoverageStatus.Unreachable => (Color.Parse("#263344"), Color.Parse("#5A7395"), -25d, 0d),
+            PropagationCoverageStatus.Marginal => (Color.Parse("#7B5822"), Color.Parse("#C48A34"), 0d, PropagationCoveragePresentation.ReachableMarginDb),
+            PropagationCoverageStatus.Reachable => (Color.Parse("#6D9538"), Color.Parse("#58B14E"), PropagationCoveragePresentation.ReachableMarginDb, PropagationCoveragePresentation.StrongMarginDb),
+            PropagationCoverageStatus.Strong => (Color.Parse("#449C54"), Color.Parse("#8AE07A"), PropagationCoveragePresentation.StrongMarginDb, PropagationCoveragePresentation.StrongMarginDb + 18d),
+            _ => (Color.Parse("#313A44"), Color.Parse("#4C5662"), -1d, 1d),
         };
 
-        if (marginDb >= stops[0].MarginDb)
-            return stops[0].Color;
-        if (marginDb <= stops[^1].MarginDb)
-            return stops[^1].Color;
-
-        for (var index = 0; index < stops.Length - 1; index++)
-        {
-            if (marginDb > stops[index + 1].MarginDb)
-            {
-                var upper = stops[index];
-                var lower = stops[index + 1];
-                var t = (marginDb - lower.MarginDb) / (upper.MarginDb - lower.MarginDb);
-                return LerpColor(lower.Color, upper.Color, t);
-            }
-        }
-
-        return stops[^1].Color;
+        var t = maxMargin <= minMargin
+            ? 1d
+            : Math.Clamp((cell.MarginDb - minMargin) / (maxMargin - minMargin), 0d, 1d);
+        return LerpColor(low, high, t);
     }
 
-    private static byte ResolveCoverageAlpha(double marginDb)
+    private static byte ResolveCoverageAlpha(PropagationCoverageCellViewModel cell, double opacityMultiplier)
     {
-        var normalized = Math.Clamp((marginDb + 10d) / 30d, 0d, 1d);
-        return (byte)Math.Round(28d + (normalized * 104d));
+        var clampedOpacity = Math.Clamp(opacityMultiplier, 0d, 1d);
+        if (!cell.IsComputed)
+            return (byte)Math.Round(176d * clampedOpacity);
+
+        var normalized = cell.Status switch
+        {
+            PropagationCoverageStatus.Unreachable => Math.Clamp((cell.MarginDb + 20d) / 20d, 0d, 1d),
+            PropagationCoverageStatus.Marginal => Math.Clamp(cell.MarginDb / Math.Max(1d, PropagationCoveragePresentation.ReachableMarginDb), 0d, 1d),
+            PropagationCoverageStatus.Reachable => Math.Clamp((cell.MarginDb - PropagationCoveragePresentation.ReachableMarginDb) / Math.Max(1d, PropagationCoveragePresentation.StrongMarginDb - PropagationCoveragePresentation.ReachableMarginDb), 0d, 1d),
+            PropagationCoverageStatus.Strong => Math.Clamp((cell.MarginDb - PropagationCoveragePresentation.StrongMarginDb) / 18d, 0d, 1d),
+            _ => 0.5d,
+        };
+
+        return (byte)Math.Round((168d + (normalized * 54d)) * clampedOpacity);
     }
 
     private static Color LerpColor(Color from, Color to, double t)
@@ -667,7 +743,5 @@ public sealed class PropagationTerrainMapControl : Control
             (byte)Math.Round(from.G + ((to.G - from.G) * clamped)),
             (byte)Math.Round(from.B + ((to.B - from.B) * clamped)));
     }
-
-    private readonly record struct CoverageStop(double MarginDb, Color Color);
     private readonly record struct ViewportState(double WidthPx, double HeightPx, double CenterX, double CenterY, double Resolution);
 }

@@ -45,14 +45,49 @@ public sealed class PropagationTopicCoverageItemViewModel
 
 public sealed class PropagationLegendItemViewModel
 {
-    public PropagationLegendItemViewModel(string label, string colorHex)
+    public PropagationLegendItemViewModel(
+        string label,
+        string colorHex,
+        PropagationLegendItemKind kind = PropagationLegendItemKind.Fill,
+        string? secondaryColorHex = null,
+        string? summary = null,
+        double strokeThickness = 2d,
+        bool isDashed = false)
     {
         Label = label;
         ColorHex = colorHex;
+        Kind = kind;
+        SecondaryColorHex = secondaryColorHex ?? colorHex;
+        Summary = summary ?? string.Empty;
+        StrokeThickness = strokeThickness;
+        IsDashed = isDashed;
     }
 
     public string Label { get; }
     public string ColorHex { get; }
+    public PropagationLegendItemKind Kind { get; }
+    public string SecondaryColorHex { get; }
+    public string Summary { get; }
+    public double StrokeThickness { get; }
+    public bool IsDashed { get; }
+    public bool ShowFillSample => Kind == PropagationLegendItemKind.Fill;
+    public bool ShowLineSample => Kind == PropagationLegendItemKind.Line;
+    public bool ShowHatchSample => Kind == PropagationLegendItemKind.Hatch;
+    public bool HasSummary => !string.IsNullOrWhiteSpace(Summary);
+}
+
+public sealed class PropagationProbeMetricItemViewModel
+{
+    public PropagationProbeMetricItemViewModel(string label, string value, string accentColor)
+    {
+        Label = label;
+        Value = value;
+        AccentColor = accentColor;
+    }
+
+    public string Label { get; }
+    public string Value { get; }
+    public string AccentColor { get; }
 }
 
 public sealed class PropagationProfileSampleItemViewModel
@@ -150,7 +185,10 @@ public sealed class PropagationTerrainMapSceneViewModel
     public IReadOnlyList<PropagationScenePolyline> ContourLines { get; init; } = Array.Empty<PropagationScenePolyline>();
     public IReadOnlyList<PropagationScenePolyline> RidgeLines { get; init; } = Array.Empty<PropagationScenePolyline>();
     public IReadOnlyList<PropagationScenePolyline> ProfileLines { get; init; } = Array.Empty<PropagationScenePolyline>();
+    public IReadOnlyList<PropagationScenePolyline> LinkEdgeLines { get; init; } = Array.Empty<PropagationScenePolyline>();
+    public IReadOnlyList<PropagationScenePolyline> StableMarginLines { get; init; } = Array.Empty<PropagationScenePolyline>();
     public IReadOnlyList<PropagationScenePoint> Sites { get; init; } = Array.Empty<PropagationScenePoint>();
+    public PropagationScenePolyline? SelectedPathLine { get; init; }
     public PropagationScenePoint? PendingSite { get; init; }
     public string? SelectedSiteId { get; init; }
     public double? SelectedSiteCoverageRadiusM { get; init; }
@@ -296,6 +334,10 @@ public sealed class PropagationMapWorkbenchViewModel : ObservableObject
 {
     private readonly PropagationViewModel _root;
     private PropagationTerrainMapSceneViewModel? _terrainSceneCache;
+    private double? _hoverSceneX;
+    private double? _hoverSceneZ;
+    private PropagationCoverageCellViewModel? _hoverCoverageCellCache;
+    private bool _hoverCoverageCellResolved;
 
     public PropagationMapWorkbenchViewModel(PropagationViewModel root)
     {
@@ -325,7 +367,7 @@ public sealed class PropagationMapWorkbenchViewModel : ObservableObject
             yield return new PropagationAnalyticalLayerItemViewModel(
                 L("Ui.Propagation.LayerCard.Terrain.Title"),
                 L("Ui.Propagation.LayerCard.Terrain.Summary"),
-                result is null ? "--" : result.AnalysisOutputs.Terrain.PathState,
+                result is null ? "--" : PropagationSemanticPresentation.ResolvePathState(result.AnalysisOutputs.Terrain.PathState),
                 result is null ? "#9AA3AE" : result.AnalysisOutputs.Terrain.IsLineOfSight ? "#75E0A2" : "#FF7373");
             yield return new PropagationAnalyticalLayerItemViewModel(
                 L("Ui.Propagation.LayerCard.Landcover.Title"),
@@ -373,16 +415,66 @@ public sealed class PropagationMapWorkbenchViewModel : ObservableObject
     public bool ShowReferenceBasemap => true;
     public double TerrainOverlayOpacity => _root.TerrainOverlayOpacity;
     public bool IsLandcoverLayerSelected => string.Equals(SelectedLayerKey, "landcover", StringComparison.Ordinal);
+    public bool HasHoverProbe => HoverCoverageCell is not null;
+    public string HoverProbeTitle => HoverCoverageCell is null
+        ? L("Ui.Propagation.Workbench.Hover.EmptyTitle")
+        : F("Ui.Propagation.Workbench.Hover.Title", PropagationCoveragePresentation.ResolveLabel(HoverCoverageCell.Status));
+    public string HoverProbeSubtitle => ResolveHoverProbeSubtitle();
+    public string HoverProbeStatusText => HoverCoverageCell is null
+        ? "--"
+        : PropagationCoveragePresentation.ResolveLabel(HoverCoverageCell.Status);
+    public string HoverProbeStatusColor => HoverCoverageCell is null
+        ? "#9AA3AE"
+        : PropagationCoveragePresentation.ResolveFillColorHex(HoverCoverageCell.Status);
+    public string HoverProbePathSummary => ResolveHoverPathSummary();
+    public string HoverProbeLandcoverSummary => ResolveHoverLandcoverSummary();
+    public IEnumerable<PropagationProbeMetricItemViewModel> HoverLocalMetrics => ResolveHoverLocalMetrics();
+    public IEnumerable<PropagationProbeMetricItemViewModel> HoverLossMetrics => ResolveHoverLossMetrics();
     public IEnumerable<PropagationLegendItemViewModel> LegendItems => ResolveLegendItems();
 
     private static string L(string key) => LocalizationService.Instance.GetString(key);
     private static string F(string key, params object[] args) => LocalizationService.Instance.Format(key, args);
 
+    private PropagationCoverageCellViewModel? HoverCoverageCell
+    {
+        get
+        {
+            if (_hoverCoverageCellResolved)
+                return _hoverCoverageCellCache;
+
+            _hoverCoverageCellCache = ResolveHoverCoverageCell();
+            _hoverCoverageCellResolved = true;
+            return _hoverCoverageCellCache;
+        }
+    }
+
     private string ResolveProbeSummary()
     {
+        if (HoverCoverageCell is { } hoverCell)
+        {
+            if (!hoverCell.IsComputed)
+            {
+                return F(
+                    "Ui.Propagation.Workbench.Probe.CoverageNoData",
+                    PropagationCoveragePresentation.ResolveLabel(hoverCell.Status),
+                    PropagationSemanticPresentation.ResolveDominantReason(hoverCell.DominantReasonCode));
+            }
+
+            return F(
+                "Ui.Propagation.Workbench.Probe.Coverage",
+                PropagationCoveragePresentation.ResolveLabel(hoverCell.Status),
+                hoverCell.MarginDb,
+                hoverCell.ReceivedPowerDbm,
+                PropagationSemanticPresentation.ResolveDominantReason(hoverCell.DominantReasonCode));
+        }
+
         var result = _root.GetSelectedResult();
         if (result?.AnalysisOutputs.Terrain is { } terrain)
-            return F("Ui.Propagation.Workbench.Probe.Terrain", terrain.PathState, terrain.DominantObstructionLabel, terrain.DominantObstructionDistanceKm);
+            return F(
+                "Ui.Propagation.Workbench.Probe.Terrain",
+                PropagationSemanticPresentation.ResolvePathState(terrain.PathState),
+                PropagationSemanticPresentation.ResolveObstacleLabel(terrain.DominantObstructionLabel),
+                terrain.DominantObstructionDistanceKm);
 
         if (!string.IsNullOrWhiteSpace(_root.SelectedNodeId))
             return F("Ui.Propagation.Workbench.Probe.Node", _root.SelectedNodeId, _root.SelectedPointX ?? 0, _root.SelectedPointY ?? 0);
@@ -391,6 +483,75 @@ public sealed class PropagationMapWorkbenchViewModel : ObservableObject
             return F("Ui.Propagation.Workbench.Probe.Point", _root.SelectedPointX.Value, _root.SelectedPointY.Value);
 
         return L("Ui.Propagation.Workbench.Probe.Empty");
+    }
+
+    private string ResolveHoverProbeSubtitle()
+    {
+        if (HoverCoverageCell is not { } cell)
+            return L("Ui.Propagation.Workbench.Hover.EmptyHint");
+
+        if (!double.IsFinite(cell.DistanceM))
+            return F("Ui.Propagation.Workbench.Probe.Point", cell.X, cell.Z);
+
+        return F(
+            "Ui.Propagation.Workbench.Hover.Subtitle",
+            cell.X,
+            cell.Z,
+            cell.DistanceM);
+    }
+
+    private string ResolveHoverPathSummary()
+    {
+        if (HoverCoverageCell is not { } cell)
+            return L("Ui.Propagation.Workbench.Hover.EmptyHint");
+
+        return F(
+            "Ui.Propagation.Workbench.Hover.PathSummary",
+            cell.IsComputed ? PropagationSemanticPresentation.ResolvePathState(cell.IsLineOfSight ? "LOS" : "NLOS") : PropagationCoveragePresentation.ResolveLabel(PropagationCoverageStatus.NoData),
+            PropagationSemanticPresentation.ResolveObstacleLabel(cell.DominantObstructionCode),
+            cell.RidgeCrossings,
+            PropagationSemanticPresentation.ResolveDominantReason(cell.DominantReasonCode));
+    }
+
+    private string ResolveHoverLandcoverSummary()
+    {
+        if (HoverCoverageCell is not { } cell)
+            return "--";
+
+        return F(
+            "Ui.Propagation.Workbench.Hover.LandcoverSummary",
+            PropagationLandcoverPresentation.ResolveLabel(cell.LandcoverClass),
+            cell.LandcoverInputCoefficientDbPerM,
+            cell.LandcoverEffectiveCoefficientDbPerM);
+    }
+
+    private IEnumerable<PropagationProbeMetricItemViewModel> ResolveHoverLocalMetrics()
+    {
+        if (HoverCoverageCell is not { } cell)
+            yield break;
+
+        yield return CreateMetric("Ui.Propagation.Workbench.Hover.Metric.RxPower", FormatDbm(cell.ReceivedPowerDbm), HoverProbeStatusColor);
+        yield return CreateMetric("Ui.Propagation.Workbench.Hover.Metric.Threshold", FormatDbm(cell.ThresholdDbm), "#A5C7FF");
+        yield return CreateMetric("Ui.Propagation.Workbench.Hover.Metric.Margin", FormatDb(cell.MarginDb), HoverProbeStatusColor);
+        yield return CreateMetric("Ui.Propagation.Workbench.Hover.Metric.Elevation", FormatMeters(cell.ElevationM), "#D7C195");
+        yield return CreateMetric("Ui.Propagation.Workbench.Hover.Metric.Fresnel", FormatRatio(cell.FresnelClearanceRatio), "#FFB04C");
+        yield return CreateMetric("Ui.Propagation.Workbench.Hover.Metric.Clearance", FormatMeters(cell.MinimumClearanceM), "#FFCF48");
+    }
+
+    private IEnumerable<PropagationProbeMetricItemViewModel> ResolveHoverLossMetrics()
+    {
+        if (HoverCoverageCell is not { } cell)
+            yield break;
+
+        yield return CreateMetric("Ui.Propagation.Workbench.Hover.Metric.Fspl", FormatDb(cell.FsplDb), "#9AD94C");
+        yield return CreateMetric("Ui.Propagation.Workbench.Hover.Metric.Diffraction", FormatDb(cell.DiffractionLossDb), "#FF8E6B");
+        yield return CreateMetric("Ui.Propagation.Workbench.Hover.Metric.FresnelLoss", FormatDb(cell.FresnelLossDb), "#F7C15A");
+        yield return CreateMetric("Ui.Propagation.Workbench.Hover.Metric.LandcoverLoss", FormatDb(cell.LandcoverLossDb), PropagationLandcoverPresentation.ResolveAccentColorHex(cell.LandcoverClass));
+        yield return CreateMetric("Ui.Propagation.Workbench.Hover.Metric.Shadow", FormatDb(cell.ShadowLossDb), "#B0A7FF");
+        yield return CreateMetric("Ui.Propagation.Workbench.Hover.Metric.Reflection", FormatDb(cell.ReflectionLossDb), "#66C6FF");
+        yield return CreateMetric("Ui.Propagation.Workbench.Hover.Metric.Environment", FormatDb(cell.EnvironmentLossDb), "#9AA3AE");
+        yield return CreateMetric("Ui.Propagation.Workbench.Hover.Metric.Ridge", FormatDb(cell.RidgePenaltyDb), "#6BD6FF");
+        yield return CreateMetric("Ui.Propagation.Workbench.Hover.Metric.TotalLoss", FormatDb(cell.TotalLossDb), "#FFFFFF");
     }
 
     private string ResolveReliabilitySummary()
@@ -446,24 +607,61 @@ public sealed class PropagationMapWorkbenchViewModel : ObservableObject
         {
             yield return new PropagationLegendItemViewModel(
                 PropagationLandcoverPresentation.ResolveLabel(PropagationLandcoverClass.BareGround),
-                PropagationLandcoverPresentation.ResolveAccentColorHex(PropagationLandcoverClass.BareGround));
+                PropagationLandcoverPresentation.ResolveAccentColorHex(PropagationLandcoverClass.BareGround),
+                summary: L("Ui.Propagation.Legend.Landcover.BareGround"));
             yield return new PropagationLegendItemViewModel(
                 PropagationLandcoverPresentation.ResolveLabel(PropagationLandcoverClass.SparseForest),
-                PropagationLandcoverPresentation.ResolveAccentColorHex(PropagationLandcoverClass.SparseForest));
+                PropagationLandcoverPresentation.ResolveAccentColorHex(PropagationLandcoverClass.SparseForest),
+                summary: L("Ui.Propagation.Legend.Landcover.SparseForest"));
             yield return new PropagationLegendItemViewModel(
                 PropagationLandcoverPresentation.ResolveLabel(PropagationLandcoverClass.DenseForest),
-                PropagationLandcoverPresentation.ResolveAccentColorHex(PropagationLandcoverClass.DenseForest));
+                PropagationLandcoverPresentation.ResolveAccentColorHex(PropagationLandcoverClass.DenseForest),
+                summary: L("Ui.Propagation.Legend.Landcover.DenseForest"));
             yield return new PropagationLegendItemViewModel(
                 PropagationLandcoverPresentation.ResolveLabel(PropagationLandcoverClass.Water),
-                PropagationLandcoverPresentation.ResolveAccentColorHex(PropagationLandcoverClass.Water));
+                PropagationLandcoverPresentation.ResolveAccentColorHex(PropagationLandcoverClass.Water),
+                summary: L("Ui.Propagation.Legend.Landcover.Water"));
             yield break;
         }
 
-        yield return new PropagationLegendItemViewModel(L("Ui.Propagation.Legend.Strong"), "#7BEA49");
-        yield return new PropagationLegendItemViewModel(L("Ui.Propagation.Legend.Moderate"), "#F0D14A");
-        yield return new PropagationLegendItemViewModel(L("Ui.Propagation.Legend.Weak"), "#F29A34");
-        yield return new PropagationLegendItemViewModel(L("Ui.Propagation.Legend.Poor"), "#EA4F4F");
-        yield return new PropagationLegendItemViewModel(L("Ui.Propagation.Legend.NoSignal"), "#B5BDC8");
+        foreach (var status in new[]
+                 {
+                     PropagationCoverageStatus.NoData,
+                     PropagationCoverageStatus.Unreachable,
+                     PropagationCoverageStatus.Marginal,
+                     PropagationCoverageStatus.Reachable,
+                     PropagationCoverageStatus.Strong,
+                 })
+        {
+            yield return new PropagationLegendItemViewModel(
+                PropagationCoveragePresentation.ResolveLabel(status),
+                PropagationCoveragePresentation.ResolveFillColorHex(status),
+                status == PropagationCoverageStatus.NoData ? PropagationLegendItemKind.Hatch : PropagationLegendItemKind.Fill,
+                PropagationCoveragePresentation.ResolveSecondaryColorHex(status),
+                PropagationCoveragePresentation.ResolveLegendSummary(status));
+        }
+
+        yield return new PropagationLegendItemViewModel(
+            L("Ui.Propagation.Legend.Line.LinkEdge"),
+            PropagationCoveragePresentation.ResolveBoundaryColorHex(PropagationCoveragePresentation.LinkEdgeMarginDb),
+            PropagationLegendItemKind.Line,
+            summary: L("Ui.Propagation.Legend.Line.LinkEdge.Summary"));
+        yield return new PropagationLegendItemViewModel(
+            L("Ui.Propagation.Legend.Line.Stable"),
+            PropagationCoveragePresentation.ResolveBoundaryColorHex(PropagationCoveragePresentation.StableMarginDb),
+            PropagationLegendItemKind.Line,
+            summary: L("Ui.Propagation.Legend.Line.Stable.Summary"));
+        yield return new PropagationLegendItemViewModel(
+            L("Ui.Propagation.Legend.Line.Ridge"),
+            "#6BD6FF",
+            PropagationLegendItemKind.Line,
+            summary: L("Ui.Propagation.Legend.Line.Ridge.Summary"));
+        yield return new PropagationLegendItemViewModel(
+            L("Ui.Propagation.Legend.Line.SelectedPath"),
+            "#4AA3FF",
+            PropagationLegendItemKind.Line,
+            summary: L("Ui.Propagation.Legend.Line.SelectedPath.Summary"),
+            isDashed: true);
     }
 
     private static string ResolveLandcoverCompositionSummary(PropagationTerrainMapSceneViewModel scene)
@@ -557,6 +755,22 @@ public sealed class PropagationMapWorkbenchViewModel : ObservableObject
                 _root.ShadowSigmaDb,
                 _root.ReflectionCoeff).ToArray();
         var activeLayerCoverageCells = ResolveActiveLayerCoverageCells(baseScene);
+        var guideCells = ResolveGuideSourceCells(selectedSiteCoverageCells, activeLayerCoverageCells);
+        var linkEdgeLines = guideCells.Count == 0
+            ? Array.Empty<PropagationScenePolyline>()
+            : PropagationCoverageGuideBuilder.BuildMarginIsolines(
+                guideCells,
+                baseScene.Columns,
+                baseScene.Rows,
+                PropagationCoveragePresentation.LinkEdgeMarginDb);
+        var stableMarginLines = guideCells.Count == 0
+            ? Array.Empty<PropagationScenePolyline>()
+            : PropagationCoverageGuideBuilder.BuildMarginIsolines(
+                guideCells,
+                baseScene.Columns,
+                baseScene.Rows,
+                PropagationCoveragePresentation.StableMarginDb);
+        var selectedPathLine = ResolveSelectedPathLine(baseScene);
 
         return new PropagationTerrainMapSceneViewModel
         {
@@ -577,7 +791,10 @@ public sealed class PropagationMapWorkbenchViewModel : ObservableObject
             ContourLines = baseScene.ContourLines,
             RidgeLines = baseScene.RidgeLines,
             ProfileLines = baseScene.ProfileLines,
+            LinkEdgeLines = linkEdgeLines,
+            StableMarginLines = stableMarginLines,
             Sites = baseScene.Sites,
+            SelectedPathLine = selectedPathLine,
             PendingSite = baseScene.PendingSite,
             SelectedSiteId = baseScene.SelectedSiteId,
             SelectedSiteCoverageRadiusM = baseScene.SelectedSiteCoverageRadiusM,
@@ -638,7 +855,13 @@ public sealed class PropagationMapWorkbenchViewModel : ObservableObject
         var txSite = _root.ScenarioSites.FirstOrDefault(site => site.Role == PropagationSiteRole.BaseStation)
                      ?? _root.ScenarioSites.FirstOrDefault();
         if (txSite is null)
-            return Array.Empty<PropagationCoverageCellViewModel>();
+        {
+            return PropagationCoveragePreviewBuilder.BuildNoData(
+                    scene,
+                    _root.VegetationAlphaSparse,
+                    _root.VegetationAlphaDense)
+                .ToArray();
+        }
 
         return PropagationCoveragePreviewBuilder.Build(
                 scene,
@@ -654,16 +877,45 @@ public sealed class PropagationMapWorkbenchViewModel : ObservableObject
             .ToArray();
     }
 
+    public void UpdateHoverProbe(double x, double z)
+    {
+        var previousCell = HoverCoverageCell;
+        _hoverSceneX = x;
+        _hoverSceneZ = z;
+        _hoverCoverageCellResolved = false;
+        var nextCell = HoverCoverageCell;
+        if (AreSameCoverageCell(previousCell, nextCell))
+            return;
+
+        OnPropertyChanged(string.Empty);
+    }
+
+    public void ClearHoverProbe()
+    {
+        if (!_hoverSceneX.HasValue && !_hoverSceneZ.HasValue && HoverCoverageCell is null)
+            return;
+
+        _hoverSceneX = null;
+        _hoverSceneZ = null;
+        _hoverCoverageCellCache = null;
+        _hoverCoverageCellResolved = true;
+        OnPropertyChanged(string.Empty);
+    }
+
     private void OnRootPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (ShouldInvalidateTerrainSceneCache(e.PropertyName))
+        {
             _terrainSceneCache = null;
+            _hoverCoverageCellResolved = false;
+        }
         OnPropertyChanged(string.Empty);
     }
 
     public void OnScenarioSitesChanged()
     {
         _terrainSceneCache = null;
+        _hoverCoverageCellResolved = false;
         OnPropertyChanged(string.Empty);
     }
 
@@ -682,6 +934,7 @@ public sealed class PropagationMapWorkbenchViewModel : ObservableObject
             nameof(PropagationViewModel.SelectedTask) => true,
             nameof(PropagationViewModel.SelectedRunIdText) => true,
             nameof(PropagationViewModel.SelectedScenarioSiteId) => true,
+            nameof(PropagationViewModel.SelectedLayerOption) => true,
             nameof(PropagationViewModel.IsParametersDirty) => true,
             nameof(PropagationViewModel.SelectedPropagationMode) => true,
             nameof(PropagationViewModel.SelectedPresetName) => true,
@@ -696,6 +949,119 @@ public sealed class PropagationMapWorkbenchViewModel : ObservableObject
             nameof(PropagationViewModel.ReflectionCoeff) => true,
             _ => false,
         };
+    }
+
+    private PropagationCoverageCellViewModel? ResolveHoverCoverageCell()
+    {
+        if (!_hoverSceneX.HasValue || !_hoverSceneZ.HasValue)
+            return null;
+
+        var scene = TerrainScene;
+        var cells = ResolveHoverCoverageSourceCells(scene);
+        if (cells.Count < scene.Columns * scene.Rows || scene.Columns <= 0 || scene.Rows <= 0)
+            return null;
+
+        ResolveSceneBounds(scene, out var minX, out var minZ, out var maxX, out var maxZ);
+        if (maxX <= minX || maxZ <= minZ)
+            return null;
+
+        var col = Math.Clamp((int)Math.Floor(((_hoverSceneX.Value - minX) / Math.Max(1d, maxX - minX)) * scene.Columns), 0, scene.Columns - 1);
+        var row = Math.Clamp((int)Math.Floor(((_hoverSceneZ.Value - minZ) / Math.Max(1d, maxZ - minZ)) * scene.Rows), 0, scene.Rows - 1);
+        return cells[(row * scene.Columns) + col];
+    }
+
+    private IReadOnlyList<PropagationCoverageCellViewModel> ResolveHoverCoverageSourceCells(PropagationTerrainMapSceneViewModel scene)
+    {
+        if (!IsLandcoverLayerSelected && scene.SelectedSiteCoverageCells.Count > 0)
+            return scene.SelectedSiteCoverageCells;
+        if (scene.ActiveLayerCoverageCells.Count > 0)
+            return scene.ActiveLayerCoverageCells;
+        return scene.SelectedSiteCoverageCells;
+    }
+
+    private static IReadOnlyList<PropagationCoverageCellViewModel> ResolveGuideSourceCells(
+        IReadOnlyList<PropagationCoverageCellViewModel> selectedSiteCoverageCells,
+        IReadOnlyList<PropagationCoverageCellViewModel> activeLayerCoverageCells)
+    {
+        return selectedSiteCoverageCells.Count > 0 ? selectedSiteCoverageCells : activeLayerCoverageCells;
+    }
+
+    private PropagationScenePolyline? ResolveSelectedPathLine(PropagationTerrainMapSceneViewModel scene)
+    {
+        var selectedSite = _root.ScenarioSites.FirstOrDefault(site => string.Equals(site.Id, _root.SelectedScenarioSiteId, StringComparison.Ordinal));
+        if (selectedSite is null)
+            return null;
+
+        PropagationSiteInput? txSite;
+        PropagationSiteInput? rxSite;
+        if (selectedSite.Role == PropagationSiteRole.TargetNode)
+        {
+            txSite = _root.ScenarioSites.FirstOrDefault(site => site.Role == PropagationSiteRole.BaseStation);
+            rxSite = selectedSite;
+        }
+        else
+        {
+            var target = _root.ScenarioSites.Where(site => site.Role == PropagationSiteRole.TargetNode).Take(1).FirstOrDefault();
+            txSite = selectedSite;
+            rxSite = target;
+        }
+
+        if (txSite is null || rxSite is null || string.Equals(txSite.Id, rxSite.Id, StringComparison.Ordinal))
+            return null;
+
+        return new PropagationScenePolyline
+        {
+            Points = new[]
+            {
+                new PropagationScenePolylinePoint { X = txSite.X, Z = txSite.Z },
+                new PropagationScenePolylinePoint { X = rxSite.X, Z = rxSite.Z },
+            },
+        };
+    }
+
+    private static bool AreSameCoverageCell(PropagationCoverageCellViewModel? previous, PropagationCoverageCellViewModel? next)
+    {
+        if (previous is null && next is null)
+            return true;
+        if (previous is null || next is null)
+            return false;
+
+        return previous.Row == next.Row &&
+               previous.Column == next.Column &&
+               previous.IsComputed == next.IsComputed &&
+               previous.Status == next.Status;
+    }
+
+    private static PropagationProbeMetricItemViewModel CreateMetric(string labelKey, string value, string accentColor)
+    {
+        return new PropagationProbeMetricItemViewModel(LocalizationService.Instance.GetString(labelKey), value, accentColor);
+    }
+
+    private static string FormatDbm(double value) => double.IsFinite(value) ? $"{value:F1} dBm" : "--";
+    private static string FormatDb(double value) => double.IsFinite(value) ? $"{value:+0.0;-0.0;0.0} dB" : "--";
+    private static string FormatMeters(double value) => double.IsFinite(value) ? $"{value:F1} m" : "--";
+    private static string FormatRatio(double value) => double.IsFinite(value) ? $"{value:F2}" : "--";
+
+    private static void ResolveSceneBounds(
+        PropagationTerrainMapSceneViewModel scene,
+        out double minX,
+        out double minZ,
+        out double maxX,
+        out double maxZ)
+    {
+        if (scene.MaxX > scene.MinX && scene.MaxZ > scene.MinZ)
+        {
+            minX = scene.MinX;
+            minZ = scene.MinZ;
+            maxX = scene.MaxX;
+            maxZ = scene.MaxZ;
+            return;
+        }
+
+        minX = 0d;
+        minZ = 0d;
+        maxX = scene.WidthM;
+        maxZ = scene.HeightM;
     }
 }
 
@@ -746,7 +1112,11 @@ public sealed class PropagationAnalysisPanelViewModel : ObservableObject
                 return "--";
 
             var terrain = result.AnalysisOutputs.Terrain;
-            return LocalizationService.Instance.Format("Ui.Propagation.Analysis.TerrainSummary", terrain.PathState, terrain.DominantObstructionLabel, terrain.ObstructionAboveLosM);
+            return LocalizationService.Instance.Format(
+                "Ui.Propagation.Analysis.TerrainSummary",
+                PropagationSemanticPresentation.ResolvePathState(terrain.PathState),
+                PropagationSemanticPresentation.ResolveObstacleLabel(terrain.DominantObstructionLabel),
+                terrain.ObstructionAboveLosM);
         }
     }
 
@@ -759,7 +1129,12 @@ public sealed class PropagationAnalysisPanelViewModel : ObservableObject
                 return "--";
 
             var fresnel = result.AnalysisOutputs.Fresnel;
-            return LocalizationService.Instance.Format("Ui.Propagation.Analysis.FresnelSummary", fresnel.ClearanceRatio, fresnel.MinimumClearanceM, fresnel.AdditionalLossDb);
+            return LocalizationService.Instance.Format(
+                "Ui.Propagation.Analysis.FresnelSummary",
+                fresnel.ClearanceRatio,
+                fresnel.MinimumClearanceM,
+                fresnel.AdditionalLossDb,
+                PropagationSemanticPresentation.ResolveFresnelRisk(fresnel.RiskLevel));
         }
     }
 
@@ -772,7 +1147,11 @@ public sealed class PropagationAnalysisPanelViewModel : ObservableObject
                 return "--";
 
             var reflection = result.AnalysisOutputs.Reflection;
-            return LocalizationService.Instance.Format("Ui.Propagation.Analysis.ReflectionSummary", reflection.MultipathRisk, reflection.RelativeGainDb, reflection.ExcessDelayNs);
+            return LocalizationService.Instance.Format(
+                "Ui.Propagation.Analysis.ReflectionSummary",
+                PropagationSemanticPresentation.ResolveReflectionRisk(reflection.MultipathRisk),
+                reflection.RelativeGainDb,
+                reflection.ExcessDelayNs);
         }
     }
 
@@ -832,9 +1211,17 @@ public sealed class PropagationAnalysisPanelViewModel : ObservableObject
                 yield break;
 
             yield return CreateTopic("01 FSPL / Link Budget", "Ready", $"FSPL {result.AnalysisOutputs.LossBreakdown.FsplDb:F1} dB with explicit total-loss accounting.", "#75E0A2");
-            yield return CreateTopic("02 LOS / Terrain", "Ready", $"{result.AnalysisOutputs.Terrain.PathState} with dominant blocker {result.AnalysisOutputs.Terrain.DominantObstructionLabel}.", "#75E0A2");
+            yield return CreateTopic(
+                "02 LOS / Terrain",
+                "Ready",
+                $"{PropagationSemanticPresentation.ResolvePathState(result.AnalysisOutputs.Terrain.PathState)} | {PropagationSemanticPresentation.ResolveObstacleLabel(result.AnalysisOutputs.Terrain.DominantObstructionLabel)}.",
+                "#75E0A2");
             yield return CreateTopic("03 Knife-edge Diffraction", "Ready", $"v={result.AnalysisOutputs.Profile.MainObstacle.V:F2}, Ld={result.AnalysisOutputs.Profile.MainObstacle.LdDb:F1} dB.", "#75E0A2");
-            yield return CreateTopic("04 Fresnel Clearance", "Ready", $"ratio {result.AnalysisOutputs.Fresnel.ClearanceRatio:F2}, risk {result.AnalysisOutputs.Fresnel.RiskLevel}.", "#75E0A2");
+            yield return CreateTopic(
+                "04 Fresnel Clearance",
+                "Ready",
+                $"ratio {result.AnalysisOutputs.Fresnel.ClearanceRatio:F2}, risk {PropagationSemanticPresentation.ResolveFresnelRisk(result.AnalysisOutputs.Fresnel.RiskLevel)}.",
+                "#75E0A2");
             yield return CreateTopic("05 Vegetation Attenuation", "Ready", $"{result.AnalysisOutputs.LossBreakdown.VegetationDb:F1} dB accumulated along profile segments.", "#75E0A2");
             yield return CreateTopic("06 Shadow Fading", "Ready", $"{result.AnalysisOutputs.LossBreakdown.ShadowDb:F1} dB with sigma-driven confidence note.", "#75E0A2");
             yield return CreateTopic("07 Bidirectional Margin", "Ready", $"DL {result.AnalysisOutputs.Link.DownlinkMarginDb:F1} dB / UL {result.AnalysisOutputs.Link.UplinkMarginDb:F1} dB.", "#75E0A2");
@@ -843,7 +1230,11 @@ public sealed class PropagationAnalysisPanelViewModel : ObservableObject
             yield return CreateTopic("10 ALOHA Capacity", "Ready", $"Capacity {result.AnalysisOutputs.Network.MaxCapacityNodes} nodes, load {result.AnalysisOutputs.Network.AlohaLoadPercent:F0}%.", "#75E0A2");
             yield return CreateTopic("11 Ridge Detection", "Ready", $"{result.SceneGeometry.RidgeLines.Count} ridge lines and {result.SceneGeometry.RelayCandidates.Count} relay candidates.", "#75E0A2");
             yield return CreateTopic("12 Relay Optimization", result.AnalysisOutputs.Optimization.TopPlans.Count > 0 ? "Ready" : "Standby", result.AnalysisOutputs.Optimization.TopPlans.Count > 0 ? $"Top plan {result.AnalysisOutputs.Optimization.RecommendedPlanId} with score decomposition." : "Switch to relay mode to generate Top-N plans.", result.AnalysisOutputs.Optimization.TopPlans.Count > 0 ? "#75E0A2" : "#FFCF48");
-            yield return CreateTopic("13 Ground Reflection", "Ready", $"{result.AnalysisOutputs.Reflection.MultipathRisk} multipath with {result.AnalysisOutputs.Reflection.RelativeGainDb:+0.0;-0.0;0.0} dB relative gain.", "#75E0A2");
+            yield return CreateTopic(
+                "13 Ground Reflection",
+                "Ready",
+                $"{PropagationSemanticPresentation.ResolveReflectionRisk(result.AnalysisOutputs.Reflection.MultipathRisk)} | {result.AnalysisOutputs.Reflection.RelativeGainDb:+0.0;-0.0;0.0} dB.",
+                "#75E0A2");
             yield return CreateTopic("14 Monte Carlo Uncertainty", result.AnalysisOutputs.Uncertainty.Iterations > 0 ? "Ready" : "Standby", result.AnalysisOutputs.Uncertainty.SensitivitySummary, result.AnalysisOutputs.Uncertainty.Iterations > 0 ? "#75E0A2" : "#FFCF48");
             yield return CreateTopic("15 Parameter Calibration", "Ready", $"MAE {result.AnalysisOutputs.Calibration.MaeBefore:F1}->{result.AnalysisOutputs.Calibration.MaeAfter:F1}, validation MAE {result.AnalysisOutputs.Calibration.ValidationMaeAfter:F1}.", "#75E0A2");
             yield return CreateTopic("16 Spatial Alignment", "Ready", $"{result.AnalysisOutputs.SpatialAlignment.Status}, offset {result.AnalysisOutputs.SpatialAlignment.HorizontalOffsetM:F1} m.", "#75E0A2");
@@ -899,7 +1290,9 @@ public sealed class PropagationAnalysisPanelViewModel : ObservableObject
             preview.LandcoverLossDb,
             preview.FsplDb,
             preview.TotalLossDb,
-            preview.MarginDb);
+            preview.MarginDb,
+            preview.ReceivedPowerDbm,
+            preview.ThresholdDbm);
     }
 
     private string ResolveSelectedLandcoverPathHint()
@@ -912,6 +1305,24 @@ public sealed class PropagationAnalysisPanelViewModel : ObservableObject
         var preview = SelectedPathPreview;
         if (preview is null || preview.DistanceM <= 0)
             yield break;
+
+        yield return new PropagationAnalyticalLayerItemViewModel(
+            LocalizationService.Instance.GetString("Ui.Propagation.Analysis.PathEvidence.LocalClass"),
+            LocalizationService.Instance.Format(
+                "Ui.Propagation.Analysis.PathEvidence.LocalClassSummary",
+                preview.RxLandcoverInputCoefficientDbPerM,
+                preview.RxLandcoverEffectiveCoefficientDbPerM),
+            PropagationLandcoverPresentation.ResolveLabel(preview.RxLandcoverClass),
+            PropagationLandcoverPresentation.ResolveAccentColorHex(preview.RxLandcoverClass));
+        yield return new PropagationAnalyticalLayerItemViewModel(
+            LocalizationService.Instance.GetString("Ui.Propagation.Analysis.PathEvidence.Constraint"),
+            LocalizationService.Instance.Format(
+                "Ui.Propagation.Analysis.PathEvidence.ConstraintSummary",
+                preview.RidgeCrossings,
+                preview.FresnelClearanceRatio,
+                preview.MinimumClearanceM),
+            PropagationSemanticPresentation.ResolveDominantReason(preview.DominantReasonCode),
+            "#FFCF48");
 
         foreach (var segment in preview.LandcoverSegments
                      .Where(item => item.LengthM > 0d || item.LossDb > 0d)
@@ -998,7 +1409,9 @@ public sealed class PropagationInvestigationStripViewModel : ObservableObject
     public double? ProfileDistanceKm => _root.ProfileDistanceKm;
     public double? ProfileFresnelRadiusM => _root.ProfileFresnelRadiusM;
     public double? ProfileMarginDb => _root.ProfileMarginDb;
-    public string? ProfileMainObstacleLabel => _root.ProfileMainObstacleLabel;
+    public string? ProfileMainObstacleLabel => string.IsNullOrWhiteSpace(_root.ProfileMainObstacleLabel)
+        ? _root.ProfileMainObstacleLabel
+        : PropagationSemanticPresentation.ResolveObstacleLabel(_root.ProfileMainObstacleLabel);
     public double? ProfileMainObstacleV => _root.ProfileMainObstacleV;
     public double? ProfileMainObstacleLdDb => _root.ProfileMainObstacleLdDb;
     public ObservableCollection<PropagationTaskItemViewModel> ActiveTasks => _root.ActiveTasks;
@@ -1026,7 +1439,7 @@ public sealed class PropagationInvestigationStripViewModel : ObservableObject
                     $"{sample.LosHeightM:F1} m",
                     $"{clearance:+0.0;-0.0;0.0} m",
                     $"{sample.FresnelRadiusM:F1} m",
-                    sample.SurfaceType,
+                    PropagationSemanticPresentation.ResolveLandcoverToken(sample.SurfaceType),
                     sample.IsBlocked
                         ? LocalizationService.Instance.GetString("Ui.Propagation.Profile.Blocked")
                         : LocalizationService.Instance.GetString("Ui.Propagation.Profile.Clear"),

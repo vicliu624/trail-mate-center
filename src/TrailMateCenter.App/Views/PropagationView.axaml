@@ -130,20 +130,38 @@
         <Border Background="{StaticResource MapNoiseBrush}" Opacity="0.06"/>
         <Border Background="{StaticResource MapVignette}" Opacity="0.22"/>
         <Grid Margin="12" RowDefinitions="*,Auto" ColumnDefinitions="250,*,240">
-          <StackPanel Grid.RowSpan="2" Spacing="8">
-            <Border Background="#A51A2839" BorderBrush="#5E7A9A" BorderThickness="1" CornerRadius="6" Padding="8">
-              <StackPanel Spacing="4">
+          <Grid Grid.RowSpan="2" RowDefinitions="Auto,*" RowSpacing="8">
+            <Border Background="#A51A2839" BorderBrush="#5E7A9A" BorderThickness="1" CornerRadius="6" Padding="8" MaxHeight="320">
+              <Grid RowDefinitions="Auto,*" RowSpacing="6">
                 <TextBlock Text="{Binding LegendTitle}" Foreground="{DynamicResource TextPrimary}" FontWeight="SemiBold"/>
-                <ItemsControl ItemsSource="{Binding LegendItems}">
-                  <ItemsControl.ItemTemplate>
-                    <DataTemplate x:DataType="vm:PropagationLegendItemViewModel">
-                      <TextBlock Text="{Binding Label}" Foreground="{Binding ColorHex}"/>
-                    </DataTemplate>
-                  </ItemsControl.ItemTemplate>
-                </ItemsControl>
-              </StackPanel>
+                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                  <ItemsControl ItemsSource="{Binding LegendItems}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="vm:PropagationLegendItemViewModel">
+                        <Grid ColumnDefinitions="34,*" ColumnSpacing="8" Margin="0,0,0,6">
+                          <Grid Width="28" Height="12" VerticalAlignment="Top">
+                            <Border IsVisible="{Binding ShowFillSample}" Background="{Binding ColorHex}" BorderBrush="#D8E3F0" BorderThickness="1" CornerRadius="2"/>
+                            <Border IsVisible="{Binding ShowHatchSample}" Background="{Binding SecondaryColorHex}" BorderBrush="#D8E3F0" BorderThickness="1" CornerRadius="2">
+                              <TextBlock Text="////" Foreground="{Binding ColorHex}" FontSize="9" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <Grid IsVisible="{Binding ShowLineSample}">
+                              <Border Height="{Binding StrokeThickness}" Background="{Binding ColorHex}" CornerRadius="1" VerticalAlignment="Center"/>
+                              <TextBlock IsVisible="{Binding IsDashed}" Text="- - -" Foreground="{Binding ColorHex}" FontSize="9" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Grid>
+                          </Grid>
+                          <StackPanel Grid.Column="1" Spacing="1">
+                            <TextBlock Text="{Binding Label}" Foreground="{DynamicResource TextPrimary}" FontSize="11"/>
+                            <TextBlock Text="{Binding Summary}" Foreground="{DynamicResource TextDim}" FontSize="10" TextWrapping="Wrap" IsVisible="{Binding HasSummary}"/>
+                          </StackPanel>
+                        </Grid>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </ScrollViewer>
+              </Grid>
             </Border>
-            <StackPanel Spacing="8">
+            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+              <StackPanel Spacing="8">
               <TextBlock Text="{DynamicResource Ui.Propagation.Workbench.AnalyticalLayers}" Foreground="{DynamicResource TextPrimary}" FontWeight="Bold"/>
               <ComboBox ItemsSource="{Binding LayerOptions}" SelectedItem="{Binding SelectedLayerOption}" DisplayMemberBinding="{Binding Label}"/>
               <StackPanel Spacing="4" Margin="0,0,0,4">
@@ -163,8 +181,9 @@
                   </DataTemplate>
                 </ItemsControl.ItemTemplate>
               </ItemsControl>
-            </StackPanel>
-          </StackPanel>
+              </StackPanel>
+            </ScrollViewer>
+          </Grid>
           <Border Grid.Column="1" Grid.RowSpan="2" Margin="8,0" Background="#80111B2A" BorderBrush="#56718E" BorderThickness="1" CornerRadius="6" ClipToBounds="True">
             <Grid Margin="12" RowDefinitions="*,Auto" ClipToBounds="True">
               <Border Background="#25131E2B" CornerRadius="8"/>
@@ -185,6 +204,57 @@
                   <TextBlock Text="{Binding WorkbenchHint}" Foreground="{DynamicResource TextDim}" FontSize="11" TextWrapping="Wrap"/>
                   <TextBlock Text="{Binding ModeOverlaySummary}" Foreground="{DynamicResource TextPrimary}" FontSize="11" TextWrapping="Wrap"/>
                 </StackPanel>
+              </Border>
+              <Border HorizontalAlignment="Right"
+                      VerticalAlignment="Bottom"
+                      Margin="10"
+                      Padding="10"
+                      Width="360"
+                      MaxHeight="320"
+                      Background="#D2151F2D"
+                      BorderBrush="{Binding HoverProbeStatusColor}"
+                      BorderThickness="1"
+                      CornerRadius="8"
+                      IsVisible="{Binding HasHoverProbe}">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                  <StackPanel Spacing="8">
+                    <StackPanel Spacing="2">
+                      <TextBlock Text="{Binding HoverProbeTitle}" Foreground="{DynamicResource TextPrimary}" FontWeight="Bold"/>
+                      <TextBlock Text="{Binding HoverProbeSubtitle}" Foreground="{DynamicResource AccentInfo}" FontSize="11" TextWrapping="Wrap"/>
+                    </StackPanel>
+                    <Border Background="{Binding HoverProbeStatusColor}" CornerRadius="4" Padding="8,4">
+                      <TextBlock Text="{Binding HoverProbeStatusText}" Foreground="#081019" FontWeight="Bold"/>
+                    </Border>
+                    <TextBlock Text="{Binding HoverProbePathSummary}" Foreground="{DynamicResource TextPrimary}" FontSize="11" TextWrapping="Wrap"/>
+                    <TextBlock Text="{Binding HoverProbeLandcoverSummary}" Foreground="{DynamicResource TextDim}" FontSize="11" TextWrapping="Wrap"/>
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                      <ItemsControl ItemsSource="{Binding HoverLocalMetrics}">
+                        <ItemsControl.ItemTemplate>
+                          <DataTemplate x:DataType="vm:PropagationProbeMetricItemViewModel">
+                            <Border Background="#60111B2A" BorderBrush="#324252" BorderThickness="1" CornerRadius="6" Padding="6" Margin="0,0,0,6">
+                              <StackPanel Spacing="2">
+                                <TextBlock Text="{Binding Label}" Foreground="{DynamicResource TextDim}" FontSize="10"/>
+                                <TextBlock Text="{Binding Value}" Foreground="{Binding AccentColor}" FontWeight="SemiBold" FontSize="11"/>
+                              </StackPanel>
+                            </Border>
+                          </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                      </ItemsControl>
+                      <ItemsControl Grid.Column="1" ItemsSource="{Binding HoverLossMetrics}">
+                        <ItemsControl.ItemTemplate>
+                          <DataTemplate x:DataType="vm:PropagationProbeMetricItemViewModel">
+                            <Border Background="#60111B2A" BorderBrush="#324252" BorderThickness="1" CornerRadius="6" Padding="6" Margin="0,0,0,6">
+                              <StackPanel Spacing="2">
+                                <TextBlock Text="{Binding Label}" Foreground="{DynamicResource TextDim}" FontSize="10"/>
+                                <TextBlock Text="{Binding Value}" Foreground="{Binding AccentColor}" FontWeight="SemiBold" FontSize="11"/>
+                              </StackPanel>
+                            </Border>
+                          </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                      </ItemsControl>
+                    </Grid>
+                  </StackPanel>
+                </ScrollViewer>
               </Border>
               <Border HorizontalAlignment="Center"
                       VerticalAlignment="Top"

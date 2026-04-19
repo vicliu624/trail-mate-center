@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using TrailMateCenter.Services;
@@ -6,14 +7,40 @@ namespace TrailMateCenter.ViewModels;
 
 public sealed class PropagationCoverageCellViewModel
 {
+    public int Row { get; init; }
+    public int Column { get; init; }
     public double X { get; init; }
     public double Z { get; init; }
     public double WidthM { get; init; }
     public double HeightM { get; init; }
+    public bool IsComputed { get; init; }
+    public PropagationCoverageStatus Status { get; init; }
+    public double DistanceM { get; init; }
+    public double ElevationM { get; init; }
     public double ReceivedPowerDbm { get; init; }
+    public double ThresholdDbm { get; init; }
     public double MarginDb { get; init; }
     public bool IsLineOfSight { get; init; }
     public bool CrossesRidge { get; init; }
+    public int RidgeCrossings { get; init; }
+    public PropagationLandcoverClass LandcoverClass { get; init; }
+    public double LandcoverInputCoefficientDbPerM { get; init; }
+    public double LandcoverEffectiveCoefficientDbPerM { get; init; }
+    public double FsplDb { get; init; }
+    public double DiffractionLossDb { get; init; }
+    public double FresnelLossDb { get; init; }
+    public double LandcoverLossDb { get; init; }
+    public double ReflectionLossDb { get; init; }
+    public double ShadowLossDb { get; init; }
+    public double EnvironmentLossDb { get; init; }
+    public double RidgePenaltyDb { get; init; }
+    public double TotalLossDb { get; init; }
+    public double ObstructionAboveLosM { get; init; }
+    public double DominantObstructionDistanceM { get; init; }
+    public double FresnelClearanceRatio { get; init; }
+    public double MinimumClearanceM { get; init; }
+    public string DominantReasonCode { get; init; } = string.Empty;
+    public string DominantObstructionCode { get; init; } = string.Empty;
 }
 
 internal sealed class PropagationSelectedPathPreview
@@ -23,6 +50,7 @@ internal sealed class PropagationSelectedPathPreview
     public double DistanceM { get; init; }
     public bool IsLineOfSight { get; init; }
     public int RidgeCrossings { get; init; }
+    public double ThresholdDbm { get; init; }
     public double FsplDb { get; init; }
     public double DiffractionLossDb { get; init; }
     public double FresnelLossDb { get; init; }
@@ -34,6 +62,14 @@ internal sealed class PropagationSelectedPathPreview
     public double TotalLossDb { get; init; }
     public double ReceivedPowerDbm { get; init; }
     public double MarginDb { get; init; }
+    public double ObstructionAboveLosM { get; init; }
+    public double FresnelClearanceRatio { get; init; }
+    public double MinimumClearanceM { get; init; }
+    public PropagationLandcoverClass RxLandcoverClass { get; init; }
+    public double RxLandcoverInputCoefficientDbPerM { get; init; }
+    public double RxLandcoverEffectiveCoefficientDbPerM { get; init; }
+    public string DominantReasonCode { get; init; } = string.Empty;
+    public string DominantObstructionCode { get; init; } = string.Empty;
     public IReadOnlyList<PropagationLandcoverSegmentContribution> LandcoverSegments { get; init; } = Array.Empty<PropagationLandcoverSegmentContribution>();
 }
 
@@ -44,8 +80,6 @@ internal readonly record struct PropagationLandcoverSegmentContribution(
 
 internal static class PropagationCoveragePreviewBuilder
 {
-    private const double PreviewFloorMarginDb = -10d;
-
     public static IReadOnlyList<PropagationCoverageCellViewModel> Build(
         PropagationTerrainMapSceneViewModel scene,
         PropagationSiteInput site,
@@ -67,11 +101,13 @@ internal static class PropagationCoveragePreviewBuilder
         var thresholdDbm = ResolveSensitivityDbm(spreadingFactor);
         var txElevationM = site.ElevationM ?? SampleElevation(scene, site.X, site.Z);
         var txHeightM = txElevationM + Math.Max(1d, site.AntennaHeightM);
-        var rxAntennaHeightM = site.Role == PropagationSiteRole.BaseStation ? 14d : Math.Max(6d, Math.Min(14d, site.AntennaHeightM));
+        var rxAntennaHeightM = site.Role == PropagationSiteRole.BaseStation
+            ? 14d
+            : Math.Max(6d, Math.Min(14d, site.AntennaHeightM));
         var txAntennaBonusDb = ResolveAntennaBonusDb(site.AntennaHeightM);
         var rxAntennaBonusDb = ResolveAntennaBonusDb(rxAntennaHeightM);
         var spreadingGainDb = ResolveSpreadingFactorGainDb(spreadingFactor);
-        var shadowPenaltyDb = shadowSigmaDb * 0.32d;
+        var shadowPenaltyDb = Math.Max(0d, shadowSigmaDb) * 0.32d;
         var reflectionPenaltyDb = Math.Abs(reflectionCoeff - 0.35d) * 2.2d;
         ResolveSceneBounds(scene, out var minX, out var minZ, out _, out _);
         var cellWidthM = scene.WidthM / Math.Max(1d, scene.Columns);
@@ -85,9 +121,7 @@ internal static class PropagationCoveragePreviewBuilder
             {
                 var x = minX + ((col + 0.5d) * cellWidthM);
                 var distanceM = Math.Sqrt(Math.Pow(x - site.X, 2) + Math.Pow(z - site.Z, 2));
-                if (distanceM < 1d)
-                    continue;
-
+                var effectiveDistanceM = Math.Max(1d, distanceM);
                 var rxElevationM = SampleElevation(scene, x, z);
                 var rxHeightM = rxElevationM + rxAntennaHeightM;
                 var path = EvaluatePath(
@@ -104,9 +138,9 @@ internal static class PropagationCoveragePreviewBuilder
                     reflectionCoeff);
                 var ridgeCrossings = CountRidgeCrossings(scene.RidgeLines, site.X, site.Z, x, z);
                 var ridgePenaltyDb = ridgeCrossings == 0
-                    ? 0
+                    ? 0d
                     : Math.Min(8d, ridgeCrossings * (path.IsLineOfSight ? 0.85d : 2.6d));
-                var distanceKm = Math.Max(0.01d, distanceM / 1000d);
+                var distanceKm = Math.Max(0.001d, effectiveDistanceM / 1000d);
                 var fsplDb = 32.44d + (20d * Math.Log10(Math.Max(1d, frequencyMHz))) + (20d * Math.Log10(distanceKm));
                 var totalLossDb =
                     fsplDb +
@@ -125,19 +159,119 @@ internal static class PropagationCoveragePreviewBuilder
                     rxAntennaBonusDb -
                     totalLossDb;
                 var marginDb = receivedPowerDbm - thresholdDbm;
-                if (marginDb < PreviewFloorMarginDb)
-                    continue;
 
                 cells.Add(new PropagationCoverageCellViewModel
                 {
+                    Row = row,
+                    Column = col,
                     X = x,
                     Z = z,
                     WidthM = cellWidthM,
                     HeightM = cellHeightM,
+                    IsComputed = true,
+                    Status = PropagationCoveragePresentation.ResolveStatus(marginDb, isComputed: true),
+                    DistanceM = distanceM,
+                    ElevationM = rxElevationM,
                     ReceivedPowerDbm = receivedPowerDbm,
+                    ThresholdDbm = thresholdDbm,
                     MarginDb = marginDb,
                     IsLineOfSight = path.IsLineOfSight,
                     CrossesRidge = ridgeCrossings > 0,
+                    RidgeCrossings = ridgeCrossings,
+                    LandcoverClass = path.RxLandcoverClass,
+                    LandcoverInputCoefficientDbPerM = path.RxLandcoverInputCoefficientDbPerM,
+                    LandcoverEffectiveCoefficientDbPerM = path.RxLandcoverEffectiveCoefficientDbPerM,
+                    FsplDb = fsplDb,
+                    DiffractionLossDb = path.DiffractionLossDb,
+                    FresnelLossDb = path.FresnelLossDb,
+                    LandcoverLossDb = path.LandcoverLossDb,
+                    ReflectionLossDb = reflectionPenaltyDb,
+                    ShadowLossDb = shadowPenaltyDb,
+                    EnvironmentLossDb = environmentLossDb,
+                    RidgePenaltyDb = ridgePenaltyDb,
+                    TotalLossDb = totalLossDb,
+                    ObstructionAboveLosM = path.MaxObstructionAboveLosM,
+                    DominantObstructionDistanceM = path.ObstructionDistanceM,
+                    FresnelClearanceRatio = path.WorstClearanceRatio,
+                    MinimumClearanceM = path.MinimumClearanceM,
+                    DominantReasonCode = ResolveDominantReasonCode(
+                        path.IsLineOfSight,
+                        marginDb,
+                        ridgeCrossings,
+                        path.DiffractionLossDb,
+                        path.FresnelLossDb,
+                        path.LandcoverLossDb,
+                        shadowPenaltyDb,
+                        reflectionPenaltyDb,
+                        environmentLossDb,
+                        ridgePenaltyDb),
+                    DominantObstructionCode = path.DominantObstructionCode,
+                });
+            }
+        }
+
+        return cells;
+    }
+
+    public static IReadOnlyList<PropagationCoverageCellViewModel> BuildNoData(
+        PropagationTerrainMapSceneViewModel scene,
+        double vegetationAlphaSparse,
+        double vegetationAlphaDense)
+    {
+        if (!scene.HasTerrain || scene.Columns <= 0 || scene.Rows <= 0 || scene.WidthM <= 0 || scene.HeightM <= 0)
+            return Array.Empty<PropagationCoverageCellViewModel>();
+
+        ResolveSceneBounds(scene, out var minX, out var minZ, out _, out _);
+        var cellWidthM = scene.WidthM / Math.Max(1d, scene.Columns);
+        var cellHeightM = scene.HeightM / Math.Max(1d, scene.Rows);
+        var cells = new List<PropagationCoverageCellViewModel>(scene.Columns * scene.Rows);
+
+        for (var row = 0; row < scene.Rows; row++)
+        {
+            var z = minZ + ((row + 0.5d) * cellHeightM);
+            for (var col = 0; col < scene.Columns; col++)
+            {
+                var x = minX + ((col + 0.5d) * cellWidthM);
+                var landcover = SampleLandcover(scene, x, z);
+                cells.Add(new PropagationCoverageCellViewModel
+                {
+                    Row = row,
+                    Column = col,
+                    X = x,
+                    Z = z,
+                    WidthM = cellWidthM,
+                    HeightM = cellHeightM,
+                    IsComputed = false,
+                    Status = PropagationCoverageStatus.NoData,
+                    DistanceM = double.NaN,
+                    ElevationM = SampleElevation(scene, x, z),
+                    ReceivedPowerDbm = double.NaN,
+                    ThresholdDbm = double.NaN,
+                    MarginDb = double.NaN,
+                    LandcoverClass = landcover,
+                    LandcoverInputCoefficientDbPerM = PropagationLandcoverPresentation.ResolveInputCoefficientDbPerM(
+                        landcover,
+                        vegetationAlphaSparse,
+                        vegetationAlphaDense),
+                    LandcoverEffectiveCoefficientDbPerM = PropagationLandcoverPresentation.ResolveEffectiveCoefficientDbPerM(
+                        landcover,
+                        vegetationAlphaSparse,
+                        vegetationAlphaDense),
+                    FsplDb = double.NaN,
+                    DiffractionLossDb = double.NaN,
+                    FresnelLossDb = double.NaN,
+                    LandcoverLossDb = double.NaN,
+                    ReflectionLossDb = double.NaN,
+                    ShadowLossDb = double.NaN,
+                    EnvironmentLossDb = double.NaN,
+                    RidgePenaltyDb = double.NaN,
+                    TotalLossDb = double.NaN,
+                    ObstructionAboveLosM = double.NaN,
+                    DominantObstructionDistanceM = double.NaN,
+                    FresnelClearanceRatio = double.NaN,
+                    MinimumClearanceM = double.NaN,
+                    DominantReasonCode = "no_data",
+                    DominantObstructionCode = "clear_path",
                 });
             }
         }
@@ -184,7 +318,7 @@ internal static class PropagationCoveragePreviewBuilder
         var txAntennaBonusDb = ResolveAntennaBonusDb(txSite.AntennaHeightM);
         var rxAntennaBonusDb = ResolveAntennaBonusDb(rxSite.AntennaHeightM);
         var spreadingGainDb = ResolveSpreadingFactorGainDb(spreadingFactor);
-        var shadowPenaltyDb = shadowSigmaDb * 0.32d;
+        var shadowPenaltyDb = Math.Max(0d, shadowSigmaDb) * 0.32d;
         var reflectionPenaltyDb = Math.Abs(reflectionCoeff - 0.35d) * 2.2d;
 
         var path = EvaluatePath(
@@ -202,9 +336,9 @@ internal static class PropagationCoveragePreviewBuilder
             includeLandcoverBreakdown: true);
         var ridgeCrossings = CountRidgeCrossings(scene.RidgeLines, txSite.X, txSite.Z, rxSite.X, rxSite.Z);
         var ridgePenaltyDb = ridgeCrossings == 0
-            ? 0
+            ? 0d
             : Math.Min(8d, ridgeCrossings * (path.IsLineOfSight ? 0.85d : 2.6d));
-        var distanceKm = Math.Max(0.01d, distanceM / 1000d);
+        var distanceKm = Math.Max(0.001d, distanceM / 1000d);
         var fsplDb = 32.44d + (20d * Math.Log10(Math.Max(1d, frequencyMHz))) + (20d * Math.Log10(distanceKm));
         var totalLossDb =
             fsplDb +
@@ -221,6 +355,7 @@ internal static class PropagationCoveragePreviewBuilder
             txAntennaBonusDb +
             rxAntennaBonusDb -
             totalLossDb;
+        var marginDb = receivedPowerDbm - thresholdDbm;
 
         return new PropagationSelectedPathPreview
         {
@@ -229,6 +364,7 @@ internal static class PropagationCoveragePreviewBuilder
             DistanceM = distanceM,
             IsLineOfSight = path.IsLineOfSight,
             RidgeCrossings = ridgeCrossings,
+            ThresholdDbm = thresholdDbm,
             FsplDb = fsplDb,
             DiffractionLossDb = path.DiffractionLossDb,
             FresnelLossDb = path.FresnelLossDb,
@@ -239,7 +375,25 @@ internal static class PropagationCoveragePreviewBuilder
             RidgePenaltyDb = ridgePenaltyDb,
             TotalLossDb = totalLossDb,
             ReceivedPowerDbm = receivedPowerDbm,
-            MarginDb = receivedPowerDbm - thresholdDbm,
+            MarginDb = marginDb,
+            ObstructionAboveLosM = path.MaxObstructionAboveLosM,
+            FresnelClearanceRatio = path.WorstClearanceRatio,
+            MinimumClearanceM = path.MinimumClearanceM,
+            RxLandcoverClass = path.RxLandcoverClass,
+            RxLandcoverInputCoefficientDbPerM = path.RxLandcoverInputCoefficientDbPerM,
+            RxLandcoverEffectiveCoefficientDbPerM = path.RxLandcoverEffectiveCoefficientDbPerM,
+            DominantReasonCode = ResolveDominantReasonCode(
+                path.IsLineOfSight,
+                marginDb,
+                ridgeCrossings,
+                path.DiffractionLossDb,
+                path.FresnelLossDb,
+                path.LandcoverLossDb,
+                shadowPenaltyDb,
+                reflectionPenaltyDb,
+                environmentLossDb,
+                ridgePenaltyDb),
+            DominantObstructionCode = path.DominantObstructionCode,
             LandcoverSegments = path.LandcoverSegments,
         };
     }
@@ -258,16 +412,41 @@ internal static class PropagationCoveragePreviewBuilder
         double reflectionCoeff,
         bool includeLandcoverBreakdown = false)
     {
+        var rxLandcoverClass = SampleLandcover(scene, rxX, rxZ);
+        var rxInputCoefficientDbPerM = PropagationLandcoverPresentation.ResolveInputCoefficientDbPerM(
+            rxLandcoverClass,
+            vegetationAlphaSparse,
+            vegetationAlphaDense);
+        var rxEffectiveCoefficientDbPerM = PropagationLandcoverPresentation.ResolveEffectiveCoefficientDbPerM(
+            rxLandcoverClass,
+            vegetationAlphaSparse,
+            vegetationAlphaDense);
         var distanceM = Math.Sqrt(Math.Pow(rxX - txX, 2) + Math.Pow(rxZ - txZ, 2));
         if (distanceM < 1d)
-            return new PathLossEvaluation(true, 0d, 0d, 0d, Array.Empty<PropagationLandcoverSegmentContribution>());
+        {
+            return new PathLossEvaluation(
+                true,
+                0d,
+                0d,
+                0d,
+                0d,
+                0d,
+                1d,
+                0d,
+                rxLandcoverClass,
+                rxInputCoefficientDbPerM,
+                rxEffectiveCoefficientDbPerM,
+                rxLandcoverClass == PropagationLandcoverClass.BareGround ? "clear_path" : rxLandcoverClass.ToString(),
+                Array.Empty<PropagationLandcoverSegmentContribution>());
+        }
 
         var lambdaM = 300d / Math.Max(1d, frequencyMHz);
-        var sampleSpacingM = Math.Max(30d, Math.Min(scene.WidthM / Math.Max(1d, scene.Columns), scene.HeightM / Math.Max(1d, scene.Rows)));
-        var sampleCount = (int)Math.Clamp(Math.Ceiling(distanceM / sampleSpacingM) + 1, 8, 72);
-        var segmentLengthM = distanceM / (sampleCount - 1d);
+        var sampleSpacingM = Math.Max(20d, Math.Min(scene.WidthM / Math.Max(1d, scene.Columns), scene.HeightM / Math.Max(1d, scene.Rows)));
+        var sampleCount = (int)Math.Clamp(Math.Ceiling(distanceM / sampleSpacingM) + 1, 12, 128);
+        var segmentLengthM = distanceM / Math.Max(1d, sampleCount - 1d);
         var maxObstructionAboveLosM = double.MinValue;
         var worstClearanceRatio = double.MaxValue;
+        var minimumClearanceM = double.MaxValue;
         var obstructionDistanceM = 0d;
         var landcoverLossDb = 0d;
         Dictionary<PropagationLandcoverClass, LandcoverContributionAccumulator>? landcoverContributions = includeLandcoverBreakdown
@@ -285,9 +464,11 @@ internal static class PropagationCoveragePreviewBuilder
             var d2 = Math.Max(1d, distanceM - d1);
             var fresnelRadiusM = Math.Sqrt(lambdaM * d1 * d2 / (d1 + d2));
             var obstructionAboveLosM = terrainElevationM - losHeightM;
-            var clearanceRatio = fresnelRadiusM <= 0
+            var physicalClearanceM = losHeightM - terrainElevationM;
+            var clearanceRatio = fresnelRadiusM <= 0d
                 ? 1d
-                : Math.Clamp((losHeightM - terrainElevationM) / (fresnelRadiusM * 0.6d), -2d, 2d);
+                : Math.Clamp(physicalClearanceM / (fresnelRadiusM * 0.6d), -2d, 2d);
+            var clearanceAgainstFresnelM = physicalClearanceM - (fresnelRadiusM * 0.6d);
 
             if (obstructionAboveLosM > maxObstructionAboveLosM)
             {
@@ -296,6 +477,7 @@ internal static class PropagationCoveragePreviewBuilder
             }
 
             worstClearanceRatio = Math.Min(worstClearanceRatio, clearanceRatio);
+            minimumClearanceM = Math.Min(minimumClearanceM, clearanceAgainstFresnelM);
         }
 
         for (var index = 1; index < sampleCount; index++)
@@ -318,7 +500,7 @@ internal static class PropagationCoveragePreviewBuilder
         var obstacleHeightM = Math.Max(0d, maxObstructionAboveLosM);
         var d1Obstacle = Math.Max(1d, obstructionDistanceM);
         var d2Obstacle = Math.Max(1d, distanceM - obstructionDistanceM);
-        var v = obstacleHeightM > 0
+        var v = obstacleHeightM > 0d
             ? obstacleHeightM * Math.Sqrt((2d / lambdaM) * ((1d / d1Obstacle) + (1d / d2Obstacle)))
             : -1d;
         var diffractionLossDb = v > -0.7d
@@ -327,7 +509,7 @@ internal static class PropagationCoveragePreviewBuilder
         var fresnelLossDb = worstClearanceRatio >= 1d
             ? 0d
             : Math.Clamp((1d - worstClearanceRatio) * 6.8d, 0d, 18d);
-        if (SampleLandcover(scene, rxX, rxZ) == PropagationLandcoverClass.Water)
+        if (rxLandcoverClass == PropagationLandcoverClass.Water)
         {
             var waterTerminationLossDb = Math.Clamp(Math.Abs(reflectionCoeff - 0.28d) * 1.5d, 0d, 1.6d);
             landcoverLossDb += waterTerminationLossDb;
@@ -346,11 +528,25 @@ internal static class PropagationCoveragePreviewBuilder
                 .ThenByDescending(entry => entry.LengthM)
                 .ToArray();
 
+        var dominantObstructionCode = obstacleHeightM > 0d
+            ? "ridge_obstruction"
+            : rxLandcoverClass == PropagationLandcoverClass.BareGround
+                ? "clear_path"
+                : rxLandcoverClass.ToString();
+
         return new PathLossEvaluation(
             obstacleHeightM <= 0d,
             diffractionLossDb,
             fresnelLossDb,
             landcoverLossDb,
+            obstacleHeightM,
+            obstructionDistanceM,
+            worstClearanceRatio,
+            minimumClearanceM,
+            rxLandcoverClass,
+            rxInputCoefficientDbPerM,
+            rxEffectiveCoefficientDbPerM,
+            dominantObstructionCode,
             landcoverSegments);
     }
 
@@ -524,6 +720,44 @@ internal static class PropagationCoveragePreviewBuilder
         return int.TryParse(text, out var sf) ? sf : 10;
     }
 
+    private static string ResolveDominantReasonCode(
+        bool isLineOfSight,
+        double marginDb,
+        int ridgeCrossings,
+        double diffractionLossDb,
+        double fresnelLossDb,
+        double landcoverLossDb,
+        double shadowLossDb,
+        double reflectionLossDb,
+        double environmentLossDb,
+        double ridgePenaltyDb)
+    {
+        if (!double.IsFinite(marginDb))
+            return "no_data";
+
+        if (!isLineOfSight && (ridgeCrossings > 0 || diffractionLossDb >= Math.Max(fresnelLossDb, landcoverLossDb)))
+            return "ridge_obstruction";
+
+        var candidates = new (string Code, double LossDb)[]
+        {
+            ("diffraction", diffractionLossDb),
+            ("fresnel_intrusion", fresnelLossDb),
+            ("vegetation_clutter", landcoverLossDb),
+            ("shadow_fading", shadowLossDb),
+            ("reflection", reflectionLossDb),
+            ("environment", environmentLossDb),
+            ("ridge_obstruction", ridgePenaltyDb),
+        };
+        var dominant = candidates
+            .OrderByDescending(candidate => candidate.LossDb)
+            .FirstOrDefault();
+
+        if (dominant.LossDb >= 1d)
+            return dominant.Code;
+
+        return "path_loss";
+    }
+
     private static double Lerp(double a, double b, double t) => a + ((b - a) * t);
 
     private static void AddLandcoverContribution(
@@ -545,6 +779,14 @@ internal static class PropagationCoveragePreviewBuilder
         double DiffractionLossDb,
         double FresnelLossDb,
         double LandcoverLossDb,
+        double MaxObstructionAboveLosM,
+        double ObstructionDistanceM,
+        double WorstClearanceRatio,
+        double MinimumClearanceM,
+        PropagationLandcoverClass RxLandcoverClass,
+        double RxLandcoverInputCoefficientDbPerM,
+        double RxLandcoverEffectiveCoefficientDbPerM,
+        string DominantObstructionCode,
         IReadOnlyList<PropagationLandcoverSegmentContribution> LandcoverSegments);
 
     private struct LandcoverContributionAccumulator
