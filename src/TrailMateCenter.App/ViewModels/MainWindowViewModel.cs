@@ -1394,52 +1394,72 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         {
             var mapsRoot = ResolveMapsExportRoot(destinationRoot);
             var bounds = (region.West, region.South, region.East, region.North);
+            var buildOptions = new OfflineCacheBuildOptions
+            {
+                IncludeOsm = region.IncludeOsm,
+                IncludeTerrain = region.IncludeTerrain,
+                IncludeSatellite = region.IncludeSatellite,
+                IncludeContours = region.IncludeContours,
+                IncludeUltraFineContours = region.IncludeUltraFineContours,
+                MinimumZoom = region.MinimumZoom,
+                MaximumZoom = region.MaximumZoom,
+            }.Normalize();
             var stats = new ExportCopyStats();
 
-            if (region.IncludeOsm)
+            var osmMinZoom = Math.Max(buildOptions.MinimumZoom, OfflineCacheBuildOptions.DefaultMinimumZoom);
+            var osmMaxZoom = Math.Min(buildOptions.MaximumZoom, OfflineCacheBuildOptions.DefaultMaximumZoom);
+            if (buildOptions.IncludeOsm && osmMinZoom <= osmMaxZoom)
             {
                 ExportBaseTiles(
                     sourceRoot: Path.Combine(cacheRoot, "tilecache"),
                     targetRoot: Path.Combine(mapsRoot, "base", "osm"),
                     extension: "png",
-                    minZoom: 0,
-                    maxZoom: 18,
+                    minZoom: osmMinZoom,
+                    maxZoom: osmMaxZoom,
                     bounds: bounds,
                     stats: stats,
                     cancellationToken: cancellationToken);
             }
 
-            if (region.IncludeTerrain)
+            var terrainMinZoom = Math.Max(buildOptions.MinimumZoom, OfflineCacheBuildOptions.DefaultMinimumZoom);
+            var terrainMaxZoom = Math.Min(buildOptions.MaximumZoom, OfflineCacheBuildOptions.TerrainMaximumZoom);
+            if (buildOptions.IncludeTerrain && terrainMinZoom <= terrainMaxZoom)
             {
                 ExportBaseTiles(
                     sourceRoot: Path.Combine(cacheRoot, "terrain-cache"),
                     targetRoot: Path.Combine(mapsRoot, "base", "terrain"),
                     extension: "png",
-                    minZoom: 0,
-                    maxZoom: 17,
+                    minZoom: terrainMinZoom,
+                    maxZoom: terrainMaxZoom,
                     bounds: bounds,
                     stats: stats,
                     cancellationToken: cancellationToken);
             }
 
-            if (region.IncludeSatellite)
+            var satelliteMinZoom = Math.Max(buildOptions.MinimumZoom, OfflineCacheBuildOptions.DefaultMinimumZoom);
+            var satelliteMaxZoom = Math.Min(buildOptions.MaximumZoom, OfflineCacheBuildOptions.DefaultMaximumZoom);
+            if (buildOptions.IncludeSatellite && satelliteMinZoom <= satelliteMaxZoom)
             {
                 ExportBaseTiles(
                     sourceRoot: Path.Combine(cacheRoot, "satellite-cache"),
                     targetRoot: Path.Combine(mapsRoot, "base", "satellite"),
                     extension: "jpg",
-                    minZoom: 0,
-                    maxZoom: 18,
+                    minZoom: satelliteMinZoom,
+                    maxZoom: satelliteMaxZoom,
                     bounds: bounds,
                     stats: stats,
                     cancellationToken: cancellationToken);
             }
 
-            if (region.IncludeContours)
+            var contourMinZoom = Math.Max(buildOptions.MinimumZoom, OfflineCacheBuildOptions.DefaultMinimumZoom);
+            var contourMaxZoom = Math.Min(buildOptions.MaximumZoom, OfflineCacheBuildOptions.DefaultMaximumZoom);
+            if (buildOptions.IncludeContours && contourMinZoom <= contourMaxZoom)
             {
                 ExportTrailMateContours(
                     contourRoot: Path.Combine(cacheRoot, "contours", "tiles"),
                     targetRoot: Path.Combine(mapsRoot, "contour"),
+                    minZoom: contourMinZoom,
+                    maxZoom: contourMaxZoom,
                     bounds: bounds,
                     stats: stats,
                     cancellationToken: cancellationToken);
@@ -1514,13 +1534,15 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     private static void ExportTrailMateContours(
         string contourRoot,
         string targetRoot,
+        int minZoom,
+        int maxZoom,
         (double West, double South, double East, double North) bounds,
         ExportCopyStats stats,
         CancellationToken cancellationToken)
     {
         Directory.CreateDirectory(targetRoot);
 
-        for (var zoom = 0; zoom <= 18; zoom++)
+        for (var zoom = minZoom; zoom <= maxZoom; zoom++)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
@@ -1754,7 +1776,9 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             nameof(MapCacheRegionViewModel.IncludeOsm) or
             nameof(MapCacheRegionViewModel.IncludeTerrain) or
             nameof(MapCacheRegionViewModel.IncludeSatellite) or
-            nameof(MapCacheRegionViewModel.IncludeContours))
+            nameof(MapCacheRegionViewModel.IncludeContours) or
+            nameof(MapCacheRegionViewModel.MinimumZoom) or
+            nameof(MapCacheRegionViewModel.MaximumZoom))
         {
             NotifyOfflineCacheBuildAvailabilityChanged();
         }
@@ -1808,28 +1832,35 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         var osm = InspectBaseLayer(
             Path.Combine(root, "tilecache"),
             "png",
-            0,
-            18,
+            Math.Max(options.MinimumZoom, OfflineCacheBuildOptions.DefaultMinimumZoom),
+            Math.Min(options.MaximumZoom, OfflineCacheBuildOptions.DefaultMaximumZoom),
             options.IncludeOsm,
             bounds,
             cancellationToken);
         var terrain = InspectBaseLayer(
             Path.Combine(root, "terrain-cache"),
             "png",
-            0,
-            17,
+            Math.Max(options.MinimumZoom, OfflineCacheBuildOptions.DefaultMinimumZoom),
+            Math.Min(options.MaximumZoom, OfflineCacheBuildOptions.TerrainMaximumZoom),
             options.IncludeTerrain,
             bounds,
             cancellationToken);
         var satellite = InspectBaseLayer(
             Path.Combine(root, "satellite-cache"),
             "jpg",
-            0,
-            18,
+            Math.Max(options.MinimumZoom, OfflineCacheBuildOptions.DefaultMinimumZoom),
+            Math.Min(options.MaximumZoom, OfflineCacheBuildOptions.DefaultMaximumZoom),
             options.IncludeSatellite,
             bounds,
             cancellationToken);
-        var contour = InspectContourLayer(root, bounds, options.IncludeContours, options.IncludeUltraFineContours, cancellationToken);
+        var contour = InspectContourLayer(
+            root,
+            bounds,
+            options.IncludeContours,
+            options.IncludeUltraFineContours,
+            options.MinimumZoom,
+            options.MaximumZoom,
+            cancellationToken);
 
         var existingTiles = osm.ExistingTiles + terrain.ExistingTiles + satellite.ExistingTiles + contour.ExistingTiles;
         var expectedTiles = osm.ExpectedTiles + terrain.ExpectedTiles + satellite.ExpectedTiles + contour.ExpectedTiles;
@@ -1857,6 +1888,8 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     {
         if (!enabled)
             return new CacheLayerCoverage(0, 0);
+        if (maxZoom < minZoom)
+            return new CacheLayerCoverage(0, 0);
 
         long expectedTiles = 0;
         long existingTiles = 0;
@@ -1880,15 +1913,19 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         (double West, double South, double East, double North) bounds,
         bool includeContours,
         bool includeUltraFineContours,
+        int minZoom,
+        int maxZoom,
         CancellationToken cancellationToken)
     {
         if (!includeContours)
+            return new CacheLayerCoverage(0, 0);
+        if (maxZoom < minZoom)
             return new CacheLayerCoverage(0, 0);
 
         var contourRoot = Path.Combine(root, "contours", "tiles");
         long expectedTiles = 0;
         long existingTiles = 0;
-        for (var zoom = 0; zoom <= 18; zoom++)
+        for (var zoom = minZoom; zoom <= maxZoom; zoom++)
         {
             cancellationToken.ThrowIfCancellationRequested();
 

@@ -3,9 +3,9 @@
         xmlns:vm="using:TrailMateCenter.ViewModels"
         x:Class="TrailMateCenter.Views.OfflineCacheDialog"
         x:DataType="vm:OfflineCacheDialogViewModel"
-        Width="430"
-        MinWidth="430"
-        MinHeight="420"
+        Width="500"
+        MinWidth="500"
+        MinHeight="520"
         SizeToContent="Height"
         CanResize="False"
         WindowStartupLocation="CenterOwner"
@@ -15,9 +15,17 @@
       <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
       <Setter Property="FontSize" Value="13"/>
     </Style>
+    <Style Selector="CheckBox /template/ ContentPresenter">
+      <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
+      <Setter Property="Opacity" Value="1"/>
+    </Style>
     <Style Selector="CheckBox:disabled">
       <Setter Property="Foreground" Value="{DynamicResource TextDim}"/>
       <Setter Property="Opacity" Value="0.85"/>
+    </Style>
+    <Style Selector="CheckBox:disabled /template/ ContentPresenter">
+      <Setter Property="Foreground" Value="{DynamicResource TextDim}"/>
+      <Setter Property="Opacity" Value="1"/>
     </Style>
     <Style Selector="TextBlock.sectionHeader">
       <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
@@ -25,8 +33,7 @@
       <Setter Property="FontSize" Value="13"/>
     </Style>
     <Style Selector="TextBlock.dialogHint">
-      <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
-      <Setter Property="Opacity" Value="0.82"/>
+      <Setter Property="Foreground" Value="{DynamicResource TextDim}"/>
       <Setter Property="FontSize" Value="11"/>
     </Style>
   </Window.Styles>
@@ -79,6 +86,39 @@
           <CheckBox Content="{DynamicResource Ui.Config.ContoursFine5m}"
                     IsChecked="{Binding IncludeUltraFineContours}"
                     IsEnabled="{Binding IncludeContours}"/>
+        </StackPanel>
+      </Border>
+
+      <Border BorderBrush="{DynamicResource PanelBorderStrong}"
+              BorderThickness="1"
+              CornerRadius="6"
+              Padding="8"
+              Background="{DynamicResource SurfaceDark}">
+        <StackPanel Spacing="6">
+          <TextBlock Text="{DynamicResource Ui.Dashboard.OfflineCacheDialog.ZoomRange}"
+                     Classes="sectionHeader"/>
+          <Grid ColumnDefinitions="*,*"
+                RowDefinitions="Auto,Auto"
+                ColumnSpacing="10"
+                RowSpacing="4">
+            <TextBlock Text="{DynamicResource Ui.Dashboard.OfflineCacheDialog.MinZoom}"
+                       Foreground="{DynamicResource TextPrimary}"/>
+            <TextBlock Grid.Column="1"
+                       Text="{DynamicResource Ui.Dashboard.OfflineCacheDialog.MaxZoom}"
+                       Foreground="{DynamicResource TextPrimary}"/>
+            <ComboBox Grid.Row="1"
+                      ItemsSource="{Binding AvailableZoomLevels}"
+                      SelectedItem="{Binding MinimumZoom}"
+                      MinWidth="120"/>
+            <ComboBox Grid.Row="1"
+                      Grid.Column="1"
+                      ItemsSource="{Binding AvailableZoomLevels}"
+                      SelectedItem="{Binding MaximumZoom}"
+                      MinWidth="120"/>
+          </Grid>
+          <TextBlock Text="{DynamicResource Ui.Dashboard.OfflineCacheDialog.ZoomHint}"
+                     Classes="dialogHint"
+                     TextWrapping="Wrap"/>
         </StackPanel>
       </Border>
 

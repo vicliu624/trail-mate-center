@@ -647,6 +647,8 @@ public partial class DashboardView : UserControl
                 IncludeSatellite = true,
                 IncludeContours = vm.ContoursEnabled,
                 IncludeUltraFineContours = vm.ContoursEnabled && vm.ContoursUltraFine,
+                MinimumZoom = OfflineCacheBuildOptions.DefaultMinimumZoom,
+                MaximumZoom = OfflineCacheBuildOptions.DefaultMaximumZoom,
             };
 
             var dialog = new OfflineCacheDialog

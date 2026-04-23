@@ -184,6 +184,8 @@ public sealed class SqliteStore
                 include_satellite INTEGER NOT NULL DEFAULT 1,
                 include_contours INTEGER NOT NULL DEFAULT 1,
                 include_ultra_fine_contours INTEGER NOT NULL DEFAULT 0,
+                min_zoom INTEGER NOT NULL DEFAULT 0,
+                max_zoom INTEGER NOT NULL DEFAULT 18,
                 sort_order INTEGER NOT NULL
             );
 
@@ -203,6 +205,8 @@ public sealed class SqliteStore
         await EnsureColumnAsync(connection, "map_cache_regions", "include_satellite", "INTEGER NOT NULL DEFAULT 1", cancellationToken);
         await EnsureColumnAsync(connection, "map_cache_regions", "include_contours", "INTEGER NOT NULL DEFAULT 1", cancellationToken);
         await EnsureColumnAsync(connection, "map_cache_regions", "include_ultra_fine_contours", "INTEGER NOT NULL DEFAULT 0", cancellationToken);
+        await EnsureColumnAsync(connection, "map_cache_regions", "min_zoom", "INTEGER NOT NULL DEFAULT 0", cancellationToken);
+        await EnsureColumnAsync(connection, "map_cache_regions", "max_zoom", "INTEGER NOT NULL DEFAULT 18", cancellationToken);
     }
 
     public async Task UpsertMessageAsync(MessageEntry message, CancellationToken cancellationToken)
@@ -854,6 +858,8 @@ public sealed class SqliteStore
                     IncludeSatellite = ReadBool(reader, "include_satellite", defaultValue: true),
                     IncludeContours = ReadBool(reader, "include_contours", defaultValue: true),
                     IncludeUltraFineContours = ReadBool(reader, "include_ultra_fine_contours", defaultValue: false),
+                    MinimumZoom = ReadNullableInt(reader, "min_zoom") ?? 0,
+                    MaximumZoom = ReadNullableInt(reader, "max_zoom") ?? 18,
                 });
             }
         }
@@ -890,10 +896,12 @@ public sealed class SqliteStore
                     INSERT INTO map_cache_regions (
                         id, name, west, south, east, north,
                         include_osm, include_terrain, include_satellite, include_contours, include_ultra_fine_contours,
+                        min_zoom, max_zoom,
                         sort_order
                     ) VALUES (
                         $id, $name, $west, $south, $east, $north,
                         $include_osm, $include_terrain, $include_satellite, $include_contours, $include_ultra_fine_contours,
+                        $min_zoom, $max_zoom,
                         $sort_order
                     );
                     """;
@@ -908,6 +916,8 @@ public sealed class SqliteStore
                 insert.Parameters.AddWithValue("$include_satellite", region.IncludeSatellite ? 1 : 0);
                 insert.Parameters.AddWithValue("$include_contours", region.IncludeContours ? 1 : 0);
                 insert.Parameters.AddWithValue("$include_ultra_fine_contours", region.IncludeUltraFineContours ? 1 : 0);
+                insert.Parameters.AddWithValue("$min_zoom", region.MinimumZoom);
+                insert.Parameters.AddWithValue("$max_zoom", region.MaximumZoom);
                 insert.Parameters.AddWithValue("$sort_order", sortOrder);
                 await insert.ExecuteNonQueryAsync(cancellationToken);
                 sortOrder++;

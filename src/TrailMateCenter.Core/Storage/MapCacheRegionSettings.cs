@@ -13,4 +13,6 @@ public sealed record MapCacheRegionSettings
     public bool IncludeSatellite { get; init; } = true;
     public bool IncludeContours { get; init; } = true;
     public bool IncludeUltraFineContours { get; init; }
+    public int MinimumZoom { get; init; } = 0;
+    public int MaximumZoom { get; init; } = 18;
 }

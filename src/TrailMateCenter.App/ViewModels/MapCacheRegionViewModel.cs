@@ -40,6 +40,12 @@ public sealed partial class MapCacheRegionViewModel : ObservableObject
     private bool _includeUltraFineContours;
 
     [ObservableProperty]
+    private int _minimumZoom = OfflineCacheBuildOptions.DefaultMinimumZoom;
+
+    [ObservableProperty]
+    private int _maximumZoom = OfflineCacheBuildOptions.DefaultMaximumZoom;
+
+    [ObservableProperty]
     private bool _isCacheHealthChecking;
 
     [ObservableProperty]
@@ -116,9 +122,11 @@ public sealed partial class MapCacheRegionViewModel : ObservableObject
     }
 
     public bool CacheNeedsMaintenance => CacheExpectedTiles > 0 && CacheExistingTiles < CacheExpectedTiles;
+    public string ZoomRangeText => $"Z{MinimumZoom}-Z{MaximumZoom}";
 
     public MapCacheRegionSettings ToSettings()
     {
+        var options = ToBuildOptions();
         return new MapCacheRegionSettings
         {
             Id = string.IsNullOrWhiteSpace(Id) ? Guid.NewGuid().ToString("N") : Id.Trim(),
@@ -127,16 +135,29 @@ public sealed partial class MapCacheRegionViewModel : ObservableObject
             South = South,
             East = East,
             North = North,
-            IncludeOsm = IncludeOsm,
-            IncludeTerrain = IncludeTerrain,
-            IncludeSatellite = IncludeSatellite,
-            IncludeContours = IncludeContours,
-            IncludeUltraFineContours = IncludeUltraFineContours,
+            IncludeOsm = options.IncludeOsm,
+            IncludeTerrain = options.IncludeTerrain,
+            IncludeSatellite = options.IncludeSatellite,
+            IncludeContours = options.IncludeContours,
+            IncludeUltraFineContours = options.IncludeUltraFineContours,
+            MinimumZoom = options.MinimumZoom,
+            MaximumZoom = options.MaximumZoom,
         };
     }
 
     public static MapCacheRegionViewModel FromSettings(MapCacheRegionSettings settings)
     {
+        var options = new OfflineCacheBuildOptions
+        {
+            IncludeOsm = settings.IncludeOsm,
+            IncludeTerrain = settings.IncludeTerrain,
+            IncludeSatellite = settings.IncludeSatellite,
+            IncludeContours = settings.IncludeContours,
+            IncludeUltraFineContours = settings.IncludeUltraFineContours,
+            MinimumZoom = settings.MinimumZoom,
+            MaximumZoom = settings.MaximumZoom,
+        }.Normalize();
+
         return new MapCacheRegionViewModel
         {
             Id = string.IsNullOrWhiteSpace(settings.Id) ? Guid.NewGuid().ToString("N") : settings.Id.Trim(),
@@ -145,21 +166,37 @@ public sealed partial class MapCacheRegionViewModel : ObservableObject
             South = settings.South,
             East = settings.East,
             North = settings.North,
-            IncludeOsm = settings.IncludeOsm,
-            IncludeTerrain = settings.IncludeTerrain,
-            IncludeSatellite = settings.IncludeSatellite,
-            IncludeContours = settings.IncludeContours,
-            IncludeUltraFineContours = settings.IncludeUltraFineContours,
+            IncludeOsm = options.IncludeOsm,
+            IncludeTerrain = options.IncludeTerrain,
+            IncludeSatellite = options.IncludeSatellite,
+            IncludeContours = options.IncludeContours,
+            IncludeUltraFineContours = options.IncludeUltraFineContours,
+            MinimumZoom = options.MinimumZoom,
+            MaximumZoom = options.MaximumZoom,
         };
     }
 
     public void ApplyBuildOptions(OfflineCacheBuildOptions options)
     {
-        IncludeOsm = options.IncludeOsm;
-        IncludeTerrain = options.IncludeTerrain;
-        IncludeSatellite = options.IncludeSatellite;
-        IncludeContours = options.IncludeContours;
-        IncludeUltraFineContours = options.IncludeUltraFineContours;
+        var normalized = options.Normalize();
+        var hasChanged = IncludeOsm != normalized.IncludeOsm ||
+                         IncludeTerrain != normalized.IncludeTerrain ||
+                         IncludeSatellite != normalized.IncludeSatellite ||
+                         IncludeContours != normalized.IncludeContours ||
+                         IncludeUltraFineContours != normalized.IncludeUltraFineContours ||
+                         MinimumZoom != normalized.MinimumZoom ||
+                         MaximumZoom != normalized.MaximumZoom;
+
+        IncludeOsm = normalized.IncludeOsm;
+        IncludeTerrain = normalized.IncludeTerrain;
+        IncludeSatellite = normalized.IncludeSatellite;
+        IncludeContours = normalized.IncludeContours;
+        IncludeUltraFineContours = normalized.IncludeUltraFineContours;
+        MinimumZoom = normalized.MinimumZoom;
+        MaximumZoom = normalized.MaximumZoom;
+
+        if (hasChanged)
+            ResetCacheHealthSummary();
     }
 
     public OfflineCacheBuildOptions ToBuildOptions()
@@ -171,15 +208,25 @@ public sealed partial class MapCacheRegionViewModel : ObservableObject
             IncludeSatellite = IncludeSatellite,
             IncludeContours = IncludeContours,
             IncludeUltraFineContours = IncludeUltraFineContours,
-        };
+            MinimumZoom = MinimumZoom,
+            MaximumZoom = MaximumZoom,
+        }.Normalize();
     }
 
     public void UpdateBounds((double West, double South, double East, double North) bounds)
     {
+        var hasChanged = West != bounds.West ||
+                         South != bounds.South ||
+                         East != bounds.East ||
+                         North != bounds.North;
+
         West = bounds.West;
         South = bounds.South;
         East = bounds.East;
         North = bounds.North;
+
+        if (hasChanged)
+            ResetCacheHealthSummary();
     }
 
     public void SetCacheHealthChecking(bool checking)
@@ -254,6 +301,41 @@ public sealed partial class MapCacheRegionViewModel : ObservableObject
     partial void OnSouthChanged(double value) => OnPropertyChanged(nameof(BoundsText));
     partial void OnEastChanged(double value) => OnPropertyChanged(nameof(BoundsText));
     partial void OnNorthChanged(double value) => OnPropertyChanged(nameof(BoundsText));
+    partial void OnMinimumZoomChanged(int value)
+    {
+        var clamped = Math.Clamp(
+            value,
+            OfflineCacheBuildOptions.DefaultMinimumZoom,
+            OfflineCacheBuildOptions.DefaultMaximumZoom);
+        if (clamped != value)
+        {
+            MinimumZoom = clamped;
+            return;
+        }
+
+        if (MaximumZoom < clamped)
+            MaximumZoom = clamped;
+
+        OnPropertyChanged(nameof(ZoomRangeText));
+    }
+
+    partial void OnMaximumZoomChanged(int value)
+    {
+        var clamped = Math.Clamp(
+            value,
+            OfflineCacheBuildOptions.DefaultMinimumZoom,
+            OfflineCacheBuildOptions.DefaultMaximumZoom);
+        if (clamped != value)
+        {
+            MaximumZoom = clamped;
+            return;
+        }
+
+        if (MinimumZoom > clamped)
+            MinimumZoom = clamped;
+
+        OnPropertyChanged(nameof(ZoomRangeText));
+    }
 
     partial void OnIncludeOsmChanged(bool value) => OnPropertyChanged(nameof(BuildTargetsText));
     partial void OnIncludeTerrainChanged(bool value) => OnPropertyChanged(nameof(BuildTargetsText));
@@ -280,5 +362,24 @@ public sealed partial class MapCacheRegionViewModel : ObservableObject
         if (safeExisting >= safeExpected)
             return (text, "#75E0A2");
         return (text, "#FFCF48");
+    }
+
+    private void ResetCacheHealthSummary()
+    {
+        IsCacheHealthChecking = false;
+        CacheHealthText = "Not checked";
+        CacheHealthDetailText = "Press refresh to inspect local cache.";
+        CacheHealthColor = "#9AA3AE";
+        CacheHealthPercent = 0;
+        CacheExistingTiles = 0;
+        CacheExpectedTiles = 0;
+        OsmCoverageText = "--";
+        TerrainCoverageText = "--";
+        SatelliteCoverageText = "--";
+        ContourCoverageText = "--";
+        OsmCoverageColor = "#9AA3AE";
+        TerrainCoverageColor = "#9AA3AE";
+        SatelliteCoverageColor = "#9AA3AE";
+        ContourCoverageColor = "#9AA3AE";
     }
 }

@@ -753,4 +753,8 @@
   <x:String x:Key="Event.Meta.Packet">Pkt {0}</x:String>
   <x:String x:Key="Event.Meta.Freq">Freq {0}</x:String>
   <x:String x:Key="Event.Meta.Sf">SF {0}</x:String>
+  <x:String x:Key="Ui.Dashboard.OfflineCacheDialog.ZoomRange">Zoom range</x:String>
+  <x:String x:Key="Ui.Dashboard.OfflineCacheDialog.MinZoom">Min zoom</x:String>
+  <x:String x:Key="Ui.Dashboard.OfflineCacheDialog.MaxZoom">Max zoom</x:String>
+  <x:String x:Key="Ui.Dashboard.OfflineCacheDialog.ZoomHint">Defaults to Z0-Z18. Terrain tiles only support up to Z17; unsupported levels are skipped automatically.</x:String>
 </ResourceDictionary>

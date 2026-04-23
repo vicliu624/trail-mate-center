@@ -18,6 +18,7 @@ using NetTopologySuite.Geometries;
 using NetTopologySuite.Geometries.Prepared;
 using Mapsui.Nts;
 using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Globalization;
@@ -48,11 +49,34 @@ public enum MapBaseLayerKind
 
 public sealed record OfflineCacheBuildOptions
 {
+    public const int DefaultMinimumZoom = 0;
+    public const int DefaultMaximumZoom = 18;
+    public const int TerrainMaximumZoom = 17;
+
     public bool IncludeOsm { get; init; } = true;
     public bool IncludeTerrain { get; init; } = true;
     public bool IncludeSatellite { get; init; } = true;
     public bool IncludeContours { get; init; } = true;
     public bool IncludeUltraFineContours { get; init; }
+    public int MinimumZoom { get; init; } = DefaultMinimumZoom;
+    public int MaximumZoom { get; init; } = DefaultMaximumZoom;
+
+    public OfflineCacheBuildOptions Normalize()
+    {
+        var minZoom = Math.Clamp(MinimumZoom, DefaultMinimumZoom, DefaultMaximumZoom);
+        var maxZoom = Math.Clamp(MaximumZoom, DefaultMinimumZoom, DefaultMaximumZoom);
+        if (maxZoom < minZoom)
+        {
+            (minZoom, maxZoom) = (maxZoom, minZoom);
+        }
+
+        return this with
+        {
+            IncludeUltraFineContours = IncludeContours && IncludeUltraFineContours,
+            MinimumZoom = minZoom,
+            MaximumZoom = maxZoom,
+        };
+    }
 }
 
 public sealed class MapViewModel : INotifyPropertyChanged
@@ -61,6 +85,8 @@ public sealed class MapViewModel : INotifyPropertyChanged
     private const string OfflineRouteIdField = "tmc_offline_route_id";
     private const int OfflineTileDownloadMaxAttempts = 3;
     private const int OfflineTileDownloadConcurrency = 6;
+    private const int OfflineTileBatchMaxPasses = 3;
+    private const int OfflineTileOneShotRecoveryThreshold = 2048;
     private const double WaypointPulsePeriodMilliseconds = 680;
     private const double WaypointPulseMinScale = 0.85;
     private const double WaypointPulseMaxScale = 1.75;
@@ -486,7 +512,7 @@ public sealed class MapViewModel : INotifyPropertyChanged
             return;
         }
 
-        var buildOptions = options ?? new OfflineCacheBuildOptions();
+        var buildOptions = (options ?? new OfflineCacheBuildOptions()).Normalize();
         if (!buildOptions.IncludeOsm &&
             !buildOptions.IncludeTerrain &&
             !buildOptions.IncludeSatellite &&
@@ -524,7 +550,7 @@ public sealed class MapViewModel : INotifyPropertyChanged
         SetOfflineCacheStatus("Offline cache task started...");
         AddMapLog(
             Mapsui.Logging.LogLevel.Information,
-            $"Offline cache task started (osm={buildOptions.IncludeOsm}, terrain={buildOptions.IncludeTerrain}, satellite={buildOptions.IncludeSatellite}, contours={buildOptions.IncludeContours}, ultraFine={buildOptions.IncludeUltraFineContours})",
+            $"Offline cache task started (osm={buildOptions.IncludeOsm}, terrain={buildOptions.IncludeTerrain}, satellite={buildOptions.IncludeSatellite}, contours={buildOptions.IncludeContours}, ultraFine={buildOptions.IncludeUltraFineContours}, minZoom={buildOptions.MinimumZoom}, maxZoom={buildOptions.MaximumZoom})",
             null,
             force: true);
 
@@ -534,15 +560,15 @@ public sealed class MapViewModel : INotifyPropertyChanged
             var totalDownloaded = 0;
             var totalSkipped = 0;
             var totalFailed = 0;
+            var totalRecoveredByRetry = 0;
             var totalPlanned = 0L;
 
             foreach (var source in BuildOfflineTileSources(buildOptions))
             {
-                for (var zoom = 0; zoom <= 18; zoom++)
+                var sourceMinZoom = Math.Max(buildOptions.MinimumZoom, source.MinZoom);
+                var sourceMaxZoom = Math.Min(buildOptions.MaximumZoom, source.MaxZoom);
+                for (var zoom = sourceMinZoom; zoom <= sourceMaxZoom; zoom++)
                 {
-                    if (zoom < source.MinZoom || zoom > source.MaxZoom)
-                        continue;
-
                     var range = GetOfflineTileRange(bounds, zoom);
                     if (range.IsEmpty)
                         continue;
@@ -560,12 +586,34 @@ public sealed class MapViewModel : INotifyPropertyChanged
                         null,
                         force: true);
 
-                    var (downloaded, skipped, failed) = await CacheBaseTilesAsync(source, zoom, tiles, token);
-                    totalDownloaded += downloaded;
-                    totalSkipped += skipped;
-                    totalFailed += failed;
-                    SetOfflineCacheStatus(
-                        $"Caching {source.DisplayName} Z{zoom} done: +{downloaded}, skip {skipped}, fail {failed}");
+                    var cacheResult = await CacheBaseTilesAsync(source, zoom, tiles, token);
+                    totalDownloaded += cacheResult.Downloaded;
+                    totalSkipped += cacheResult.Skipped;
+                    totalFailed += cacheResult.Failed;
+                    totalRecoveredByRetry += cacheResult.RecoveredAfterRetry;
+
+                    if (cacheResult.RecoveredAfterRetry > 0)
+                    {
+                        AddMapLog(
+                            Mapsui.Logging.LogLevel.Information,
+                            $"Offline cache: {source.DisplayName} Z{zoom} auto-recovered {cacheResult.RecoveredAfterRetry} tiles across {cacheResult.PassesUsed} passes",
+                            null,
+                            force: true);
+                    }
+
+                    if (cacheResult.Failed > 0)
+                    {
+                        AddMapLog(
+                            Mapsui.Logging.LogLevel.Warning,
+                            $"Offline cache: {source.DisplayName} Z{zoom} still has {cacheResult.Failed} failed tiles after {cacheResult.PassesUsed} passes",
+                            null,
+                            force: true);
+                    }
+
+                    var zoomStatus = cacheResult.RecoveredAfterRetry > 0
+                        ? $"Caching {source.DisplayName} Z{zoom} done: +{cacheResult.Downloaded}, skip {cacheResult.Skipped}, recovered {cacheResult.RecoveredAfterRetry}, fail {cacheResult.Failed}"
+                        : $"Caching {source.DisplayName} Z{zoom} done: +{cacheResult.Downloaded}, skip {cacheResult.Skipped}, fail {cacheResult.Failed}";
+                    SetOfflineCacheStatus(zoomStatus);
                 }
             }
 
@@ -595,7 +643,7 @@ public sealed class MapViewModel : INotifyPropertyChanged
                 _contourService.UpdateSettings(contourSettings);
 
                 var queuedContourLineTiles = 0L;
-                for (var zoom = 0; zoom <= 18; zoom++)
+                for (var zoom = buildOptions.MinimumZoom; zoom <= buildOptions.MaximumZoom; zoom++)
                 {
                     var spec = GetContourSpec(zoom, contourSettings.EnableUltraFine);
                     if (spec.Count == 0)
@@ -623,11 +671,19 @@ public sealed class MapViewModel : INotifyPropertyChanged
                 _contourService.UpdateSettings(_contourSettings);
             }
 
-            SetOfflineCacheStatus(
-                $"Offline cache complete: planned {totalPlanned}, downloaded {totalDownloaded}, skipped {totalSkipped}, failed {totalFailed}");
+            var completionText = totalFailed > 0
+                ? totalRecoveredByRetry > 0
+                    ? $"Offline cache partial: planned {totalPlanned}, downloaded {totalDownloaded}, skipped {totalSkipped}, auto-recovered {totalRecoveredByRetry}, failed {totalFailed}"
+                    : $"Offline cache partial: planned {totalPlanned}, downloaded {totalDownloaded}, skipped {totalSkipped}, failed {totalFailed}"
+                : totalRecoveredByRetry > 0
+                    ? $"Offline cache complete: planned {totalPlanned}, downloaded {totalDownloaded}, skipped {totalSkipped}, auto-recovered {totalRecoveredByRetry}"
+                    : $"Offline cache complete: planned {totalPlanned}, downloaded {totalDownloaded}, skipped {totalSkipped}, failed {totalFailed}";
+            SetOfflineCacheStatus(completionText);
             AddMapLog(
-                Mapsui.Logging.LogLevel.Information,
-                $"Offline cache complete: planned={totalPlanned}, downloaded={totalDownloaded}, skipped={totalSkipped}, failed={totalFailed}",
+                totalFailed > 0 ? Mapsui.Logging.LogLevel.Warning : Mapsui.Logging.LogLevel.Information,
+                totalRecoveredByRetry > 0
+                    ? $"Offline cache finished: planned={totalPlanned}, downloaded={totalDownloaded}, skipped={totalSkipped}, autoRecovered={totalRecoveredByRetry}, failed={totalFailed}"
+                    : $"Offline cache finished: planned={totalPlanned}, downloaded={totalDownloaded}, skipped={totalSkipped}, failed={totalFailed}",
                 null,
                 force: true);
         }
@@ -1468,18 +1524,77 @@ public sealed class MapViewModel : INotifyPropertyChanged
         return sources;
     }
 
-    private async Task<(int Downloaded, int Skipped, int Failed)> CacheBaseTilesAsync(
+    private async Task<TileCacheBatchResult> CacheBaseTilesAsync(
         OfflineTileSource source,
         int zoom,
         IReadOnlyList<(int X, int Y)> tiles,
         CancellationToken cancellationToken)
     {
         if (tiles.Count == 0)
-            return (0, 0, 0);
+            return new TileCacheBatchResult(0, 0, 0, 0, 0);
+
+        var totalDownloaded = 0;
+        var totalSkipped = 0;
+        var failedAfterFirstPass = 0;
+        var passTiles = tiles;
+        var passesUsed = 0;
+
+        while (true)
+        {
+            var passResult = await CacheBaseTilesPassAsync(source, zoom, passTiles, cancellationToken);
+            passesUsed++;
+            totalDownloaded += passResult.Downloaded;
+            totalSkipped += passResult.Skipped;
+
+            if (passesUsed == 1)
+                failedAfterFirstPass = passResult.Failed;
+
+            if (passResult.Failed <= 0)
+            {
+                return new TileCacheBatchResult(
+                    totalDownloaded,
+                    totalSkipped,
+                    0,
+                    failedAfterFirstPass,
+                    passesUsed);
+            }
+
+            if (!ShouldContinueOfflineTileRecoveryPass(passesUsed, passTiles.Count, passResult))
+            {
+                return new TileCacheBatchResult(
+                    totalDownloaded,
+                    totalSkipped,
+                    passResult.Failed,
+                    failedAfterFirstPass,
+                    passesUsed);
+            }
+
+            var nextPass = passesUsed + 1;
+            SetOfflineCacheStatus(
+                $"Retrying {source.DisplayName} Z{zoom}: {passResult.Failed} failed tiles (auto pass {nextPass}/{OfflineTileBatchMaxPasses})...");
+            AddMapLog(
+                Mapsui.Logging.LogLevel.Warning,
+                $"Offline cache: retrying {source.DisplayName} Z{zoom} for {passResult.Failed} failed tiles (auto pass {nextPass}/{OfflineTileBatchMaxPasses})",
+                null,
+                force: true);
+
+            await DelayBeforeTileBatchRetryAsync(passesUsed, cancellationToken);
+            passTiles = passResult.FailedTiles;
+        }
+    }
+
+    private async Task<TileCachePassResult> CacheBaseTilesPassAsync(
+        OfflineTileSource source,
+        int zoom,
+        IReadOnlyList<(int X, int Y)> tiles,
+        CancellationToken cancellationToken)
+    {
+        if (tiles.Count == 0)
+            return new TileCachePassResult(0, 0, 0, Array.Empty<(int X, int Y)>());
 
         var downloaded = 0;
         var skipped = 0;
-        var failed = 0;
+        var failedTiles = new ConcurrentBag<(int X, int Y)>();
 
         await Parallel.ForEachAsync(
             tiles,
@@ -1496,12 +1611,17 @@ public sealed class MapViewModel : INotifyPropertyChanged
                         Interlocked.Increment(ref skipped);
                         break;
                     default:
-                        Interlocked.Increment(ref failed);
+                        failedTiles.Add(coordinate);
                         break;
                 }
             });
 
-        return (downloaded, skipped, failed);
+        var failedTileList = failedTiles.ToArray();
+        return new TileCachePassResult(
+            downloaded,
+            skipped,
+            failedTileList.Length,
+            failedTileList);
     }
 
     private async Task<TileCacheWriteResult> EnsureBaseTileCachedAsync(
@@ -1659,6 +1779,36 @@ public sealed class MapViewModel : INotifyPropertyChanged
             1 => TimeSpan.FromMilliseconds(350),
             2 => TimeSpan.FromMilliseconds(900),
             _ => TimeSpan.FromMilliseconds(1500),
+        };
+
+        return Task.Delay(delay, cancellationToken);
+    }
+
+    private static bool ShouldContinueOfflineTileRecoveryPass(
+        int completedPasses,
+        int inputTileCount,
+        TileCachePassResult passResult)
+    {
+        if (passResult.Failed <= 0 || completedPasses >= OfflineTileBatchMaxPasses)
+            return false;
+
+        var resolvedThisPass = Math.Max(0, inputTileCount - passResult.Failed);
+        if (resolvedThisPass > 0)
+            return true;
+
+        return completedPasses == 1 && inputTileCount <= OfflineTileOneShotRecoveryThreshold;
+    }
+
+    private static Task DelayBeforeTileBatchRetryAsync(int completedPasses, CancellationToken cancellationToken)
+    {
+        if (completedPasses >= OfflineTileBatchMaxPasses)
+            return Task.CompletedTask;
+
+        var delay = completedPasses switch
+        {
+            1 => TimeSpan.FromSeconds(2),
+            2 => TimeSpan.FromSeconds(5),
+            _ => TimeSpan.FromSeconds(8),
         };
 
         return Task.Delay(delay, cancellationToken);
@@ -2517,6 +2667,22 @@ public sealed class MapViewModel : INotifyPropertyChanged
         int MinZoom,
         int MaxZoom,
         Func<int, int, int, string> BuildUrl);
+
+    private readonly record struct TileCachePassResult(
+        int Downloaded,
+        int Skipped,
+        int Failed,
+        IReadOnlyList<(int X, int Y)> FailedTiles);
+
+    private readonly record struct TileCacheBatchResult(
+        int Downloaded,
+        int Skipped,
+        int Failed,
+        int FailedAfterFirstPass,
+        int PassesUsed)
+    {
+        public int RecoveredAfterRetry => Math.Max(0, FailedAfterFirstPass - Failed);
+    }
 
     private enum TileCacheWriteResult
     {

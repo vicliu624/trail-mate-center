@@ -48,4 +48,56 @@ public sealed class SqliteStoreTests
             }
         }
     }
+
+    [Fact]
+    public async Task MapCacheRegions_Preserve_ZoomRange()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "TrailMateCenter.Tests", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        var dbPath = Path.Combine(root, "store.db");
+
+        try
+        {
+            var store = new SqliteStore(dbPath);
+            await store.InitializeAsync(CancellationToken.None);
+
+            var regions = new[]
+            {
+                new MapCacheRegionSettings
+                {
+                    Id = "region-1",
+                    Name = "Kunming",
+                    West = 102.0,
+                    South = 24.0,
+                    East = 103.0,
+                    North = 25.0,
+                    IncludeOsm = true,
+                    IncludeTerrain = false,
+                    IncludeSatellite = true,
+                    IncludeContours = true,
+                    IncludeUltraFineContours = true,
+                    MinimumZoom = 6,
+                    MaximumZoom = 14,
+                },
+            };
+
+            await store.SaveMapCacheRegionsAsync(regions, CancellationToken.None);
+
+            var loaded = await store.LoadMapCacheRegionsAsync(CancellationToken.None);
+            var region = Assert.Single(loaded);
+            Assert.Equal(6, region.MinimumZoom);
+            Assert.Equal(14, region.MaximumZoom);
+            Assert.True(region.IncludeOsm);
+            Assert.False(region.IncludeTerrain);
+            Assert.True(region.IncludeUltraFineContours);
+        }
+        finally
+        {
+            SqliteConnection.ClearAllPools();
+            if (Directory.Exists(root))
+            {
+                Directory.Delete(root, recursive: true);
+            }
+        }
+    }
 }

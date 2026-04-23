@@ -752,4 +752,8 @@
   <x:String x:Key="Status.Propagation.InterferenceQueued">干扰分析任务已排队。</x:String>
   <x:String x:Key="Status.Propagation.MonteCarloQueued">蒙特卡洛仿真任务已排队。</x:String>
   <x:String x:Key="Status.Propagation.ExportReady">结果包已准备好导出。</x:String>
+  <x:String x:Key="Ui.Dashboard.OfflineCacheDialog.ZoomRange">缩放级别</x:String>
+  <x:String x:Key="Ui.Dashboard.OfflineCacheDialog.MinZoom">最小缩放</x:String>
+  <x:String x:Key="Ui.Dashboard.OfflineCacheDialog.MaxZoom">最大缩放</x:String>
+  <x:String x:Key="Ui.Dashboard.OfflineCacheDialog.ZoomHint">默认缓存 0-18 级；地形图最高支持 17 级，超出时会自动跳过不支持的级别。</x:String>
 </ResourceDictionary>

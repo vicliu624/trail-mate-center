@@ -1,4 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace TrailMateCenter.ViewModels;
 
@@ -17,6 +19,12 @@ public sealed record OfflineCacheDialogResult(
 
 public sealed partial class OfflineCacheDialogViewModel : ObservableObject
 {
+    private static readonly IReadOnlyList<int> ZoomLevels =
+        Enumerable.Range(
+            OfflineCacheBuildOptions.DefaultMinimumZoom,
+            OfflineCacheBuildOptions.DefaultMaximumZoom - OfflineCacheBuildOptions.DefaultMinimumZoom + 1)
+        .ToArray();
+
     [ObservableProperty]
     private string _regionName = string.Empty;
 
@@ -38,8 +46,15 @@ public sealed partial class OfflineCacheDialogViewModel : ObservableObject
     [ObservableProperty]
     private bool _includeUltraFineContours;
 
+    [ObservableProperty]
+    private int _minimumZoom = OfflineCacheBuildOptions.DefaultMinimumZoom;
+
+    [ObservableProperty]
+    private int _maximumZoom = OfflineCacheBuildOptions.DefaultMaximumZoom;
+
     public bool HasSelection => IncludeOsm || IncludeTerrain || IncludeSatellite || IncludeContours;
     public bool CanBuild => HasSelection;
+    public IReadOnlyList<int> AvailableZoomLevels => ZoomLevels;
 
     public OfflineCacheBuildOptions ToBuildOptions()
     {
@@ -50,12 +65,46 @@ public sealed partial class OfflineCacheDialogViewModel : ObservableObject
             IncludeSatellite = IncludeSatellite,
             IncludeContours = IncludeContours,
             IncludeUltraFineContours = IncludeContours && IncludeUltraFineContours,
-        };
+            MinimumZoom = MinimumZoom,
+            MaximumZoom = MaximumZoom,
+        }.Normalize();
     }
 
     partial void OnIncludeOsmChanged(bool value) => OnSelectionChanged();
     partial void OnIncludeTerrainChanged(bool value) => OnSelectionChanged();
     partial void OnIncludeSatelliteChanged(bool value) => OnSelectionChanged();
+    partial void OnMinimumZoomChanged(int value)
+    {
+        var clamped = Math.Clamp(
+            value,
+            OfflineCacheBuildOptions.DefaultMinimumZoom,
+            OfflineCacheBuildOptions.DefaultMaximumZoom);
+        if (clamped != value)
+        {
+            MinimumZoom = clamped;
+            return;
+        }
+
+        if (MaximumZoom < clamped)
+            MaximumZoom = clamped;
+    }
+
+    partial void OnMaximumZoomChanged(int value)
+    {
+        var clamped = Math.Clamp(
+            value,
+            OfflineCacheBuildOptions.DefaultMinimumZoom,
+            OfflineCacheBuildOptions.DefaultMaximumZoom);
+        if (clamped != value)
+        {
+            MaximumZoom = clamped;
+            return;
+        }
+
+        if (MinimumZoom > clamped)
+            MinimumZoom = clamped;
+    }
+
     partial void OnIncludeContoursChanged(bool value)
     {
         if (!value && IncludeUltraFineContours)

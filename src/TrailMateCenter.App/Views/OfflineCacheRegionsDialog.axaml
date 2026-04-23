@@ -65,6 +65,9 @@
                     <TextBlock Text="{Binding BuildTargetsText}"
                                Foreground="{DynamicResource TextDim}"
                                FontSize="11"/>
+                    <TextBlock Text="{Binding ZoomRangeText}"
+                               Foreground="{DynamicResource TextDim}"
+                               FontSize="11"/>
                     <Grid ColumnDefinitions="Auto,*"
                           RowDefinitions="Auto,Auto,Auto,Auto"
                           ColumnSpacing="8"
@@ -136,34 +139,39 @@
 
       <Border Grid.Row="3" BorderBrush="{DynamicResource PanelBorder}" BorderThickness="0,1,0,0" Padding="0,10,0,0">
         <Grid ColumnDefinitions="*,Auto">
-          <StackPanel Orientation="Horizontal" Spacing="8">
-            <Button Content="{DynamicResource Ui.Dashboard.OfflineCacheRegionsDialog.RefreshStatus}" Click="OnRefreshStatusClicked"/>
-            <Button Content="{DynamicResource Ui.Dashboard.OfflineCacheRegionsDialog.Jump}" Click="OnJumpClicked"/>
-            <Button Content="{DynamicResource Ui.Dashboard.OfflineCacheApplyRegion}" Command="{Binding ApplyOfflineCacheRegionCommand}"/>
-            <Button Content="{DynamicResource Ui.Dashboard.OfflineCacheRegionsDialog.Continue}"
-                    Classes="primary"
-                    IsVisible="{Binding CanContinueSelectedOfflineCacheRegion}"
-                    Command="{Binding BuildOfflineCacheRegionCommand}"/>
-            <Button Content="{DynamicResource Ui.Dashboard.OfflineCacheRegionsDialog.Export}"
-                    Click="OnExportClicked"
-                    IsEnabled="{Binding CanExportSelectedOfflineCacheRegion}"/>
-            <Button Content="{DynamicResource Ui.Dashboard.OfflineCacheDeleteRegion}" Command="{Binding RemoveOfflineCacheRegionCommand}"/>
-            <TextBlock Text="{DynamicResource Ui.Dashboard.OfflineCacheRegionsDialog.Checking}"
+          <StackPanel Spacing="6">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <Button Content="{DynamicResource Ui.Dashboard.OfflineCacheRegionsDialog.RefreshStatus}" Click="OnRefreshStatusClicked"/>
+              <Button Content="{DynamicResource Ui.Dashboard.OfflineCacheRegionsDialog.Jump}" Click="OnJumpClicked"/>
+              <Button Content="{DynamicResource Ui.Dashboard.OfflineCacheApplyRegion}" Command="{Binding ApplyOfflineCacheRegionCommand}"/>
+              <Button Content="{DynamicResource Ui.Dashboard.OfflineCacheRegionsDialog.Continue}"
+                      Classes="primary"
+                      IsVisible="{Binding CanContinueSelectedOfflineCacheRegion}"
+                      Command="{Binding BuildOfflineCacheRegionCommand}"/>
+              <Button Content="{DynamicResource Ui.Dashboard.OfflineCacheRegionsDialog.Export}"
+                      Click="OnExportClicked"
+                      IsEnabled="{Binding CanExportSelectedOfflineCacheRegion}"/>
+              <Button Content="{DynamicResource Ui.Dashboard.OfflineCacheDeleteRegion}" Command="{Binding RemoveOfflineCacheRegionCommand}"/>
+              <TextBlock Text="{DynamicResource Ui.Dashboard.OfflineCacheRegionsDialog.Checking}"
+                         Foreground="{DynamicResource TextDim}"
+                         VerticalAlignment="Center"
+                         IsVisible="{Binding IsOfflineCacheHealthRefreshing}"/>
+              <TextBlock Text="{DynamicResource Ui.Dashboard.OfflineCacheRegionsDialog.Caching}"
+                         Foreground="#7CC5FF"
+                         VerticalAlignment="Center"
+                         IsVisible="{Binding Map.IsOfflineCacheRunning}"/>
+              <TextBlock Text="{DynamicResource Ui.Dashboard.OfflineCacheRegionsDialog.Exporting}"
+                         Foreground="#75E0A2"
+                         VerticalAlignment="Center"
+                         IsVisible="{Binding IsOfflineCacheExporting}"/>
+            </StackPanel>
+            <TextBlock Text="{Binding Map.OfflineCacheStatusText}"
                        Foreground="{DynamicResource TextDim}"
-                       VerticalAlignment="Center"
-                       IsVisible="{Binding IsOfflineCacheHealthRefreshing}"/>
-            <TextBlock Text="{DynamicResource Ui.Dashboard.OfflineCacheRegionsDialog.Caching}"
-                       Foreground="#7CC5FF"
-                       VerticalAlignment="Center"
-                       IsVisible="{Binding Map.IsOfflineCacheRunning}"/>
-            <TextBlock Text="{DynamicResource Ui.Dashboard.OfflineCacheRegionsDialog.Exporting}"
-                       Foreground="#75E0A2"
-                       VerticalAlignment="Center"
-                       IsVisible="{Binding IsOfflineCacheExporting}"/>
+                       MaxWidth="720"
+                       TextWrapping="Wrap"/>
             <TextBlock Text="{Binding OfflineCacheExportStatusText}"
                        Foreground="{DynamicResource TextDim}"
-                       VerticalAlignment="Center"
-                       MaxWidth="280"
+                       MaxWidth="720"
                        TextWrapping="Wrap"/>
           </StackPanel>
           <Button Grid.Column="1"
