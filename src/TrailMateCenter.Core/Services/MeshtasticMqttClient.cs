@@ -1270,7 +1270,7 @@ public sealed class MeshtasticMqttClient : IAsyncDisposable
     private static IEnumerable<string> SplitTopics(string topicText)
     {
         return topicText
-            .Split([',', ';', '\r', '\n'], StringSplitOptions.RemoveEmptyEntries)
+            .Split(new[] { ',', ';', '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
             .Select(t => t.Trim())
             .Where(t => !string.IsNullOrWhiteSpace(t));
     }
