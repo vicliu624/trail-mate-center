@@ -100,4 +100,76 @@ public sealed class SqliteStoreTests
             }
         }
     }
+
+    [Fact]
+    public async Task MapCacheRegions_Preserve_PoiExportSettings()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "TrailMateCenter.Tests", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        var dbPath = Path.Combine(root, "store.db");
+
+        try
+        {
+            var store = new SqliteStore(dbPath);
+            await store.InitializeAsync(CancellationToken.None);
+
+            await store.SaveMapCacheRegionsAsync(
+                new[]
+                {
+                    new MapCacheRegionSettings
+                    {
+                        Id = "poi-region",
+                        Name = "Sweden POI",
+                        West = 10,
+                        South = 55,
+                        East = 25,
+                        North = 69.5,
+                        AdminLevel = 2,
+                        BoundaryGeoJson = """{"type":"Polygon","coordinates":[[[10,55],[25,55],[25,69.5],[10,69.5],[10,55]]]}""",
+                        IncludeOsm = false,
+                        IncludeTerrain = false,
+                        IncludeSatellite = false,
+                        IncludeContours = false,
+                        EnablePoiSeparation = true,
+                        PoiPbfPath = @"D:\osm\sweden-latest.osm.pbf",
+                        PoiSourceProvider = "geofabrik",
+                        PoiSourceDownloadUrl = "https://download.geofabrik.de/europe/sweden-latest.osm.pbf",
+                        GenerateFullPoisJsonl = true,
+                        GenerateTileIndexedPoiFiles = true,
+                        PoiIndexMinimumZoom = 10,
+                        PoiIndexMaximumZoom = 17,
+                        MaxPoiPerTile = 150,
+                        IncludePoiLabels = true,
+                        IncludeOriginalOsmTags = true,
+                        PoiOutputFormat = "compact",
+                        SelectedPoiTypes = ["water", "camp", "shelter"],
+                    },
+                },
+                CancellationToken.None);
+
+            var loaded = await store.LoadMapCacheRegionsAsync(CancellationToken.None);
+            var region = Assert.Single(loaded);
+            Assert.Equal(2, region.AdminLevel);
+            Assert.Contains("\"Polygon\"", region.BoundaryGeoJson);
+            Assert.True(region.EnablePoiSeparation);
+            Assert.Equal(@"D:\osm\sweden-latest.osm.pbf", region.PoiPbfPath);
+            Assert.Equal("geofabrik", region.PoiSourceProvider);
+            Assert.Equal("https://download.geofabrik.de/europe/sweden-latest.osm.pbf", region.PoiSourceDownloadUrl);
+            Assert.False(region.IncludeOsm);
+            Assert.Equal(10, region.PoiIndexMinimumZoom);
+            Assert.Equal(17, region.PoiIndexMaximumZoom);
+            Assert.Equal(150, region.MaxPoiPerTile);
+            Assert.True(region.IncludeOriginalOsmTags);
+            Assert.Equal("compact", region.PoiOutputFormat);
+            Assert.Equal(["camp", "shelter", "water"], region.SelectedPoiTypes);
+        }
+        finally
+        {
+            SqliteConnection.ClearAllPools();
+            if (Directory.Exists(root))
+            {
+                Directory.Delete(root, recursive: true);
+            }
+        }
+    }
 }

@@ -33,6 +33,7 @@ public partial class DashboardView : UserControl
     private bool _suppressNextMapTap;
     private bool _offlineCacheDialogOpen;
     private bool _offlineCacheRegionsDialogOpen;
+    private bool _mapPackBuilderDialogOpen;
     private ContextMenu? _offlineRouteContextMenu;
     private MenuItem? _offlineRouteCacheMenuItem;
     private MenuItem? _teamPositionMenuRootItem;
@@ -637,11 +638,8 @@ public partial class DashboardView : UserControl
             var defaultName = string.IsNullOrWhiteSpace(vm.OfflineCacheRegionName)
                 ? $"Area {vm.OfflineCacheRegions.Count + 1}"
                 : vm.OfflineCacheRegionName.Trim();
-
-            var dialogVm = new OfflineCacheDialogViewModel
+            var defaults = vm.SelectedOfflineCacheRegion?.ToBuildOptions() ?? new OfflineCacheBuildOptions
             {
-                RegionName = defaultName,
-                SaveRegion = true,
                 IncludeOsm = true,
                 IncludeTerrain = true,
                 IncludeSatellite = true,
@@ -650,6 +648,33 @@ public partial class DashboardView : UserControl
                 MinimumZoom = OfflineCacheBuildOptions.DefaultMinimumZoom,
                 MaximumZoom = OfflineCacheBuildOptions.DefaultMaximumZoom,
             };
+
+            var dialogVm = new OfflineCacheDialogViewModel
+            {
+                RegionName = defaultName,
+                SaveRegion = true,
+                IncludeOsm = defaults.IncludeOsm,
+                IncludeTerrain = defaults.IncludeTerrain,
+                IncludeSatellite = defaults.IncludeSatellite,
+                IncludeContours = defaults.IncludeContours,
+                IncludeUltraFineContours = defaults.IncludeUltraFineContours,
+                MinimumZoom = defaults.MinimumZoom,
+                MaximumZoom = defaults.MaximumZoom,
+                EnablePoiSeparation = defaults.EnablePoiSeparation,
+                PoiPbfPath = defaults.PoiPbfPath,
+                GenerateFullPoisJsonl = defaults.GenerateFullPoisJsonl,
+                GenerateTileIndexedPoiFiles = defaults.GenerateTileIndexedPoiFiles,
+                PoiIndexMinimumZoom = defaults.PoiIndexMinimumZoom,
+                PoiIndexMaximumZoom = defaults.PoiIndexMaximumZoom,
+                MaxPoiPerTile = defaults.MaxPoiPerTile,
+                IncludePoiLabels = defaults.IncludePoiLabels,
+                IncludeOriginalOsmTags = defaults.IncludeOriginalOsmTags,
+                PoiOutputFormat = defaults.PoiOutputFormat,
+            };
+            foreach (var option in dialogVm.PoiTypes)
+            {
+                option.IsSelected = defaults.SelectedPoiTypes.Contains(option.Id, StringComparer.OrdinalIgnoreCase);
+            }
 
             var dialog = new OfflineCacheDialog
             {
@@ -682,6 +707,22 @@ public partial class DashboardView : UserControl
             return;
 
         await ShowOfflineCacheRegionsDialogAsync(vm);
+    }
+
+    private async void OnMapPackBuilderClicked(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is not MainWindowViewModel vm)
+            return;
+
+        await ShowMapPackBuilderDialogAsync(vm);
+    }
+
+    private void OnClearPoiPreviewClicked(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is not MainWindowViewModel vm)
+            return;
+
+        vm.Map.ClearPoiPreview();
     }
 
     private async void OnImportTrackClicked(object? sender, RoutedEventArgs e)
@@ -751,6 +792,25 @@ public partial class DashboardView : UserControl
         finally
         {
             _offlineCacheRegionsDialogOpen = false;
+        }
+    }
+
+    private async Task ShowMapPackBuilderDialogAsync(MainWindowViewModel vm)
+    {
+        if (_mapPackBuilderDialogOpen)
+            return;
+        if (TopLevel.GetTopLevel(this) is not Window owner)
+            return;
+
+        _mapPackBuilderDialogOpen = true;
+        try
+        {
+            var dialog = new MapPackBuilderDialog(vm);
+            await dialog.ShowDialog(owner);
+        }
+        finally
+        {
+            _mapPackBuilderDialogOpen = false;
         }
     }
 

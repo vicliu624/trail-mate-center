@@ -8,6 +8,7 @@ using System.ComponentModel;
 using System.Globalization;
 using System.Linq;
 using TrailMateCenter.Localization;
+using TrailMateCenter.Maps;
 using TrailMateCenter.Models;
 using TrailMateCenter.Protocol;
 using TrailMateCenter.Services;
@@ -1315,6 +1316,12 @@ public sealed partial class MainWindowViewModel : ViewModelBase
                     result.CopiedTiles,
                     result.SourceTiles,
                     result.SkippedTiles);
+                if (result.PoiEnabled)
+                {
+                    statusText = result.PoiSuccess
+                        ? $"{statusText} {loc.Format("Status.OfflineCache.PoiExportDone", result.PoiCount, result.PoiTileFiles)}"
+                        : $"{statusText} {loc.Format("Status.OfflineCache.PoiExportFailed", result.PoiErrorMessage ?? "unknown")}";
+                }
                 if (result.UnreadableEntries > 0)
                 {
                     statusText = $"{statusText} {loc.Format("Status.OfflineCache.ExportUnreadableEntries", result.UnreadableEntries)}";
@@ -1363,6 +1370,121 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         }
     }
 
+    public async Task<OfflineCacheRegionExportResult> ExportMapPackAsync(
+        MapPackExportPlan plan,
+        CancellationToken cancellationToken = default)
+    {
+        if (plan is null)
+            throw new ArgumentNullException(nameof(plan));
+
+        var targetRoot = plan.OutputDirectory?.Trim() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(targetRoot))
+        {
+            return OfflineCacheRegionExportResult.Fail("Destination folder is empty.");
+        }
+
+        if (Map.IsOfflineCacheRunning)
+        {
+            return OfflineCacheRegionExportResult.Fail("Offline cache is running.");
+        }
+
+        if (IsOfflineCacheExporting)
+        {
+            return OfflineCacheRegionExportResult.Fail("Export is already running.");
+        }
+
+        var bounds = plan.Area.Bounds.Normalize();
+        var region = new MapCacheRegionSettings
+        {
+            Id = string.IsNullOrWhiteSpace(plan.Name) ? Guid.NewGuid().ToString("N") : plan.Name.Trim(),
+            Name = string.IsNullOrWhiteSpace(plan.Area.Name) ? plan.Name : plan.Area.Name,
+            West = bounds.West,
+            South = bounds.South,
+            East = bounds.East,
+            North = bounds.North,
+            AdminLevel = plan.Area.AdminLevel,
+            BoundaryGeoJson = plan.Area.BoundaryGeoJson,
+            IncludeOsm = plan.BaseLayers.IncludeOsm,
+            IncludeTerrain = plan.BaseLayers.IncludeTerrain,
+            IncludeSatellite = plan.BaseLayers.IncludeSatellite,
+            IncludeContours = plan.BaseLayers.IncludeContours,
+            IncludeUltraFineContours = plan.BaseLayers.IncludeContours && plan.BaseLayers.IncludeUltraFineContours,
+            MinimumZoom = plan.BaseLayers.MinimumZoom,
+            MaximumZoom = plan.BaseLayers.MaximumZoom,
+            EnablePoiSeparation = plan.Poi.EnablePoiSeparation,
+            PoiPbfPath = plan.Poi.PbfPath,
+            PoiSourceProvider = plan.Poi.SourceProvider,
+            PoiSourceDownloadUrl = plan.Poi.SourceDownloadUrl,
+            GenerateFullPoisJsonl = plan.Poi.GenerateFullPoisJsonl,
+            GenerateTileIndexedPoiFiles = plan.Poi.GenerateTileIndex,
+            PoiIndexMinimumZoom = plan.Poi.IndexOptions.MinZoom,
+            PoiIndexMaximumZoom = plan.Poi.IndexOptions.MaxZoom,
+            MaxPoiPerTile = plan.Poi.IndexOptions.MaxPoiPerTile,
+            IncludePoiLabels = plan.Poi.IndexOptions.IncludeLabels,
+            IncludeOriginalOsmTags = plan.Poi.IndexOptions.IncludeOriginalTags,
+            PoiOutputFormat = plan.Poi.IndexOptions.OutputFormat == PoiOutputFormat.Compact ? "compact" : "readable",
+            SelectedPoiTypes = plan.Poi.SelectedPoiTypes.ToArray(),
+        };
+
+        var loc = LocalizationService.Instance;
+        IsOfflineCacheExporting = true;
+        OfflineCacheExportStatusText = loc.GetString("Status.OfflineCache.ExportInProgress");
+        try
+        {
+            var result = await Task.Run(
+                () => ExportOfflineCacheRegion(region, GetOfflineCacheRoot(), targetRoot, cancellationToken),
+                cancellationToken);
+
+            OfflineCacheExportStatusText = result.Success
+                ? BuildOfflineCacheExportStatus(loc, result)
+                : loc.Format("Status.OfflineCache.ExportFailed", result.ErrorMessage ?? "unknown");
+            return result;
+        }
+        catch (OperationCanceledException)
+        {
+            OfflineCacheExportStatusText = loc.GetString("Status.OfflineCache.ExportCanceled");
+            return OfflineCacheRegionExportResult.Fail("Canceled");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to export map pack '{Name}'", plan.Name);
+            OfflineCacheExportStatusText = loc.Format("Status.OfflineCache.ExportFailed", ex.Message);
+            return OfflineCacheRegionExportResult.Fail(ex.Message);
+        }
+        finally
+        {
+            IsOfflineCacheExporting = false;
+        }
+    }
+
+    private static string BuildOfflineCacheExportStatus(
+        LocalizationService loc,
+        OfflineCacheRegionExportResult result)
+    {
+        var statusText = loc.Format(
+            "Status.OfflineCache.ExportDone",
+            result.CopiedTiles,
+            result.SourceTiles,
+            result.SkippedTiles);
+        if (result.PoiEnabled)
+        {
+            statusText = result.PoiSuccess
+                ? $"{statusText} {loc.Format("Status.OfflineCache.PoiExportDone", result.PoiCount, result.PoiTileFiles)}"
+                : $"{statusText} {loc.Format("Status.OfflineCache.PoiExportFailed", result.PoiErrorMessage ?? "unknown")}";
+        }
+        if (result.UnreadableEntries > 0)
+        {
+            statusText = $"{statusText} {loc.Format("Status.OfflineCache.ExportUnreadableEntries", result.UnreadableEntries)}";
+        }
+
+        if (result.MissingSourceTiles > 0)
+        {
+            statusText = $"{statusText} {loc.Format("Status.OfflineCache.ExportSourceIncomplete", result.MissingSourceTiles, result.ExpectedTiles)}";
+        }
+
+        return statusText;
+    }
+
     private bool TryApplySelectedOfflineCacheRegion(bool focusMap)
     {
         if (SelectedOfflineCacheRegion is null)
@@ -1403,6 +1525,19 @@ public sealed partial class MainWindowViewModel : ViewModelBase
                 IncludeUltraFineContours = region.IncludeUltraFineContours,
                 MinimumZoom = region.MinimumZoom,
                 MaximumZoom = region.MaximumZoom,
+                EnablePoiSeparation = region.EnablePoiSeparation,
+                PoiPbfPath = region.PoiPbfPath,
+                GenerateFullPoisJsonl = region.GenerateFullPoisJsonl,
+                GenerateTileIndexedPoiFiles = region.GenerateTileIndexedPoiFiles,
+                PoiIndexMinimumZoom = region.PoiIndexMinimumZoom,
+                PoiIndexMaximumZoom = region.PoiIndexMaximumZoom,
+                MaxPoiPerTile = region.MaxPoiPerTile,
+                IncludePoiLabels = region.IncludePoiLabels,
+                IncludeOriginalOsmTags = region.IncludeOriginalOsmTags,
+                PoiOutputFormat = string.Equals(region.PoiOutputFormat, "compact", StringComparison.OrdinalIgnoreCase)
+                    ? PoiOutputFormat.Compact
+                    : PoiOutputFormat.Readable,
+                SelectedPoiTypes = region.SelectedPoiTypes,
             }.Normalize();
             var stats = new ExportCopyStats();
 
@@ -1465,13 +1600,38 @@ public sealed partial class MainWindowViewModel : ViewModelBase
                     cancellationToken: cancellationToken);
             }
 
+            PoiExportResult? poiResult = null;
+            if (buildOptions.HasPoiExport)
+            {
+                var poiService = new MapPoiExportService();
+                poiResult = poiService.ExportFromPbfAsync(
+                        new PoiExportRequest
+                        {
+                            MapsRoot = mapsRoot,
+                            PbfPath = buildOptions.PoiPbfPath,
+                            Bounds = new GeoBounds(bounds.West, bounds.South, bounds.East, bounds.North),
+                            BoundaryGeoJson = region.BoundaryGeoJson,
+                            AreaName = region.Name,
+                            AreaAdminLevel = region.AdminLevel,
+                            SourceProvider = region.PoiSourceProvider,
+                            SourceDownloadUrl = region.PoiSourceDownloadUrl,
+                            SelectedPoiTypes = buildOptions.SelectedPoiTypes,
+                            IndexOptions = buildOptions.ToPoiIndexOptions(),
+                        },
+                        progress: null,
+                        cancellationToken)
+                    .GetAwaiter()
+                    .GetResult();
+            }
+
             return OfflineCacheRegionExportResult.Ok(
                 mapsRoot,
                 stats.ExpectedTiles,
                 stats.SourceTiles,
                 stats.CopiedTiles,
                 stats.SkippedTiles,
-                stats.UnreadableEntries);
+                stats.UnreadableEntries,
+                poiResult);
         }
         catch (OperationCanceledException)
         {
@@ -1777,6 +1937,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             nameof(MapCacheRegionViewModel.IncludeTerrain) or
             nameof(MapCacheRegionViewModel.IncludeSatellite) or
             nameof(MapCacheRegionViewModel.IncludeContours) or
+            nameof(MapCacheRegionViewModel.EnablePoiSeparation) or
             nameof(MapCacheRegionViewModel.MinimumZoom) or
             nameof(MapCacheRegionViewModel.MaximumZoom))
         {
@@ -2084,6 +2245,11 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         long CopiedTiles,
         long SkippedTiles,
         long UnreadableEntries,
+        bool PoiEnabled,
+        bool PoiSuccess,
+        long PoiCount,
+        int PoiTileFiles,
+        string? PoiErrorMessage,
         string? ErrorMessage)
     {
         public long MissingSourceTiles => Math.Max(0, ExpectedTiles - SourceTiles);
@@ -2094,7 +2260,8 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             long sourceTiles,
             long copiedTiles,
             long skippedTiles,
-            long unreadableEntries)
+            long unreadableEntries,
+            PoiExportResult? poiResult)
         {
             return new OfflineCacheRegionExportResult(
                 Success: true,
@@ -2104,6 +2271,11 @@ public sealed partial class MainWindowViewModel : ViewModelBase
                 CopiedTiles: copiedTiles,
                 SkippedTiles: skippedTiles,
                 UnreadableEntries: unreadableEntries,
+                PoiEnabled: poiResult is not null,
+                PoiSuccess: poiResult?.Success == true,
+                PoiCount: poiResult?.SourcePoiCount ?? 0,
+                PoiTileFiles: poiResult?.TileFilesWritten ?? 0,
+                PoiErrorMessage: poiResult?.ErrorMessage,
                 ErrorMessage: null);
         }
 
@@ -2117,6 +2289,11 @@ public sealed partial class MainWindowViewModel : ViewModelBase
                 CopiedTiles: 0,
                 SkippedTiles: 0,
                 UnreadableEntries: 0,
+                PoiEnabled: false,
+                PoiSuccess: false,
+                PoiCount: 0,
+                PoiTileFiles: 0,
+                PoiErrorMessage: null,
                 ErrorMessage: errorMessage);
         }
     }

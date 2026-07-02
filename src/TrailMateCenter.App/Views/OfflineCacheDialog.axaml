@@ -3,9 +3,9 @@
         xmlns:vm="using:TrailMateCenter.ViewModels"
         x:Class="TrailMateCenter.Views.OfflineCacheDialog"
         x:DataType="vm:OfflineCacheDialogViewModel"
-        Width="500"
-        MinWidth="500"
-        MinHeight="520"
+        Width="620"
+        MinWidth="560"
+        MinHeight="700"
         SizeToContent="Height"
         CanResize="False"
         WindowStartupLocation="CenterOwner"
@@ -38,11 +38,13 @@
     </Style>
   </Window.Styles>
 
-  <Border Padding="14"
-          Background="{DynamicResource PanelBg}"
+  <Border Background="{DynamicResource PanelBg}"
           BorderBrush="{DynamicResource PanelBorderStrong}"
           BorderThickness="1"
           CornerRadius="8">
+    <ScrollViewer Padding="14"
+                  VerticalScrollBarVisibility="Auto"
+                  MaxHeight="760">
     <StackPanel Spacing="10">
       <TextBlock Text="{DynamicResource Ui.Dashboard.OfflineCacheDialog.Title}"
                  FontSize="16"
@@ -122,6 +124,110 @@
         </StackPanel>
       </Border>
 
+      <Border BorderBrush="{DynamicResource PanelBorderStrong}"
+              BorderThickness="1"
+              CornerRadius="6"
+              Padding="8"
+              Background="{DynamicResource SurfaceDark}">
+        <StackPanel Spacing="8">
+          <Grid ColumnDefinitions="*,Auto">
+            <TextBlock Text="{DynamicResource Ui.Dashboard.OfflineCacheDialog.Poi}"
+                       Classes="sectionHeader"/>
+            <CheckBox Grid.Column="1"
+                      Content="{DynamicResource Ui.Dashboard.OfflineCacheDialog.PoiEnable}"
+                      IsChecked="{Binding EnablePoiSeparation}"/>
+          </Grid>
+
+          <Grid ColumnDefinitions="*,Auto"
+                ColumnSpacing="8"
+                IsEnabled="{Binding EnablePoiSeparation}">
+            <TextBox Text="{Binding PoiPbfPath, UpdateSourceTrigger=PropertyChanged}"
+                     Watermark="{DynamicResource Ui.Dashboard.OfflineCacheDialog.PoiPbfPath}"/>
+            <Button Grid.Column="1"
+                    Content="{DynamicResource Ui.Dashboard.OfflineCacheDialog.PoiPickPbf}"
+                    Click="OnPickPbfClicked"/>
+          </Grid>
+
+          <WrapPanel IsEnabled="{Binding EnablePoiSeparation}">
+            <CheckBox Content="{DynamicResource Ui.Dashboard.OfflineCacheDialog.PoiFullJsonl}"
+                      IsChecked="{Binding GenerateFullPoisJsonl}"
+                      Margin="0,0,12,6"/>
+            <CheckBox Content="{DynamicResource Ui.Dashboard.OfflineCacheDialog.PoiTileIndex}"
+                      IsChecked="{Binding GenerateTileIndexedPoiFiles}"
+                      Margin="0,0,12,6"/>
+            <CheckBox Content="{DynamicResource Ui.Dashboard.OfflineCacheDialog.PoiLabels}"
+                      IsChecked="{Binding IncludePoiLabels}"
+                      Margin="0,0,12,6"/>
+            <CheckBox Content="{DynamicResource Ui.Dashboard.OfflineCacheDialog.PoiTags}"
+                      IsChecked="{Binding IncludeOriginalOsmTags}"
+                      Margin="0,0,12,6"/>
+          </WrapPanel>
+
+          <Grid ColumnDefinitions="*,*,*"
+                RowDefinitions="Auto,Auto"
+                ColumnSpacing="10"
+                RowSpacing="4"
+                IsEnabled="{Binding EnablePoiSeparation}">
+            <TextBlock Text="{DynamicResource Ui.Dashboard.OfflineCacheDialog.PoiMinZoom}"
+                       Foreground="{DynamicResource TextPrimary}"/>
+            <TextBlock Grid.Column="1"
+                       Text="{DynamicResource Ui.Dashboard.OfflineCacheDialog.PoiMaxZoom}"
+                       Foreground="{DynamicResource TextPrimary}"/>
+            <TextBlock Grid.Column="2"
+                       Text="{DynamicResource Ui.Dashboard.OfflineCacheDialog.PoiMaxPerTile}"
+                       Foreground="{DynamicResource TextPrimary}"/>
+            <ComboBox Grid.Row="1"
+                      ItemsSource="{Binding AvailablePoiZoomLevels}"
+                      SelectedItem="{Binding PoiIndexMinimumZoom}"
+                      MinWidth="110"/>
+            <ComboBox Grid.Row="1"
+                      Grid.Column="1"
+                      ItemsSource="{Binding AvailablePoiZoomLevels}"
+                      SelectedItem="{Binding PoiIndexMaximumZoom}"
+                      MinWidth="110"/>
+            <NumericUpDown Grid.Row="1"
+                           Grid.Column="2"
+                           Minimum="1"
+                           Maximum="5000"
+                           Increment="25"
+                           Value="{Binding MaxPoiPerTile}"
+                           MinWidth="110"/>
+          </Grid>
+
+          <Grid ColumnDefinitions="Auto,*"
+                ColumnSpacing="8"
+                IsEnabled="{Binding EnablePoiSeparation}">
+            <TextBlock Text="{DynamicResource Ui.Dashboard.OfflineCacheDialog.PoiOutputFormat}"
+                       Foreground="{DynamicResource TextPrimary}"
+                       VerticalAlignment="Center"/>
+            <ComboBox Grid.Column="1"
+                      ItemsSource="{Binding AvailablePoiOutputFormats}"
+                      SelectedItem="{Binding PoiOutputFormat}"
+                      MinWidth="160"/>
+          </Grid>
+
+          <ItemsControl ItemsSource="{Binding PoiTypes}"
+                        IsEnabled="{Binding EnablePoiSeparation}">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <WrapPanel/>
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:PoiTypeOptionViewModel">
+                <CheckBox Content="{Binding Label}"
+                          IsChecked="{Binding IsSelected}"
+                          Margin="0,0,12,6"/>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+
+          <TextBlock Text="{DynamicResource Ui.Dashboard.OfflineCacheDialog.PoiHint}"
+                     Classes="dialogHint"
+                     TextWrapping="Wrap"/>
+        </StackPanel>
+      </Border>
+
       <CheckBox Content="{DynamicResource Ui.Dashboard.OfflineCacheDialog.SaveRegion}"
                 IsChecked="{Binding SaveRegion}"/>
 
@@ -136,5 +242,6 @@
         </StackPanel>
       </Border>
     </StackPanel>
+    </ScrollViewer>
   </Border>
 </Window>

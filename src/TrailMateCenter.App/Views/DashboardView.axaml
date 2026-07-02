@@ -129,6 +129,18 @@
                        Height="20"
                        Stretch="Uniform"/>
               </Button>
+              <ToggleButton x:Name="PoiPreviewPanelToggle"
+                            Width="36"
+                            Height="36"
+                            Padding="0"
+                            Background="#EAF2FC"
+                            BorderBrush="#8DA8C7"
+                            BorderThickness="1"
+                            Content="POI"
+                            Foreground="#0F172A"
+                            FontSize="10"
+                            FontWeight="Bold"
+                            ToolTip.Tip="{DynamicResource Ui.Dashboard.PoiPreviewFilters}"/>
               <Button Width="36"
                       Height="36"
                       Padding="6"
@@ -143,6 +155,81 @@
                        Stretch="Uniform"/>
               </Button>
             </StackPanel>
+          </Border>
+          <Border HorizontalAlignment="Right"
+                  VerticalAlignment="Top"
+                  Margin="12,12,62,0"
+                  Width="286"
+                  MaxHeight="520"
+                  Background="{DynamicResource PanelBg}"
+                  BorderBrush="{DynamicResource PanelBorderStrong}"
+                  BorderThickness="1"
+                  CornerRadius="6"
+                  Padding="10"
+                  Opacity="0.96"
+                  IsVisible="{Binding IsChecked, ElementName=PoiPreviewPanelToggle}">
+            <Grid RowDefinitions="Auto,Auto,Auto,*,Auto" RowSpacing="8">
+              <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Spacing="2">
+                  <TextBlock Text="{DynamicResource Ui.Dashboard.PoiPreview}"
+                             Foreground="{DynamicResource TextPrimary}"
+                             FontWeight="Bold"/>
+                  <TextBlock Text="{Binding Map.PoiPreviewStatusText}"
+                             Foreground="{DynamicResource TextDim}"
+                             FontSize="10"
+                             TextWrapping="Wrap"/>
+                </StackPanel>
+                <Button Grid.Column="1"
+                        Content="{DynamicResource Ui.Dashboard.PoiPreviewBuilder}"
+                        MinWidth="68"
+                        Click="OnMapPackBuilderClicked"/>
+              </Grid>
+
+              <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8">
+                <CheckBox Content="{DynamicResource Ui.Dashboard.PoiPreviewOverlay}"
+                          IsChecked="{Binding Map.ShowPoiPreview}"/>
+                <Button Content="{DynamicResource Ui.Dashboard.PoiPreviewClear}"
+                        Click="OnClearPoiPreviewClicked"/>
+              </StackPanel>
+
+              <Grid Grid.Row="2" ColumnDefinitions="Auto,*" ColumnSpacing="8">
+                <TextBlock Text="{DynamicResource Ui.Dashboard.PoiPreviewLimit}"
+                           Foreground="{DynamicResource TextPrimary}"
+                           VerticalAlignment="Center"/>
+                <NumericUpDown Grid.Column="1"
+                               Minimum="1"
+                               Maximum="5000"
+                               Increment="100"
+                               Value="{Binding Map.PoiPreviewLimit}"
+                               MinWidth="100"/>
+              </Grid>
+
+              <ScrollViewer Grid.Row="3"
+                            MaxHeight="320"
+                            VerticalScrollBarVisibility="Auto"
+                            HorizontalScrollBarVisibility="Disabled">
+                <ItemsControl ItemsSource="{Binding Map.PoiPreviewTypes}">
+                  <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                      <WrapPanel/>
+                    </ItemsPanelTemplate>
+                  </ItemsControl.ItemsPanel>
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:PoiTypeOptionViewModel">
+                      <CheckBox Content="{Binding Label}"
+                                IsChecked="{Binding IsSelected}"
+                                Margin="0,0,12,6"/>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </ScrollViewer>
+
+              <TextBlock Grid.Row="4"
+                         Text="{Binding Map.PoiPreviewSelectionText}"
+                         Foreground="{DynamicResource TextDim}"
+                         FontSize="10"
+                         TextWrapping="Wrap"/>
+            </Grid>
           </Border>
           <Border HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="12"
                   Background="{DynamicResource SurfaceDark}" BorderBrush="{DynamicResource PanelBorder}"

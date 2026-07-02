@@ -179,6 +179,8 @@ public sealed class SqliteStore
                 south REAL NOT NULL,
                 east REAL NOT NULL,
                 north REAL NOT NULL,
+                admin_level INTEGER,
+                boundary_geojson TEXT NOT NULL DEFAULT '',
                 include_osm INTEGER NOT NULL DEFAULT 1,
                 include_terrain INTEGER NOT NULL DEFAULT 1,
                 include_satellite INTEGER NOT NULL DEFAULT 1,
@@ -186,6 +188,19 @@ public sealed class SqliteStore
                 include_ultra_fine_contours INTEGER NOT NULL DEFAULT 0,
                 min_zoom INTEGER NOT NULL DEFAULT 0,
                 max_zoom INTEGER NOT NULL DEFAULT 18,
+                enable_poi_separation INTEGER NOT NULL DEFAULT 0,
+                poi_pbf_path TEXT NOT NULL DEFAULT '',
+                poi_source_provider TEXT NOT NULL DEFAULT 'local',
+                poi_source_download_url TEXT NOT NULL DEFAULT '',
+                poi_generate_full INTEGER NOT NULL DEFAULT 1,
+                poi_generate_index INTEGER NOT NULL DEFAULT 1,
+                poi_min_zoom INTEGER NOT NULL DEFAULT 10,
+                poi_max_zoom INTEGER NOT NULL DEFAULT 17,
+                poi_max_per_tile INTEGER NOT NULL DEFAULT 200,
+                poi_include_labels INTEGER NOT NULL DEFAULT 1,
+                poi_include_tags INTEGER NOT NULL DEFAULT 0,
+                poi_output_format TEXT NOT NULL DEFAULT 'readable',
+                poi_selected_types TEXT NOT NULL DEFAULT '',
                 sort_order INTEGER NOT NULL
             );
 
@@ -207,6 +222,21 @@ public sealed class SqliteStore
         await EnsureColumnAsync(connection, "map_cache_regions", "include_ultra_fine_contours", "INTEGER NOT NULL DEFAULT 0", cancellationToken);
         await EnsureColumnAsync(connection, "map_cache_regions", "min_zoom", "INTEGER NOT NULL DEFAULT 0", cancellationToken);
         await EnsureColumnAsync(connection, "map_cache_regions", "max_zoom", "INTEGER NOT NULL DEFAULT 18", cancellationToken);
+        await EnsureColumnAsync(connection, "map_cache_regions", "admin_level", "INTEGER", cancellationToken);
+        await EnsureColumnAsync(connection, "map_cache_regions", "boundary_geojson", "TEXT NOT NULL DEFAULT ''", cancellationToken);
+        await EnsureColumnAsync(connection, "map_cache_regions", "enable_poi_separation", "INTEGER NOT NULL DEFAULT 0", cancellationToken);
+        await EnsureColumnAsync(connection, "map_cache_regions", "poi_pbf_path", "TEXT NOT NULL DEFAULT ''", cancellationToken);
+        await EnsureColumnAsync(connection, "map_cache_regions", "poi_source_provider", "TEXT NOT NULL DEFAULT 'local'", cancellationToken);
+        await EnsureColumnAsync(connection, "map_cache_regions", "poi_source_download_url", "TEXT NOT NULL DEFAULT ''", cancellationToken);
+        await EnsureColumnAsync(connection, "map_cache_regions", "poi_generate_full", "INTEGER NOT NULL DEFAULT 1", cancellationToken);
+        await EnsureColumnAsync(connection, "map_cache_regions", "poi_generate_index", "INTEGER NOT NULL DEFAULT 1", cancellationToken);
+        await EnsureColumnAsync(connection, "map_cache_regions", "poi_min_zoom", "INTEGER NOT NULL DEFAULT 10", cancellationToken);
+        await EnsureColumnAsync(connection, "map_cache_regions", "poi_max_zoom", "INTEGER NOT NULL DEFAULT 17", cancellationToken);
+        await EnsureColumnAsync(connection, "map_cache_regions", "poi_max_per_tile", "INTEGER NOT NULL DEFAULT 200", cancellationToken);
+        await EnsureColumnAsync(connection, "map_cache_regions", "poi_include_labels", "INTEGER NOT NULL DEFAULT 1", cancellationToken);
+        await EnsureColumnAsync(connection, "map_cache_regions", "poi_include_tags", "INTEGER NOT NULL DEFAULT 0", cancellationToken);
+        await EnsureColumnAsync(connection, "map_cache_regions", "poi_output_format", "TEXT NOT NULL DEFAULT 'readable'", cancellationToken);
+        await EnsureColumnAsync(connection, "map_cache_regions", "poi_selected_types", "TEXT NOT NULL DEFAULT ''", cancellationToken);
     }
 
     public async Task UpsertMessageAsync(MessageEntry message, CancellationToken cancellationToken)
@@ -853,6 +883,8 @@ public sealed class SqliteStore
                     South = reader.GetDouble(reader.GetOrdinal("south")),
                     East = reader.GetDouble(reader.GetOrdinal("east")),
                     North = reader.GetDouble(reader.GetOrdinal("north")),
+                    AdminLevel = ReadNullableInt(reader, "admin_level"),
+                    BoundaryGeoJson = ReadNullableString(reader, "boundary_geojson") ?? string.Empty,
                     IncludeOsm = ReadBool(reader, "include_osm", defaultValue: true),
                     IncludeTerrain = ReadBool(reader, "include_terrain", defaultValue: true),
                     IncludeSatellite = ReadBool(reader, "include_satellite", defaultValue: true),
@@ -860,6 +892,19 @@ public sealed class SqliteStore
                     IncludeUltraFineContours = ReadBool(reader, "include_ultra_fine_contours", defaultValue: false),
                     MinimumZoom = ReadNullableInt(reader, "min_zoom") ?? 0,
                     MaximumZoom = ReadNullableInt(reader, "max_zoom") ?? 18,
+                    EnablePoiSeparation = ReadBool(reader, "enable_poi_separation", defaultValue: false),
+                    PoiPbfPath = ReadNullableString(reader, "poi_pbf_path") ?? string.Empty,
+                    PoiSourceProvider = ReadNullableString(reader, "poi_source_provider") ?? "local",
+                    PoiSourceDownloadUrl = ReadNullableString(reader, "poi_source_download_url") ?? string.Empty,
+                    GenerateFullPoisJsonl = ReadBool(reader, "poi_generate_full", defaultValue: true),
+                    GenerateTileIndexedPoiFiles = ReadBool(reader, "poi_generate_index", defaultValue: true),
+                    PoiIndexMinimumZoom = ReadNullableInt(reader, "poi_min_zoom") ?? 10,
+                    PoiIndexMaximumZoom = ReadNullableInt(reader, "poi_max_zoom") ?? 17,
+                    MaxPoiPerTile = ReadNullableInt(reader, "poi_max_per_tile") ?? 200,
+                    IncludePoiLabels = ReadBool(reader, "poi_include_labels", defaultValue: true),
+                    IncludeOriginalOsmTags = ReadBool(reader, "poi_include_tags", defaultValue: false),
+                    PoiOutputFormat = ReadNullableString(reader, "poi_output_format") ?? "readable",
+                    SelectedPoiTypes = DeserializePoiTypes(ReadNullableString(reader, "poi_selected_types")),
                 });
             }
         }
@@ -894,14 +939,20 @@ public sealed class SqliteStore
                 insert.Transaction = transaction;
                 insert.CommandText = """
                     INSERT INTO map_cache_regions (
-                        id, name, west, south, east, north,
+                        id, name, west, south, east, north, admin_level, boundary_geojson,
                         include_osm, include_terrain, include_satellite, include_contours, include_ultra_fine_contours,
                         min_zoom, max_zoom,
+                        enable_poi_separation, poi_pbf_path, poi_source_provider, poi_source_download_url,
+                        poi_generate_full, poi_generate_index, poi_min_zoom, poi_max_zoom,
+                        poi_max_per_tile, poi_include_labels, poi_include_tags, poi_output_format, poi_selected_types,
                         sort_order
                     ) VALUES (
-                        $id, $name, $west, $south, $east, $north,
+                        $id, $name, $west, $south, $east, $north, $admin_level, $boundary_geojson,
                         $include_osm, $include_terrain, $include_satellite, $include_contours, $include_ultra_fine_contours,
                         $min_zoom, $max_zoom,
+                        $enable_poi_separation, $poi_pbf_path, $poi_source_provider, $poi_source_download_url,
+                        $poi_generate_full, $poi_generate_index, $poi_min_zoom, $poi_max_zoom,
+                        $poi_max_per_tile, $poi_include_labels, $poi_include_tags, $poi_output_format, $poi_selected_types,
                         $sort_order
                     );
                     """;
@@ -911,6 +962,8 @@ public sealed class SqliteStore
                 insert.Parameters.AddWithValue("$south", region.South);
                 insert.Parameters.AddWithValue("$east", region.East);
                 insert.Parameters.AddWithValue("$north", region.North);
+                insert.Parameters.AddWithValue("$admin_level", DbValue(region.AdminLevel));
+                insert.Parameters.AddWithValue("$boundary_geojson", region.BoundaryGeoJson ?? string.Empty);
                 insert.Parameters.AddWithValue("$include_osm", region.IncludeOsm ? 1 : 0);
                 insert.Parameters.AddWithValue("$include_terrain", region.IncludeTerrain ? 1 : 0);
                 insert.Parameters.AddWithValue("$include_satellite", region.IncludeSatellite ? 1 : 0);
@@ -918,6 +971,19 @@ public sealed class SqliteStore
                 insert.Parameters.AddWithValue("$include_ultra_fine_contours", region.IncludeUltraFineContours ? 1 : 0);
                 insert.Parameters.AddWithValue("$min_zoom", region.MinimumZoom);
                 insert.Parameters.AddWithValue("$max_zoom", region.MaximumZoom);
+                insert.Parameters.AddWithValue("$enable_poi_separation", region.EnablePoiSeparation ? 1 : 0);
+                insert.Parameters.AddWithValue("$poi_pbf_path", region.PoiPbfPath ?? string.Empty);
+                insert.Parameters.AddWithValue("$poi_source_provider", string.IsNullOrWhiteSpace(region.PoiSourceProvider) ? "local" : region.PoiSourceProvider.Trim());
+                insert.Parameters.AddWithValue("$poi_source_download_url", region.PoiSourceDownloadUrl ?? string.Empty);
+                insert.Parameters.AddWithValue("$poi_generate_full", region.GenerateFullPoisJsonl ? 1 : 0);
+                insert.Parameters.AddWithValue("$poi_generate_index", region.GenerateTileIndexedPoiFiles ? 1 : 0);
+                insert.Parameters.AddWithValue("$poi_min_zoom", region.PoiIndexMinimumZoom);
+                insert.Parameters.AddWithValue("$poi_max_zoom", region.PoiIndexMaximumZoom);
+                insert.Parameters.AddWithValue("$poi_max_per_tile", region.MaxPoiPerTile);
+                insert.Parameters.AddWithValue("$poi_include_labels", region.IncludePoiLabels ? 1 : 0);
+                insert.Parameters.AddWithValue("$poi_include_tags", region.IncludeOriginalOsmTags ? 1 : 0);
+                insert.Parameters.AddWithValue("$poi_output_format", string.IsNullOrWhiteSpace(region.PoiOutputFormat) ? "readable" : region.PoiOutputFormat.Trim());
+                insert.Parameters.AddWithValue("$poi_selected_types", SerializePoiTypes(region.SelectedPoiTypes));
                 insert.Parameters.AddWithValue("$sort_order", sortOrder);
                 await insert.ExecuteNonQueryAsync(cancellationToken);
                 sortOrder++;
@@ -1003,6 +1069,44 @@ public sealed class SqliteStore
     {
         var ordinal = reader.GetOrdinal(column);
         return reader.IsDBNull(ordinal) ? null : reader.GetString(ordinal);
+    }
+
+    private static string SerializePoiTypes(IReadOnlyCollection<string>? types)
+    {
+        var normalized = (types ?? Array.Empty<string>())
+            .Where(static t => !string.IsNullOrWhiteSpace(t))
+            .Select(static t => t.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(static t => t, StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+
+        return JsonSerializer.Serialize(normalized, JsonOptions);
+    }
+
+    private static IReadOnlyList<string> DeserializePoiTypes(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return Array.Empty<string>();
+
+        try
+        {
+            var result = JsonSerializer.Deserialize<string[]>(value, JsonOptions);
+            return (result ?? Array.Empty<string>())
+                .Where(static t => !string.IsNullOrWhiteSpace(t))
+                .Select(static t => t.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(static t => t, StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+        }
+        catch
+        {
+            return value
+                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Where(static t => !string.IsNullOrWhiteSpace(t))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(static t => t, StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+        }
     }
 
     private static HostLinkEvent? DeserializeEvent(string eventType, string payload)

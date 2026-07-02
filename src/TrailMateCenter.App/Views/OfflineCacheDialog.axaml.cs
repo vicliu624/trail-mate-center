@@ -1,5 +1,6 @@
 using Avalonia.Controls;
 using Avalonia.Interactivity;
+using Avalonia.Platform.Storage;
 using TrailMateCenter.ViewModels;
 
 namespace TrailMateCenter.Views;
@@ -28,7 +29,7 @@ public partial class OfflineCacheDialog : Window
     private void OnSaveOnlyClicked(object? sender, RoutedEventArgs e)
     {
         var vm = DataContext as OfflineCacheDialogViewModel;
-        if (vm is null)
+        if (vm is null || !vm.HasSelection)
         {
             Close();
             return;
@@ -54,6 +55,35 @@ public partial class OfflineCacheDialog : Window
             vm.SaveRegion,
             vm.ToBuildOptions());
         Close();
+    }
+
+    private async void OnPickPbfClicked(object? sender, RoutedEventArgs e)
+    {
+        var vm = DataContext as OfflineCacheDialogViewModel;
+        if (vm is null || !StorageProvider.CanOpen)
+            return;
+
+        var files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        {
+            AllowMultiple = false,
+            Title = "Select OSM PBF file",
+            FileTypeFilter =
+            [
+                new FilePickerFileType("OSM PBF")
+                {
+                    Patterns = ["*.osm.pbf", "*.pbf"],
+                },
+                FilePickerFileTypes.All,
+            ],
+        });
+
+        var file = files.FirstOrDefault();
+        var path = file?.TryGetLocalPath();
+        if (!string.IsNullOrWhiteSpace(path))
+        {
+            vm.PoiPbfPath = path;
+            vm.EnablePoiSeparation = true;
+        }
     }
 
     private static string NormalizeRegionName(string? value)

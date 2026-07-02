@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using System.Globalization;
+using TrailMateCenter.Maps;
 using TrailMateCenter.Storage;
 
 namespace TrailMateCenter.ViewModels;
@@ -44,6 +45,39 @@ public sealed partial class MapCacheRegionViewModel : ObservableObject
 
     [ObservableProperty]
     private int _maximumZoom = OfflineCacheBuildOptions.DefaultMaximumZoom;
+
+    [ObservableProperty]
+    private bool _enablePoiSeparation;
+
+    [ObservableProperty]
+    private string _poiPbfPath = string.Empty;
+
+    [ObservableProperty]
+    private bool _generateFullPoisJsonl = true;
+
+    [ObservableProperty]
+    private bool _generateTileIndexedPoiFiles = true;
+
+    [ObservableProperty]
+    private int _poiIndexMinimumZoom = 10;
+
+    [ObservableProperty]
+    private int _poiIndexMaximumZoom = 17;
+
+    [ObservableProperty]
+    private int _maxPoiPerTile = 200;
+
+    [ObservableProperty]
+    private bool _includePoiLabels = true;
+
+    [ObservableProperty]
+    private bool _includeOriginalOsmTags;
+
+    [ObservableProperty]
+    private PoiOutputFormat _poiOutputFormat = PoiOutputFormat.Readable;
+
+    [ObservableProperty]
+    private IReadOnlyList<string> _selectedPoiTypes = Array.Empty<string>();
 
     [ObservableProperty]
     private bool _isCacheHealthChecking;
@@ -114,6 +148,10 @@ public sealed partial class MapCacheRegionViewModel : ObservableObject
             {
                 parts.Add(IncludeUltraFineContours ? "Contours(+5m)" : "Contours");
             }
+            if (EnablePoiSeparation)
+            {
+                parts.Add("POI");
+            }
 
             return parts.Count == 0
                 ? "No layers selected"
@@ -123,6 +161,9 @@ public sealed partial class MapCacheRegionViewModel : ObservableObject
 
     public bool CacheNeedsMaintenance => CacheExpectedTiles > 0 && CacheExistingTiles < CacheExpectedTiles;
     public string ZoomRangeText => $"Z{MinimumZoom}-Z{MaximumZoom}";
+    public string PoiSummaryText => EnablePoiSeparation
+        ? $"POI Z{PoiIndexMinimumZoom}-Z{PoiIndexMaximumZoom}, {SelectedPoiTypes.Count} types"
+        : "POI disabled";
 
     public MapCacheRegionSettings ToSettings()
     {
@@ -142,6 +183,17 @@ public sealed partial class MapCacheRegionViewModel : ObservableObject
             IncludeUltraFineContours = options.IncludeUltraFineContours,
             MinimumZoom = options.MinimumZoom,
             MaximumZoom = options.MaximumZoom,
+            EnablePoiSeparation = options.EnablePoiSeparation,
+            PoiPbfPath = options.PoiPbfPath,
+            GenerateFullPoisJsonl = options.GenerateFullPoisJsonl,
+            GenerateTileIndexedPoiFiles = options.GenerateTileIndexedPoiFiles,
+            PoiIndexMinimumZoom = options.PoiIndexMinimumZoom,
+            PoiIndexMaximumZoom = options.PoiIndexMaximumZoom,
+            MaxPoiPerTile = options.MaxPoiPerTile,
+            IncludePoiLabels = options.IncludePoiLabels,
+            IncludeOriginalOsmTags = options.IncludeOriginalOsmTags,
+            PoiOutputFormat = options.PoiOutputFormat.ToString().ToLowerInvariant(),
+            SelectedPoiTypes = options.SelectedPoiTypes.ToArray(),
         };
     }
 
@@ -156,6 +208,17 @@ public sealed partial class MapCacheRegionViewModel : ObservableObject
             IncludeUltraFineContours = settings.IncludeUltraFineContours,
             MinimumZoom = settings.MinimumZoom,
             MaximumZoom = settings.MaximumZoom,
+            EnablePoiSeparation = settings.EnablePoiSeparation,
+            PoiPbfPath = settings.PoiPbfPath ?? string.Empty,
+            GenerateFullPoisJsonl = settings.GenerateFullPoisJsonl,
+            GenerateTileIndexedPoiFiles = settings.GenerateTileIndexedPoiFiles,
+            PoiIndexMinimumZoom = settings.PoiIndexMinimumZoom,
+            PoiIndexMaximumZoom = settings.PoiIndexMaximumZoom,
+            MaxPoiPerTile = settings.MaxPoiPerTile,
+            IncludePoiLabels = settings.IncludePoiLabels,
+            IncludeOriginalOsmTags = settings.IncludeOriginalOsmTags,
+            PoiOutputFormat = ParsePoiOutputFormat(settings.PoiOutputFormat),
+            SelectedPoiTypes = NormalizePoiTypes(settings.SelectedPoiTypes),
         }.Normalize();
 
         return new MapCacheRegionViewModel
@@ -173,6 +236,17 @@ public sealed partial class MapCacheRegionViewModel : ObservableObject
             IncludeUltraFineContours = options.IncludeUltraFineContours,
             MinimumZoom = options.MinimumZoom,
             MaximumZoom = options.MaximumZoom,
+            EnablePoiSeparation = options.EnablePoiSeparation,
+            PoiPbfPath = options.PoiPbfPath,
+            GenerateFullPoisJsonl = options.GenerateFullPoisJsonl,
+            GenerateTileIndexedPoiFiles = options.GenerateTileIndexedPoiFiles,
+            PoiIndexMinimumZoom = options.PoiIndexMinimumZoom,
+            PoiIndexMaximumZoom = options.PoiIndexMaximumZoom,
+            MaxPoiPerTile = options.MaxPoiPerTile,
+            IncludePoiLabels = options.IncludePoiLabels,
+            IncludeOriginalOsmTags = options.IncludeOriginalOsmTags,
+            PoiOutputFormat = options.PoiOutputFormat,
+            SelectedPoiTypes = options.SelectedPoiTypes.ToArray(),
         };
     }
 
@@ -185,7 +259,18 @@ public sealed partial class MapCacheRegionViewModel : ObservableObject
                          IncludeContours != normalized.IncludeContours ||
                          IncludeUltraFineContours != normalized.IncludeUltraFineContours ||
                          MinimumZoom != normalized.MinimumZoom ||
-                         MaximumZoom != normalized.MaximumZoom;
+                         MaximumZoom != normalized.MaximumZoom ||
+                         EnablePoiSeparation != normalized.EnablePoiSeparation ||
+                         !string.Equals(PoiPbfPath, normalized.PoiPbfPath, StringComparison.Ordinal) ||
+                         GenerateFullPoisJsonl != normalized.GenerateFullPoisJsonl ||
+                         GenerateTileIndexedPoiFiles != normalized.GenerateTileIndexedPoiFiles ||
+                         PoiIndexMinimumZoom != normalized.PoiIndexMinimumZoom ||
+                         PoiIndexMaximumZoom != normalized.PoiIndexMaximumZoom ||
+                         MaxPoiPerTile != normalized.MaxPoiPerTile ||
+                         IncludePoiLabels != normalized.IncludePoiLabels ||
+                         IncludeOriginalOsmTags != normalized.IncludeOriginalOsmTags ||
+                         PoiOutputFormat != normalized.PoiOutputFormat ||
+                         !SelectedPoiTypes.SequenceEqual(normalized.SelectedPoiTypes, StringComparer.OrdinalIgnoreCase);
 
         IncludeOsm = normalized.IncludeOsm;
         IncludeTerrain = normalized.IncludeTerrain;
@@ -194,6 +279,17 @@ public sealed partial class MapCacheRegionViewModel : ObservableObject
         IncludeUltraFineContours = normalized.IncludeUltraFineContours;
         MinimumZoom = normalized.MinimumZoom;
         MaximumZoom = normalized.MaximumZoom;
+        EnablePoiSeparation = normalized.EnablePoiSeparation;
+        PoiPbfPath = normalized.PoiPbfPath;
+        GenerateFullPoisJsonl = normalized.GenerateFullPoisJsonl;
+        GenerateTileIndexedPoiFiles = normalized.GenerateTileIndexedPoiFiles;
+        PoiIndexMinimumZoom = normalized.PoiIndexMinimumZoom;
+        PoiIndexMaximumZoom = normalized.PoiIndexMaximumZoom;
+        MaxPoiPerTile = normalized.MaxPoiPerTile;
+        IncludePoiLabels = normalized.IncludePoiLabels;
+        IncludeOriginalOsmTags = normalized.IncludeOriginalOsmTags;
+        PoiOutputFormat = normalized.PoiOutputFormat;
+        SelectedPoiTypes = normalized.SelectedPoiTypes.ToArray();
 
         if (hasChanged)
             ResetCacheHealthSummary();
@@ -210,6 +306,17 @@ public sealed partial class MapCacheRegionViewModel : ObservableObject
             IncludeUltraFineContours = IncludeUltraFineContours,
             MinimumZoom = MinimumZoom,
             MaximumZoom = MaximumZoom,
+            EnablePoiSeparation = EnablePoiSeparation,
+            PoiPbfPath = PoiPbfPath,
+            GenerateFullPoisJsonl = GenerateFullPoisJsonl,
+            GenerateTileIndexedPoiFiles = GenerateTileIndexedPoiFiles,
+            PoiIndexMinimumZoom = PoiIndexMinimumZoom,
+            PoiIndexMaximumZoom = PoiIndexMaximumZoom,
+            MaxPoiPerTile = MaxPoiPerTile,
+            IncludePoiLabels = IncludePoiLabels,
+            IncludeOriginalOsmTags = IncludeOriginalOsmTags,
+            PoiOutputFormat = PoiOutputFormat,
+            SelectedPoiTypes = SelectedPoiTypes.ToArray(),
         }.Normalize();
     }
 
@@ -342,6 +449,43 @@ public sealed partial class MapCacheRegionViewModel : ObservableObject
     partial void OnIncludeSatelliteChanged(bool value) => OnPropertyChanged(nameof(BuildTargetsText));
     partial void OnIncludeContoursChanged(bool value) => OnPropertyChanged(nameof(BuildTargetsText));
     partial void OnIncludeUltraFineContoursChanged(bool value) => OnPropertyChanged(nameof(BuildTargetsText));
+    partial void OnEnablePoiSeparationChanged(bool value)
+    {
+        OnPropertyChanged(nameof(BuildTargetsText));
+        OnPropertyChanged(nameof(PoiSummaryText));
+    }
+
+    partial void OnPoiIndexMinimumZoomChanged(int value)
+    {
+        var clamped = Math.Clamp(value, 0, 24);
+        if (clamped != value)
+        {
+            PoiIndexMinimumZoom = clamped;
+            return;
+        }
+
+        if (PoiIndexMaximumZoom < clamped)
+            PoiIndexMaximumZoom = clamped;
+
+        OnPropertyChanged(nameof(PoiSummaryText));
+    }
+
+    partial void OnPoiIndexMaximumZoomChanged(int value)
+    {
+        var clamped = Math.Clamp(value, 0, 24);
+        if (clamped != value)
+        {
+            PoiIndexMaximumZoom = clamped;
+            return;
+        }
+
+        if (PoiIndexMinimumZoom > clamped)
+            PoiIndexMinimumZoom = clamped;
+
+        OnPropertyChanged(nameof(PoiSummaryText));
+    }
+
+    partial void OnSelectedPoiTypesChanged(IReadOnlyList<string> value) => OnPropertyChanged(nameof(PoiSummaryText));
 
     partial void OnCacheExistingTilesChanged(long value) => OnPropertyChanged(nameof(CacheNeedsMaintenance));
     partial void OnCacheExpectedTilesChanged(long value) => OnPropertyChanged(nameof(CacheNeedsMaintenance));
@@ -381,5 +525,22 @@ public sealed partial class MapCacheRegionViewModel : ObservableObject
         TerrainCoverageColor = "#9AA3AE";
         SatelliteCoverageColor = "#9AA3AE";
         ContourCoverageColor = "#9AA3AE";
+    }
+
+    private static PoiOutputFormat ParsePoiOutputFormat(string? value)
+    {
+        return string.Equals(value, "compact", StringComparison.OrdinalIgnoreCase)
+            ? PoiOutputFormat.Compact
+            : PoiOutputFormat.Readable;
+    }
+
+    private static IReadOnlyList<string> NormalizePoiTypes(IEnumerable<string>? types)
+    {
+        return (types ?? Array.Empty<string>())
+            .Where(static t => !string.IsNullOrWhiteSpace(t))
+            .Select(static t => t.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(static t => t, StringComparer.OrdinalIgnoreCase)
+            .ToArray();
     }
 }

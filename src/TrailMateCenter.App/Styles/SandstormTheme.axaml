@@ -88,6 +88,19 @@
 
   <Style Selector="CheckBox">
     <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
+    <Setter Property="FontSize" Value="13"/>
+  </Style>
+  <Style Selector="CheckBox /template/ ContentPresenter">
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
+    <Setter Property="Opacity" Value="1"/>
+  </Style>
+  <Style Selector="CheckBox:disabled">
+    <Setter Property="Foreground" Value="{DynamicResource TextDim}"/>
+    <Setter Property="Opacity" Value="0.85"/>
+  </Style>
+  <Style Selector="CheckBox:disabled /template/ ContentPresenter">
+    <Setter Property="Foreground" Value="{DynamicResource TextDim}"/>
+    <Setter Property="Opacity" Value="1"/>
   </Style>
 
   <Style Selector="TabControl">

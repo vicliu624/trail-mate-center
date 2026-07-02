@@ -1,6 +1,7 @@
 using Avalonia.Threading;
 using Avalonia.Platform;
 using Mapsui;
+using Mapsui.Extensions;
 using Mapsui.Layers;
 using Mapsui.Styles;
 using Mapsui.Tiling.Fetcher;
@@ -23,11 +24,13 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Globalization;
 using System.Linq;
+using System.Text.Json;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Threading;
 using System.Xml.Linq;
 using TrailMateCenter.Localization;
+using TrailMateCenter.Maps;
 using TrailMateCenter.Models;
 using TrailMateCenter.Services;
 using TrailMateCenter.Storage;
@@ -60,6 +63,17 @@ public sealed record OfflineCacheBuildOptions
     public bool IncludeUltraFineContours { get; init; }
     public int MinimumZoom { get; init; } = DefaultMinimumZoom;
     public int MaximumZoom { get; init; } = DefaultMaximumZoom;
+    public bool EnablePoiSeparation { get; init; }
+    public string PoiPbfPath { get; init; } = string.Empty;
+    public bool GenerateFullPoisJsonl { get; init; } = true;
+    public bool GenerateTileIndexedPoiFiles { get; init; } = true;
+    public int PoiIndexMinimumZoom { get; init; } = 10;
+    public int PoiIndexMaximumZoom { get; init; } = 17;
+    public int MaxPoiPerTile { get; init; } = 200;
+    public bool IncludePoiLabels { get; init; } = true;
+    public bool IncludeOriginalOsmTags { get; init; }
+    public PoiOutputFormat PoiOutputFormat { get; init; } = PoiOutputFormat.Readable;
+    public IReadOnlyCollection<string> SelectedPoiTypes { get; init; } = Array.Empty<string>();
 
     public OfflineCacheBuildOptions Normalize()
     {
@@ -70,12 +84,49 @@ public sealed record OfflineCacheBuildOptions
             (minZoom, maxZoom) = (maxZoom, minZoom);
         }
 
+        var normalizedPoiOptions = ToPoiIndexOptions();
         return this with
         {
             IncludeUltraFineContours = IncludeContours && IncludeUltraFineContours,
             MinimumZoom = minZoom,
             MaximumZoom = maxZoom,
+            GenerateTileIndexedPoiFiles = GenerateTileIndexedPoiFiles,
+            GenerateFullPoisJsonl = GenerateFullPoisJsonl,
+            PoiIndexMinimumZoom = normalizedPoiOptions.MinZoom,
+            PoiIndexMaximumZoom = normalizedPoiOptions.MaxZoom,
+            MaxPoiPerTile = normalizedPoiOptions.MaxPoiPerTile,
+            PoiPbfPath = string.IsNullOrWhiteSpace(PoiPbfPath) ? string.Empty : PoiPbfPath.Trim(),
+            SelectedPoiTypes = SelectedPoiTypes
+                .Where(static t => !string.IsNullOrWhiteSpace(t))
+                .Select(static t => t.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(static t => t, StringComparer.OrdinalIgnoreCase)
+                .ToArray(),
         };
+    }
+
+    public bool HasTileLayers =>
+        IncludeOsm ||
+        IncludeTerrain ||
+        IncludeSatellite ||
+        IncludeContours;
+
+    public bool HasPoiExport =>
+        EnablePoiSeparation;
+
+    public PoiIndexOptions ToPoiIndexOptions()
+    {
+        return new PoiIndexOptions
+        {
+            MinZoom = PoiIndexMinimumZoom,
+            MaxZoom = PoiIndexMaximumZoom,
+            MaxPoiPerTile = MaxPoiPerTile,
+            IncludeLabels = IncludePoiLabels,
+            IncludeOriginalTags = IncludeOriginalOsmTags,
+            GenerateFullPoisJsonl = GenerateFullPoisJsonl,
+            GenerateTileIndex = GenerateTileIndexedPoiFiles,
+            OutputFormat = PoiOutputFormat,
+        }.Normalize();
     }
 }
 
@@ -83,6 +134,7 @@ public sealed class MapViewModel : INotifyPropertyChanged
 {
     private const string NodeIdField = "tmc_node_id";
     private const string OfflineRouteIdField = "tmc_offline_route_id";
+    private const string PoiIdField = "tmc_poi_id";
     private const int OfflineTileDownloadMaxAttempts = 3;
     private const int OfflineTileDownloadConcurrency = 6;
     private const int OfflineTileBatchMaxPasses = 3;
@@ -104,12 +156,14 @@ public sealed class MapViewModel : INotifyPropertyChanged
     private readonly List<MapSample> _samples = new();
     private readonly List<WaypointSample> _waypoints = new();
     private readonly List<OfflineRoute> _offlineRoutes = new();
+    private readonly List<PoiPreviewSample> _poiPreviewSamples = new();
     private readonly MemoryLayer _pointLayer;
     private readonly MemoryLayer _trackLayer;
     private readonly MemoryLayer _clusterLayer;
     private readonly MemoryLayer _waypointLayer;
     private readonly MemoryLayer _offlineSelectionLayer;
     private readonly MemoryLayer _offlineRouteLayer;
+    private readonly MemoryLayer _poiPreviewLayer;
     private readonly Dictionary<MapBaseLayerKind, TileLayer> _baseLayers = new();
     private readonly TileLayer _gibsLayer;
     private readonly Action<Mapsui.Logging.LogLevel, string, Exception?> _mapsuiLogSink;
@@ -136,6 +190,12 @@ public sealed class MapViewModel : INotifyPropertyChanged
     private bool _isOfflineCacheSelectionMode;
     private bool _isOfflineCacheRunning;
     private string _offlineCacheStatusText = string.Empty;
+    private bool _showPoiPreview;
+    private int _poiPreviewLimit = 800;
+    private int _poiPreviewLoadedCount;
+    private int _poiPreviewVisibleCount;
+    private string _poiPreviewStatusText = "No POI preview loaded.";
+    private bool _suppressPoiPreviewTypeSelectionChanged;
     private string? _selectedOfflineRouteId;
     private int _bulkUpdateDepth;
     private bool _layersDirty;
@@ -185,9 +245,11 @@ public sealed class MapViewModel : INotifyPropertyChanged
         _waypointLayer = new MemoryLayer { Name = "waypoints" };
         _offlineSelectionLayer = new MemoryLayer { Name = "offline-selection-overlay" };
         _offlineRouteLayer = new MemoryLayer { Name = "offline-routes" };
+        _poiPreviewLayer = new MemoryLayer { Name = "poi-preview" };
 
         Map.Layers.Add(_offlineSelectionLayer);
         Map.Layers.Add(_offlineRouteLayer);
+        Map.Layers.Add(_poiPreviewLayer);
         Map.Layers.Add(_trackLayer);
         Map.Layers.Add(_clusterLayer);
         Map.Layers.Add(_pointLayer);
@@ -199,6 +261,7 @@ public sealed class MapViewModel : INotifyPropertyChanged
             Interval = TimeSpan.FromMilliseconds(120),
         };
         _waypointPulseTimer.Tick += (_, _) => OnWaypointPulseTimerTick();
+        InitializePoiPreviewTypes();
         UpdateZoomInfo();
     }
 
@@ -226,11 +289,84 @@ public sealed class MapViewModel : INotifyPropertyChanged
     public bool IsOfflineCacheRunning => _isOfflineCacheRunning;
     public bool CanRunOfflineCache => !_isOfflineCacheRunning && _offlineCacheSelectionBounds.HasValue;
     public string OfflineCacheStatusText => _offlineCacheStatusText;
+    public bool ShowPoiPreview
+    {
+        get => _showPoiPreview;
+        set
+        {
+            if (_showPoiPreview == value)
+                return;
+
+            _showPoiPreview = value;
+            RefreshPoiPreviewLayer();
+            OnPropertyChanged(nameof(ShowPoiPreview));
+        }
+    }
+
+    public int PoiPreviewLimit
+    {
+        get => _poiPreviewLimit;
+        set
+        {
+            var normalized = Math.Clamp(value, 1, 5000);
+            if (_poiPreviewLimit == normalized)
+                return;
+
+            _poiPreviewLimit = normalized;
+            RefreshPoiPreviewLayer();
+            OnPropertyChanged(nameof(PoiPreviewLimit));
+        }
+    }
+    public ObservableCollection<PoiTypeOptionViewModel> PoiPreviewTypes { get; } = new();
+    public bool HasSelectedPoiPreviewTypes => PoiPreviewTypes.Any(static option => option.IsSelected);
+    public IReadOnlyCollection<string> SelectedPoiPreviewTypes => PoiPreviewTypes
+        .Where(static option => option.IsSelected)
+        .Select(static option => option.Id)
+        .ToArray();
+    public string PoiPreviewSelectionText
+    {
+        get
+        {
+            var selected = PoiPreviewTypes
+                .Where(static option => option.IsSelected)
+                .Select(static option => option.Label)
+                .ToArray();
+            return selected.Length == 0 ? "No POI types selected" : string.Join(", ", selected);
+        }
+    }
+    public int PoiPreviewLoadedCount => _poiPreviewLoadedCount;
+    public int PoiPreviewVisibleCount => _poiPreviewVisibleCount;
+    public string PoiPreviewStatusText => _poiPreviewStatusText;
     public ObservableCollection<MapLogEntry> MapLogEntries { get; } = new();
 
     public void RefreshLocalization()
     {
         UpdateZoomInfo();
+    }
+
+    private void InitializePoiPreviewTypes()
+    {
+        foreach (var definition in PoiTypeCatalog.DefaultTypes)
+        {
+            var option = PoiTypeCatalog.CreateOption(definition);
+            option.PropertyChanged += (_, e) =>
+            {
+                if (string.Equals(e.PropertyName, nameof(PoiTypeOptionViewModel.IsSelected), StringComparison.Ordinal))
+                    OnPoiPreviewTypeSelectionChanged();
+            };
+            PoiPreviewTypes.Add(option);
+        }
+    }
+
+    private void OnPoiPreviewTypeSelectionChanged()
+    {
+        if (_suppressPoiPreviewTypeSelectionChanged)
+            return;
+
+        OnPropertyChanged(nameof(HasSelectedPoiPreviewTypes));
+        OnPropertyChanged(nameof(SelectedPoiPreviewTypes));
+        OnPropertyChanged(nameof(PoiPreviewSelectionText));
+        RefreshPoiPreviewLayer();
     }
 
     public void AddPoint(uint? fromId, double lat, double lon, MapSampleSource source = MapSampleSource.Local)
@@ -485,6 +621,79 @@ public sealed class MapViewModel : INotifyPropertyChanged
         SetOfflineCacheStatus("Selection cleared.");
     }
 
+    public void SetPoiPreview(IEnumerable<PoiRecord> pois, bool show = true, int? limit = null)
+    {
+        if (pois is null)
+            throw new ArgumentNullException(nameof(pois));
+
+        if (limit.HasValue)
+            _poiPreviewLimit = Math.Clamp(limit.Value, 1, 5000);
+
+        var normalized = pois
+            .Where(static p => !string.IsNullOrWhiteSpace(p.Id))
+            .Select(static p => new PoiPreviewSample(
+                p.Id,
+                p.Type,
+                p.Name,
+                p.Latitude,
+                p.Longitude,
+                p.Priority))
+            .ToArray();
+
+        lock (_gate)
+        {
+            _poiPreviewSamples.Clear();
+            _poiPreviewSamples.AddRange(normalized);
+        }
+
+        _poiPreviewLoadedCount = normalized.Length;
+        _showPoiPreview = show;
+        OnPropertyChanged(nameof(ShowPoiPreview));
+        OnPropertyChanged(nameof(PoiPreviewLimit));
+        OnPropertyChanged(nameof(PoiPreviewLoadedCount));
+        RefreshPoiPreviewLayer();
+    }
+
+    public void ClearPoiPreview()
+    {
+        lock (_gate)
+        {
+            _poiPreviewSamples.Clear();
+        }
+
+        _poiPreviewLoadedCount = 0;
+        _poiPreviewVisibleCount = 0;
+        _poiPreviewStatusText = "No POI preview loaded.";
+        OnPropertyChanged(nameof(PoiPreviewLoadedCount));
+        OnPropertyChanged(nameof(PoiPreviewVisibleCount));
+        OnPropertyChanged(nameof(PoiPreviewStatusText));
+        RefreshPoiPreviewLayer();
+    }
+
+    public void SetPoiPreviewSelectedTypes(IEnumerable<string> selectedTypes)
+    {
+        var selected = new HashSet<string>(
+            (selectedTypes ?? Array.Empty<string>())
+                .Where(static type => !string.IsNullOrWhiteSpace(type))
+                .Select(static type => type.Trim()),
+            StringComparer.OrdinalIgnoreCase);
+
+        _suppressPoiPreviewTypeSelectionChanged = true;
+        try
+        {
+            foreach (var option in PoiPreviewTypes)
+            {
+                option.IsSelected = selected.Contains(option.Id);
+            }
+        }
+        finally
+        {
+            _suppressPoiPreviewTypeSelectionChanged = false;
+        }
+
+        OnPoiPreviewTypeSelectionChanged();
+    }
+
     public void CancelOfflineCache()
     {
         lock (_offlineCacheGate)
@@ -518,7 +727,9 @@ public sealed class MapViewModel : INotifyPropertyChanged
             !buildOptions.IncludeSatellite &&
             !buildOptions.IncludeContours)
         {
-            SetOfflineCacheStatus("Nothing selected for caching.");
+            SetOfflineCacheStatus(buildOptions.HasPoiExport
+                ? "POI export is configured for USB/SD export; no raster cache layers selected."
+                : "Nothing selected for caching.");
             return;
         }
 
@@ -1079,6 +1290,46 @@ public sealed class MapViewModel : INotifyPropertyChanged
         return true;
     }
 
+    public bool SetOfflineCacheSelectionGeoJson(
+        string? geoJson,
+        string? selectionName = null,
+        bool focusMap = false)
+    {
+        if (string.IsNullOrWhiteSpace(geoJson))
+            return false;
+
+        try
+        {
+            using var document = JsonDocument.Parse(geoJson);
+            var worldPolygons = new List<Polygon>();
+            CollectGeoJsonPolygons(document.RootElement, worldPolygons);
+            if (worldPolygons.Count == 0)
+                return false;
+
+            Geometry geometry = worldPolygons.Count == 1
+                ? worldPolygons[0]
+                : new MultiPolygon(worldPolygons.ToArray());
+            if (!geometry.IsValid)
+                geometry = geometry.Buffer(0);
+            if (geometry.IsEmpty)
+                return false;
+
+            var bounds = ClampBounds(GetLonLatBounds(geometry.EnvelopeInternal));
+            SetOfflineCacheSelectionGeometryCore(
+                geometry,
+                bounds,
+                selectionName,
+                $"Boundary selection: W {bounds.West:F5}, S {bounds.South:F5}, E {bounds.East:F5}, N {bounds.North:F5}");
+            if (focusMap)
+                FocusOnBounds(bounds);
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
     internal bool TryGetViewportLonLatBounds(out (double West, double South, double East, double North) bounds)
     {
         if (!TryGetViewportWorldBounds(out var worldBounds))
@@ -1139,6 +1390,48 @@ public sealed class MapViewModel : INotifyPropertyChanged
         _offlineRouteLayer.Features = BuildOfflineRouteFeatures(offlineRouteSnapshot, selectedOfflineRouteId);
     }
 
+    private void RefreshPoiPreviewLayer()
+    {
+        if (!Dispatcher.UIThread.CheckAccess())
+        {
+            Dispatcher.UIThread.Post(RefreshPoiPreviewLayer);
+            return;
+        }
+
+        if (!_showPoiPreview)
+        {
+            _poiPreviewLayer.Features = Array.Empty<IFeature>();
+            SetPoiPreviewRenderStatus(0);
+            Map.Refresh(ChangeType.Discrete);
+            return;
+        }
+
+        List<PoiPreviewSample> snapshot;
+        lock (_gate)
+        {
+            snapshot = _poiPreviewSamples.ToList();
+        }
+
+        var features = BuildPoiPreviewFeatures(snapshot, _poiPreviewLimit).ToArray();
+        _poiPreviewLayer.Features = features;
+        SetPoiPreviewRenderStatus(features.Length);
+        Map.Refresh(ChangeType.Discrete);
+    }
+
+    private void SetPoiPreviewRenderStatus(int visibleCount)
+    {
+        _poiPreviewVisibleCount = visibleCount;
+        _poiPreviewStatusText = !_showPoiPreview
+            ? $"POI preview hidden. Loaded: {_poiPreviewLoadedCount:N0}."
+            : _poiPreviewLoadedCount == 0
+                ? "No POI preview loaded."
+                : !HasSelectedPoiPreviewTypes
+                    ? $"POI preview loaded {_poiPreviewLoadedCount:N0}, but no types are selected."
+                    : $"POI preview: {visibleCount:N0} visible / {_poiPreviewLoadedCount:N0} loaded.";
+        OnPropertyChanged(nameof(PoiPreviewVisibleCount));
+        OnPropertyChanged(nameof(PoiPreviewStatusText));
+    }
+
     private void RequestLayerRefresh()
     {
         lock (_gate)
@@ -1177,6 +1470,7 @@ public sealed class MapViewModel : INotifyPropertyChanged
     private void OnViewportChanged()
     {
         RefreshLayers();
+        RefreshPoiPreviewLayer();
         var zoom = GetCurrentZoom();
         UpdateContourVisibility(zoom);
         UpdateZoomInfo(zoom);
@@ -2078,6 +2372,106 @@ public sealed class MapViewModel : INotifyPropertyChanged
         return features;
     }
 
+    private IEnumerable<IFeature> BuildPoiPreviewFeatures(
+        List<PoiPreviewSample> samples,
+        int limit)
+    {
+        var selectedTypes = PoiPreviewTypes
+            .Where(static option => option.IsSelected)
+            .Select(static option => option.Id)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        if (selectedTypes.Count == 0)
+            return Array.Empty<IFeature>();
+
+        var viewportBounds = TryGetViewportLonLatBounds();
+        var query = samples.Where(p => selectedTypes.Contains(p.Type));
+        if (viewportBounds.HasValue)
+        {
+            var bounds = viewportBounds.Value.Normalize();
+            query = query.Where(p => bounds.Contains(p.Latitude, p.Longitude));
+        }
+
+        var selected = query
+            .OrderByDescending(static p => p.Priority)
+            .ThenBy(static p => p.Name ?? string.Empty, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(static p => p.Id, StringComparer.Ordinal)
+            .Take(Math.Clamp(limit, 1, 5000))
+            .ToArray();
+
+        var features = new List<IFeature>(selected.Length);
+        foreach (var poi in selected)
+        {
+            var (x, y) = SphericalMercator.FromLonLat(poi.Longitude, poi.Latitude);
+            var feature = new PointFeature(x, y);
+            feature[PoiIdField] = poi.Id;
+
+            var color = ResolvePoiPreviewColor(poi.Type);
+            feature.Styles.Add(new SymbolStyle
+            {
+                SymbolType = SymbolType.Ellipse,
+                Fill = new Brush(Color.FromArgb(225, color.R, color.G, color.B)),
+                Outline = new Pen(Color.FromArgb(255, 15, 23, 42), 1.2f),
+                SymbolScale = poi.Priority >= 85 ? 0.92 : 0.72,
+            });
+
+            if (!string.IsNullOrWhiteSpace(poi.Name) && GetCurrentZoom() >= 12)
+            {
+                feature.Styles.Add(new LabelStyle
+                {
+                    Text = poi.Name,
+                    ForeColor = Color.FromArgb(255, 245, 250, 255),
+                    BackColor = new Brush(Color.FromArgb(190, 15, 23, 42)),
+                    Offset = new Offset(8, -10),
+                    HorizontalAlignment = LabelStyle.HorizontalAlignmentEnum.Left,
+                    VerticalAlignment = LabelStyle.VerticalAlignmentEnum.Top,
+                    Font = new Font { Size = 10 },
+                });
+            }
+
+            features.Add(feature);
+        }
+
+        return features;
+    }
+
+    private GeoBounds? TryGetViewportLonLatBounds()
+    {
+        try
+        {
+            var viewport = Map.Navigator.Viewport;
+            if (viewport.Width <= 1 || viewport.Height <= 1)
+                return null;
+
+            var topLeft = viewport.ScreenToWorld(new ScreenPosition(0, 0));
+            var bottomRight = viewport.ScreenToWorld(new ScreenPosition(viewport.Width, viewport.Height));
+            var (west, north) = SphericalMercator.ToLonLat(topLeft.X, topLeft.Y);
+            var (east, south) = SphericalMercator.ToLonLat(bottomRight.X, bottomRight.Y);
+            return new GeoBounds(west, south, east, north).Normalize();
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private static Color ResolvePoiPreviewColor(string? type)
+    {
+        return (type ?? string.Empty).ToLowerInvariant() switch
+        {
+            "water" => Color.FromArgb(255, 56, 189, 248),
+            "camp" => Color.FromArgb(255, 34, 197, 94),
+            "shelter" => Color.FromArgb(255, 250, 204, 21),
+            "peak" => Color.FromArgb(255, 248, 113, 113),
+            "viewpoint" => Color.FromArgb(255, 167, 139, 250),
+            "trailhead" => Color.FromArgb(255, 251, 146, 60),
+            "parking" => Color.FromArgb(255, 96, 165, 250),
+            "toilet" => Color.FromArgb(255, 45, 212, 191),
+            "emergency" => Color.FromArgb(255, 239, 68, 68),
+            "ranger" => Color.FromArgb(255, 132, 204, 22),
+            _ => Color.FromArgb(255, 203, 213, 225),
+        };
+    }
+
     private static string? ResolveTeamLocationImagePath(TeamLocationSource? source)
     {
         if (!source.HasValue || source.Value == TeamLocationSource.None)
@@ -2457,6 +2851,128 @@ public sealed class MapViewModel : INotifyPropertyChanged
         }));
     }
 
+    private static void CollectGeoJsonPolygons(JsonElement element, List<Polygon> output)
+    {
+        if (element.ValueKind != JsonValueKind.Object)
+            return;
+        if (!element.TryGetProperty("type", out var typeElement) ||
+            typeElement.ValueKind != JsonValueKind.String)
+        {
+            return;
+        }
+
+        var type = typeElement.GetString();
+        if (string.Equals(type, "FeatureCollection", StringComparison.OrdinalIgnoreCase) &&
+            element.TryGetProperty("features", out var features) &&
+            features.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var feature in features.EnumerateArray())
+                CollectGeoJsonPolygons(feature, output);
+            return;
+        }
+
+        if (string.Equals(type, "Feature", StringComparison.OrdinalIgnoreCase) &&
+            element.TryGetProperty("geometry", out var geometry))
+        {
+            CollectGeoJsonPolygons(geometry, output);
+            return;
+        }
+
+        if (!element.TryGetProperty("coordinates", out var coordinates))
+            return;
+
+        if (string.Equals(type, "Polygon", StringComparison.OrdinalIgnoreCase))
+        {
+            var polygon = TryParseGeoJsonPolygon(coordinates);
+            if (polygon is not null)
+                output.Add(polygon);
+            return;
+        }
+
+        if (string.Equals(type, "MultiPolygon", StringComparison.OrdinalIgnoreCase) &&
+            coordinates.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var polygonElement in coordinates.EnumerateArray())
+            {
+                var polygon = TryParseGeoJsonPolygon(polygonElement);
+                if (polygon is not null)
+                    output.Add(polygon);
+            }
+        }
+    }
+
+    private static Polygon? TryParseGeoJsonPolygon(JsonElement polygonElement)
+    {
+        if (polygonElement.ValueKind != JsonValueKind.Array)
+            return null;
+
+        var rings = new List<LinearRing>();
+        foreach (var ringElement in polygonElement.EnumerateArray())
+        {
+            var coords = ParseGeoJsonRing(ringElement);
+            if (coords.Length >= 4)
+                rings.Add(new LinearRing(coords));
+        }
+
+        if (rings.Count == 0)
+            return null;
+
+        return new Polygon(rings[0], rings.Skip(1).ToArray());
+    }
+
+    private static Coordinate[] ParseGeoJsonRing(JsonElement ringElement)
+    {
+        if (ringElement.ValueKind != JsonValueKind.Array)
+            return Array.Empty<Coordinate>();
+
+        var coords = new List<Coordinate>();
+        foreach (var pointElement in ringElement.EnumerateArray())
+        {
+            if (!TryReadGeoJsonPosition(pointElement, out var lon, out var lat))
+                continue;
+
+            var (x, y) = SphericalMercator.FromLonLat(lon, lat);
+            coords.Add(new Coordinate(x, y));
+        }
+
+        if (coords.Count > 0 &&
+            (Math.Abs(coords[0].X - coords[^1].X) > 0.001 || Math.Abs(coords[0].Y - coords[^1].Y) > 0.001))
+        {
+            coords.Add(coords[0]);
+        }
+
+        return coords.ToArray();
+    }
+
+    private static bool TryReadGeoJsonPosition(JsonElement pointElement, out double lon, out double lat)
+    {
+        lon = 0;
+        lat = 0;
+        if (pointElement.ValueKind != JsonValueKind.Array)
+            return false;
+
+        var values = pointElement.EnumerateArray().Take(2).ToArray();
+        if (values.Length < 2)
+            return false;
+        if (!TryReadJsonDouble(values[0], out lon))
+            return false;
+        if (!TryReadJsonDouble(values[1], out lat))
+            return false;
+
+        return IsValidLonLat(lon, lat);
+    }
+
+    private static bool TryReadJsonDouble(JsonElement element, out double value)
+    {
+        if (element.ValueKind == JsonValueKind.Number)
+            return element.TryGetDouble(out value);
+        if (element.ValueKind == JsonValueKind.String)
+            return double.TryParse(element.GetString(), NumberStyles.Float, CultureInfo.InvariantCulture, out value);
+
+        value = 0;
+        return false;
+    }
+
     private TileLayer CreateOsmLayer()
     {
         var cacheDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "TrailMateCenter", "tilecache");
@@ -2571,6 +3087,13 @@ public sealed class MapViewModel : INotifyPropertyChanged
         DateTimeOffset CreatedAtUtc,
         DateTimeOffset? PulseUntilUtc,
         TeamLocationSource? TeamLocationMarker);
+    private sealed record PoiPreviewSample(
+        string Id,
+        string Type,
+        string? Name,
+        double Latitude,
+        double Longitude,
+        int Priority);
     private sealed record OfflineRoute(string Id, string Name, IReadOnlyList<MPoint> Points)
     {
         public (double West, double South, double East, double North) Bounds

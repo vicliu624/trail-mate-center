@@ -68,6 +68,9 @@
                     <TextBlock Text="{Binding ZoomRangeText}"
                                Foreground="{DynamicResource TextDim}"
                                FontSize="11"/>
+                    <TextBlock Text="{Binding PoiSummaryText}"
+                               Foreground="{DynamicResource TextDim}"
+                               FontSize="11"/>
                     <Grid ColumnDefinitions="Auto,*"
                           RowDefinitions="Auto,Auto,Auto,Auto"
                           ColumnSpacing="8"
