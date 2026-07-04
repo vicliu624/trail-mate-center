@@ -99,6 +99,74 @@ public sealed class MapPackWorkflowTests
     }
 
     [Fact]
+    public async Task GeofabrikCatalogProvider_FindsSmallestPbfCoveringArea()
+    {
+        var root = CreateTempRoot();
+        try
+        {
+            const string catalog = """
+                {
+                  "type": "FeatureCollection",
+                  "features": [
+                    {
+                      "type": "Feature",
+                      "properties": {
+                        "id": "china",
+                        "name": "China",
+                        "urls": { "pbf": "https://download.geofabrik.de/asia/china-latest.osm.pbf" }
+                      },
+                      "geometry": {
+                        "type": "Polygon",
+                        "coordinates": [[[70,15],[140,15],[140,55],[70,55],[70,15]]]
+                      }
+                    },
+                    {
+                      "type": "Feature",
+                      "properties": {
+                        "id": "yunnan",
+                        "parent": "china",
+                        "name": "Yunnan",
+                        "urls": { "pbf": "https://download.geofabrik.de/asia/china/yunnan-latest.osm.pbf" }
+                      },
+                      "geometry": {
+                        "type": "Polygon",
+                        "coordinates": [[[97,21],[107,21],[107,30],[97,30],[97,21]]]
+                      }
+                    },
+                    {
+                      "type": "Feature",
+                      "properties": {
+                        "id": "kunming",
+                        "parent": "yunnan",
+                        "name": "Kunming"
+                      },
+                      "geometry": {
+                        "type": "Polygon",
+                        "coordinates": [[[102,24],[104,24],[104,27],[102,27],[102,24]]]
+                      }
+                    }
+                  ]
+                }
+                """;
+
+            var provider = new GeofabrikCatalogProvider(
+                new HttpClient(new FakeHttpHandler(catalog)),
+                root,
+                new Uri("https://example.test/index-v1.json"));
+
+            var matches = await provider.FindCoveringRegionsAsync(new GeoBounds(102.16, 24.38, 103.66, 26.54));
+
+            Assert.NotEmpty(matches);
+            Assert.Equal("yunnan", matches[0].Id);
+            Assert.Equal("China / Yunnan", matches[0].DisplayName);
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
     public async Task NominatimProvider_UsesCacheAfterFirstSearch()
     {
         var root = CreateTempRoot();

@@ -789,8 +789,9 @@
   <x:String x:Key="Ui.MapPack.Step.Area">Step 1: Select Area / Administrative Boundary</x:String>
   <x:String x:Key="Ui.MapPack.AreaSearchWatermark">Country, region, county, district</x:String>
   <x:String x:Key="Ui.MapPack.SearchAdminBoundary">Search Administrative Boundary</x:String>
-  <x:String x:Key="Ui.MapPack.PbfSearchWatermark">Geofabrik PBF source, e.g. Sweden</x:String>
-  <x:String x:Key="Ui.MapPack.SearchPbf">Search PBF</x:String>
+  <x:String x:Key="Ui.MapPack.PbfSourceTitle">OSM PBF source (auto matched)</x:String>
+  <x:String x:Key="Ui.MapPack.PbfSourceHint">PBF is used to extract POI from raw OSM data. The app selects the smallest Geofabrik PBF that covers the current area; it can be larger than the administrative boundary.</x:String>
+  <x:String x:Key="Ui.MapPack.RefreshPbfSource">Match PBF again</x:String>
   <x:String x:Key="Ui.MapPack.DownloadSelectedPbf">Download Selected PBF</x:String>
   <x:String x:Key="Ui.MapPack.ImportGeoJsonBoundary">Import GeoJSON Boundary</x:String>
   <x:String x:Key="Ui.MapPack.AreaName">Area name</x:String>
@@ -856,6 +857,9 @@
   <x:String x:Key="Ui.MapPack.Status.BoundaryLoaded">Loaded {0:N0} boundary results.</x:String>
   <x:String x:Key="Ui.MapPack.Status.LoadingPbfCatalog">Loading Geofabrik PBF catalog...</x:String>
   <x:String x:Key="Ui.MapPack.Status.PbfOptionsLoaded">Loaded {0:N0} PBF source options.</x:String>
+  <x:String x:Key="Ui.MapPack.Status.MatchingPbfSource">Matching a PBF source for the current area...</x:String>
+  <x:String x:Key="Ui.MapPack.Status.PbfSourceMatched">PBF source auto matched: {0}</x:String>
+  <x:String x:Key="Ui.MapPack.Status.NoCoveringPbfSource">No Geofabrik PBF covers the current area. Pick a local .osm.pbf file in the POI section.</x:String>
   <x:String x:Key="Ui.MapPack.Status.DownloadingRegion">Downloading {0}...</x:String>
   <x:String x:Key="Ui.MapPack.Status.DownloadingPbfPercent">Downloading PBF {0:F1}% ({1} / {2})</x:String>
   <x:String x:Key="Ui.MapPack.Status.DownloadingPbfBytes">Downloading PBF {0}</x:String>

@@ -788,8 +788,9 @@
   <x:String x:Key="Ui.MapPack.Step.Area">步骤 1：选择区域 / 行政区边界</x:String>
   <x:String x:Key="Ui.MapPack.AreaSearchWatermark">国家、省、市、县或区</x:String>
   <x:String x:Key="Ui.MapPack.SearchAdminBoundary">搜索行政区</x:String>
-  <x:String x:Key="Ui.MapPack.PbfSearchWatermark">Geofabrik PBF 来源，例如 yunnan</x:String>
-  <x:String x:Key="Ui.MapPack.SearchPbf">搜索 PBF</x:String>
+  <x:String x:Key="Ui.MapPack.PbfSourceTitle">OSM PBF 数据源（自动匹配）</x:String>
+  <x:String x:Key="Ui.MapPack.PbfSourceHint">PBF 用于从 OSM 原始数据中提取 POI。系统会选择能覆盖当前区域的最小 Geofabrik PBF；它可能比行政区更大。</x:String>
+  <x:String x:Key="Ui.MapPack.RefreshPbfSource">重新匹配 PBF</x:String>
   <x:String x:Key="Ui.MapPack.DownloadSelectedPbf">下载选中的 PBF</x:String>
   <x:String x:Key="Ui.MapPack.ImportGeoJsonBoundary">导入 GeoJSON 边界</x:String>
   <x:String x:Key="Ui.MapPack.AreaName">区域名称</x:String>
@@ -855,6 +856,9 @@
   <x:String x:Key="Ui.MapPack.Status.BoundaryLoaded">已加载 {0:N0} 个边界结果。</x:String>
   <x:String x:Key="Ui.MapPack.Status.LoadingPbfCatalog">正在加载 Geofabrik PBF 目录...</x:String>
   <x:String x:Key="Ui.MapPack.Status.PbfOptionsLoaded">已加载 {0:N0} 个 PBF 来源选项。</x:String>
+  <x:String x:Key="Ui.MapPack.Status.MatchingPbfSource">正在为当前区域匹配 PBF 来源...</x:String>
+  <x:String x:Key="Ui.MapPack.Status.PbfSourceMatched">已自动匹配 PBF 来源：{0}</x:String>
+  <x:String x:Key="Ui.MapPack.Status.NoCoveringPbfSource">没有找到覆盖当前区域的 Geofabrik PBF，请在 POI 区域选择本地 .osm.pbf 文件。</x:String>
   <x:String x:Key="Ui.MapPack.Status.DownloadingRegion">正在下载 {0}...</x:String>
   <x:String x:Key="Ui.MapPack.Status.DownloadingPbfPercent">正在下载 PBF {0:F1}%（{1} / {2}）</x:String>
   <x:String x:Key="Ui.MapPack.Status.DownloadingPbfBytes">正在下载 PBF {0}</x:String>

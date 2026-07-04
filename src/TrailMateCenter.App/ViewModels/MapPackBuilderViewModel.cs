@@ -73,9 +73,6 @@ public sealed partial class MapPackBuilderViewModel : ObservableObject
     private string _areaSearchText = string.Empty;
 
     [ObservableProperty]
-    private string _geofabrikSearchText = string.Empty;
-
-    [ObservableProperty]
     private AdminAreaOptionViewModel? _selectedAdminArea;
 
     [ObservableProperty]
@@ -323,13 +320,7 @@ public sealed partial class MapPackBuilderViewModel : ObservableObject
     {
         await RunOperationAsync(async token =>
         {
-            StatusText = T("Ui.MapPack.Status.LoadingPbfCatalog");
-            var results = await _geofabrikCatalogProvider.SearchAsync(GeofabrikSearchText, 20, token);
-            GeofabrikRegions.Clear();
-            foreach (var region in results)
-                GeofabrikRegions.Add(new GeofabrikRegionOptionViewModel(region));
-
-            StatusText = F("Ui.MapPack.Status.PbfOptionsLoaded", GeofabrikRegions.Count);
+            await RefreshPbfSourcesForCurrentBoundsAsync(token, autoSelect: true).ConfigureAwait(true);
         }).ConfigureAwait(false);
     }
 
@@ -527,6 +518,46 @@ public sealed partial class MapPackBuilderViewModel : ObservableObject
         UpdateEstimate();
     }
 
+    private async void QueuePbfSourceAutoMatch()
+    {
+        if (IsBusy)
+            return;
+
+        await RunOperationAsync(async token =>
+        {
+            await RefreshPbfSourcesForCurrentBoundsAsync(token, autoSelect: true).ConfigureAwait(true);
+        }).ConfigureAwait(false);
+    }
+
+    private async Task RefreshPbfSourcesForCurrentBoundsAsync(CancellationToken token, bool autoSelect)
+    {
+        StatusText = T("Ui.MapPack.Status.MatchingPbfSource");
+        var results = await _geofabrikCatalogProvider
+            .FindCoveringRegionsAsync(CurrentBounds, 12, token)
+            .ConfigureAwait(true);
+
+        GeofabrikRegions.Clear();
+        foreach (var region in results)
+            GeofabrikRegions.Add(new GeofabrikRegionOptionViewModel(region));
+
+        if (results.Count == 0)
+        {
+            SelectedGeofabrikRegion = null;
+            StatusText = T("Ui.MapPack.Status.NoCoveringPbfSource");
+            return;
+        }
+
+        if (autoSelect)
+        {
+            SelectedGeofabrikRegion = GeofabrikRegions[0];
+            StatusText = F("Ui.MapPack.Status.PbfSourceMatched", SelectedGeofabrikRegion.Record.DisplayName);
+        }
+        else
+        {
+            StatusText = F("Ui.MapPack.Status.PbfOptionsLoaded", GeofabrikRegions.Count);
+        }
+    }
+
     private void ResetPoiTypes()
     {
         PoiTypes.Clear();
@@ -560,6 +591,7 @@ public sealed partial class MapPackBuilderViewModel : ObservableObject
         var area = value.Record;
         ApplyBounds(area.Bounds, area.Name, area.AdminLevel, area.BoundaryGeoJson);
         StatusText = F("Ui.MapPack.Status.AreaSelected", area.DisplayName);
+        QueuePbfSourceAutoMatch();
     }
 
     partial void OnSelectedGeofabrikRegionChanged(GeofabrikRegionOptionViewModel? value)
@@ -569,10 +601,6 @@ public sealed partial class MapPackBuilderViewModel : ObservableObject
             return;
 
         var region = value.Record;
-        if (!region.Bounds.Equals(default(GeoBounds)))
-        {
-            ApplyBounds(region.Bounds, region.Name, null, region.BoundaryGeoJson);
-        }
         PbfDownloadUrl = region.PbfUrl;
         PbfProvider = "geofabrik";
         StatusText = F("Ui.MapPack.Status.PbfSourceSelected", region.DisplayName);

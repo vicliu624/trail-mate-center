@@ -84,10 +84,16 @@
               </ListBox>
 
               <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                <TextBox Text="{Binding GeofabrikSearchText, UpdateSourceTrigger=PropertyChanged}"
-                         Watermark="{DynamicResource Ui.MapPack.PbfSearchWatermark}"/>
+                <StackPanel Spacing="2">
+                  <TextBlock Text="{DynamicResource Ui.MapPack.PbfSourceTitle}"
+                             Foreground="{DynamicResource TextPrimary}"
+                             FontWeight="SemiBold"/>
+                  <TextBlock Text="{DynamicResource Ui.MapPack.PbfSourceHint}"
+                             Classes="dialogHint"
+                             TextWrapping="Wrap"/>
+                </StackPanel>
                 <Button Grid.Column="1"
-                        Content="{DynamicResource Ui.MapPack.SearchPbf}"
+                        Content="{DynamicResource Ui.MapPack.RefreshPbfSource}"
                         Command="{Binding SearchGeofabrikCommand}"/>
               </Grid>
               <ListBox ItemsSource="{Binding GeofabrikRegions}"

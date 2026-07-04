@@ -131,6 +131,27 @@ public sealed class GeofabrikCatalogProvider
             .ToArray();
     }
 
+    public async Task<IReadOnlyList<GeofabrikRegionRecord>> FindCoveringRegionsAsync(
+        GeoBounds bounds,
+        int limit = 10,
+        CancellationToken cancellationToken = default)
+    {
+        var catalog = await GetCatalogAsync(cancellationToken: cancellationToken).ConfigureAwait(false);
+        if (catalog.Regions.Count == 0)
+            return Array.Empty<GeofabrikRegionRecord>();
+
+        var target = bounds.Normalize();
+        return catalog.Regions
+            .Where(region =>
+                !string.IsNullOrWhiteSpace(region.PbfUrl) &&
+                HasUsableBounds(region.Bounds) &&
+                Contains(region.Bounds, target))
+            .OrderBy(static region => Area(region.Bounds))
+            .ThenBy(static region => region.DisplayName, StringComparer.OrdinalIgnoreCase)
+            .Take(Math.Max(1, limit))
+            .ToArray();
+    }
+
     public string GetCatalogCachePath()
     {
         return Path.Combine(_cacheDirectory, "index-v1.json");
@@ -278,6 +299,30 @@ public sealed class GeofabrikCatalogProvider
         if (region.DisplayName.StartsWith(query, StringComparison.OrdinalIgnoreCase))
             return 3;
         return 4;
+    }
+
+    private static bool HasUsableBounds(GeoBounds bounds)
+    {
+        var normalized = bounds.Normalize();
+        return Math.Abs(normalized.East - normalized.West) > double.Epsilon &&
+               Math.Abs(normalized.North - normalized.South) > double.Epsilon;
+    }
+
+    private static bool Contains(GeoBounds outerBounds, GeoBounds innerBounds)
+    {
+        const double Tolerance = 0.000001;
+        var outer = outerBounds.Normalize();
+        var inner = innerBounds.Normalize();
+        return inner.West >= outer.West - Tolerance &&
+               inner.East <= outer.East + Tolerance &&
+               inner.South >= outer.South - Tolerance &&
+               inner.North <= outer.North + Tolerance;
+    }
+
+    private static double Area(GeoBounds bounds)
+    {
+        var normalized = bounds.Normalize();
+        return Math.Abs(normalized.East - normalized.West) * Math.Abs(normalized.North - normalized.South);
     }
 
     private static string GetString(JsonElement element, string propertyName)
