@@ -537,6 +537,8 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     public bool CanExportSelectedOfflineCacheRegion => SelectedOfflineCacheRegion is not null &&
                                                       !Map.IsOfflineCacheRunning &&
                                                       !IsOfflineCacheExporting;
+    public bool CanResumeSelectedOfflineCacheRegionExport => CanExportSelectedOfflineCacheRegion &&
+                                                             SelectedOfflineCacheRegion?.CanResumeExport == true;
     public bool HasTeams => Teams.Count > 0 || HasAnyTeamSignal();
     public bool HasNoTeams => Teams.Count == 0 && IsConfirmedNotInTeam();
     public bool SupportsTeamAppPosting => _client.SupportsTxAppDataCommand;
@@ -1231,6 +1233,68 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         return Map.RunOfflineCacheForSelectionAsync(options);
     }
 
+    public async Task<MapCacheRegionViewModel> RegisterMapPackExportTaskAsync(
+        MapPackExportPlan plan,
+        CancellationToken cancellationToken = default)
+    {
+        if (plan is null)
+            throw new ArgumentNullException(nameof(plan));
+
+        var settings = CreateMapCacheRegionSettings(plan);
+        var region = UpsertOfflineCacheRegion(settings);
+        region.MarkExportStarted(plan.OutputDirectory);
+        SelectedOfflineCacheRegion = region;
+        OfflineCacheRegionName = region.Name;
+        await SaveOfflineCacheRegionsAsync();
+        NotifyOfflineCacheBuildAvailabilityChanged();
+        return region;
+    }
+
+    public async Task MarkMapPackExportTaskCanceledAsync(MapCacheRegionViewModel? region)
+    {
+        if (region is null)
+            return;
+
+        region.MarkExportCanceled();
+        await SaveOfflineCacheRegionsAsync();
+        NotifyOfflineCacheBuildAvailabilityChanged();
+    }
+
+    private MapCacheRegionViewModel UpsertOfflineCacheRegion(MapCacheRegionSettings settings)
+    {
+        var region = FindMatchingOfflineCacheRegion(settings);
+        if (region is not null)
+        {
+            region.ApplySettings(settings);
+            return region;
+        }
+
+        var newSettings = settings with
+        {
+            Id = string.IsNullOrWhiteSpace(settings.Id) ? Guid.NewGuid().ToString("N") : settings.Id.Trim(),
+        };
+        region = MapCacheRegionViewModel.FromSettings(newSettings);
+        TrackOfflineCacheRegion(region);
+        OfflineCacheRegions.Add(region);
+        return region;
+    }
+
+    private MapCacheRegionViewModel? FindMatchingOfflineCacheRegion(MapCacheRegionSettings settings)
+    {
+        return OfflineCacheRegions.FirstOrDefault(region =>
+            string.Equals(region.Name, settings.Name, StringComparison.OrdinalIgnoreCase) &&
+            AreSameBounds(region, settings));
+    }
+
+    private static bool AreSameBounds(MapCacheRegionViewModel region, MapCacheRegionSettings settings)
+    {
+        const double epsilon = 0.000001;
+        return Math.Abs(region.West - settings.West) < epsilon &&
+               Math.Abs(region.South - settings.South) < epsilon &&
+               Math.Abs(region.East - settings.East) < epsilon &&
+               Math.Abs(region.North - settings.North) < epsilon;
+    }
+
     public bool FocusSelectedOfflineCacheRegionOnMap()
     {
         return TryApplySelectedOfflineCacheRegion(focusMap: true);
@@ -1280,7 +1344,8 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         string destinationRoot,
         CancellationToken cancellationToken = default)
     {
-        if (SelectedOfflineCacheRegion is null)
+        var selectedRegion = SelectedOfflineCacheRegion;
+        if (selectedRegion is null)
         {
             return OfflineCacheRegionExportResult.Fail("No cache region selected.");
         }
@@ -1301,14 +1366,19 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             return OfflineCacheRegionExportResult.Fail("Export is already running.");
         }
 
-        var region = SelectedOfflineCacheRegion.ToSettings();
         var loc = LocalizationService.Instance;
         IsOfflineCacheExporting = true;
-        OfflineCacheExportStatusText = loc.GetString("Status.OfflineCache.ExportInProgress");
+        OfflineCacheExportStatusText = loc.GetString("Ui.MapPack.Status.PreparingTiles");
+        selectedRegion.MarkExportStarted(targetRoot);
+        await SaveOfflineCacheRegionsAsync();
+        var exportProgress = CreateRegionExportProgress(null, selectedRegion);
         try
         {
+            await PrepareOfflineCacheRegionTilesForExportAsync(selectedRegion, cancellationToken);
+            var region = selectedRegion.ToSettings();
+            OfflineCacheExportStatusText = loc.GetString("Status.OfflineCache.ExportInProgress");
             var result = await Task.Run(
-                () => ExportOfflineCacheRegion(region, GetOfflineCacheRoot(), targetRoot, cancellationToken),
+                () => ExportOfflineCacheRegion(region, GetOfflineCacheRoot(), targetRoot, cancellationToken, exportProgress),
                 cancellationToken);
 
             if (result.Success)
@@ -1335,6 +1405,15 @@ public sealed partial class MainWindowViewModel : ViewModelBase
                 }
 
                 OfflineCacheExportStatusText = statusText;
+                selectedRegion.ApplyExportResult(
+                    true,
+                    result.ExpectedTiles,
+                    result.SourceTiles,
+                    result.CopiedTiles,
+                    result.SkippedTiles,
+                    result.UnreadableEntries,
+                    result.ErrorMessage);
+                await SaveOfflineCacheRegionsAsync();
                 _logger.LogInformation(
                     "Offline cache region '{RegionName}' exported to '{TargetRoot}'. copied={Copied}, source={Source}, expected={Expected}, missing={Missing}, skipped={Skipped}, unreadable={Unreadable}",
                     region.Name,
@@ -1351,31 +1430,77 @@ public sealed partial class MainWindowViewModel : ViewModelBase
                 OfflineCacheExportStatusText = loc.Format(
                     "Status.OfflineCache.ExportFailed",
                     result.ErrorMessage ?? "unknown");
+                selectedRegion.ApplyExportResult(false, 0, 0, 0, 0, 0, result.ErrorMessage);
+                await SaveOfflineCacheRegionsAsync();
             }
 
             return result;
         }
         catch (OperationCanceledException)
         {
+            selectedRegion.MarkExportCanceled();
+            await SaveOfflineCacheRegionsAsync();
             OfflineCacheExportStatusText = loc.GetString("Status.OfflineCache.ExportCanceled");
             return OfflineCacheRegionExportResult.Fail("Canceled");
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Failed to export offline cache region '{RegionName}'", region.Name);
+            selectedRegion.ApplyExportResult(false, 0, 0, 0, 0, 0, ex.Message);
+            await SaveOfflineCacheRegionsAsync();
+            _logger.LogWarning(ex, "Failed to export offline cache region '{RegionName}'", selectedRegion.Name);
             OfflineCacheExportStatusText = loc.Format("Status.OfflineCache.ExportFailed", ex.Message);
             return OfflineCacheRegionExportResult.Fail(ex.Message);
         }
         finally
         {
             IsOfflineCacheExporting = false;
+            NotifyOfflineCacheBuildAvailabilityChanged();
         }
+    }
+
+    private async Task PrepareOfflineCacheRegionTilesForExportAsync(
+        MapCacheRegionViewModel region,
+        CancellationToken cancellationToken)
+    {
+        var options = region.ToBuildOptions();
+        var hasRasterLayers = options.IncludeOsm ||
+                              options.IncludeTerrain ||
+                              options.IncludeSatellite ||
+                              options.IncludeContours;
+        if (!hasRasterLayers)
+            return;
+
+        SelectedOfflineCacheRegion = region;
+        TryApplySelectedOfflineCacheRegion(focusMap: false);
+        await Map.RunOfflineCacheForSelectionAsync(options with
+        {
+            EnablePoiSeparation = false,
+        }, cancellationToken);
+        await RefreshOfflineCacheRegionHealthAsync(region, cancellationToken);
+    }
+
+    public async Task<OfflineCacheRegionExportResult> ResumeSelectedOfflineCacheRegionExportAsync(
+        CancellationToken cancellationToken = default)
+    {
+        if (SelectedOfflineCacheRegion is null)
+        {
+            return OfflineCacheRegionExportResult.Fail("No cache region selected.");
+        }
+
+        var destinationRoot = SelectedOfflineCacheRegion.ExportOutputDirectory;
+        if (string.IsNullOrWhiteSpace(destinationRoot))
+        {
+            return OfflineCacheRegionExportResult.Fail("No export destination saved.");
+        }
+
+        return await ExportSelectedOfflineCacheRegionAsync(destinationRoot, cancellationToken);
     }
 
     public async Task<OfflineCacheRegionExportResult> ExportMapPackAsync(
         MapPackExportPlan plan,
         CancellationToken cancellationToken = default,
-        IProgress<OfflineCacheExportProgress>? progress = null)
+        IProgress<OfflineCacheExportProgress>? progress = null,
+        MapCacheRegionViewModel? exportTaskRegion = null)
     {
         if (plan is null)
             throw new ArgumentNullException(nameof(plan));
@@ -1396,66 +1521,53 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             return OfflineCacheRegionExportResult.Fail("Export is already running.");
         }
 
-        var bounds = plan.Area.Bounds.Normalize();
-        var region = new MapCacheRegionSettings
-        {
-            Id = string.IsNullOrWhiteSpace(plan.Name) ? Guid.NewGuid().ToString("N") : plan.Name.Trim(),
-            Name = string.IsNullOrWhiteSpace(plan.Area.Name) ? plan.Name : plan.Area.Name,
-            West = bounds.West,
-            South = bounds.South,
-            East = bounds.East,
-            North = bounds.North,
-            AdminLevel = plan.Area.AdminLevel,
-            BoundaryGeoJson = plan.Area.BoundaryGeoJson,
-            IncludeOsm = plan.BaseLayers.IncludeOsm,
-            IncludeTerrain = plan.BaseLayers.IncludeTerrain,
-            IncludeSatellite = plan.BaseLayers.IncludeSatellite,
-            IncludeContours = plan.BaseLayers.IncludeContours,
-            IncludeUltraFineContours = plan.BaseLayers.IncludeContours && plan.BaseLayers.IncludeUltraFineContours,
-            MinimumZoom = plan.BaseLayers.MinimumZoom,
-            MaximumZoom = plan.BaseLayers.MaximumZoom,
-            EnablePoiSeparation = plan.Poi.EnablePoiSeparation,
-            PoiPbfPath = plan.Poi.PbfPath,
-            PoiSourceProvider = plan.Poi.SourceProvider,
-            PoiSourceDownloadUrl = plan.Poi.SourceDownloadUrl,
-            GenerateFullPoisJsonl = plan.Poi.GenerateFullPoisJsonl,
-            GenerateTileIndexedPoiFiles = plan.Poi.GenerateTileIndex,
-            PoiIndexMinimumZoom = plan.Poi.IndexOptions.MinZoom,
-            PoiIndexMaximumZoom = plan.Poi.IndexOptions.MaxZoom,
-            MaxPoiPerTile = plan.Poi.IndexOptions.MaxPoiPerTile,
-            IncludePoiLabels = plan.Poi.IndexOptions.IncludeLabels,
-            IncludeOriginalOsmTags = plan.Poi.IndexOptions.IncludeOriginalTags,
-            PoiOutputFormat = plan.Poi.IndexOptions.OutputFormat == PoiOutputFormat.Compact ? "compact" : "readable",
-            SelectedPoiTypes = plan.Poi.SelectedPoiTypes.ToArray(),
-        };
+        var region = CreateMapCacheRegionSettings(plan);
+        exportTaskRegion ??= await RegisterMapPackExportTaskAsync(plan, cancellationToken);
+        exportTaskRegion.ApplySettings(region);
+        exportTaskRegion.MarkExportStarted(targetRoot);
+        await SaveOfflineCacheRegionsAsync();
 
         var loc = LocalizationService.Instance;
         IsOfflineCacheExporting = true;
         OfflineCacheExportStatusText = loc.GetString("Status.OfflineCache.ExportInProgress");
-        progress?.Report(OfflineCacheExportProgress.Preparing());
+        var exportProgress = CreateRegionExportProgress(progress, exportTaskRegion);
+        exportProgress?.Report(OfflineCacheExportProgress.Preparing());
         try
         {
             var result = await Task.Run(
-                () => ExportOfflineCacheRegion(region, GetOfflineCacheRoot(), targetRoot, cancellationToken, progress),
+                () => ExportOfflineCacheRegion(region, GetOfflineCacheRoot(), targetRoot, cancellationToken, exportProgress),
                 cancellationToken);
 
             OfflineCacheExportStatusText = result.Success
                 ? BuildOfflineCacheExportStatus(loc, result)
                 : loc.Format("Status.OfflineCache.ExportFailed", result.ErrorMessage ?? "unknown");
-            progress?.Report(result.Success
+            exportTaskRegion.ApplyExportResult(
+                result.Success,
+                result.ExpectedTiles,
+                result.SourceTiles,
+                result.CopiedTiles,
+                result.SkippedTiles,
+                result.UnreadableEntries,
+                result.ErrorMessage);
+            await SaveOfflineCacheRegionsAsync();
+            exportProgress?.Report(result.Success
                 ? OfflineCacheExportProgress.Done()
                 : OfflineCacheExportProgress.Failed());
             return result;
         }
         catch (OperationCanceledException)
         {
-            progress?.Report(OfflineCacheExportProgress.Failed());
+            exportTaskRegion.MarkExportCanceled();
+            await SaveOfflineCacheRegionsAsync();
+            exportProgress?.Report(OfflineCacheExportProgress.Failed());
             OfflineCacheExportStatusText = loc.GetString("Status.OfflineCache.ExportCanceled");
             return OfflineCacheRegionExportResult.Fail("Canceled");
         }
         catch (Exception ex)
         {
-            progress?.Report(OfflineCacheExportProgress.Failed());
+            exportTaskRegion.ApplyExportResult(false, 0, 0, 0, 0, 0, ex.Message);
+            await SaveOfflineCacheRegionsAsync();
+            exportProgress?.Report(OfflineCacheExportProgress.Failed());
             _logger.LogWarning(ex, "Failed to export map pack '{Name}'", plan.Name);
             OfflineCacheExportStatusText = loc.Format("Status.OfflineCache.ExportFailed", ex.Message);
             return OfflineCacheRegionExportResult.Fail(ex.Message);
@@ -1550,6 +1662,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
                 SelectedPoiTypes = region.SelectedPoiTypes,
             }.Normalize();
             var stats = new ExportCopyStats();
+            stats.ProgressTotalTiles = CountExpectedExportTiles(buildOptions, bounds);
             progress?.Report(OfflineCacheExportProgress.Preparing());
 
             var osmMinZoom = Math.Max(buildOptions.MinimumZoom, OfflineCacheBuildOptions.DefaultMinimumZoom);
@@ -1697,6 +1810,61 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         return mapsRoot;
     }
 
+    private static long CountExpectedExportTiles(
+        OfflineCacheBuildOptions buildOptions,
+        (double West, double South, double East, double North) bounds)
+    {
+        var total = 0L;
+
+        static long CountBaseTiles(
+            int minZoom,
+            int maxZoom,
+            (double West, double South, double East, double North) bounds)
+        {
+            var total = 0L;
+            for (var zoom = minZoom; zoom <= maxZoom; zoom++)
+            {
+                var range = GetOfflineRange(bounds, zoom);
+                if (!range.IsEmpty)
+                    total += range.TileCount;
+            }
+
+            return total;
+        }
+
+        var osmMinZoom = Math.Max(buildOptions.MinimumZoom, OfflineCacheBuildOptions.DefaultMinimumZoom);
+        var osmMaxZoom = Math.Min(buildOptions.MaximumZoom, OfflineCacheBuildOptions.DefaultMaximumZoom);
+        if (buildOptions.IncludeOsm && osmMinZoom <= osmMaxZoom)
+            total += CountBaseTiles(osmMinZoom, osmMaxZoom, bounds);
+
+        var terrainMinZoom = Math.Max(buildOptions.MinimumZoom, OfflineCacheBuildOptions.DefaultMinimumZoom);
+        var terrainMaxZoom = Math.Min(buildOptions.MaximumZoom, OfflineCacheBuildOptions.TerrainMaximumZoom);
+        if (buildOptions.IncludeTerrain && terrainMinZoom <= terrainMaxZoom)
+            total += CountBaseTiles(terrainMinZoom, terrainMaxZoom, bounds);
+
+        var satelliteMinZoom = Math.Max(buildOptions.MinimumZoom, OfflineCacheBuildOptions.DefaultMinimumZoom);
+        var satelliteMaxZoom = Math.Min(buildOptions.MaximumZoom, OfflineCacheBuildOptions.DefaultMaximumZoom);
+        if (buildOptions.IncludeSatellite && satelliteMinZoom <= satelliteMaxZoom)
+            total += CountBaseTiles(satelliteMinZoom, satelliteMaxZoom, bounds);
+
+        var contourMinZoom = Math.Max(buildOptions.MinimumZoom, OfflineCacheBuildOptions.DefaultMinimumZoom);
+        var contourMaxZoom = Math.Min(buildOptions.MaximumZoom, OfflineCacheBuildOptions.DefaultMaximumZoom);
+        if (buildOptions.IncludeContours && contourMinZoom <= contourMaxZoom)
+        {
+            for (var zoom = contourMinZoom; zoom <= contourMaxZoom; zoom++)
+            {
+                if (GetTrailMateContourProfileForZoom(zoom) is null)
+                    continue;
+
+                var range = GetOfflineRange(bounds, zoom);
+                if (!range.IsEmpty)
+                    total += range.TileCount;
+            }
+        }
+
+        return total;
+    }
+
     private static void ExportBaseTiles(
         string sourceRoot,
         string targetRoot,
@@ -1735,6 +1903,61 @@ public sealed partial class MainWindowViewModel : ViewModelBase
                 progress,
                 cancellationToken);
         }
+    }
+
+    private static MapCacheRegionSettings CreateMapCacheRegionSettings(MapPackExportPlan plan)
+    {
+        var bounds = plan.Area.Bounds.Normalize();
+        return new MapCacheRegionSettings
+        {
+            Id = Guid.NewGuid().ToString("N"),
+            Name = string.IsNullOrWhiteSpace(plan.Area.Name) ? plan.Name : plan.Area.Name,
+            West = bounds.West,
+            South = bounds.South,
+            East = bounds.East,
+            North = bounds.North,
+            AdminLevel = plan.Area.AdminLevel,
+            BoundaryGeoJson = plan.Area.BoundaryGeoJson,
+            IncludeOsm = plan.BaseLayers.IncludeOsm,
+            IncludeTerrain = plan.BaseLayers.IncludeTerrain,
+            IncludeSatellite = plan.BaseLayers.IncludeSatellite,
+            IncludeContours = plan.BaseLayers.IncludeContours,
+            IncludeUltraFineContours = plan.BaseLayers.IncludeContours && plan.BaseLayers.IncludeUltraFineContours,
+            MinimumZoom = plan.BaseLayers.MinimumZoom,
+            MaximumZoom = plan.BaseLayers.MaximumZoom,
+            EnablePoiSeparation = plan.Poi.EnablePoiSeparation,
+            PoiPbfPath = plan.Poi.PbfPath,
+            PoiSourceProvider = plan.Poi.SourceProvider,
+            PoiSourceDownloadUrl = plan.Poi.SourceDownloadUrl,
+            GenerateFullPoisJsonl = plan.Poi.GenerateFullPoisJsonl,
+            GenerateTileIndexedPoiFiles = plan.Poi.GenerateTileIndex,
+            PoiIndexMinimumZoom = plan.Poi.IndexOptions.MinZoom,
+            PoiIndexMaximumZoom = plan.Poi.IndexOptions.MaxZoom,
+            MaxPoiPerTile = plan.Poi.IndexOptions.MaxPoiPerTile,
+            IncludePoiLabels = plan.Poi.IndexOptions.IncludeLabels,
+            IncludeOriginalOsmTags = plan.Poi.IndexOptions.IncludeOriginalTags,
+            PoiOutputFormat = plan.Poi.IndexOptions.OutputFormat == PoiOutputFormat.Compact ? "compact" : "readable",
+            SelectedPoiTypes = plan.Poi.SelectedPoiTypes.ToArray(),
+            ExportOutputDirectory = plan.OutputDirectory,
+            ExportState = "exporting",
+        };
+    }
+
+    private static IProgress<OfflineCacheExportProgress>? CreateRegionExportProgress(
+        IProgress<OfflineCacheExportProgress>? downstream,
+        MapCacheRegionViewModel? region)
+    {
+        if (downstream is null && region is null)
+            return null;
+
+        return new Progress<OfflineCacheExportProgress>(progress =>
+        {
+            downstream?.Report(progress);
+            if (region is null || progress.Kind != OfflineCacheExportProgressKind.Layer)
+                return;
+
+            region.ApplyExportProgress(progress.Completed, progress.Total, progress.CopiedTiles, progress.SkippedTiles);
+        });
     }
 
     private static void ExportTrailMateContours(
@@ -1811,24 +2034,46 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     {
         var zoomText = zoom.ToString(CultureInfo.InvariantCulture);
         var sourceZoomRoot = Path.Combine(sourceRoot, zoomText);
+        var totalColumns = Math.Max(1, range.MaxX - range.MinX + 1);
+        var tilesPerColumn = Math.Max(1L, (long)range.MaxY - range.MinY + 1);
+        var totalTiles = Math.Max(1L, range.TileCount);
+        var progressTotalTiles = Math.Max(1L, stats.ProgressTotalTiles);
         if (!Directory.Exists(sourceZoomRoot))
+        {
+            stats.ProcessedTiles += totalTiles;
+            progress?.Report(OfflineCacheExportProgress.Layer(
+                layerResourceKey,
+                zoom,
+                Math.Min(stats.ProcessedTiles, progressTotalTiles),
+                progressTotalTiles,
+                stats.CopiedTiles,
+                stats.SkippedTiles));
             return;
+        }
 
         var searchPattern = $"*.{sourceExtension}";
         var targetZoomRoot = Path.Combine(targetRoot, zoomText);
-        var totalColumns = Math.Max(1, range.MaxX - range.MinX + 1);
-        var processedColumns = 0L;
-        progress?.Report(OfflineCacheExportProgress.Layer(layerResourceKey, zoom, 0, totalColumns, stats.CopiedTiles, stats.SkippedTiles));
+        var processedZoomTiles = 0L;
+        progress?.Report(OfflineCacheExportProgress.Layer(
+            layerResourceKey,
+            zoom,
+            Math.Min(stats.ProcessedTiles, progressTotalTiles),
+            progressTotalTiles,
+            stats.CopiedTiles,
+            stats.SkippedTiles));
         for (var x = range.MinX; x <= range.MaxX; x++)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            processedColumns++;
+            var columnTiles = Math.Min(tilesPerColumn, totalTiles - processedZoomTiles);
+            processedZoomTiles += columnTiles;
+            stats.ProcessedTiles += columnTiles;
+            var processedTiles = Math.Min(stats.ProcessedTiles, progressTotalTiles);
 
             var xText = x.ToString(CultureInfo.InvariantCulture);
             var sourceXRoot = Path.Combine(sourceZoomRoot, xText);
             if (!Directory.Exists(sourceXRoot))
             {
-                ReportExportColumnProgress(progress, layerResourceKey, zoom, processedColumns, totalColumns, stats);
+                ReportExportTileProgress(progress, layerResourceKey, zoom, processedTiles, progressTotalTiles, stats);
                 continue;
             }
 
@@ -1841,7 +2086,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             catch (Exception ex) when (IsSkippableFileSystemException(ex))
             {
                 stats.UnreadableEntries++;
-                ReportExportColumnProgress(progress, layerResourceKey, zoom, processedColumns, totalColumns, stats);
+                ReportExportTileProgress(progress, layerResourceKey, zoom, processedTiles, progressTotalTiles, stats);
                 continue;
             }
 
@@ -1875,30 +2120,30 @@ public sealed partial class MainWindowViewModel : ViewModelBase
                 }
             }
 
-            ReportExportColumnProgress(progress, layerResourceKey, zoom, processedColumns, totalColumns, stats);
+            ReportExportTileProgress(progress, layerResourceKey, zoom, processedTiles, progressTotalTiles, stats);
         }
     }
 
-    private static void ReportExportColumnProgress(
+    private static void ReportExportTileProgress(
         IProgress<OfflineCacheExportProgress>? progress,
         string layerResourceKey,
         int zoom,
-        long processedColumns,
-        long totalColumns,
+        long processedTiles,
+        long totalTiles,
         ExportCopyStats stats)
     {
         if (progress is null)
             return;
 
-        if (processedColumns == totalColumns ||
-            processedColumns % 10 == 0 ||
+        if (processedTiles == totalTiles ||
+            processedTiles % 500 == 0 ||
             (stats.CopiedTiles > 0 && stats.CopiedTiles % 200 == 0))
         {
             progress.Report(OfflineCacheExportProgress.Layer(
                 layerResourceKey,
                 zoom,
-                processedColumns,
-                totalColumns,
+                processedTiles,
+                totalTiles,
                 stats.CopiedTiles,
                 stats.SkippedTiles));
         }
@@ -2086,6 +2331,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         BuildOfflineCacheRegionCommand.NotifyCanExecuteChanged();
         OnPropertyChanged(nameof(CanContinueSelectedOfflineCacheRegion));
         OnPropertyChanged(nameof(CanExportSelectedOfflineCacheRegion));
+        OnPropertyChanged(nameof(CanResumeSelectedOfflineCacheRegionExport));
     }
 
     private void TrackOfflineCacheRegion(MapCacheRegionViewModel region)
@@ -2117,7 +2363,9 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             nameof(MapCacheRegionViewModel.IncludeContours) or
             nameof(MapCacheRegionViewModel.EnablePoiSeparation) or
             nameof(MapCacheRegionViewModel.MinimumZoom) or
-            nameof(MapCacheRegionViewModel.MaximumZoom))
+            nameof(MapCacheRegionViewModel.MaximumZoom) or
+            nameof(MapCacheRegionViewModel.ExportOutputDirectory) or
+            nameof(MapCacheRegionViewModel.ExportState))
         {
             NotifyOfflineCacheBuildAvailabilityChanged();
         }
@@ -2545,6 +2793,8 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         public long CopiedTiles { get; set; }
         public long SkippedTiles { get; set; }
         public long UnreadableEntries { get; set; }
+        public long ProgressTotalTiles { get; set; }
+        public long ProcessedTiles { get; set; }
     }
 
     private async Task DisconnectAsync()

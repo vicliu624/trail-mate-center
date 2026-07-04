@@ -201,6 +201,17 @@ public sealed class SqliteStore
                 poi_include_tags INTEGER NOT NULL DEFAULT 0,
                 poi_output_format TEXT NOT NULL DEFAULT 'readable',
                 poi_selected_types TEXT NOT NULL DEFAULT '',
+                export_output_directory TEXT NOT NULL DEFAULT '',
+                export_state TEXT NOT NULL DEFAULT 'none',
+                export_processed_tiles INTEGER NOT NULL DEFAULT 0,
+                export_expected_tiles INTEGER NOT NULL DEFAULT 0,
+                export_source_tiles INTEGER NOT NULL DEFAULT 0,
+                export_copied_tiles INTEGER NOT NULL DEFAULT 0,
+                export_skipped_tiles INTEGER NOT NULL DEFAULT 0,
+                export_missing_tiles INTEGER NOT NULL DEFAULT 0,
+                export_unreadable_entries INTEGER NOT NULL DEFAULT 0,
+                export_last_error TEXT NOT NULL DEFAULT '',
+                export_updated_at INTEGER NOT NULL DEFAULT 0,
                 sort_order INTEGER NOT NULL
             );
 
@@ -237,6 +248,17 @@ public sealed class SqliteStore
         await EnsureColumnAsync(connection, "map_cache_regions", "poi_include_tags", "INTEGER NOT NULL DEFAULT 0", cancellationToken);
         await EnsureColumnAsync(connection, "map_cache_regions", "poi_output_format", "TEXT NOT NULL DEFAULT 'readable'", cancellationToken);
         await EnsureColumnAsync(connection, "map_cache_regions", "poi_selected_types", "TEXT NOT NULL DEFAULT ''", cancellationToken);
+        await EnsureColumnAsync(connection, "map_cache_regions", "export_output_directory", "TEXT NOT NULL DEFAULT ''", cancellationToken);
+        await EnsureColumnAsync(connection, "map_cache_regions", "export_state", "TEXT NOT NULL DEFAULT 'none'", cancellationToken);
+        await EnsureColumnAsync(connection, "map_cache_regions", "export_processed_tiles", "INTEGER NOT NULL DEFAULT 0", cancellationToken);
+        await EnsureColumnAsync(connection, "map_cache_regions", "export_expected_tiles", "INTEGER NOT NULL DEFAULT 0", cancellationToken);
+        await EnsureColumnAsync(connection, "map_cache_regions", "export_source_tiles", "INTEGER NOT NULL DEFAULT 0", cancellationToken);
+        await EnsureColumnAsync(connection, "map_cache_regions", "export_copied_tiles", "INTEGER NOT NULL DEFAULT 0", cancellationToken);
+        await EnsureColumnAsync(connection, "map_cache_regions", "export_skipped_tiles", "INTEGER NOT NULL DEFAULT 0", cancellationToken);
+        await EnsureColumnAsync(connection, "map_cache_regions", "export_missing_tiles", "INTEGER NOT NULL DEFAULT 0", cancellationToken);
+        await EnsureColumnAsync(connection, "map_cache_regions", "export_unreadable_entries", "INTEGER NOT NULL DEFAULT 0", cancellationToken);
+        await EnsureColumnAsync(connection, "map_cache_regions", "export_last_error", "TEXT NOT NULL DEFAULT ''", cancellationToken);
+        await EnsureColumnAsync(connection, "map_cache_regions", "export_updated_at", "INTEGER NOT NULL DEFAULT 0", cancellationToken);
     }
 
     public async Task UpsertMessageAsync(MessageEntry message, CancellationToken cancellationToken)
@@ -905,6 +927,17 @@ public sealed class SqliteStore
                     IncludeOriginalOsmTags = ReadBool(reader, "poi_include_tags", defaultValue: false),
                     PoiOutputFormat = ReadNullableString(reader, "poi_output_format") ?? "readable",
                     SelectedPoiTypes = DeserializePoiTypes(ReadNullableString(reader, "poi_selected_types")),
+                    ExportOutputDirectory = ReadNullableString(reader, "export_output_directory") ?? string.Empty,
+                    ExportState = ReadNullableString(reader, "export_state") ?? "none",
+                    ExportProcessedTiles = ReadNullableLong(reader, "export_processed_tiles") ?? 0,
+                    ExportExpectedTiles = ReadNullableLong(reader, "export_expected_tiles") ?? 0,
+                    ExportSourceTiles = ReadNullableLong(reader, "export_source_tiles") ?? 0,
+                    ExportCopiedTiles = ReadNullableLong(reader, "export_copied_tiles") ?? 0,
+                    ExportSkippedTiles = ReadNullableLong(reader, "export_skipped_tiles") ?? 0,
+                    ExportMissingTiles = ReadNullableLong(reader, "export_missing_tiles") ?? 0,
+                    ExportUnreadableEntries = ReadNullableLong(reader, "export_unreadable_entries") ?? 0,
+                    ExportLastError = ReadNullableString(reader, "export_last_error") ?? string.Empty,
+                    ExportUpdatedAtUnixTime = ReadNullableLong(reader, "export_updated_at") ?? 0,
                 });
             }
         }
@@ -945,6 +978,9 @@ public sealed class SqliteStore
                         enable_poi_separation, poi_pbf_path, poi_source_provider, poi_source_download_url,
                         poi_generate_full, poi_generate_index, poi_min_zoom, poi_max_zoom,
                         poi_max_per_tile, poi_include_labels, poi_include_tags, poi_output_format, poi_selected_types,
+                        export_output_directory, export_state, export_processed_tiles, export_expected_tiles, export_source_tiles,
+                        export_copied_tiles, export_skipped_tiles, export_missing_tiles, export_unreadable_entries,
+                        export_last_error, export_updated_at,
                         sort_order
                     ) VALUES (
                         $id, $name, $west, $south, $east, $north, $admin_level, $boundary_geojson,
@@ -953,6 +989,9 @@ public sealed class SqliteStore
                         $enable_poi_separation, $poi_pbf_path, $poi_source_provider, $poi_source_download_url,
                         $poi_generate_full, $poi_generate_index, $poi_min_zoom, $poi_max_zoom,
                         $poi_max_per_tile, $poi_include_labels, $poi_include_tags, $poi_output_format, $poi_selected_types,
+                        $export_output_directory, $export_state, $export_processed_tiles, $export_expected_tiles, $export_source_tiles,
+                        $export_copied_tiles, $export_skipped_tiles, $export_missing_tiles, $export_unreadable_entries,
+                        $export_last_error, $export_updated_at,
                         $sort_order
                     );
                     """;
@@ -984,6 +1023,17 @@ public sealed class SqliteStore
                 insert.Parameters.AddWithValue("$poi_include_tags", region.IncludeOriginalOsmTags ? 1 : 0);
                 insert.Parameters.AddWithValue("$poi_output_format", string.IsNullOrWhiteSpace(region.PoiOutputFormat) ? "readable" : region.PoiOutputFormat.Trim());
                 insert.Parameters.AddWithValue("$poi_selected_types", SerializePoiTypes(region.SelectedPoiTypes));
+                insert.Parameters.AddWithValue("$export_output_directory", region.ExportOutputDirectory ?? string.Empty);
+                insert.Parameters.AddWithValue("$export_state", string.IsNullOrWhiteSpace(region.ExportState) ? "none" : region.ExportState.Trim());
+                insert.Parameters.AddWithValue("$export_processed_tiles", Math.Max(0, region.ExportProcessedTiles));
+                insert.Parameters.AddWithValue("$export_expected_tiles", Math.Max(0, region.ExportExpectedTiles));
+                insert.Parameters.AddWithValue("$export_source_tiles", Math.Max(0, region.ExportSourceTiles));
+                insert.Parameters.AddWithValue("$export_copied_tiles", Math.Max(0, region.ExportCopiedTiles));
+                insert.Parameters.AddWithValue("$export_skipped_tiles", Math.Max(0, region.ExportSkippedTiles));
+                insert.Parameters.AddWithValue("$export_missing_tiles", Math.Max(0, region.ExportMissingTiles));
+                insert.Parameters.AddWithValue("$export_unreadable_entries", Math.Max(0, region.ExportUnreadableEntries));
+                insert.Parameters.AddWithValue("$export_last_error", region.ExportLastError ?? string.Empty);
+                insert.Parameters.AddWithValue("$export_updated_at", Math.Max(0, region.ExportUpdatedAtUnixTime));
                 insert.Parameters.AddWithValue("$sort_order", sortOrder);
                 await insert.ExecuteNonQueryAsync(cancellationToken);
                 sortOrder++;

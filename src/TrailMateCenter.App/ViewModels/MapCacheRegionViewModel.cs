@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using System.Globalization;
+using TrailMateCenter.Localization;
 using TrailMateCenter.Maps;
 using TrailMateCenter.Storage;
 
@@ -7,6 +8,16 @@ namespace TrailMateCenter.ViewModels;
 
 public sealed partial class MapCacheRegionViewModel : ObservableObject
 {
+    private const string ExportStateNone = "none";
+    private const string ExportStateExporting = "exporting";
+    private const string ExportStateCompleted = "completed";
+    private const string ExportStatePartial = "partial";
+    private const string ExportStateFailed = "failed";
+    private const string ExportStateCanceled = "canceled";
+
+    private static string T(string key) => LocalizationService.Instance.GetString(key);
+    private static string F(string key, params object[] args) => LocalizationService.Instance.Format(key, args);
+
     [ObservableProperty]
     private string _id = Guid.NewGuid().ToString("N");
 
@@ -24,6 +35,12 @@ public sealed partial class MapCacheRegionViewModel : ObservableObject
 
     [ObservableProperty]
     private double _north;
+
+    [ObservableProperty]
+    private int? _adminLevel;
+
+    [ObservableProperty]
+    private string _boundaryGeoJson = string.Empty;
 
     [ObservableProperty]
     private bool _includeOsm = true;
@@ -51,6 +68,12 @@ public sealed partial class MapCacheRegionViewModel : ObservableObject
 
     [ObservableProperty]
     private string _poiPbfPath = string.Empty;
+
+    [ObservableProperty]
+    private string _poiSourceProvider = "local";
+
+    [ObservableProperty]
+    private string _poiSourceDownloadUrl = string.Empty;
 
     [ObservableProperty]
     private bool _generateFullPoisJsonl = true;
@@ -124,6 +147,39 @@ public sealed partial class MapCacheRegionViewModel : ObservableObject
     [ObservableProperty]
     private string _contourCoverageColor = "#9AA3AE";
 
+    [ObservableProperty]
+    private string _exportOutputDirectory = string.Empty;
+
+    [ObservableProperty]
+    private string _exportState = ExportStateNone;
+
+    [ObservableProperty]
+    private long _exportProcessedTiles;
+
+    [ObservableProperty]
+    private long _exportExpectedTiles;
+
+    [ObservableProperty]
+    private long _exportSourceTiles;
+
+    [ObservableProperty]
+    private long _exportCopiedTiles;
+
+    [ObservableProperty]
+    private long _exportSkippedTiles;
+
+    [ObservableProperty]
+    private long _exportMissingTiles;
+
+    [ObservableProperty]
+    private long _exportUnreadableEntries;
+
+    [ObservableProperty]
+    private string _exportLastError = string.Empty;
+
+    [ObservableProperty]
+    private long _exportUpdatedAtUnixTime;
+
     public string BoundsText =>
         string.Format(
             CultureInfo.InvariantCulture,
@@ -164,6 +220,101 @@ public sealed partial class MapCacheRegionViewModel : ObservableObject
     public string PoiSummaryText => EnablePoiSeparation
         ? $"POI Z{PoiIndexMinimumZoom}-Z{PoiIndexMaximumZoom}, {SelectedPoiTypes.Count} types"
         : "POI disabled";
+    public bool HasExportTask =>
+        !string.IsNullOrWhiteSpace(ExportOutputDirectory) ||
+        !string.Equals(NormalizeExportState(ExportState), ExportStateNone, StringComparison.OrdinalIgnoreCase);
+    public bool CanResumeExport
+    {
+        get
+        {
+            if (string.IsNullOrWhiteSpace(ExportOutputDirectory))
+                return false;
+
+            return NormalizeExportState(ExportState) is ExportStateExporting or
+                ExportStatePartial or
+                ExportStateFailed or
+                ExportStateCanceled;
+        }
+    }
+    public string ExportTaskText
+    {
+        get
+        {
+            var state = NormalizeExportState(ExportState);
+            return state switch
+            {
+                ExportStateExporting => T("Ui.Dashboard.OfflineCacheRegionsDialog.ExportTask.Exporting"),
+                ExportStateCompleted => T("Ui.Dashboard.OfflineCacheRegionsDialog.ExportTask.Completed"),
+                ExportStatePartial => T("Ui.Dashboard.OfflineCacheRegionsDialog.ExportTask.Partial"),
+                ExportStateFailed => T("Ui.Dashboard.OfflineCacheRegionsDialog.ExportTask.Failed"),
+                ExportStateCanceled => T("Ui.Dashboard.OfflineCacheRegionsDialog.ExportTask.Canceled"),
+                _ => T("Ui.Dashboard.OfflineCacheRegionsDialog.ExportTask.Ready"),
+            };
+        }
+    }
+
+    public string ExportTaskDetailText
+    {
+        get
+        {
+            if (!HasExportTask)
+                return string.Empty;
+
+            var destination = string.IsNullOrWhiteSpace(ExportOutputDirectory)
+                ? T("Ui.Dashboard.OfflineCacheRegionsDialog.ExportTask.NoDestination")
+                : ExportOutputDirectory.Trim();
+            var expected = Math.Max(0, ExportExpectedTiles);
+            var processed = Math.Max(0, ExportProcessedTiles);
+            var source = Math.Max(0, ExportSourceTiles);
+            var missing = Math.Max(0, ExportMissingTiles);
+            var copied = Math.Max(0, ExportCopiedTiles);
+            var skipped = Math.Max(0, ExportSkippedTiles);
+            var detail = string.Equals(NormalizeExportState(ExportState), ExportStateExporting, StringComparison.OrdinalIgnoreCase) && expected > 0
+                ? F(
+                    "Ui.Dashboard.OfflineCacheRegionsDialog.ExportTask.DetailRunning",
+                    destination,
+                    processed,
+                    expected,
+                    copied,
+                    skipped)
+                : expected > 0
+                ? F(
+                    "Ui.Dashboard.OfflineCacheRegionsDialog.ExportTask.DetailWithStats",
+                    destination,
+                    source,
+                    expected,
+                    missing,
+                    copied,
+                    skipped)
+                : F("Ui.Dashboard.OfflineCacheRegionsDialog.ExportTask.Detail", destination);
+
+            if (!string.IsNullOrWhiteSpace(ExportLastError))
+            {
+                detail = $"{detail} {F("Ui.Dashboard.OfflineCacheRegionsDialog.ExportTask.Error", ExportLastError.Trim())}";
+            }
+
+            return detail;
+        }
+    }
+
+    public string ExportTaskColor
+    {
+        get
+        {
+            return NormalizeExportState(ExportState) switch
+            {
+                ExportStateExporting => "#7CC5FF",
+                ExportStateCompleted => "#75E0A2",
+                ExportStatePartial => "#FFCF48",
+                ExportStateFailed => "#FF7373",
+                ExportStateCanceled => "#9AA3AE",
+                _ => "#9AA3AE",
+            };
+        }
+    }
+    public double ExportTaskPercent => ExportExpectedTiles <= 0
+        ? 0
+        : Math.Clamp((double)GetExportProgressNumerator() / ExportExpectedTiles * 100.0, 0, 100);
 
     public MapCacheRegionSettings ToSettings()
     {
@@ -176,6 +327,8 @@ public sealed partial class MapCacheRegionViewModel : ObservableObject
             South = South,
             East = East,
             North = North,
+            AdminLevel = AdminLevel,
+            BoundaryGeoJson = BoundaryGeoJson ?? string.Empty,
             IncludeOsm = options.IncludeOsm,
             IncludeTerrain = options.IncludeTerrain,
             IncludeSatellite = options.IncludeSatellite,
@@ -185,6 +338,8 @@ public sealed partial class MapCacheRegionViewModel : ObservableObject
             MaximumZoom = options.MaximumZoom,
             EnablePoiSeparation = options.EnablePoiSeparation,
             PoiPbfPath = options.PoiPbfPath,
+            PoiSourceProvider = string.IsNullOrWhiteSpace(PoiSourceProvider) ? "local" : PoiSourceProvider.Trim(),
+            PoiSourceDownloadUrl = PoiSourceDownloadUrl ?? string.Empty,
             GenerateFullPoisJsonl = options.GenerateFullPoisJsonl,
             GenerateTileIndexedPoiFiles = options.GenerateTileIndexedPoiFiles,
             PoiIndexMinimumZoom = options.PoiIndexMinimumZoom,
@@ -194,6 +349,17 @@ public sealed partial class MapCacheRegionViewModel : ObservableObject
             IncludeOriginalOsmTags = options.IncludeOriginalOsmTags,
             PoiOutputFormat = options.PoiOutputFormat.ToString().ToLowerInvariant(),
             SelectedPoiTypes = options.SelectedPoiTypes.ToArray(),
+            ExportOutputDirectory = ExportOutputDirectory ?? string.Empty,
+            ExportState = NormalizeExportState(ExportState),
+            ExportProcessedTiles = Math.Max(0, ExportProcessedTiles),
+            ExportExpectedTiles = Math.Max(0, ExportExpectedTiles),
+            ExportSourceTiles = Math.Max(0, ExportSourceTiles),
+            ExportCopiedTiles = Math.Max(0, ExportCopiedTiles),
+            ExportSkippedTiles = Math.Max(0, ExportSkippedTiles),
+            ExportMissingTiles = Math.Max(0, ExportMissingTiles),
+            ExportUnreadableEntries = Math.Max(0, ExportUnreadableEntries),
+            ExportLastError = ExportLastError ?? string.Empty,
+            ExportUpdatedAtUnixTime = Math.Max(0, ExportUpdatedAtUnixTime),
         };
     }
 
@@ -229,6 +395,8 @@ public sealed partial class MapCacheRegionViewModel : ObservableObject
             South = settings.South,
             East = settings.East,
             North = settings.North,
+            AdminLevel = settings.AdminLevel,
+            BoundaryGeoJson = settings.BoundaryGeoJson ?? string.Empty,
             IncludeOsm = options.IncludeOsm,
             IncludeTerrain = options.IncludeTerrain,
             IncludeSatellite = options.IncludeSatellite,
@@ -238,6 +406,8 @@ public sealed partial class MapCacheRegionViewModel : ObservableObject
             MaximumZoom = options.MaximumZoom,
             EnablePoiSeparation = options.EnablePoiSeparation,
             PoiPbfPath = options.PoiPbfPath,
+            PoiSourceProvider = string.IsNullOrWhiteSpace(settings.PoiSourceProvider) ? "local" : settings.PoiSourceProvider.Trim(),
+            PoiSourceDownloadUrl = settings.PoiSourceDownloadUrl ?? string.Empty,
             GenerateFullPoisJsonl = options.GenerateFullPoisJsonl,
             GenerateTileIndexedPoiFiles = options.GenerateTileIndexedPoiFiles,
             PoiIndexMinimumZoom = options.PoiIndexMinimumZoom,
@@ -247,7 +417,53 @@ public sealed partial class MapCacheRegionViewModel : ObservableObject
             IncludeOriginalOsmTags = options.IncludeOriginalOsmTags,
             PoiOutputFormat = options.PoiOutputFormat,
             SelectedPoiTypes = options.SelectedPoiTypes.ToArray(),
+            ExportOutputDirectory = settings.ExportOutputDirectory ?? string.Empty,
+            ExportState = NormalizeExportState(settings.ExportState),
+            ExportProcessedTiles = Math.Max(0, settings.ExportProcessedTiles),
+            ExportExpectedTiles = Math.Max(0, settings.ExportExpectedTiles),
+            ExportSourceTiles = Math.Max(0, settings.ExportSourceTiles),
+            ExportCopiedTiles = Math.Max(0, settings.ExportCopiedTiles),
+            ExportSkippedTiles = Math.Max(0, settings.ExportSkippedTiles),
+            ExportMissingTiles = Math.Max(0, settings.ExportMissingTiles),
+            ExportUnreadableEntries = Math.Max(0, settings.ExportUnreadableEntries),
+            ExportLastError = settings.ExportLastError ?? string.Empty,
+            ExportUpdatedAtUnixTime = Math.Max(0, settings.ExportUpdatedAtUnixTime),
         };
+    }
+
+    public void ApplySettings(MapCacheRegionSettings settings)
+    {
+        var options = new OfflineCacheBuildOptions
+        {
+            IncludeOsm = settings.IncludeOsm,
+            IncludeTerrain = settings.IncludeTerrain,
+            IncludeSatellite = settings.IncludeSatellite,
+            IncludeContours = settings.IncludeContours,
+            IncludeUltraFineContours = settings.IncludeUltraFineContours,
+            MinimumZoom = settings.MinimumZoom,
+            MaximumZoom = settings.MaximumZoom,
+            EnablePoiSeparation = settings.EnablePoiSeparation,
+            PoiPbfPath = settings.PoiPbfPath ?? string.Empty,
+            GenerateFullPoisJsonl = settings.GenerateFullPoisJsonl,
+            GenerateTileIndexedPoiFiles = settings.GenerateTileIndexedPoiFiles,
+            PoiIndexMinimumZoom = settings.PoiIndexMinimumZoom,
+            PoiIndexMaximumZoom = settings.PoiIndexMaximumZoom,
+            MaxPoiPerTile = settings.MaxPoiPerTile,
+            IncludePoiLabels = settings.IncludePoiLabels,
+            IncludeOriginalOsmTags = settings.IncludeOriginalOsmTags,
+            PoiOutputFormat = ParsePoiOutputFormat(settings.PoiOutputFormat),
+            SelectedPoiTypes = NormalizePoiTypes(settings.SelectedPoiTypes),
+        }.Normalize();
+
+        if (string.IsNullOrWhiteSpace(Id))
+            Id = string.IsNullOrWhiteSpace(settings.Id) ? Guid.NewGuid().ToString("N") : settings.Id.Trim();
+        Name = string.IsNullOrWhiteSpace(settings.Name) ? Name : settings.Name.Trim();
+        UpdateBounds((settings.West, settings.South, settings.East, settings.North));
+        AdminLevel = settings.AdminLevel;
+        BoundaryGeoJson = settings.BoundaryGeoJson ?? string.Empty;
+        ApplyBuildOptions(options);
+        PoiSourceProvider = string.IsNullOrWhiteSpace(settings.PoiSourceProvider) ? "local" : settings.PoiSourceProvider.Trim();
+        PoiSourceDownloadUrl = settings.PoiSourceDownloadUrl ?? string.Empty;
     }
 
     public void ApplyBuildOptions(OfflineCacheBuildOptions options)
@@ -318,6 +534,70 @@ public sealed partial class MapCacheRegionViewModel : ObservableObject
             PoiOutputFormat = PoiOutputFormat,
             SelectedPoiTypes = SelectedPoiTypes.ToArray(),
         }.Normalize();
+    }
+
+    public void MarkExportStarted(string outputDirectory)
+    {
+        ExportOutputDirectory = outputDirectory?.Trim() ?? string.Empty;
+        ExportState = ExportStateExporting;
+        ExportProcessedTiles = 0;
+        ExportExpectedTiles = 0;
+        ExportSourceTiles = 0;
+        ExportCopiedTiles = 0;
+        ExportSkippedTiles = 0;
+        ExportMissingTiles = 0;
+        ExportUnreadableEntries = 0;
+        ExportLastError = string.Empty;
+        TouchExportTask();
+    }
+
+    public void ApplyExportProgress(long processedTiles, long expectedTiles, long copiedTiles, long skippedTiles)
+    {
+        ExportState = ExportStateExporting;
+        ExportProcessedTiles = Math.Max(ExportProcessedTiles, processedTiles);
+        ExportExpectedTiles = Math.Max(ExportExpectedTiles, expectedTiles);
+        ExportCopiedTiles = Math.Max(0, copiedTiles);
+        ExportSkippedTiles = Math.Max(0, skippedTiles);
+        TouchExportTask();
+    }
+
+    public void ApplyExportResult(
+        bool success,
+        long expectedTiles,
+        long sourceTiles,
+        long copiedTiles,
+        long skippedTiles,
+        long unreadableEntries,
+        string? errorMessage)
+    {
+        if (success || expectedTiles > 0)
+            ExportExpectedTiles = Math.Max(0, expectedTiles);
+        ExportProcessedTiles = success
+            ? ExportExpectedTiles
+            : ExportExpectedTiles > 0 ? Math.Clamp(ExportProcessedTiles, 0, ExportExpectedTiles) : ExportProcessedTiles;
+        if (success || sourceTiles > 0)
+            ExportSourceTiles = Math.Max(0, sourceTiles);
+        if (success || copiedTiles > 0)
+            ExportCopiedTiles = Math.Max(0, copiedTiles);
+        if (success || skippedTiles > 0)
+            ExportSkippedTiles = Math.Max(0, skippedTiles);
+        ExportMissingTiles = ExportExpectedTiles > 0
+            ? Math.Max(0, ExportExpectedTiles - ExportSourceTiles)
+            : ExportMissingTiles;
+        if (success || unreadableEntries > 0)
+            ExportUnreadableEntries = Math.Max(0, unreadableEntries);
+        ExportLastError = errorMessage ?? string.Empty;
+        ExportState = success
+            ? ExportMissingTiles > 0 || ExportUnreadableEntries > 0 ? ExportStatePartial : ExportStateCompleted
+            : ExportStateFailed;
+        TouchExportTask();
+    }
+
+    public void MarkExportCanceled()
+    {
+        ExportState = ExportStateCanceled;
+        ExportLastError = string.Empty;
+        TouchExportTask();
     }
 
     public void UpdateBounds((double West, double South, double East, double North) bounds)
@@ -489,6 +769,17 @@ public sealed partial class MapCacheRegionViewModel : ObservableObject
 
     partial void OnCacheExistingTilesChanged(long value) => OnPropertyChanged(nameof(CacheNeedsMaintenance));
     partial void OnCacheExpectedTilesChanged(long value) => OnPropertyChanged(nameof(CacheNeedsMaintenance));
+    partial void OnExportOutputDirectoryChanged(string value) => NotifyExportTaskChanged();
+    partial void OnExportStateChanged(string value) => NotifyExportTaskChanged();
+    partial void OnExportProcessedTilesChanged(long value) => NotifyExportTaskChanged();
+    partial void OnExportExpectedTilesChanged(long value) => NotifyExportTaskChanged();
+    partial void OnExportSourceTilesChanged(long value) => NotifyExportTaskChanged();
+    partial void OnExportCopiedTilesChanged(long value) => NotifyExportTaskChanged();
+    partial void OnExportSkippedTilesChanged(long value) => NotifyExportTaskChanged();
+    partial void OnExportMissingTilesChanged(long value) => NotifyExportTaskChanged();
+    partial void OnExportUnreadableEntriesChanged(long value) => NotifyExportTaskChanged();
+    partial void OnExportLastErrorChanged(string value) => NotifyExportTaskChanged();
+    partial void OnExportUpdatedAtUnixTimeChanged(long value) => NotifyExportTaskChanged();
 
     private static (string Text, string Color) BuildLayerCoverage(long existing, long expected)
     {
@@ -525,6 +816,47 @@ public sealed partial class MapCacheRegionViewModel : ObservableObject
         TerrainCoverageColor = "#9AA3AE";
         SatelliteCoverageColor = "#9AA3AE";
         ContourCoverageColor = "#9AA3AE";
+    }
+
+    private void TouchExportTask()
+    {
+        ExportUpdatedAtUnixTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        NotifyExportTaskChanged();
+    }
+
+    private void NotifyExportTaskChanged()
+    {
+        OnPropertyChanged(nameof(HasExportTask));
+        OnPropertyChanged(nameof(CanResumeExport));
+        OnPropertyChanged(nameof(ExportTaskText));
+        OnPropertyChanged(nameof(ExportTaskDetailText));
+        OnPropertyChanged(nameof(ExportTaskColor));
+        OnPropertyChanged(nameof(ExportTaskPercent));
+    }
+
+    private long GetExportProgressNumerator()
+    {
+        var state = NormalizeExportState(ExportState);
+        if (state == ExportStateExporting)
+            return Math.Max(0, ExportProcessedTiles);
+
+        if (state is ExportStateCompleted or ExportStatePartial)
+            return Math.Max(0, ExportSourceTiles);
+
+        return Math.Max(Math.Max(0, ExportProcessedTiles), Math.Max(0, ExportSourceTiles));
+    }
+
+    private static string NormalizeExportState(string? state)
+    {
+        return state?.Trim().ToLowerInvariant() switch
+        {
+            ExportStateExporting => ExportStateExporting,
+            ExportStateCompleted => ExportStateCompleted,
+            ExportStatePartial => ExportStatePartial,
+            ExportStateFailed => ExportStateFailed,
+            ExportStateCanceled => ExportStateCanceled,
+            _ => ExportStateNone,
+        };
     }
 
     private static PoiOutputFormat ParsePoiOutputFormat(string? value)

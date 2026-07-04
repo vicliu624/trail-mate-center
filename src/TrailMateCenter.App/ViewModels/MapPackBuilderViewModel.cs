@@ -271,6 +271,7 @@ public sealed partial class MapPackBuilderViewModel : ObservableObject
 
     public void ApplyExportProgress(MainWindowViewModel.OfflineCacheExportProgress progress)
     {
+        var updateStatusText = true;
         switch (progress.Kind)
         {
             case MainWindowViewModel.OfflineCacheExportProgressKind.Preparing:
@@ -305,14 +306,17 @@ public sealed partial class MapPackBuilderViewModel : ObservableObject
                 IsExportProgressIndeterminate = false;
                 ExportProgressPercent = 100;
                 ExportProgressText = T("Ui.MapPack.Status.ExportCompleted");
+                updateStatusText = false;
                 break;
             case MainWindowViewModel.OfflineCacheExportProgressKind.Failed:
                 IsExportProgressIndeterminate = false;
                 ExportProgressText = T("Ui.MapPack.Status.ExportFailedShort");
+                updateStatusText = false;
                 break;
         }
 
-        StatusText = ExportProgressText;
+        if (updateStatusText)
+            StatusText = ExportProgressText;
     }
 
     public void ApplyTilePreparationProgress()

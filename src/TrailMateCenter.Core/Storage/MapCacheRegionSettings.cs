@@ -30,4 +30,15 @@ public sealed record MapCacheRegionSettings
     public bool IncludeOriginalOsmTags { get; init; }
     public string PoiOutputFormat { get; init; } = "readable";
     public IReadOnlyList<string> SelectedPoiTypes { get; init; } = Array.Empty<string>();
+    public string ExportOutputDirectory { get; init; } = string.Empty;
+    public string ExportState { get; init; } = "none";
+    public long ExportProcessedTiles { get; init; }
+    public long ExportExpectedTiles { get; init; }
+    public long ExportSourceTiles { get; init; }
+    public long ExportCopiedTiles { get; init; }
+    public long ExportSkippedTiles { get; init; }
+    public long ExportMissingTiles { get; init; }
+    public long ExportUnreadableEntries { get; init; }
+    public string ExportLastError { get; init; } = string.Empty;
+    public long ExportUpdatedAtUnixTime { get; init; }
 }

@@ -115,9 +115,12 @@ public partial class MapPackBuilderDialog : Window
 
         var cancellationToken = ViewModel.BeginExport();
         var progress = new Progress<MainWindowViewModel.OfflineCacheExportProgress>(ViewModel.ApplyExportProgress);
+        MapCacheRegionViewModel? exportTaskRegion = null;
         try
         {
             ViewModel.ApplyManualBounds();
+            var plan = ViewModel.BuildPlan();
+            exportTaskRegion = await _ownerViewModel.RegisterMapPackExportTaskAsync(plan, cancellationToken);
             if (ViewModel.HasTileSelection)
             {
                 ViewModel.ApplyTilePreparationProgress();
@@ -129,13 +132,14 @@ public partial class MapPackBuilderDialog : Window
                 ViewModel.ApplyTilePreparationComplete();
             }
 
-            var result = await _ownerViewModel.ExportMapPackAsync(ViewModel.BuildPlan(), cancellationToken, progress);
+            var result = await _ownerViewModel.ExportMapPackAsync(plan, cancellationToken, progress, exportTaskRegion);
             ViewModel.StatusText = result.Success
                 ? $"{Loc.Format("Ui.MapPack.Status.ExportComplete", result.TargetMapRoot)} {_ownerViewModel.OfflineCacheExportStatusText}"
                 : Loc.Format("Ui.MapPack.Status.ExportFailed", result.ErrorMessage ?? Loc.GetString("Ui.MapPack.Unknown"));
         }
         catch (OperationCanceledException)
         {
+            await _ownerViewModel.MarkMapPackExportTaskCanceledAsync(exportTaskRegion);
             ViewModel.ApplyOperationCanceled();
         }
         finally

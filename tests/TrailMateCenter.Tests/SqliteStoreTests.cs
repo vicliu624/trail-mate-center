@@ -172,4 +172,66 @@ public sealed class SqliteStoreTests
             }
         }
     }
+
+    [Fact]
+    public async Task MapCacheRegions_Preserve_ExportTaskSettings()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "TrailMateCenter.Tests", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        var dbPath = Path.Combine(root, "store.db");
+
+        try
+        {
+            var store = new SqliteStore(dbPath);
+            await store.InitializeAsync(CancellationToken.None);
+
+            await store.SaveMapCacheRegionsAsync(
+                new[]
+                {
+                    new MapCacheRegionSettings
+                    {
+                        Id = "export-region",
+                        Name = "Kunming",
+                        West = 102.16798,
+                        South = 24.38890,
+                        East = 103.66897,
+                        North = 26.54848,
+                        ExportOutputDirectory = @"C:\maps\trail_mate_maps",
+                        ExportState = "partial",
+                        ExportProcessedTiles = 980,
+                        ExportExpectedTiles = 1000,
+                        ExportSourceTiles = 900,
+                        ExportCopiedTiles = 850,
+                        ExportSkippedTiles = 40,
+                        ExportMissingTiles = 100,
+                        ExportUnreadableEntries = 2,
+                        ExportLastError = "network timeout",
+                        ExportUpdatedAtUnixTime = 1_788_888_888,
+                    },
+                },
+                CancellationToken.None);
+
+            var loaded = await store.LoadMapCacheRegionsAsync(CancellationToken.None);
+            var region = Assert.Single(loaded);
+            Assert.Equal(@"C:\maps\trail_mate_maps", region.ExportOutputDirectory);
+            Assert.Equal("partial", region.ExportState);
+            Assert.Equal(980, region.ExportProcessedTiles);
+            Assert.Equal(1000, region.ExportExpectedTiles);
+            Assert.Equal(900, region.ExportSourceTiles);
+            Assert.Equal(850, region.ExportCopiedTiles);
+            Assert.Equal(40, region.ExportSkippedTiles);
+            Assert.Equal(100, region.ExportMissingTiles);
+            Assert.Equal(2, region.ExportUnreadableEntries);
+            Assert.Equal("network timeout", region.ExportLastError);
+            Assert.Equal(1_788_888_888, region.ExportUpdatedAtUnixTime);
+        }
+        finally
+        {
+            SqliteConnection.ClearAllPools();
+            if (Directory.Exists(root))
+            {
+                Directory.Delete(root, recursive: true);
+            }
+        }
+    }
 }

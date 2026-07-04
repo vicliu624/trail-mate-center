@@ -144,4 +144,14 @@ public partial class OfflineCacheRegionsDialog : Window
 
         await vm.ExportSelectedOfflineCacheRegionAsync(destinationRoot, CancellationToken.None);
     }
+
+    private async void OnResumeExportClicked(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is not MainWindowViewModel vm)
+            return;
+        if (!vm.CanResumeSelectedOfflineCacheRegionExport)
+            return;
+
+        await vm.ResumeSelectedOfflineCacheRegionExportAsync(CancellationToken.None);
+    }
 }
