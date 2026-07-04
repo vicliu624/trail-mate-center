@@ -315,6 +315,29 @@ public sealed partial class MapPackBuilderViewModel : ObservableObject
         StatusText = ExportProgressText;
     }
 
+    public void ApplyTilePreparationProgress()
+    {
+        IsExportProgressIndeterminate = true;
+        ExportProgressPercent = 0;
+        ExportProgressText = T("Ui.MapPack.Status.PreparingTiles");
+        StatusText = ExportProgressText;
+    }
+
+    public void ApplyTilePreparationComplete()
+    {
+        IsExportProgressIndeterminate = true;
+        ExportProgressPercent = 0;
+        ExportProgressText = T("Ui.MapPack.Status.TilesReady");
+        StatusText = ExportProgressText;
+    }
+
+    public void ApplyOperationCanceled()
+    {
+        IsExportProgressIndeterminate = false;
+        ExportProgressText = T("Ui.MapPack.Status.OperationCanceled");
+        StatusText = ExportProgressText;
+    }
+
     public void EndExport()
     {
         IsExporting = false;

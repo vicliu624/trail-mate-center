@@ -117,29 +117,31 @@ public partial class MapPackBuilderDialog : Window
         var progress = new Progress<MainWindowViewModel.OfflineCacheExportProgress>(ViewModel.ApplyExportProgress);
         try
         {
+            ViewModel.ApplyManualBounds();
+            if (ViewModel.HasTileSelection)
+            {
+                ViewModel.ApplyTilePreparationProgress();
+                await _ownerViewModel.Map.RunOfflineCacheForSelectionAsync(ViewModel.ToOfflineCacheBuildOptions() with
+                {
+                    EnablePoiSeparation = false,
+                }, cancellationToken);
+                cancellationToken.ThrowIfCancellationRequested();
+                ViewModel.ApplyTilePreparationComplete();
+            }
+
             var result = await _ownerViewModel.ExportMapPackAsync(ViewModel.BuildPlan(), cancellationToken, progress);
             ViewModel.StatusText = result.Success
-                ? Loc.Format("Ui.MapPack.Status.ExportComplete", result.TargetMapRoot)
+                ? $"{Loc.Format("Ui.MapPack.Status.ExportComplete", result.TargetMapRoot)} {_ownerViewModel.OfflineCacheExportStatusText}"
                 : Loc.Format("Ui.MapPack.Status.ExportFailed", result.ErrorMessage ?? Loc.GetString("Ui.MapPack.Unknown"));
+        }
+        catch (OperationCanceledException)
+        {
+            ViewModel.ApplyOperationCanceled();
         }
         finally
         {
             ViewModel.EndExport();
         }
-    }
-
-    private async void OnBuildRasterCacheClicked(object? sender, RoutedEventArgs e)
-    {
-        if (ViewModel is null || !ViewModel.HasTileSelection)
-            return;
-
-        ViewModel.ApplyManualBounds();
-        ViewModel.StatusText = Loc.GetString("Ui.MapPack.Status.RasterCacheStarted");
-        await _ownerViewModel.Map.RunOfflineCacheForSelectionAsync(ViewModel.ToOfflineCacheBuildOptions() with
-        {
-            EnablePoiSeparation = false,
-        });
-        ViewModel.StatusText = _ownerViewModel.Map.OfflineCacheStatusText;
     }
 
     private async Task OnPickOutputFolderForExportAsync(MapPackBuilderViewModel vm)

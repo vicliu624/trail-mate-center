@@ -295,7 +295,7 @@
   <x:String x:Key="Status.OfflineCache.PoiExportDone">POI 导出完成：{0} 个 POI，{1} 个索引文件。</x:String>
   <x:String x:Key="Status.OfflineCache.PoiExportFailed">POI 导出失败：{0}</x:String>
   <x:String x:Key="Status.OfflineCache.ExportUnreadableEntries">另有 {0} 个文件项无法读取，已跳过。</x:String>
-  <x:String x:Key="Status.OfflineCache.ExportSourceIncomplete">源缓存仍缺少 {0} / {1} 张瓦片，建议继续缓存后再导出。</x:String>
+  <x:String x:Key="Status.OfflineCache.ExportSourceIncomplete">地图包仍缺少 {0} / {1} 张瓦片，请检查网络后重新导出。</x:String>
   <x:String x:Key="Status.OfflineCache.ExportFailed">离线地图导出失败: {0}</x:String>
   <x:String x:Key="Status.OfflineCache.ExportCanceled">离线地图导出已取消</x:String>
 
@@ -831,10 +831,9 @@
   <x:String x:Key="Ui.MapPack.Step.Export">步骤 5：导出</x:String>
   <x:String x:Key="Ui.MapPack.OutputWatermark">SD 卡或输出文件夹</x:String>
   <x:String x:Key="Ui.MapPack.PickFolder">选择文件夹</x:String>
-  <x:String x:Key="Ui.MapPack.ExportHint">现有栅格瓦片导出到 /maps/base 和 /maps/contour。卫星源缓存中的 JPG 会在导出时转换为 PNG。POI 叠加数据写入 /maps/poi。</x:String>
+  <x:String x:Key="Ui.MapPack.ExportHint">导出时会自动下载缺失的栅格瓦片，并写入 /maps/base 和 /maps/contour。卫星图会导出为 PNG。POI 叠加数据写入 /maps/poi。</x:String>
   <x:String x:Key="Ui.MapPack.CancelTask">取消任务</x:String>
   <x:String x:Key="Ui.MapPack.Close">关闭</x:String>
-  <x:String x:Key="Ui.MapPack.BuildRasterCache">构建栅格缓存</x:String>
   <x:String x:Key="Ui.MapPack.ExportMapPack">导出地图包</x:String>
   <x:String x:Key="Ui.MapPack.FilePicker.PbfTitle">选择 OSM PBF 文件</x:String>
   <x:String x:Key="Ui.MapPack.FilePicker.BoundaryTitle">选择 GeoJSON 边界文件</x:String>
@@ -851,8 +850,8 @@
   <x:String x:Key="Ui.MapPack.Status.PbfSelected">已选择 PBF：{0}</x:String>
   <x:String x:Key="Ui.MapPack.Status.OutputDirectory">输出目录：{0}</x:String>
   <x:String x:Key="Ui.MapPack.Status.SearchingBoundary">正在搜索行政区边界...</x:String>
-  <x:String x:Key="Ui.MapPack.Status.BoundaryFallback">边界搜索使用了备用结果/缓存：{0}</x:String>
-  <x:String x:Key="Ui.MapPack.Status.BoundaryLoadedCache">已从缓存加载 {0:N0} 个边界结果。</x:String>
+  <x:String x:Key="Ui.MapPack.Status.BoundaryFallback">边界搜索使用了备用结果：{0}</x:String>
+  <x:String x:Key="Ui.MapPack.Status.BoundaryLoadedCache">已加载 {0:N0} 个边界结果。</x:String>
   <x:String x:Key="Ui.MapPack.Status.BoundaryLoaded">已加载 {0:N0} 个边界结果。</x:String>
   <x:String x:Key="Ui.MapPack.Status.LoadingPbfCatalog">正在加载 Geofabrik PBF 目录...</x:String>
   <x:String x:Key="Ui.MapPack.Status.PbfOptionsLoaded">已加载 {0:N0} 个 PBF 来源选项。</x:String>
@@ -874,8 +873,9 @@
   <x:String x:Key="Ui.MapPack.Status.PbfSourceSelected">已选择 PBF 来源：{0}</x:String>
   <x:String x:Key="Ui.MapPack.Status.ExportComplete">导出完成：{0}</x:String>
   <x:String x:Key="Ui.MapPack.Status.ExportFailed">导出失败：{0}</x:String>
-  <x:String x:Key="Ui.MapPack.Status.RasterCacheStarted">已在地图上启动栅格缓存任务。</x:String>
   <x:String x:Key="Ui.MapPack.Status.ExportStarting">正在启动地图包导出...</x:String>
+  <x:String x:Key="Ui.MapPack.Status.PreparingTiles">正在下载缺失的地图瓦片...</x:String>
+  <x:String x:Key="Ui.MapPack.Status.TilesReady">地图瓦片已准备好，正在开始导出...</x:String>
   <x:String x:Key="Ui.MapPack.Status.ExportPreparing">正在准备导出目录和图层...</x:String>
   <x:String x:Key="Ui.MapPack.Status.ExportLayerProgress">正在导出 {0} Z{1}：{2:N0}/{3:N0} 列，已复制 {4:N0}，已跳过 {5:N0}</x:String>
   <x:String x:Key="Ui.MapPack.Status.ExportPoiProgress">正在导出 POI：已扫描 {0:N0} 个 OSM 元素，已提取 {1:N0} 个 POI</x:String>

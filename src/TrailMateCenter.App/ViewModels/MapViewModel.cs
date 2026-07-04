@@ -707,16 +707,23 @@ public sealed class MapViewModel : INotifyPropertyChanged
 
     public Task RunOfflineCacheForSelectionAsync()
     {
-        return RunOfflineCacheForSelectionAsync(new OfflineCacheBuildOptions());
+        return RunOfflineCacheForSelectionAsync(new OfflineCacheBuildOptions(), CancellationToken.None);
     }
 
     public async Task RunOfflineCacheForSelectionAsync(OfflineCacheBuildOptions? options)
+    {
+        await RunOfflineCacheForSelectionAsync(options, CancellationToken.None);
+    }
+
+    public async Task RunOfflineCacheForSelectionAsync(OfflineCacheBuildOptions? options, CancellationToken cancellationToken)
     {
         if (_isOfflineCacheRunning)
         {
             SetOfflineCacheStatus("Offline cache task is already running.");
             return;
         }
+
+        cancellationToken.ThrowIfCancellationRequested();
 
         if (!_offlineCacheSelectionBounds.HasValue)
         {
@@ -745,7 +752,9 @@ public sealed class MapViewModel : INotifyPropertyChanged
         var preparedSelection = selectionGeometry is null
             ? null
             : PreparedGeometryFactory.Prepare(selectionGeometry);
-        var cts = new CancellationTokenSource();
+        var cts = cancellationToken.CanBeCanceled
+            ? CancellationTokenSource.CreateLinkedTokenSource(cancellationToken)
+            : new CancellationTokenSource();
         lock (_offlineCacheGate)
         {
             if (_isOfflineCacheRunning)
@@ -905,6 +914,8 @@ public sealed class MapViewModel : INotifyPropertyChanged
         {
             SetOfflineCacheStatus("Offline cache task canceled.");
             AddMapLog(Mapsui.Logging.LogLevel.Warning, "Offline cache task canceled", null, force: true);
+            if (cancellationToken.IsCancellationRequested)
+                throw;
         }
         catch (Exception ex)
         {

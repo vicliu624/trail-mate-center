@@ -700,7 +700,7 @@
   <x:String x:Key="Status.OfflineCache.PoiExportDone">POI exported: {0} POI, {1} index files.</x:String>
   <x:String x:Key="Status.OfflineCache.PoiExportFailed">POI export failed: {0}</x:String>
   <x:String x:Key="Status.OfflineCache.ExportUnreadableEntries">{0} unreadable entries were skipped.</x:String>
-  <x:String x:Key="Status.OfflineCache.ExportSourceIncomplete">Source cache is still missing {0} / {1} tiles. Continue caching before the next export.</x:String>
+  <x:String x:Key="Status.OfflineCache.ExportSourceIncomplete">The map pack is still missing {0} / {1} tiles. Check the network and export again.</x:String>
   <x:String x:Key="Status.OfflineCache.ExportDoneWithUnreadable">Export complete: copied {0} tiles, source available {1}, skipped {2}; unreadable entries skipped {3}</x:String>
   <x:String x:Key="Status.OfflineCache.ExportFailed">Offline map export failed: {0}</x:String>
   <x:String x:Key="Status.OfflineCache.ExportCanceled">Offline map export canceled</x:String>
@@ -832,10 +832,9 @@
   <x:String x:Key="Ui.MapPack.Step.Export">Step 5: Export</x:String>
   <x:String x:Key="Ui.MapPack.OutputWatermark">SD card or output folder</x:String>
   <x:String x:Key="Ui.MapPack.PickFolder">Pick Folder</x:String>
-  <x:String x:Key="Ui.MapPack.ExportHint">Existing raster tile folders are exported under /maps/base and /maps/contour. Satellite source JPG tiles are converted to PNG during export. POI overlay data is written under /maps/poi.</x:String>
+  <x:String x:Key="Ui.MapPack.ExportHint">Missing raster tiles are downloaded automatically during export and written under /maps/base and /maps/contour. Satellite imagery is exported as PNG. POI overlay data is written under /maps/poi.</x:String>
   <x:String x:Key="Ui.MapPack.CancelTask">Cancel Task</x:String>
   <x:String x:Key="Ui.MapPack.Close">Close</x:String>
-  <x:String x:Key="Ui.MapPack.BuildRasterCache">Build Raster Cache</x:String>
   <x:String x:Key="Ui.MapPack.ExportMapPack">Export Map Pack</x:String>
   <x:String x:Key="Ui.MapPack.FilePicker.PbfTitle">Select OSM PBF file</x:String>
   <x:String x:Key="Ui.MapPack.FilePicker.BoundaryTitle">Select GeoJSON boundary</x:String>
@@ -852,8 +851,8 @@
   <x:String x:Key="Ui.MapPack.Status.PbfSelected">PBF selected: {0}</x:String>
   <x:String x:Key="Ui.MapPack.Status.OutputDirectory">Output directory: {0}</x:String>
   <x:String x:Key="Ui.MapPack.Status.SearchingBoundary">Searching administrative boundaries...</x:String>
-  <x:String x:Key="Ui.MapPack.Status.BoundaryFallback">Boundary search used fallback/cache: {0}</x:String>
-  <x:String x:Key="Ui.MapPack.Status.BoundaryLoadedCache">Loaded {0:N0} boundary results from cache.</x:String>
+  <x:String x:Key="Ui.MapPack.Status.BoundaryFallback">Boundary search used fallback results: {0}</x:String>
+  <x:String x:Key="Ui.MapPack.Status.BoundaryLoadedCache">Loaded {0:N0} boundary results.</x:String>
   <x:String x:Key="Ui.MapPack.Status.BoundaryLoaded">Loaded {0:N0} boundary results.</x:String>
   <x:String x:Key="Ui.MapPack.Status.LoadingPbfCatalog">Loading Geofabrik PBF catalog...</x:String>
   <x:String x:Key="Ui.MapPack.Status.PbfOptionsLoaded">Loaded {0:N0} PBF source options.</x:String>
@@ -875,8 +874,9 @@
   <x:String x:Key="Ui.MapPack.Status.PbfSourceSelected">PBF source selected: {0}</x:String>
   <x:String x:Key="Ui.MapPack.Status.ExportComplete">Export complete: {0}</x:String>
   <x:String x:Key="Ui.MapPack.Status.ExportFailed">Export failed: {0}</x:String>
-  <x:String x:Key="Ui.MapPack.Status.RasterCacheStarted">Raster cache task started on the map.</x:String>
   <x:String x:Key="Ui.MapPack.Status.ExportStarting">Starting map pack export...</x:String>
+  <x:String x:Key="Ui.MapPack.Status.PreparingTiles">Downloading missing map tiles...</x:String>
+  <x:String x:Key="Ui.MapPack.Status.TilesReady">Map tiles are ready. Starting export...</x:String>
   <x:String x:Key="Ui.MapPack.Status.ExportPreparing">Preparing export folders and layers...</x:String>
   <x:String x:Key="Ui.MapPack.Status.ExportLayerProgress">Exporting {0} Z{1}: {2:N0}/{3:N0} columns, copied {4:N0}, skipped {5:N0}</x:String>
   <x:String x:Key="Ui.MapPack.Status.ExportPoiProgress">Exporting POI: scanned {0:N0} OSM elements, extracted {1:N0} POI</x:String>
