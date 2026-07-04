@@ -2,12 +2,16 @@ using Avalonia.Threading;
 using Avalonia.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Mapsui.Projections;
 using Microsoft.Extensions.Logging;
+using NetTopologySuite.Geometries;
+using NetTopologySuite.Geometries.Prepared;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Globalization;
 using System.Linq;
+using System.Text.Json;
 using TrailMateCenter.Localization;
 using TrailMateCenter.Maps;
 using TrailMateCenter.Models;
@@ -1616,12 +1620,17 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             SelectedOfflineCacheRegion.South,
             SelectedOfflineCacheRegion.East,
             SelectedOfflineCacheRegion.North);
-        Map.SetOfflineCacheSelectionBounds(bounds, SelectedOfflineCacheRegion.Name);
-
-        if (focusMap)
+        if (string.IsNullOrWhiteSpace(SelectedOfflineCacheRegion.BoundaryGeoJson) ||
+            !Map.SetOfflineCacheSelectionGeoJson(SelectedOfflineCacheRegion.BoundaryGeoJson, SelectedOfflineCacheRegion.Name, focusMap))
         {
-            Map.IsOfflineCacheSelectionMode = false;
-            Map.FocusOnBounds(bounds);
+            Map.SetOfflineCacheSelectionBounds(bounds, SelectedOfflineCacheRegion.Name);
+            if (focusMap)
+            {
+                Map.IsOfflineCacheSelectionMode = false;
+                Map.FocusOnBounds(bounds);
+            }
+
+            return true;
         }
 
         return true;
@@ -1661,8 +1670,9 @@ public sealed partial class MainWindowViewModel : ViewModelBase
                     : PoiOutputFormat.Readable,
                 SelectedPoiTypes = region.SelectedPoiTypes,
             }.Normalize();
+            var tileSelector = OfflineTileSelector.FromRegion(region);
             var stats = new ExportCopyStats();
-            stats.ProgressTotalTiles = CountExpectedExportTiles(buildOptions, bounds);
+            stats.ProgressTotalTiles = CountExpectedExportTiles(buildOptions, bounds, tileSelector);
             progress?.Report(OfflineCacheExportProgress.Preparing());
 
             var osmMinZoom = Math.Max(buildOptions.MinimumZoom, OfflineCacheBuildOptions.DefaultMinimumZoom);
@@ -1678,6 +1688,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
                     minZoom: osmMinZoom,
                     maxZoom: osmMaxZoom,
                     bounds: bounds,
+                    tileSelector: tileSelector,
                     stats: stats,
                     layerResourceKey: "Ui.MapPack.Layer.Osm",
                     progress: progress,
@@ -1697,6 +1708,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
                     minZoom: terrainMinZoom,
                     maxZoom: terrainMaxZoom,
                     bounds: bounds,
+                    tileSelector: tileSelector,
                     stats: stats,
                     layerResourceKey: "Ui.MapPack.Layer.Terrain",
                     progress: progress,
@@ -1716,6 +1728,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
                     minZoom: satelliteMinZoom,
                     maxZoom: satelliteMaxZoom,
                     bounds: bounds,
+                    tileSelector: tileSelector,
                     stats: stats,
                     layerResourceKey: "Ui.MapPack.Layer.Satellite",
                     progress: progress,
@@ -1732,6 +1745,8 @@ public sealed partial class MainWindowViewModel : ViewModelBase
                     minZoom: contourMinZoom,
                     maxZoom: contourMaxZoom,
                     bounds: bounds,
+                    allowUltraFineContours: buildOptions.IncludeUltraFineContours,
+                    tileSelector: tileSelector,
                     stats: stats,
                     layerResourceKey: "Ui.MapPack.Layer.Contours",
                     progress: progress,
@@ -1812,21 +1827,23 @@ public sealed partial class MainWindowViewModel : ViewModelBase
 
     private static long CountExpectedExportTiles(
         OfflineCacheBuildOptions buildOptions,
-        (double West, double South, double East, double North) bounds)
+        (double West, double South, double East, double North) bounds,
+        OfflineTileSelector tileSelector)
     {
         var total = 0L;
 
         static long CountBaseTiles(
             int minZoom,
             int maxZoom,
-            (double West, double South, double East, double North) bounds)
+            (double West, double South, double East, double North) bounds,
+            OfflineTileSelector tileSelector)
         {
             var total = 0L;
             for (var zoom = minZoom; zoom <= maxZoom; zoom++)
             {
                 var range = GetOfflineRange(bounds, zoom);
                 if (!range.IsEmpty)
-                    total += range.TileCount;
+                    total += tileSelector.CountTiles(range, zoom);
             }
 
             return total;
@@ -1835,17 +1852,17 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         var osmMinZoom = Math.Max(buildOptions.MinimumZoom, OfflineCacheBuildOptions.DefaultMinimumZoom);
         var osmMaxZoom = Math.Min(buildOptions.MaximumZoom, OfflineCacheBuildOptions.DefaultMaximumZoom);
         if (buildOptions.IncludeOsm && osmMinZoom <= osmMaxZoom)
-            total += CountBaseTiles(osmMinZoom, osmMaxZoom, bounds);
+            total += CountBaseTiles(osmMinZoom, osmMaxZoom, bounds, tileSelector);
 
         var terrainMinZoom = Math.Max(buildOptions.MinimumZoom, OfflineCacheBuildOptions.DefaultMinimumZoom);
         var terrainMaxZoom = Math.Min(buildOptions.MaximumZoom, OfflineCacheBuildOptions.TerrainMaximumZoom);
         if (buildOptions.IncludeTerrain && terrainMinZoom <= terrainMaxZoom)
-            total += CountBaseTiles(terrainMinZoom, terrainMaxZoom, bounds);
+            total += CountBaseTiles(terrainMinZoom, terrainMaxZoom, bounds, tileSelector);
 
         var satelliteMinZoom = Math.Max(buildOptions.MinimumZoom, OfflineCacheBuildOptions.DefaultMinimumZoom);
         var satelliteMaxZoom = Math.Min(buildOptions.MaximumZoom, OfflineCacheBuildOptions.DefaultMaximumZoom);
         if (buildOptions.IncludeSatellite && satelliteMinZoom <= satelliteMaxZoom)
-            total += CountBaseTiles(satelliteMinZoom, satelliteMaxZoom, bounds);
+            total += CountBaseTiles(satelliteMinZoom, satelliteMaxZoom, bounds, tileSelector);
 
         var contourMinZoom = Math.Max(buildOptions.MinimumZoom, OfflineCacheBuildOptions.DefaultMinimumZoom);
         var contourMaxZoom = Math.Min(buildOptions.MaximumZoom, OfflineCacheBuildOptions.DefaultMaximumZoom);
@@ -1853,12 +1870,13 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         {
             for (var zoom = contourMinZoom; zoom <= contourMaxZoom; zoom++)
             {
-                if (GetTrailMateContourProfileForZoom(zoom) is null)
+                var profiles = GetContourProfilesForZoom(zoom, buildOptions.IncludeUltraFineContours);
+                if (profiles.Count == 0)
                     continue;
 
                 var range = GetOfflineRange(bounds, zoom);
                 if (!range.IsEmpty)
-                    total += range.TileCount;
+                    total += tileSelector.CountTiles(range, zoom) * profiles.Count;
             }
         }
 
@@ -1874,6 +1892,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         int minZoom,
         int maxZoom,
         (double West, double South, double East, double North) bounds,
+        OfflineTileSelector tileSelector,
         ExportCopyStats stats,
         string layerResourceKey,
         IProgress<OfflineCacheExportProgress>? progress,
@@ -1889,7 +1908,11 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             if (range.IsEmpty)
                 continue;
 
-            stats.ExpectedTiles += range.TileCount;
+            var expectedTiles = tileSelector.CountTiles(range, zoom);
+            if (expectedTiles <= 0)
+                continue;
+
+            stats.ExpectedTiles += expectedTiles;
             CopyTilesInRange(
                 sourceRoot,
                 targetRoot,
@@ -1898,6 +1921,8 @@ public sealed partial class MainWindowViewModel : ViewModelBase
                 convertToPng,
                 zoom,
                 range,
+                expectedTiles,
+                tileSelector,
                 stats,
                 layerResourceKey,
                 progress,
@@ -1966,6 +1991,8 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         int minZoom,
         int maxZoom,
         (double West, double South, double East, double North) bounds,
+        bool allowUltraFineContours,
+        OfflineTileSelector tileSelector,
         ExportCopyStats stats,
         string layerResourceKey,
         IProgress<OfflineCacheExportProgress>? progress,
@@ -1977,46 +2004,39 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            var profile = GetTrailMateContourProfileForZoom(zoom);
-            if (profile is null)
+            var profiles = GetContourProfilesForZoom(zoom, allowUltraFineContours);
+            if (profiles.Count == 0)
                 continue;
 
             var range = GetOfflineRange(bounds, zoom);
             if (range.IsEmpty)
                 continue;
 
-            var profileSourceRoot = Path.Combine(contourRoot, profile);
-            var profileTargetRoot = Path.Combine(targetRoot, profile);
-            stats.ExpectedTiles += range.TileCount;
-            CopyTilesInRange(
-                profileSourceRoot,
-                profileTargetRoot,
-                "png",
-                "png",
-                false,
-                zoom,
-                range,
-                stats,
-                layerResourceKey,
-                progress,
-                cancellationToken);
+            var expectedTiles = tileSelector.CountTiles(range, zoom);
+            if (expectedTiles <= 0)
+                continue;
+
+            foreach (var profile in profiles)
+            {
+                var profileSourceRoot = Path.Combine(contourRoot, profile);
+                var profileTargetRoot = Path.Combine(targetRoot, profile);
+                stats.ExpectedTiles += expectedTiles;
+                CopyTilesInRange(
+                    profileSourceRoot,
+                    profileTargetRoot,
+                    "png",
+                    "png",
+                    false,
+                    zoom,
+                    range,
+                    expectedTiles,
+                    tileSelector,
+                    stats,
+                    layerResourceKey,
+                    progress,
+                    cancellationToken);
+            }
         }
-    }
-
-    private static string? GetTrailMateContourProfileForZoom(int zoom)
-    {
-        if (zoom <= 7)
-            return null;
-        if (zoom is 8 or 10)
-            return "major-500";
-        if (zoom is 9 or 11)
-            return "major-200";
-        if (zoom is >= 12 and <= 14)
-            return "major-100";
-        if (zoom is 15 or 16)
-            return "major-50";
-
-        return "major-25";
     }
 
     private static void CopyTilesInRange(
@@ -2027,6 +2047,8 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         bool convertToPng,
         int zoom,
         TileRange range,
+        long expectedTiles,
+        OfflineTileSelector tileSelector,
         ExportCopyStats stats,
         string layerResourceKey,
         IProgress<OfflineCacheExportProgress>? progress,
@@ -2034,9 +2056,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     {
         var zoomText = zoom.ToString(CultureInfo.InvariantCulture);
         var sourceZoomRoot = Path.Combine(sourceRoot, zoomText);
-        var totalColumns = Math.Max(1, range.MaxX - range.MinX + 1);
-        var tilesPerColumn = Math.Max(1L, (long)range.MaxY - range.MinY + 1);
-        var totalTiles = Math.Max(1L, range.TileCount);
+        var totalTiles = Math.Max(1L, expectedTiles);
         var progressTotalTiles = Math.Max(1L, stats.ProgressTotalTiles);
         if (!Directory.Exists(sourceZoomRoot))
         {
@@ -2064,7 +2084,12 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         for (var x = range.MinX; x <= range.MaxX; x++)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            var columnTiles = Math.Min(tilesPerColumn, totalTiles - processedZoomTiles);
+            var columnTiles = Math.Min(
+                tileSelector.CountTilesInColumn(range, zoom, x, cancellationToken),
+                totalTiles - processedZoomTiles);
+            if (columnTiles <= 0)
+                continue;
+
             processedZoomTiles += columnTiles;
             stats.ProcessedTiles += columnTiles;
             var processedTiles = Math.Min(stats.ProcessedTiles, progressTotalTiles);
@@ -2098,6 +2123,8 @@ public sealed partial class MainWindowViewModel : ViewModelBase
                     if (!int.TryParse(fileName, NumberStyles.Integer, CultureInfo.InvariantCulture, out var y))
                         continue;
                     if (y < range.MinY || y > range.MaxY)
+                        continue;
+                    if (!tileSelector.IncludesTile(zoom, x, y))
                         continue;
 
                     stats.SourceTiles++;
@@ -2415,6 +2442,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             region.North);
         var options = region.ToBuildOptions();
         var root = GetOfflineCacheRoot();
+        var tileSelector = OfflineTileSelector.FromRegion(region.ToSettings());
 
         var osm = InspectBaseLayer(
             Path.Combine(root, "tilecache"),
@@ -2423,6 +2451,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             Math.Min(options.MaximumZoom, OfflineCacheBuildOptions.DefaultMaximumZoom),
             options.IncludeOsm,
             bounds,
+            tileSelector,
             cancellationToken);
         var terrain = InspectBaseLayer(
             Path.Combine(root, "terrain-cache"),
@@ -2431,6 +2460,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             Math.Min(options.MaximumZoom, OfflineCacheBuildOptions.TerrainMaximumZoom),
             options.IncludeTerrain,
             bounds,
+            tileSelector,
             cancellationToken);
         var satellite = InspectBaseLayer(
             Path.Combine(root, "satellite-cache"),
@@ -2439,6 +2469,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             Math.Min(options.MaximumZoom, OfflineCacheBuildOptions.DefaultMaximumZoom),
             options.IncludeSatellite,
             bounds,
+            tileSelector,
             cancellationToken);
         var contour = InspectContourLayer(
             root,
@@ -2447,6 +2478,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             options.IncludeUltraFineContours,
             options.MinimumZoom,
             options.MaximumZoom,
+            tileSelector,
             cancellationToken);
 
         var existingTiles = osm.ExistingTiles + terrain.ExistingTiles + satellite.ExistingTiles + contour.ExistingTiles;
@@ -2471,6 +2503,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         int maxZoom,
         bool enabled,
         (double West, double South, double East, double North) bounds,
+        OfflineTileSelector tileSelector,
         CancellationToken cancellationToken)
     {
         if (!enabled)
@@ -2488,8 +2521,12 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             if (range.IsEmpty)
                 continue;
 
-            expectedTiles += range.TileCount;
-            existingTiles += CountExistingTiles(cacheRoot, extension, zoom, range, cancellationToken);
+            var expectedForZoom = tileSelector.CountTiles(range, zoom, cancellationToken);
+            if (expectedForZoom <= 0)
+                continue;
+
+            expectedTiles += expectedForZoom;
+            existingTiles += CountExistingTiles(cacheRoot, extension, zoom, range, tileSelector, cancellationToken);
         }
 
         return new CacheLayerCoverage(existingTiles, expectedTiles);
@@ -2502,6 +2539,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         bool includeUltraFineContours,
         int minZoom,
         int maxZoom,
+        OfflineTileSelector tileSelector,
         CancellationToken cancellationToken)
     {
         if (!includeContours)
@@ -2524,11 +2562,15 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             if (range.IsEmpty)
                 continue;
 
-            expectedTiles += range.TileCount * profiles.Count;
+            var expectedForZoom = tileSelector.CountTiles(range, zoom, cancellationToken);
+            if (expectedForZoom <= 0)
+                continue;
+
+            expectedTiles += expectedForZoom * profiles.Count;
             foreach (var profile in profiles)
             {
                 var profileRoot = Path.Combine(contourRoot, profile);
-                existingTiles += CountExistingTiles(profileRoot, "png", zoom, range, cancellationToken);
+                existingTiles += CountExistingTiles(profileRoot, "png", zoom, range, tileSelector, cancellationToken);
             }
         }
 
@@ -2540,6 +2582,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         string extension,
         int zoom,
         TileRange range,
+        OfflineTileSelector tileSelector,
         CancellationToken cancellationToken)
     {
         var count = 0L;
@@ -2575,6 +2618,8 @@ public sealed partial class MainWindowViewModel : ViewModelBase
                         continue;
                     if (y < range.MinY || y > range.MaxY)
                         continue;
+                    if (!tileSelector.IncludesTile(zoom, x, y))
+                        continue;
                     count++;
                 }
                 catch (Exception ex) when (IsSkippableFileSystemException(ex))
@@ -2602,6 +2647,244 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             (yMin, yMax) = (yMax, yMin);
 
         return new TileRange(xMin, xMax, yMin, yMax);
+    }
+
+    private sealed class OfflineTileSelector
+    {
+        private readonly IPreparedGeometry? _preparedSelection;
+
+        private OfflineTileSelector(IPreparedGeometry? preparedSelection)
+        {
+            _preparedSelection = preparedSelection;
+        }
+
+        public static OfflineTileSelector FromRegion(MapCacheRegionSettings region)
+        {
+            return new OfflineTileSelector(TryCreatePreparedBoundary(region.BoundaryGeoJson));
+        }
+
+        public long CountTiles(TileRange range, int zoom, CancellationToken cancellationToken = default)
+        {
+            if (range.IsEmpty)
+                return 0;
+            if (_preparedSelection is null)
+                return range.TileCount;
+
+            var total = 0L;
+            for (var x = range.MinX; x <= range.MaxX; x++)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                total += CountTilesInColumn(range, zoom, x, cancellationToken);
+            }
+
+            return total;
+        }
+
+        public long CountTilesInColumn(
+            TileRange range,
+            int zoom,
+            int x,
+            CancellationToken cancellationToken = default)
+        {
+            if (range.IsEmpty || x < range.MinX || x > range.MaxX)
+                return 0;
+            if (_preparedSelection is null)
+                return Math.Max(0, range.MaxY - range.MinY + 1);
+
+            var total = 0L;
+            for (var y = range.MinY; y <= range.MaxY; y++)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                if (IncludesTile(zoom, x, y))
+                    total++;
+            }
+
+            return total;
+        }
+
+        public bool IncludesTile(int zoom, int x, int y)
+        {
+            return _preparedSelection is null || IntersectsTile(_preparedSelection, zoom, x, y);
+        }
+    }
+
+    private static IPreparedGeometry? TryCreatePreparedBoundary(string? geoJson)
+    {
+        if (string.IsNullOrWhiteSpace(geoJson))
+            return null;
+
+        try
+        {
+            using var document = JsonDocument.Parse(geoJson);
+            var polygons = new List<Polygon>();
+            CollectGeoJsonPolygons(document.RootElement, polygons);
+            if (polygons.Count == 0)
+                return null;
+
+            Geometry geometry = polygons.Count == 1
+                ? polygons[0]
+                : new MultiPolygon(polygons.ToArray());
+            if (!geometry.IsValid)
+                geometry = geometry.Buffer(0);
+            return geometry.IsEmpty ? null : PreparedGeometryFactory.Prepare(geometry);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private static bool IntersectsTile(IPreparedGeometry preparedSelection, int zoom, int x, int y)
+    {
+        var bounds = ContourTileMath.TileToBounds(x, y, zoom);
+        var (westX, southY) = SphericalMercator.FromLonLat(bounds.West, bounds.South);
+        var (eastX, northY) = SphericalMercator.FromLonLat(bounds.East, bounds.North);
+        var minX = Math.Min(westX, eastX);
+        var maxX = Math.Max(westX, eastX);
+        var minY = Math.Min(southY, northY);
+        var maxY = Math.Max(southY, northY);
+
+        var tilePolygon = new Polygon(new LinearRing(new[]
+        {
+            new Coordinate(minX, minY),
+            new Coordinate(maxX, minY),
+            new Coordinate(maxX, maxY),
+            new Coordinate(minX, maxY),
+            new Coordinate(minX, minY),
+        }));
+        return preparedSelection.Intersects(tilePolygon);
+    }
+
+    private static void CollectGeoJsonPolygons(JsonElement element, List<Polygon> output)
+    {
+        if (element.ValueKind != JsonValueKind.Object)
+            return;
+        if (!element.TryGetProperty("type", out var typeElement) ||
+            typeElement.ValueKind != JsonValueKind.String)
+        {
+            return;
+        }
+
+        var type = typeElement.GetString();
+        if (string.Equals(type, "FeatureCollection", StringComparison.OrdinalIgnoreCase) &&
+            element.TryGetProperty("features", out var features) &&
+            features.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var feature in features.EnumerateArray())
+                CollectGeoJsonPolygons(feature, output);
+            return;
+        }
+
+        if (string.Equals(type, "Feature", StringComparison.OrdinalIgnoreCase) &&
+            element.TryGetProperty("geometry", out var geometry))
+        {
+            CollectGeoJsonPolygons(geometry, output);
+            return;
+        }
+
+        if (!element.TryGetProperty("coordinates", out var coordinates))
+            return;
+
+        if (string.Equals(type, "Polygon", StringComparison.OrdinalIgnoreCase))
+        {
+            var polygon = TryParseGeoJsonPolygon(coordinates);
+            if (polygon is not null)
+                output.Add(polygon);
+            return;
+        }
+
+        if (string.Equals(type, "MultiPolygon", StringComparison.OrdinalIgnoreCase) &&
+            coordinates.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var polygonElement in coordinates.EnumerateArray())
+            {
+                var polygon = TryParseGeoJsonPolygon(polygonElement);
+                if (polygon is not null)
+                    output.Add(polygon);
+            }
+        }
+    }
+
+    private static Polygon? TryParseGeoJsonPolygon(JsonElement polygonElement)
+    {
+        if (polygonElement.ValueKind != JsonValueKind.Array)
+            return null;
+
+        var rings = new List<LinearRing>();
+        foreach (var ringElement in polygonElement.EnumerateArray())
+        {
+            var coords = ParseGeoJsonRing(ringElement);
+            if (coords.Length >= 4)
+                rings.Add(new LinearRing(coords));
+        }
+
+        return rings.Count == 0
+            ? null
+            : new Polygon(rings[0], rings.Skip(1).ToArray());
+    }
+
+    private static Coordinate[] ParseGeoJsonRing(JsonElement ringElement)
+    {
+        if (ringElement.ValueKind != JsonValueKind.Array)
+            return Array.Empty<Coordinate>();
+
+        var coords = new List<Coordinate>();
+        foreach (var pointElement in ringElement.EnumerateArray())
+        {
+            if (!TryReadGeoJsonPosition(pointElement, out var lon, out var lat))
+                continue;
+
+            var (x, y) = SphericalMercator.FromLonLat(lon, lat);
+            coords.Add(new Coordinate(x, y));
+        }
+
+        if (coords.Count > 0 &&
+            (Math.Abs(coords[0].X - coords[^1].X) > 0.001 ||
+             Math.Abs(coords[0].Y - coords[^1].Y) > 0.001))
+        {
+            coords.Add(coords[0]);
+        }
+
+        return coords.ToArray();
+    }
+
+    private static bool TryReadGeoJsonPosition(JsonElement pointElement, out double lon, out double lat)
+    {
+        lon = 0;
+        lat = 0;
+        if (pointElement.ValueKind != JsonValueKind.Array)
+            return false;
+
+        var values = pointElement.EnumerateArray().Take(2).ToArray();
+        if (values.Length < 2)
+            return false;
+        if (!TryReadJsonDouble(values[0], out lon))
+            return false;
+        if (!TryReadJsonDouble(values[1], out lat))
+            return false;
+
+        return IsValidLonLat(lon, lat);
+    }
+
+    private static bool TryReadJsonDouble(JsonElement element, out double value)
+    {
+        if (element.ValueKind == JsonValueKind.Number)
+            return element.TryGetDouble(out value);
+        if (element.ValueKind == JsonValueKind.String)
+            return double.TryParse(element.GetString(), NumberStyles.Float, CultureInfo.InvariantCulture, out value);
+
+        value = 0;
+        return false;
+    }
+
+    private static bool IsValidLonLat(double lon, double lat)
+    {
+        return !double.IsNaN(lon) &&
+               !double.IsInfinity(lon) &&
+               !double.IsNaN(lat) &&
+               !double.IsInfinity(lat) &&
+               lon is >= -180 and <= 180 &&
+               lat is >= -90 and <= 90;
     }
 
     private static IReadOnlyList<string> GetContourProfilesForZoom(int zoom, bool allowUltraFineContours)

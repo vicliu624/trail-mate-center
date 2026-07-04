@@ -188,6 +188,9 @@ public sealed partial class MapCacheRegionViewModel : ObservableObject
             South,
             East,
             North);
+    public string SelectionShapeText => string.IsNullOrWhiteSpace(BoundaryGeoJson)
+        ? T("Ui.Dashboard.OfflineCacheRegionsDialog.Shape.Rectangle")
+        : T("Ui.Dashboard.OfflineCacheRegionsDialog.Shape.Boundary");
 
     public string BuildTargetsText
     {
@@ -688,6 +691,7 @@ public sealed partial class MapCacheRegionViewModel : ObservableObject
     partial void OnSouthChanged(double value) => OnPropertyChanged(nameof(BoundsText));
     partial void OnEastChanged(double value) => OnPropertyChanged(nameof(BoundsText));
     partial void OnNorthChanged(double value) => OnPropertyChanged(nameof(BoundsText));
+    partial void OnBoundaryGeoJsonChanged(string value) => OnPropertyChanged(nameof(SelectionShapeText));
     partial void OnMinimumZoomChanged(int value)
     {
         var clamped = Math.Clamp(

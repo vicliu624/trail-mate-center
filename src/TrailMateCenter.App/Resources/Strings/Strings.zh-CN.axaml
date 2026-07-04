@@ -103,6 +103,8 @@
   <x:String x:Key="Ui.Dashboard.OfflineCacheRegionsDialog.ExportPickFolder">选择U盘或SD卡根目录</x:String>
   <x:String x:Key="Ui.Dashboard.OfflineCacheRegionsDialog.Checking">状态检测中...</x:String>
   <x:String x:Key="Ui.Dashboard.OfflineCacheRegionsDialog.Caching">正在缓存...</x:String>
+  <x:String x:Key="Ui.Dashboard.OfflineCacheRegionsDialog.Shape.Boundary">抽瓦片：行政区边界（上方为外接范围）</x:String>
+  <x:String x:Key="Ui.Dashboard.OfflineCacheRegionsDialog.Shape.Rectangle">抽瓦片：矩形范围</x:String>
   <x:String x:Key="Ui.Dashboard.OfflineCacheRegionsDialog.Close">关闭</x:String>
   <x:String x:Key="Ui.Dashboard.OfflineCacheRegionsDialog.ExportTask.Ready">地图包任务已保存</x:String>
   <x:String x:Key="Ui.Dashboard.OfflineCacheRegionsDialog.ExportTask.Exporting">地图包导出中</x:String>

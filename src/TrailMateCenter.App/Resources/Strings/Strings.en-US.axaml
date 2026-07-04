@@ -485,6 +485,8 @@
   <x:String x:Key="Ui.Dashboard.OfflineCacheRegionsDialog.ExportPickFolder">Select USB/SD root folder</x:String>
   <x:String x:Key="Ui.Dashboard.OfflineCacheRegionsDialog.Checking">Inspecting cache...</x:String>
   <x:String x:Key="Ui.Dashboard.OfflineCacheRegionsDialog.Caching">Caching...</x:String>
+  <x:String x:Key="Ui.Dashboard.OfflineCacheRegionsDialog.Shape.Boundary">Tile area: administrative boundary (bounds shown above)</x:String>
+  <x:String x:Key="Ui.Dashboard.OfflineCacheRegionsDialog.Shape.Rectangle">Tile area: rectangular bounds</x:String>
   <x:String x:Key="Ui.Dashboard.OfflineCacheRegionsDialog.Close">Close</x:String>
   <x:String x:Key="Ui.Dashboard.OfflineCacheRegionsDialog.ExportTask.Ready">Map pack task saved</x:String>
   <x:String x:Key="Ui.Dashboard.OfflineCacheRegionsDialog.ExportTask.Exporting">Map pack export running</x:String>
