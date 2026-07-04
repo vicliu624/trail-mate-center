@@ -875,6 +875,13 @@
   <x:String x:Key="Ui.MapPack.Status.ExportComplete">导出完成：{0}</x:String>
   <x:String x:Key="Ui.MapPack.Status.ExportFailed">导出失败：{0}</x:String>
   <x:String x:Key="Ui.MapPack.Status.RasterCacheStarted">已在地图上启动栅格缓存任务。</x:String>
+  <x:String x:Key="Ui.MapPack.Status.ExportStarting">正在启动地图包导出...</x:String>
+  <x:String x:Key="Ui.MapPack.Status.ExportPreparing">正在准备导出目录和图层...</x:String>
+  <x:String x:Key="Ui.MapPack.Status.ExportLayerProgress">正在导出 {0} Z{1}：{2:N0}/{3:N0} 列，已复制 {4:N0}，已跳过 {5:N0}</x:String>
+  <x:String x:Key="Ui.MapPack.Status.ExportPoiProgress">正在导出 POI：已扫描 {0:N0} 个 OSM 元素，已提取 {1:N0} 个 POI</x:String>
+  <x:String x:Key="Ui.MapPack.Status.ExportFinalizing">正在写入清单并完成导出...</x:String>
+  <x:String x:Key="Ui.MapPack.Status.ExportCompleted">地图包导出完成。</x:String>
+  <x:String x:Key="Ui.MapPack.Status.ExportFailedShort">地图包导出失败。</x:String>
   <x:String x:Key="Ui.MapPack.Estimate.Layer">{0}：{1:N0} 个瓦片，约 {2}</x:String>
   <x:String x:Key="Ui.MapPack.Estimate.Total">总计：{0:N0} 个瓦片，约 {1}</x:String>
   <x:String x:Key="Ui.MapPack.Estimate.Poi">POI：{0}，索引 Z{1}-{2}，每瓦片最多 {3:N0}</x:String>

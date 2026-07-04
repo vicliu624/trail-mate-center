@@ -169,6 +169,18 @@ public sealed partial class MapPackBuilderViewModel : ObservableObject
     private bool _isBusy;
 
     [ObservableProperty]
+    private bool _isExporting;
+
+    [ObservableProperty]
+    private bool _isExportProgressIndeterminate;
+
+    [ObservableProperty]
+    private double _exportProgressPercent;
+
+    [ObservableProperty]
+    private string _exportProgressText = string.Empty;
+
+    [ObservableProperty]
     private string _statusText = T("Ui.MapPack.Status.Ready");
 
     [ObservableProperty]
@@ -186,6 +198,7 @@ public sealed partial class MapPackBuilderViewModel : ObservableObject
     public bool CanExport => !IsBusy && (HasTileSelection || HasPoiExportSelection);
     public bool HasTileSelection => IncludeOsm || IncludeTerrain || IncludeSatellite || IncludeContours;
     public bool HasPoiExportSelection => EnablePoiSeparation && !string.IsNullOrWhiteSpace(PbfPath) && HasSelectedPoiTypes;
+    public bool HasExportProgress => IsExporting || !string.IsNullOrWhiteSpace(ExportProgressText);
     public string BoundsText => CurrentBounds.ToInvariantText();
     public GeoBounds CurrentBounds => new(West, South, East, North);
     public string AdminLevelText => AdminLevel.HasValue ? AdminLevel.Value.ToString() : T("Ui.MapPack.AdminLevelUnknown");
@@ -237,6 +250,77 @@ public sealed partial class MapPackBuilderViewModel : ObservableObject
             },
             OutputDirectory = OutputDirectory,
         };
+    }
+
+    public CancellationToken BeginExport()
+    {
+        if (IsBusy)
+            return CancellationToken.None;
+
+        _operationCts?.Dispose();
+        _operationCts = new CancellationTokenSource();
+        IsBusy = true;
+        IsExporting = true;
+        IsExportProgressIndeterminate = true;
+        ExportProgressPercent = 0;
+        ExportProgressText = T("Ui.MapPack.Status.ExportStarting");
+        StatusText = ExportProgressText;
+        NotifyCommandStates();
+        return _operationCts.Token;
+    }
+
+    public void ApplyExportProgress(MainWindowViewModel.OfflineCacheExportProgress progress)
+    {
+        switch (progress.Kind)
+        {
+            case MainWindowViewModel.OfflineCacheExportProgressKind.Preparing:
+                IsExportProgressIndeterminate = true;
+                ExportProgressPercent = 0;
+                ExportProgressText = T("Ui.MapPack.Status.ExportPreparing");
+                break;
+            case MainWindowViewModel.OfflineCacheExportProgressKind.Layer:
+                IsExportProgressIndeterminate = progress.Total <= 0;
+                ExportProgressPercent = progress.Percent;
+                ExportProgressText = F(
+                    "Ui.MapPack.Status.ExportLayerProgress",
+                    T(progress.LayerResourceKey),
+                    progress.Zoom,
+                    progress.Completed,
+                    progress.Total,
+                    progress.CopiedTiles,
+                    progress.SkippedTiles);
+                break;
+            case MainWindowViewModel.OfflineCacheExportProgressKind.Poi:
+                IsExportProgressIndeterminate = true;
+                ExportProgressText = F(
+                    "Ui.MapPack.Status.ExportPoiProgress",
+                    progress.ProcessedElements,
+                    progress.ExtractedPoiCount);
+                break;
+            case MainWindowViewModel.OfflineCacheExportProgressKind.Finalizing:
+                IsExportProgressIndeterminate = true;
+                ExportProgressText = T("Ui.MapPack.Status.ExportFinalizing");
+                break;
+            case MainWindowViewModel.OfflineCacheExportProgressKind.Completed:
+                IsExportProgressIndeterminate = false;
+                ExportProgressPercent = 100;
+                ExportProgressText = T("Ui.MapPack.Status.ExportCompleted");
+                break;
+            case MainWindowViewModel.OfflineCacheExportProgressKind.Failed:
+                IsExportProgressIndeterminate = false;
+                ExportProgressText = T("Ui.MapPack.Status.ExportFailedShort");
+                break;
+        }
+
+        StatusText = ExportProgressText;
+    }
+
+    public void EndExport()
+    {
+        IsExporting = false;
+        IsExportProgressIndeterminate = false;
+        IsBusy = false;
+        NotifyCommandStates();
     }
 
     public OfflineCacheBuildOptions ToOfflineCacheBuildOptions()
@@ -607,6 +691,8 @@ public sealed partial class MapPackBuilderViewModel : ObservableObject
     }
 
     partial void OnIsBusyChanged(bool value) => NotifyCommandStates();
+    partial void OnIsExportingChanged(bool value) => OnPropertyChanged(nameof(HasExportProgress));
+    partial void OnExportProgressTextChanged(string value) => OnPropertyChanged(nameof(HasExportProgress));
     partial void OnAdminLevelChanged(int? value) => OnPropertyChanged(nameof(AdminLevelText));
     partial void OnIncludeOsmChanged(bool value) => OnExportInputChanged();
     partial void OnIncludeTerrainChanged(bool value) => OnExportInputChanged();

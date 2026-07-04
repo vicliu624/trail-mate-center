@@ -254,6 +254,12 @@
       <Border Grid.Row="2" BorderBrush="{DynamicResource PanelBorder}" BorderThickness="0,1,0,0" Padding="0,10,0,0">
         <Grid ColumnDefinitions="*,Auto">
           <StackPanel Spacing="4">
+            <ProgressBar Minimum="0"
+                         Maximum="100"
+                         Height="8"
+                         Value="{Binding ExportProgressPercent}"
+                         IsIndeterminate="{Binding IsExportProgressIndeterminate}"
+                         IsVisible="{Binding HasExportProgress}"/>
             <TextBlock Text="{Binding StatusText}" Foreground="{DynamicResource TextDim}" TextWrapping="Wrap"/>
             <TextBlock Text="{Binding OutputDirectory}" Foreground="{DynamicResource TextDim}" FontSize="10" TextWrapping="Wrap"/>
           </StackPanel>

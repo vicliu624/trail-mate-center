@@ -876,6 +876,13 @@
   <x:String x:Key="Ui.MapPack.Status.ExportComplete">Export complete: {0}</x:String>
   <x:String x:Key="Ui.MapPack.Status.ExportFailed">Export failed: {0}</x:String>
   <x:String x:Key="Ui.MapPack.Status.RasterCacheStarted">Raster cache task started on the map.</x:String>
+  <x:String x:Key="Ui.MapPack.Status.ExportStarting">Starting map pack export...</x:String>
+  <x:String x:Key="Ui.MapPack.Status.ExportPreparing">Preparing export folders and layers...</x:String>
+  <x:String x:Key="Ui.MapPack.Status.ExportLayerProgress">Exporting {0} Z{1}: {2:N0}/{3:N0} columns, copied {4:N0}, skipped {5:N0}</x:String>
+  <x:String x:Key="Ui.MapPack.Status.ExportPoiProgress">Exporting POI: scanned {0:N0} OSM elements, extracted {1:N0} POI</x:String>
+  <x:String x:Key="Ui.MapPack.Status.ExportFinalizing">Writing manifests and finishing export...</x:String>
+  <x:String x:Key="Ui.MapPack.Status.ExportCompleted">Map pack export complete.</x:String>
+  <x:String x:Key="Ui.MapPack.Status.ExportFailedShort">Map pack export failed.</x:String>
   <x:String x:Key="Ui.MapPack.Estimate.Layer">{0}: {1:N0} tiles, ~{2}</x:String>
   <x:String x:Key="Ui.MapPack.Estimate.Total">Total: {0:N0} tiles, ~{1}</x:String>
   <x:String x:Key="Ui.MapPack.Estimate.Poi">POI: {0}, index Z{1}-{2}, max {3:N0}/tile</x:String>

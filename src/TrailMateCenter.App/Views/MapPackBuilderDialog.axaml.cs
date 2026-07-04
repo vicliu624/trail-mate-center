@@ -113,10 +113,19 @@ public partial class MapPackBuilderDialog : Window
                 return;
         }
 
-        var result = await _ownerViewModel.ExportMapPackAsync(ViewModel.BuildPlan());
-        ViewModel.StatusText = result.Success
-            ? Loc.Format("Ui.MapPack.Status.ExportComplete", result.TargetMapRoot)
-            : Loc.Format("Ui.MapPack.Status.ExportFailed", result.ErrorMessage ?? Loc.GetString("Ui.MapPack.Unknown"));
+        var cancellationToken = ViewModel.BeginExport();
+        var progress = new Progress<MainWindowViewModel.OfflineCacheExportProgress>(ViewModel.ApplyExportProgress);
+        try
+        {
+            var result = await _ownerViewModel.ExportMapPackAsync(ViewModel.BuildPlan(), cancellationToken, progress);
+            ViewModel.StatusText = result.Success
+                ? Loc.Format("Ui.MapPack.Status.ExportComplete", result.TargetMapRoot)
+                : Loc.Format("Ui.MapPack.Status.ExportFailed", result.ErrorMessage ?? Loc.GetString("Ui.MapPack.Unknown"));
+        }
+        finally
+        {
+            ViewModel.EndExport();
+        }
     }
 
     private async void OnBuildRasterCacheClicked(object? sender, RoutedEventArgs e)
