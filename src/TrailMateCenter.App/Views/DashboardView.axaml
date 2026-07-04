@@ -53,13 +53,9 @@
       <Border Background="{DynamicResource SurfaceDark}" BorderBrush="{DynamicResource PanelBorder}" BorderThickness="0,0,1,0" Classes="panel">
         <Grid>
           <mapsui:MapControl x:Name="MainMapControl" Map="{Binding Map.Map}" />
-          <Canvas IsHitTestVisible="False">
-            <Polyline x:Name="OfflineSelectionPolygon"
-                      IsVisible="False"
-                      Stroke="#FF53C7FF"
-                      StrokeThickness="2"
-                      Fill="Transparent"/>
-          </Canvas>
+          <Canvas x:Name="OfflineSelectionCanvas"
+                  IsHitTestVisible="False"
+                  IsVisible="False"/>
           <Border IsHitTestVisible="False" Background="{StaticResource MapGridBrush}" Opacity="0.08"/>
           <Border IsHitTestVisible="False" Background="{StaticResource MapNoiseBrush}" Opacity="0.04"/>
           <Border IsHitTestVisible="False" Background="{StaticResource MapVignette}" Opacity="0.2"/>
@@ -92,6 +88,36 @@
               <TextBlock Text="{Binding Map.CurrentZoomText}" Foreground="{DynamicResource TextPrimary}" FontSize="10"/>
               <TextBlock Text="{Binding Map.CurrentContourText}" Foreground="{DynamicResource TextDim}" FontSize="10"/>
               <TextBlock Text="{Binding Map.OfflineCacheStatusText}" Foreground="{DynamicResource TextDim}" FontSize="10" TextWrapping="Wrap" MaxWidth="520"/>
+              <WrapPanel>
+                <Button Content="{DynamicResource Ui.Dashboard.OfflineCacheRun}"
+                        Margin="0,0,6,6"
+                        MinWidth="72"
+                        IsEnabled="{Binding Map.CanRunOfflineCache}"
+                        Click="OnRunOfflineCacheClicked"/>
+                <Button Content="{DynamicResource Ui.Dashboard.OfflineCacheCancel}"
+                        Margin="0,0,6,6"
+                        MinWidth="72"
+                        IsEnabled="{Binding Map.IsOfflineCacheRunning}"
+                        Click="OnCancelOfflineCacheClicked"/>
+                <Button x:Name="OfflineSelectionCompleteButton"
+                        Content="{DynamicResource Ui.Dashboard.OfflineCacheComplete}"
+                        Margin="0,0,6,6"
+                        MinWidth="72"
+                        IsEnabled="False"
+                        IsVisible="{Binding Map.IsOfflineCacheSelectionMode}"
+                        Click="OnCompleteOfflineCacheSelectionClicked"
+                        ToolTip.Tip="{DynamicResource Ui.Dashboard.OfflineCacheCompleteTip}"/>
+                <Button Content="{DynamicResource Ui.Dashboard.OfflineCacheClear}"
+                        Margin="0,0,6,6"
+                        MinWidth="72"
+                        IsEnabled="{Binding Map.CanClearOfflineCacheSelection}"
+                        Click="OnClearOfflineCacheSelectionClicked"/>
+                <Button Content="{DynamicResource Ui.Dashboard.AdminMapBuilder}"
+                        Margin="0,0,6,6"
+                        MinWidth="92"
+                        Click="OnMapPackBuilderClicked"
+                        ToolTip.Tip="{DynamicResource Ui.Dashboard.AdminMapBuilderTip}"/>
+              </WrapPanel>
             </StackPanel>
           </Border>
           <Border HorizontalAlignment="Right" VerticalAlignment="Top" Margin="12"
@@ -110,7 +136,7 @@
                             BorderBrush="#8DA8C7"
                             BorderThickness="1"
                             IsChecked="{Binding Map.IsOfflineCacheSelectionMode}"
-                            ToolTip.Tip="{DynamicResource Ui.Dashboard.OfflineCacheSelect}">
+                            ToolTip.Tip="{DynamicResource Ui.Dashboard.OfflineCacheSelectTip}">
                 <Image Source="/Assets/kuangxuan.png"
                        Width="20"
                        Height="20"

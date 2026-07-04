@@ -1,4 +1,5 @@
 using Avalonia.Threading;
+using Avalonia.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging;
@@ -1548,7 +1549,9 @@ public sealed partial class MainWindowViewModel : ViewModelBase
                 ExportBaseTiles(
                     sourceRoot: Path.Combine(cacheRoot, "tilecache"),
                     targetRoot: Path.Combine(mapsRoot, "base", "osm"),
-                    extension: "png",
+                    sourceExtension: "png",
+                    targetExtension: "png",
+                    convertToPng: false,
                     minZoom: osmMinZoom,
                     maxZoom: osmMaxZoom,
                     bounds: bounds,
@@ -1563,7 +1566,9 @@ public sealed partial class MainWindowViewModel : ViewModelBase
                 ExportBaseTiles(
                     sourceRoot: Path.Combine(cacheRoot, "terrain-cache"),
                     targetRoot: Path.Combine(mapsRoot, "base", "terrain"),
-                    extension: "png",
+                    sourceExtension: "png",
+                    targetExtension: "png",
+                    convertToPng: false,
                     minZoom: terrainMinZoom,
                     maxZoom: terrainMaxZoom,
                     bounds: bounds,
@@ -1578,7 +1583,9 @@ public sealed partial class MainWindowViewModel : ViewModelBase
                 ExportBaseTiles(
                     sourceRoot: Path.Combine(cacheRoot, "satellite-cache"),
                     targetRoot: Path.Combine(mapsRoot, "base", "satellite"),
-                    extension: "jpg",
+                    sourceExtension: "jpg",
+                    targetExtension: "png",
+                    convertToPng: true,
                     minZoom: satelliteMinZoom,
                     maxZoom: satelliteMaxZoom,
                     bounds: bounds,
@@ -1669,7 +1676,9 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     private static void ExportBaseTiles(
         string sourceRoot,
         string targetRoot,
-        string extension,
+        string sourceExtension,
+        string targetExtension,
+        bool convertToPng,
         int minZoom,
         int maxZoom,
         (double West, double South, double East, double North) bounds,
@@ -1687,7 +1696,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
                 continue;
 
             stats.ExpectedTiles += range.TileCount;
-            CopyTilesInRange(sourceRoot, targetRoot, extension, zoom, range, stats, cancellationToken);
+            CopyTilesInRange(sourceRoot, targetRoot, sourceExtension, targetExtension, convertToPng, zoom, range, stats, cancellationToken);
         }
     }
 
@@ -1717,7 +1726,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             var profileSourceRoot = Path.Combine(contourRoot, profile);
             var profileTargetRoot = Path.Combine(targetRoot, profile);
             stats.ExpectedTiles += range.TileCount;
-            CopyTilesInRange(profileSourceRoot, profileTargetRoot, "png", zoom, range, stats, cancellationToken);
+            CopyTilesInRange(profileSourceRoot, profileTargetRoot, "png", "png", false, zoom, range, stats, cancellationToken);
         }
     }
 
@@ -1740,7 +1749,9 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     private static void CopyTilesInRange(
         string sourceRoot,
         string targetRoot,
-        string extension,
+        string sourceExtension,
+        string targetExtension,
+        bool convertToPng,
         int zoom,
         TileRange range,
         ExportCopyStats stats,
@@ -1751,7 +1762,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         if (!Directory.Exists(sourceZoomRoot))
             return;
 
-        var searchPattern = $"*.{extension}";
+        var searchPattern = $"*.{sourceExtension}";
         var targetZoomRoot = Path.Combine(targetRoot, zoomText);
         for (var x = range.MinX; x <= range.MaxX; x++)
         {
@@ -1787,22 +1798,102 @@ public sealed partial class MainWindowViewModel : ViewModelBase
                     stats.SourceTiles++;
                     targetXRoot ??= Path.Combine(targetZoomRoot, xText);
                     Directory.CreateDirectory(targetXRoot);
-                    var targetFile = Path.Combine(targetXRoot, $"{y}.{extension}");
-                    if (File.Exists(targetFile) && IsSameSizeTile(sourceFile, targetFile))
+                    var targetFile = Path.Combine(targetXRoot, $"{y}.{targetExtension}");
+                    if (IsTargetTileCurrent(sourceFile, targetFile, convertToPng))
                     {
                         stats.SkippedTiles++;
                         continue;
                     }
 
-                    File.Copy(sourceFile, targetFile, overwrite: true);
+                    WriteExportTile(sourceFile, targetFile, convertToPng);
                     stats.CopiedTiles++;
                 }
-                catch (Exception ex) when (IsSkippableFileSystemException(ex))
+                catch (Exception ex) when (IsSkippableTileExportException(ex))
                 {
                     stats.UnreadableEntries++;
                     stats.SkippedTiles++;
                 }
             }
+        }
+    }
+
+    private static void WriteExportTile(string sourceFile, string targetFile, bool convertToPng)
+    {
+        if (!convertToPng)
+        {
+            File.Copy(sourceFile, targetFile, overwrite: true);
+            return;
+        }
+
+        ConvertTileToPng(sourceFile, targetFile);
+    }
+
+    private static void ConvertTileToPng(string sourceFile, string targetFile)
+    {
+        var targetDirectory = Path.GetDirectoryName(targetFile);
+        if (!string.IsNullOrWhiteSpace(targetDirectory))
+            Directory.CreateDirectory(targetDirectory);
+
+        var tempFile = Path.Combine(
+            targetDirectory ?? string.Empty,
+            $"{Path.GetFileNameWithoutExtension(targetFile)}.{Guid.NewGuid():N}.tmp.png");
+        try
+        {
+            using var bitmap = new Bitmap(sourceFile);
+            bitmap.Save(tempFile);
+            if (!IsNonEmptyFile(tempFile))
+                throw new IOException("Converted tile is empty.");
+
+            File.Move(tempFile, targetFile, overwrite: true);
+            File.SetLastWriteTimeUtc(targetFile, File.GetLastWriteTimeUtc(sourceFile));
+        }
+        finally
+        {
+            TryDeleteExportTempFile(tempFile);
+        }
+    }
+
+    private static bool IsTargetTileCurrent(string sourceFile, string targetFile, bool converted)
+    {
+        if (!File.Exists(targetFile) || !IsNonEmptyFile(targetFile))
+            return false;
+
+        if (!converted)
+            return IsSameSizeTile(sourceFile, targetFile);
+
+        try
+        {
+            return File.GetLastWriteTimeUtc(targetFile) >= File.GetLastWriteTimeUtc(sourceFile);
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private static bool IsNonEmptyFile(string file)
+    {
+        try
+        {
+            var info = new FileInfo(file);
+            return info.Exists && info.Length > 0;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private static void TryDeleteExportTempFile(string path)
+    {
+        try
+        {
+            if (File.Exists(path))
+                File.Delete(path);
+        }
+        catch
+        {
+            // Best effort cleanup; export stats account for the original conversion failure.
         }
     }
 
@@ -2581,6 +2672,11 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     private static bool IsSkippableFileSystemException(Exception ex)
     {
         return ex is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException or PathTooLongException;
+    }
+
+    private static bool IsSkippableTileExportException(Exception ex)
+    {
+        return IsSkippableFileSystemException(ex) || ex is InvalidOperationException;
     }
 
     private async Task StopPropagationUnityRuntimeAsync()

@@ -1,7 +1,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using System.Collections.ObjectModel;
-using System.Globalization;
+using TrailMateCenter.Localization;
 using TrailMateCenter.Maps;
 using TrailMateCenter.Osm;
 
@@ -9,6 +9,9 @@ namespace TrailMateCenter.ViewModels;
 
 public sealed partial class MapPackBuilderViewModel : ObservableObject
 {
+    private static string T(string key) => LocalizationService.Instance.GetString(key);
+    private static string F(string key, params object[] args) => LocalizationService.Instance.Format(key, args);
+
     private readonly MapViewModel _map;
     private readonly CachedNominatimAdminAreaProvider _adminAreaProvider;
     private readonly GeofabrikCatalogProvider _geofabrikCatalogProvider;
@@ -41,11 +44,11 @@ public sealed partial class MapPackBuilderViewModel : ObservableObject
 
         if (_map.TryGetOfflineCacheSelectionBounds(out var bounds))
         {
-            ApplyBounds(new GeoBounds(bounds.West, bounds.South, bounds.East, bounds.North), "Current map selection", null, string.Empty);
+            ApplyBounds(new GeoBounds(bounds.West, bounds.South, bounds.East, bounds.North), T("Ui.MapPack.CurrentMapSelection"), null, string.Empty);
         }
         else
         {
-            ApplyBounds(new GeoBounds(10, 55, 25, 69.5), "Sweden", 2, string.Empty);
+            ApplyBounds(new GeoBounds(10, 55, 25, 69.5), T("Ui.MapPack.DefaultSweden"), 2, string.Empty);
         }
 
         UpdateEstimate();
@@ -64,7 +67,7 @@ public sealed partial class MapPackBuilderViewModel : ObservableObject
     public ObservableCollection<PoiTypeOptionViewModel> PoiTypes { get; } = new();
 
     [ObservableProperty]
-    private string _packName = "TrailMate map pack";
+    private string _packName = T("Ui.MapPack.DefaultPackName");
 
     [ObservableProperty]
     private string _areaSearchText = string.Empty;
@@ -79,7 +82,7 @@ public sealed partial class MapPackBuilderViewModel : ObservableObject
     private GeofabrikRegionOptionViewModel? _selectedGeofabrikRegion;
 
     [ObservableProperty]
-    private string _areaName = "Selection";
+    private string _areaName = T("Ui.MapPack.DefaultAreaName");
 
     [ObservableProperty]
     private int? _adminLevel;
@@ -169,7 +172,7 @@ public sealed partial class MapPackBuilderViewModel : ObservableObject
     private bool _isBusy;
 
     [ObservableProperty]
-    private string _statusText = "Ready.";
+    private string _statusText = T("Ui.MapPack.Status.Ready");
 
     [ObservableProperty]
     private string _estimateText = string.Empty;
@@ -179,8 +182,8 @@ public sealed partial class MapPackBuilderViewModel : ObservableObject
 
     public IReadOnlyList<int> AvailableZoomLevels { get; } = Enumerable.Range(0, 19).ToArray();
     public IReadOnlyList<int> AvailablePoiZoomLevels { get; } = Enumerable.Range(0, 25).ToArray();
-    public IReadOnlyList<PoiOutputFormat> AvailablePoiOutputFormats { get; } =
-        [PoiOutputFormat.Readable, PoiOutputFormat.Compact];
+    public IReadOnlyList<PoiOutputFormatOptionViewModel> AvailablePoiOutputFormats { get; } =
+        [new(PoiOutputFormat.Readable), new(PoiOutputFormat.Compact)];
 
     public bool HasSelectedPoiTypes => PoiTypes.Any(static p => p.IsSelected);
     public bool CanExport => !IsBusy && (HasTileSelection || HasPoiExportSelection);
@@ -188,15 +191,28 @@ public sealed partial class MapPackBuilderViewModel : ObservableObject
     public bool HasPoiExportSelection => EnablePoiSeparation && !string.IsNullOrWhiteSpace(PbfPath) && HasSelectedPoiTypes;
     public string BoundsText => CurrentBounds.ToInvariantText();
     public GeoBounds CurrentBounds => new(West, South, East, North);
+    public string AdminLevelText => AdminLevel.HasValue ? AdminLevel.Value.ToString() : T("Ui.MapPack.AdminLevelUnknown");
+    public string PreviewPoiCountText => F("Ui.MapPack.PreviewPoiCount", PreviewPoiCount);
+    public PoiOutputFormatOptionViewModel? SelectedPoiOutputFormat
+    {
+        get => AvailablePoiOutputFormats.FirstOrDefault(option => option.Value == PoiOutputFormat);
+        set
+        {
+            if (value is not null)
+                PoiOutputFormat = value.Value;
+        }
+    }
 
     public MapPackExportPlan BuildPlan()
     {
         return new MapPackExportPlan
         {
-            Name = string.IsNullOrWhiteSpace(PackName) ? AreaName : PackName.Trim(),
+            Name = string.IsNullOrWhiteSpace(PackName)
+                ? (string.IsNullOrWhiteSpace(AreaName) ? T("Ui.MapPack.DefaultPackName") : AreaName.Trim())
+                : PackName.Trim(),
             Area = new MapPackAreaSelection
             {
-                Name = string.IsNullOrWhiteSpace(AreaName) ? "Selection" : AreaName.Trim(),
+                Name = string.IsNullOrWhiteSpace(AreaName) ? T("Ui.MapPack.DefaultAreaName") : AreaName.Trim(),
                 AdminLevel = AdminLevel,
                 Bounds = CurrentBounds.Normalize(),
                 BoundaryGeoJson = BoundaryGeoJson,
@@ -260,7 +276,7 @@ public sealed partial class MapPackBuilderViewModel : ObservableObject
         PbfProvider = "local";
         PbfDownloadUrl = string.Empty;
         EnablePoiSeparation = true;
-        StatusText = $"PBF selected: {Path.GetFileName(path)}";
+        StatusText = F("Ui.MapPack.Status.PbfSelected", Path.GetFileName(path));
     }
 
     public void SetOutputDirectory(string path)
@@ -269,19 +285,19 @@ public sealed partial class MapPackBuilderViewModel : ObservableObject
             return;
 
         OutputDirectory = path;
-        StatusText = $"Output directory: {path}";
+        StatusText = F("Ui.MapPack.Status.OutputDirectory", path);
     }
 
     public void ApplyManualBounds()
     {
-        ApplyBounds(CurrentBounds, string.IsNullOrWhiteSpace(AreaName) ? "Manual bounds" : AreaName, AdminLevel, BoundaryGeoJson);
+        ApplyBounds(CurrentBounds, string.IsNullOrWhiteSpace(AreaName) ? T("Ui.MapPack.ManualBounds") : AreaName, AdminLevel, BoundaryGeoJson);
     }
 
     private async Task SearchAdminAreasAsync()
     {
         await RunOperationAsync(async token =>
         {
-            StatusText = "Searching administrative boundaries...";
+            StatusText = T("Ui.MapPack.Status.SearchingBoundary");
             var result = await _adminAreaProvider.SearchAsync(
                     new AdminAreaQuery
                     {
@@ -296,10 +312,10 @@ public sealed partial class MapPackBuilderViewModel : ObservableObject
                 AdminAreas.Add(new AdminAreaOptionViewModel(area));
 
             StatusText = result.ErrorMessage is not null
-                ? $"Boundary search used fallback/cache: {result.ErrorMessage}"
+                ? F("Ui.MapPack.Status.BoundaryFallback", result.ErrorMessage)
                 : result.FromCache
-                    ? $"Loaded {AdminAreas.Count} boundary results from cache."
-                    : $"Loaded {AdminAreas.Count} boundary results.";
+                    ? F("Ui.MapPack.Status.BoundaryLoadedCache", AdminAreas.Count)
+                    : F("Ui.MapPack.Status.BoundaryLoaded", AdminAreas.Count);
         }).ConfigureAwait(false);
     }
 
@@ -307,13 +323,13 @@ public sealed partial class MapPackBuilderViewModel : ObservableObject
     {
         await RunOperationAsync(async token =>
         {
-            StatusText = "Loading Geofabrik PBF catalog...";
+            StatusText = T("Ui.MapPack.Status.LoadingPbfCatalog");
             var results = await _geofabrikCatalogProvider.SearchAsync(GeofabrikSearchText, 20, token);
             GeofabrikRegions.Clear();
             foreach (var region in results)
                 GeofabrikRegions.Add(new GeofabrikRegionOptionViewModel(region));
 
-            StatusText = $"Loaded {GeofabrikRegions.Count} PBF source options.";
+            StatusText = F("Ui.MapPack.Status.PbfOptionsLoaded", GeofabrikRegions.Count);
         }).ConfigureAwait(false);
     }
 
@@ -325,12 +341,16 @@ public sealed partial class MapPackBuilderViewModel : ObservableObject
         await RunOperationAsync(async token =>
         {
             var region = SelectedGeofabrikRegion.Record;
-            StatusText = $"Downloading {region.DisplayName}...";
+            StatusText = F("Ui.MapPack.Status.DownloadingRegion", region.DisplayName);
             var progress = new Progress<GeofabrikDownloadProgress>(p =>
             {
                 StatusText = p.Percent.HasValue
-                    ? $"Downloading PBF {p.Percent.Value:F1}% ({ExportEstimator.FormatBytes(p.BytesReceived)} / {ExportEstimator.FormatBytes(p.TotalBytes ?? 0)})"
-                    : $"Downloading PBF {ExportEstimator.FormatBytes(p.BytesReceived)}";
+                    ? F(
+                        "Ui.MapPack.Status.DownloadingPbfPercent",
+                        p.Percent.Value,
+                        ExportEstimator.FormatBytes(p.BytesReceived),
+                        ExportEstimator.FormatBytes(p.TotalBytes ?? 0))
+                    : F("Ui.MapPack.Status.DownloadingPbfBytes", ExportEstimator.FormatBytes(p.BytesReceived));
             });
 
             var entry = await _pbfDownloadService.DownloadAsync(region, forceRefresh: false, progress, token);
@@ -338,7 +358,7 @@ public sealed partial class MapPackBuilderViewModel : ObservableObject
             PbfProvider = "geofabrik";
             PbfDownloadUrl = entry.Url;
             EnablePoiSeparation = true;
-            StatusText = $"PBF ready: {Path.GetFileName(entry.LocalPath)} ({ExportEstimator.FormatBytes(entry.SizeBytes)})";
+            StatusText = F("Ui.MapPack.Status.PbfReady", Path.GetFileName(entry.LocalPath), ExportEstimator.FormatBytes(entry.SizeBytes));
         }).ConfigureAwait(false);
     }
 
@@ -352,12 +372,12 @@ public sealed partial class MapPackBuilderViewModel : ObservableObject
             var result = await _boundaryImporter.ImportAsync(path, token);
             if (!result.Success)
             {
-                StatusText = result.ErrorMessage ?? "Boundary import failed.";
+                StatusText = result.ErrorMessage ?? T("Ui.MapPack.Status.BoundaryImportFailed");
                 return;
             }
 
             ApplyBounds(result.Bounds, result.Name, null, result.BoundaryGeoJson);
-            StatusText = $"Boundary imported: {result.Name}";
+            StatusText = F("Ui.MapPack.Status.BoundaryImported", result.Name);
         }).ConfigureAwait(false);
     }
 
@@ -368,7 +388,7 @@ public sealed partial class MapPackBuilderViewModel : ObservableObject
 
         await RunOperationAsync(async token =>
         {
-            StatusText = "Extracting POI preview...";
+            StatusText = T("Ui.MapPack.Status.ExtractingPoiPreview");
             var preview = await _poiExtractor.ExtractAsync(
                     new OsmPoiExtractionOptions
                     {
@@ -382,17 +402,15 @@ public sealed partial class MapPackBuilderViewModel : ObservableObject
                     },
                     new Progress<OsmPoiExtractionProgress>(p =>
                     {
-                        StatusText = string.Create(
-                            CultureInfo.InvariantCulture,
-                            $"Scanning PBF: {p.ProcessedElements:N0} OSM elements, {p.ExtractedPoiCount:N0} preview POI");
+                        StatusText = F("Ui.MapPack.Status.ScanningPbf", p.ProcessedElements, p.ExtractedPoiCount);
                     }),
                     token);
 
             PreviewPoiCount = preview.Count;
             _map.SetPoiPreview(preview, ShowPoiPreview, PoiPreviewLimit);
             StatusText = preview.Count == 0
-                ? "No POI found in selected preview area."
-                : $"Preview loaded: {preview.Count:N0} POI.";
+                ? T("Ui.MapPack.Status.NoPoiFound")
+                : F("Ui.MapPack.Status.PreviewLoaded", preview.Count);
         }).ConfigureAwait(false);
     }
 
@@ -401,17 +419,17 @@ public sealed partial class MapPackBuilderViewModel : ObservableObject
         var estimate = _estimator.Estimate(BuildPlan());
         EstimateText = string.Join(
             Environment.NewLine,
-            estimate.Layers.Select(l => $"{l.Name}: {l.TileCount:N0} tiles, ~{ExportEstimator.FormatBytes(l.EstimatedBytes)}")
-                .Append($"Total: {estimate.TotalTileCount:N0} tiles, ~{ExportEstimator.FormatBytes(estimate.EstimatedTileBytes)}")
+            estimate.Layers.Select(l => F("Ui.MapPack.Estimate.Layer", l.Name, l.TileCount, ExportEstimator.FormatBytes(l.EstimatedBytes)))
+                .Append(F("Ui.MapPack.Estimate.Total", estimate.TotalTileCount, ExportEstimator.FormatBytes(estimate.EstimatedTileBytes)))
                 .Append(EnablePoiSeparation
-                    ? $"POI: {SelectedPoiTypeText()}, index Z{PoiIndexMinimumZoom}-{PoiIndexMaximumZoom}, max {MaxPoiPerTile:N0}/tile"
-                    : "POI: disabled"));
+                    ? F("Ui.MapPack.Estimate.Poi", SelectedPoiTypeText(), PoiIndexMinimumZoom, PoiIndexMaximumZoom, MaxPoiPerTile)
+                    : T("Ui.MapPack.Estimate.PoiDisabled")));
     }
 
     private string SelectedPoiTypeText()
     {
-        var selected = PoiTypes.Where(static p => p.IsSelected).Select(static p => p.Id).ToArray();
-        return selected.Length == 0 ? "none" : string.Join(", ", selected);
+        var selected = PoiTypes.Where(static p => p.IsSelected).Select(static p => p.Label).ToArray();
+        return selected.Length == 0 ? T("Ui.MapPack.None") : string.Join(", ", selected);
     }
 
     private async Task RunOperationAsync(Func<CancellationToken, Task> operation)
@@ -428,7 +446,7 @@ public sealed partial class MapPackBuilderViewModel : ObservableObject
         }
         catch (OperationCanceledException)
         {
-            StatusText = "Operation canceled.";
+            StatusText = T("Ui.MapPack.Status.OperationCanceled");
         }
         catch (Exception ex)
         {
@@ -496,7 +514,7 @@ public sealed partial class MapPackBuilderViewModel : ObservableObject
         South = normalized.South;
         East = normalized.East;
         North = normalized.North;
-        AreaName = string.IsNullOrWhiteSpace(name) ? "Selection" : name.Trim();
+        AreaName = string.IsNullOrWhiteSpace(name) ? T("Ui.MapPack.DefaultAreaName") : name.Trim();
         AdminLevel = adminLevel;
         BoundaryGeoJson = boundaryGeoJson ?? string.Empty;
         if (string.IsNullOrWhiteSpace(BoundaryGeoJson) ||
@@ -515,10 +533,7 @@ public sealed partial class MapPackBuilderViewModel : ObservableObject
         var selectedPreviewTypes = _map.SelectedPoiPreviewTypes.ToHashSet(StringComparer.OrdinalIgnoreCase);
         foreach (var definition in PoiTypeCatalog.DefaultTypes)
         {
-            var option = new PoiTypeOptionViewModel(
-                definition.Id,
-                definition.Label,
-                selectedPreviewTypes.Contains(definition.Id));
+            var option = PoiTypeCatalog.CreateOption(definition, selectedPreviewTypes.Contains(definition.Id));
             option.PropertyChanged += (_, e) =>
             {
                 OnPropertyChanged(nameof(HasSelectedPoiTypes));
@@ -544,7 +559,7 @@ public sealed partial class MapPackBuilderViewModel : ObservableObject
 
         var area = value.Record;
         ApplyBounds(area.Bounds, area.Name, area.AdminLevel, area.BoundaryGeoJson);
-        StatusText = $"Area selected: {area.DisplayName}";
+        StatusText = F("Ui.MapPack.Status.AreaSelected", area.DisplayName);
     }
 
     partial void OnSelectedGeofabrikRegionChanged(GeofabrikRegionOptionViewModel? value)
@@ -560,10 +575,11 @@ public sealed partial class MapPackBuilderViewModel : ObservableObject
         }
         PbfDownloadUrl = region.PbfUrl;
         PbfProvider = "geofabrik";
-        StatusText = $"PBF source selected: {region.DisplayName}";
+        StatusText = F("Ui.MapPack.Status.PbfSourceSelected", region.DisplayName);
     }
 
     partial void OnIsBusyChanged(bool value) => NotifyCommandStates();
+    partial void OnAdminLevelChanged(int? value) => OnPropertyChanged(nameof(AdminLevelText));
     partial void OnIncludeOsmChanged(bool value) => OnExportInputChanged();
     partial void OnIncludeTerrainChanged(bool value) => OnExportInputChanged();
     partial void OnIncludeSatelliteChanged(bool value) => OnExportInputChanged();
@@ -586,7 +602,12 @@ public sealed partial class MapPackBuilderViewModel : ObservableObject
     partial void OnGenerateTileIndexChanged(bool value) => OnExportInputChanged();
     partial void OnIncludePoiLabelsChanged(bool value) => OnExportInputChanged();
     partial void OnIncludeOriginalOsmTagsChanged(bool value) => OnExportInputChanged();
-    partial void OnPoiOutputFormatChanged(PoiOutputFormat value) => OnExportInputChanged();
+    partial void OnPoiOutputFormatChanged(PoiOutputFormat value)
+    {
+        OnPropertyChanged(nameof(SelectedPoiOutputFormat));
+        OnExportInputChanged();
+    }
+    partial void OnPreviewPoiCountChanged(long value) => OnPropertyChanged(nameof(PreviewPoiCountText));
     partial void OnOutputDirectoryChanged(string value) => OnExportInputChanged();
     partial void OnShowPoiPreviewChanged(bool value) => _map.ShowPoiPreview = value;
 
@@ -693,7 +714,7 @@ public sealed class AdminAreaOptionViewModel
     public AdminAreaRecord Record { get; }
     public string DisplayText => string.IsNullOrWhiteSpace(Record.DisplayName) ? Record.Name : Record.DisplayName;
     public string DetailText => Record.AdminLevel.HasValue
-        ? $"admin_level {Record.AdminLevel.Value} | {Record.Bounds.ToInvariantText()}"
+        ? LocalizationService.Instance.Format("Ui.MapPack.Detail.AdminLevel", Record.AdminLevel.Value, Record.Bounds.ToInvariantText())
         : Record.Bounds.ToInvariantText();
 }
 
@@ -707,6 +728,19 @@ public sealed class GeofabrikRegionOptionViewModel
     public GeofabrikRegionRecord Record { get; }
     public string DisplayText => string.IsNullOrWhiteSpace(Record.DisplayName) ? Record.Name : Record.DisplayName;
     public string DetailText => string.IsNullOrWhiteSpace(Record.PbfUrl)
-        ? "No PBF URL"
+        ? LocalizationService.Instance.GetString("Ui.MapPack.Detail.NoPbfUrl")
         : Record.PbfUrl;
+}
+
+public sealed class PoiOutputFormatOptionViewModel
+{
+    public PoiOutputFormatOptionViewModel(PoiOutputFormat value)
+    {
+        Value = value;
+    }
+
+    public PoiOutputFormat Value { get; }
+    public string Label => Value == PoiOutputFormat.Compact
+        ? LocalizationService.Instance.GetString("Ui.MapPack.OutputFormat.Compact")
+        : LocalizationService.Instance.GetString("Ui.MapPack.OutputFormat.Readable");
 }

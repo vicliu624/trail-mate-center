@@ -6,6 +6,7 @@ using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Shapes;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform;
 using Avalonia.Platform.Storage;
@@ -21,15 +22,15 @@ namespace TrailMateCenter.Views;
 
 public partial class DashboardView : UserControl
 {
-    private const double OfflineSelectionEdgePanThreshold = 28;
-    private const double OfflineSelectionEdgePanMaxStepPx = 24;
+    private const double OfflineSelectionClosePointRadiusPx = 14;
 
     private MapControl? _mapControl;
-    private Polyline? _offlineSelectionPolygon;
+    private Canvas? _offlineSelectionCanvas;
+    private Button? _offlineSelectionCompleteButton;
     private ToggleButton? _offlineSelectionModeToggle;
-    private bool _isOfflineSelectionDragging;
     private readonly List<Point> _offlineSelectionScreenPath = new();
-    private Point _offlineSelectionLastPoint;
+    private readonly List<MPoint> _offlineSelectionWorldPath = new();
+    private Point? _offlineSelectionPreviewPoint;
     private bool _suppressNextMapTap;
     private bool _offlineCacheDialogOpen;
     private bool _offlineCacheRegionsDialogOpen;
@@ -54,7 +55,8 @@ public partial class DashboardView : UserControl
         if (_mapControl is null)
             return;
 
-        _offlineSelectionPolygon = this.FindControl<Polyline>("OfflineSelectionPolygon");
+        _offlineSelectionCanvas = this.FindControl<Canvas>("OfflineSelectionCanvas");
+        _offlineSelectionCompleteButton = this.FindControl<Button>("OfflineSelectionCompleteButton");
         _offlineSelectionModeToggle = this.FindControl<ToggleButton>("OfflineCacheSelectToggle");
         if (_offlineSelectionModeToggle is not null)
         {
@@ -189,13 +191,8 @@ public partial class DashboardView : UserControl
         {
             DisableFollowLatestForManualNavigation();
             SyncOfflineSelectionPanLock();
-            _isOfflineSelectionDragging = true;
-            _offlineSelectionLastPoint = ClampPointToMapBounds(e.GetPosition(_mapControl));
-            _offlineSelectionScreenPath.Clear();
-            AppendOfflineSelectionPoint(_offlineSelectionLastPoint, force: true);
+            AddOfflineSelectionVertex(e.GetPosition(_mapControl));
             _suppressNextMapTap = true;
-            e.Pointer.Capture(_mapControl);
-            UpdateOfflineSelectionVisual();
             e.Handled = true;
             return;
         }
@@ -205,21 +202,24 @@ public partial class DashboardView : UserControl
 
     private void OnMapPointerMoved(object? sender, PointerEventArgs e)
     {
-        if (_mapControl is null || !_isOfflineSelectionDragging)
+        if (_mapControl is null || !IsOfflineSelectionModeActive())
             return;
 
-        var pointer = e.GetPosition(_mapControl);
-        TryAutoPanAtMapEdge(pointer);
-
-        var current = ClampPointToMapBounds(pointer);
-        _offlineSelectionLastPoint = current;
-        AppendOfflineSelectionPoint(current, force: false);
+        _offlineSelectionPreviewPoint = _offlineSelectionScreenPath.Count > 0
+            ? ClampPointToMapBounds(e.GetPosition(_mapControl))
+            : null;
         UpdateOfflineSelectionVisual();
         e.Handled = true;
     }
 
     private void OnMapPointerWheelChanged(object? sender, PointerWheelEventArgs e)
     {
+        if (IsOfflineSelectionModeActive())
+        {
+            e.Handled = true;
+            return;
+        }
+
         DisableFollowLatestForManualNavigation();
     }
 
@@ -268,12 +268,13 @@ public partial class DashboardView : UserControl
     {
         if (_mapControl is null)
             return;
-        if (_isOfflineSelectionDragging)
+        if (IsOfflineSelectionModeActive())
         {
-            _offlineSelectionLastPoint = ClampPointToMapBounds(e.GetPosition(_mapControl));
-            AppendOfflineSelectionPoint(_offlineSelectionLastPoint, force: true);
-            e.Pointer.Capture(null);
-            CompleteOfflineSelection();
+            if (e.InitialPressMouseButton == MouseButton.Right)
+            {
+                CompleteOfflineSelection();
+            }
+
             e.Handled = true;
             return;
         }
@@ -460,10 +461,7 @@ public partial class DashboardView : UserControl
 
     private void OnMapPointerCaptureLost(object? sender, PointerCaptureLostEventArgs e)
     {
-        if (!_isOfflineSelectionDragging)
-            return;
-
-        CompleteOfflineSelection();
+        UpdateOfflineSelectionVisual();
     }
 
     private async Task ApplyOfflineSelectionAsync()
@@ -472,13 +470,7 @@ public partial class DashboardView : UserControl
             return;
         if (DataContext is not MainWindowViewModel vm)
             return;
-        var viewport = _mapControl.Map.Navigator.Viewport;
-        var worldPoints = _offlineSelectionScreenPath
-            .Select(p => viewport.ScreenToWorld(new ScreenPosition(p.X, p.Y)))
-            .Select(p => new MPoint(p.X, p.Y))
-            .ToList();
-        HideOfflineSelectionVisual();
-        _offlineSelectionScreenPath.Clear();
+        var worldPoints = _offlineSelectionWorldPath.ToList();
 
         if (worldPoints.Count < 3)
             return;
@@ -486,6 +478,7 @@ public partial class DashboardView : UserControl
         if (!vm.Map.SetOfflineCacheSelectionPolygonFromWorldPoints(worldPoints))
             return;
 
+        ResetOfflineSelectionDraft();
         vm.Map.IsOfflineCacheSelectionMode = false;
         SyncOfflineSelectionPanLock();
 
@@ -494,39 +487,91 @@ public partial class DashboardView : UserControl
 
     private void CompleteOfflineSelection()
     {
-        if (!_isOfflineSelectionDragging)
+        if (_offlineSelectionWorldPath.Count < 3)
             return;
 
-        _isOfflineSelectionDragging = false;
         _ = ApplyOfflineSelectionAsync();
         SyncOfflineSelectionPanLock();
     }
 
     private void UpdateOfflineSelectionVisual()
     {
-        if (_offlineSelectionPolygon is null || _offlineSelectionScreenPath.Count < 2)
+        if (_offlineSelectionCanvas is null)
             return;
 
-        var points = new List<Point>(_offlineSelectionScreenPath.Count + 1);
-        points.AddRange(_offlineSelectionScreenPath);
-        points.Add(_offlineSelectionScreenPath[0]);
-        _offlineSelectionPolygon.Points = points;
-        _offlineSelectionPolygon.IsVisible = true;
+        _offlineSelectionCanvas.Children.Clear();
+
+        var previewPath = new List<Point>(_offlineSelectionScreenPath.Count + 1);
+        previewPath.AddRange(_offlineSelectionScreenPath);
+        if (_offlineSelectionPreviewPoint.HasValue && previewPath.Count > 0)
+            previewPath.Add(_offlineSelectionPreviewPoint.Value);
+
+        if (previewPath.Count >= 3)
+        {
+            _offlineSelectionCanvas.Children.Add(new Polygon
+            {
+                Points = previewPath,
+                Fill = new SolidColorBrush(Color.FromArgb(42, 83, 199, 255)),
+                StrokeThickness = 0,
+            });
+        }
+
+        if (previewPath.Count >= 2)
+        {
+            _offlineSelectionCanvas.Children.Add(new Polyline
+            {
+                Points = previewPath,
+                Stroke = new SolidColorBrush(Color.FromArgb(255, 77, 213, 255)),
+                StrokeThickness = 3,
+                Fill = Brushes.Transparent,
+            });
+        }
+
+        for (var i = 0; i < _offlineSelectionScreenPath.Count; i++)
+        {
+            var point = _offlineSelectionScreenPath[i];
+            var isCloseTarget = i == 0 && _offlineSelectionScreenPath.Count >= 3;
+            var size = isCloseTarget ? 14 : 10;
+            var marker = new Ellipse
+            {
+                Width = size,
+                Height = size,
+                Fill = new SolidColorBrush(isCloseTarget
+                    ? Color.FromArgb(245, 159, 232, 112)
+                    : Color.FromArgb(245, 83, 199, 255)),
+                Stroke = new SolidColorBrush(Color.FromArgb(255, 248, 250, 252)),
+                StrokeThickness = isCloseTarget ? 2 : 1.5,
+            };
+            Canvas.SetLeft(marker, point.X - (size * 0.5));
+            Canvas.SetTop(marker, point.Y - (size * 0.5));
+            _offlineSelectionCanvas.Children.Add(marker);
+        }
+
+        _offlineSelectionCanvas.IsVisible = previewPath.Count > 0;
+        UpdateOfflineSelectionActionState();
     }
 
     private void HideOfflineSelectionVisual()
     {
-        if (_offlineSelectionPolygon is not null)
-            _offlineSelectionPolygon.IsVisible = false;
+        if (_offlineSelectionCanvas is not null)
+        {
+            _offlineSelectionCanvas.Children.Clear();
+            _offlineSelectionCanvas.IsVisible = false;
+        }
+
+        UpdateOfflineSelectionActionState();
     }
 
     private void OnOfflineSelectionModeToggled(object? sender, RoutedEventArgs e)
     {
         if (!IsOfflineSelectionModeActive())
         {
-            _isOfflineSelectionDragging = false;
-            _offlineSelectionScreenPath.Clear();
-            HideOfflineSelectionVisual();
+            ResetOfflineSelectionDraft();
+        }
+        else
+        {
+            _offlineSelectionPreviewPoint = null;
+            UpdateOfflineSelectionVisual();
         }
 
         SyncOfflineSelectionPanLock();
@@ -535,11 +580,13 @@ public partial class DashboardView : UserControl
     private void OnDataContextChanged(object? sender, EventArgs e)
     {
         SyncOfflineSelectionPanLock();
+        UpdateOfflineSelectionActionState();
     }
 
     private void OnAttachedToVisualTree(object? sender, VisualTreeAttachmentEventArgs e)
     {
         SyncOfflineSelectionPanLock();
+        UpdateOfflineSelectionActionState();
     }
 
     private bool IsOfflineSelectionModeActive()
@@ -556,6 +603,7 @@ public partial class DashboardView : UserControl
             return;
 
         _mapControl.Map.Navigator.PanLock = IsOfflineSelectionModeActive();
+        UpdateOfflineSelectionActionState();
     }
 
     private Point ClampPointToMapBounds(Point point)
@@ -570,59 +618,68 @@ public partial class DashboardView : UserControl
             Math.Clamp(point.Y, 0, height));
     }
 
-    private void AppendOfflineSelectionPoint(Point point, bool force)
-    {
-        if (_offlineSelectionScreenPath.Count == 0)
-        {
-            _offlineSelectionScreenPath.Add(point);
-            return;
-        }
-
-        var last = _offlineSelectionScreenPath[_offlineSelectionScreenPath.Count - 1];
-        var dx = point.X - last.X;
-        var dy = point.Y - last.Y;
-        if (!force && (dx * dx + dy * dy) < 16)
-            return;
-
-        _offlineSelectionScreenPath.Add(point);
-    }
-
-    private void TryAutoPanAtMapEdge(Point pointerPosition)
+    private void AddOfflineSelectionVertex(Point point)
     {
         if (_mapControl?.Map is null)
             return;
 
-        var bounds = _mapControl.Bounds;
-        if (bounds.Width <= 1 || bounds.Height <= 1)
+        var clamped = ClampPointToMapBounds(point);
+        if (_offlineSelectionScreenPath.Count >= 3 && IsNearFirstOfflineSelectionPoint(clamped))
+        {
+            CompleteOfflineSelection();
             return;
+        }
 
-        var panX = ComputeEdgePanDelta(pointerPosition.X, bounds.Width);
-        var panY = ComputeEdgePanDelta(pointerPosition.Y, bounds.Height);
-        if (Math.Abs(panX) < 0.01 && Math.Abs(panY) < 0.01)
+        if (_offlineSelectionScreenPath.Count > 0 && IsNearLastOfflineSelectionPoint(clamped))
             return;
 
         var viewport = _mapControl.Map.Navigator.Viewport;
-        var centerScreen = new ScreenPosition((bounds.Width * 0.5) + panX, (bounds.Height * 0.5) + panY);
-        var newCenter = viewport.ScreenToWorld(centerScreen);
-        _mapControl.Map.Navigator.CenterOn(newCenter, 0, null);
+        var world = viewport.ScreenToWorld(new ScreenPosition(clamped.X, clamped.Y));
+        _offlineSelectionScreenPath.Add(clamped);
+        _offlineSelectionWorldPath.Add(new MPoint(world.X, world.Y));
+        _offlineSelectionPreviewPoint = null;
+        UpdateOfflineSelectionVisual();
     }
 
-    private static double ComputeEdgePanDelta(double pointerAxis, double extent)
+    private bool IsNearFirstOfflineSelectionPoint(Point point)
     {
-        if (pointerAxis < OfflineSelectionEdgePanThreshold)
-        {
-            var intensity = Math.Clamp((OfflineSelectionEdgePanThreshold - pointerAxis) / OfflineSelectionEdgePanThreshold, 0.0, 1.0);
-            return -OfflineSelectionEdgePanMaxStepPx * intensity;
-        }
+        if (_offlineSelectionScreenPath.Count == 0)
+            return false;
 
-        var farEdgeStart = extent - OfflineSelectionEdgePanThreshold;
-        if (pointerAxis > farEdgeStart)
-        {
-            var intensity = Math.Clamp((pointerAxis - farEdgeStart) / OfflineSelectionEdgePanThreshold, 0.0, 1.0);
-            return OfflineSelectionEdgePanMaxStepPx * intensity;
-        }
+        return GetPointDistanceSquared(point, _offlineSelectionScreenPath[0]) <=
+               OfflineSelectionClosePointRadiusPx * OfflineSelectionClosePointRadiusPx;
+    }
 
-        return 0;
+    private bool IsNearLastOfflineSelectionPoint(Point point)
+    {
+        if (_offlineSelectionScreenPath.Count == 0)
+            return false;
+
+        return GetPointDistanceSquared(point, _offlineSelectionScreenPath[^1]) <= 16;
+    }
+
+    private static double GetPointDistanceSquared(Point first, Point second)
+    {
+        var dx = first.X - second.X;
+        var dy = first.Y - second.Y;
+        return (dx * dx) + (dy * dy);
+    }
+
+    private void ResetOfflineSelectionDraft()
+    {
+        _offlineSelectionScreenPath.Clear();
+        _offlineSelectionWorldPath.Clear();
+        _offlineSelectionPreviewPoint = null;
+        HideOfflineSelectionVisual();
+    }
+
+    private void UpdateOfflineSelectionActionState()
+    {
+        if (_offlineSelectionCompleteButton is not null)
+        {
+            _offlineSelectionCompleteButton.IsEnabled =
+                IsOfflineSelectionModeActive() && _offlineSelectionWorldPath.Count >= 3;
+        }
     }
 
     private async Task ShowOfflineCacheDialogAsync(MainWindowViewModel vm)
@@ -830,13 +887,24 @@ public partial class DashboardView : UserControl
         vm.Map.CancelOfflineCache();
     }
 
+    private void OnCompleteOfflineCacheSelectionClicked(object? sender, RoutedEventArgs e)
+    {
+        CompleteOfflineSelection();
+    }
+
     private void OnClearOfflineCacheSelectionClicked(object? sender, RoutedEventArgs e)
     {
         if (DataContext is not MainWindowViewModel vm)
             return;
 
-        vm.Map.ClearOfflineCacheSelection();
-        HideOfflineSelectionVisual();
+        ResetOfflineSelectionDraft();
+        vm.Map.IsOfflineCacheSelectionMode = false;
+        if (vm.Map.HasOfflineCacheSelection)
+        {
+            vm.Map.ClearOfflineCacheSelection();
+        }
+
+        SyncOfflineSelectionPanLock();
     }
 
     private void OnMapLogPanelPointerWheelChanged(object? sender, PointerWheelEventArgs e)

@@ -8,7 +8,7 @@
         MinHeight="760"
         CanResize="True"
         WindowStartupLocation="CenterOwner"
-        Title="Map Pack Builder">
+        Title="{DynamicResource Ui.MapPack.Title}">
   <Window.Styles>
     <Style Selector="TextBlock.sectionHeader">
       <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
@@ -24,7 +24,7 @@
       <Setter Property="FontSize" Value="13"/>
       <Setter Property="Opacity" Value="1"/>
     </Style>
-    <Style Selector="CheckBox /template/ ContentPresenter">
+    <Style Selector="CheckBox /template/ TextBlock#CheckBoxText">
       <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
       <Setter Property="Opacity" Value="1"/>
     </Style>
@@ -32,7 +32,7 @@
       <Setter Property="Foreground" Value="{DynamicResource TextDim}"/>
       <Setter Property="Opacity" Value="0.85"/>
     </Style>
-    <Style Selector="CheckBox:disabled /template/ ContentPresenter">
+    <Style Selector="CheckBox:disabled /template/ TextBlock#CheckBoxText">
       <Setter Property="Foreground" Value="{DynamicResource TextDim}"/>
       <Setter Property="Opacity" Value="1"/>
     </Style>
@@ -44,11 +44,11 @@
           CornerRadius="8">
     <Grid RowDefinitions="Auto,*,Auto" Margin="14">
       <StackPanel Spacing="4">
-        <TextBlock Text="Map Pack Builder"
+        <TextBlock Text="{DynamicResource Ui.MapPack.Title}"
                    FontSize="18"
                    FontWeight="Bold"
                    Foreground="{DynamicResource TextPrimary}"/>
-        <TextBlock Text="Build raster tiles and optional OSM-derived POI overlay data without changing existing Trail-Mate map folders."
+        <TextBlock Text="{DynamicResource Ui.MapPack.Description}"
                    Classes="dialogHint"
                    TextWrapping="Wrap"/>
       </StackPanel>
@@ -59,12 +59,12 @@
         <StackPanel Spacing="10">
           <Border BorderBrush="{DynamicResource PanelBorderStrong}" BorderThickness="1" CornerRadius="6" Padding="10" Background="{DynamicResource SurfaceDark}">
             <StackPanel Spacing="8">
-              <TextBlock Text="Step 1: Select Area" Classes="sectionHeader"/>
+              <TextBlock Text="{DynamicResource Ui.MapPack.Step.Area}" Classes="sectionHeader"/>
               <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
                 <TextBox Text="{Binding AreaSearchText, UpdateSourceTrigger=PropertyChanged}"
-                         Watermark="Country, region, county, district"/>
+                         Watermark="{DynamicResource Ui.MapPack.AreaSearchWatermark}"/>
                 <Button Grid.Column="1"
-                        Content="Search Boundary"
+                        Content="{DynamicResource Ui.MapPack.SearchAdminBoundary}"
                         Command="{Binding SearchAdminAreasCommand}"/>
               </Grid>
               <ListBox ItemsSource="{Binding AdminAreas}"
@@ -85,9 +85,9 @@
 
               <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
                 <TextBox Text="{Binding GeofabrikSearchText, UpdateSourceTrigger=PropertyChanged}"
-                         Watermark="Geofabrik PBF source, e.g. Sweden"/>
+                         Watermark="{DynamicResource Ui.MapPack.PbfSearchWatermark}"/>
                 <Button Grid.Column="1"
-                        Content="Search PBF"
+                        Content="{DynamicResource Ui.MapPack.SearchPbf}"
                         Command="{Binding SearchGeofabrikCommand}"/>
               </Grid>
               <ListBox ItemsSource="{Binding GeofabrikRegions}"
@@ -106,48 +106,60 @@
                 </ListBox.ItemTemplate>
               </ListBox>
               <StackPanel Orientation="Horizontal" Spacing="8">
-                <Button Content="Download Selected PBF"
+                <Button Content="{DynamicResource Ui.MapPack.DownloadSelectedPbf}"
                         Command="{Binding DownloadSelectedPbfCommand}"/>
-                <Button Content="Import GeoJSON Boundary"
+                <Button Content="{DynamicResource Ui.MapPack.ImportGeoJsonBoundary}"
                         Click="OnImportBoundaryClicked"/>
               </StackPanel>
 
               <Grid ColumnDefinitions="*,Auto,*,Auto,*,Auto,*" ColumnSpacing="6" RowDefinitions="Auto,Auto,Auto">
-                <TextBlock Text="Area name" Foreground="{DynamicResource TextPrimary}"/>
-                <TextBlock Grid.Column="2" Text="Admin level" Foreground="{DynamicResource TextPrimary}"/>
-                <TextBlock Grid.Column="4" Text="Bounds" Foreground="{DynamicResource TextPrimary}"/>
+                <TextBlock Text="{DynamicResource Ui.MapPack.AreaName}" Foreground="{DynamicResource TextPrimary}"/>
+                <TextBlock Grid.Column="2" Text="{DynamicResource Ui.MapPack.AdminLevel}" Foreground="{DynamicResource TextPrimary}"/>
+                <TextBlock Grid.Column="4" Text="{DynamicResource Ui.MapPack.Bounds}" Foreground="{DynamicResource TextPrimary}"/>
                 <TextBox Grid.Row="1" Text="{Binding AreaName, UpdateSourceTrigger=PropertyChanged}"/>
-                <NumericUpDown Grid.Row="1" Grid.Column="2" Minimum="1" Maximum="12" Value="{Binding AdminLevel}"/>
+                <Border Grid.Row="1"
+                        Grid.Column="2"
+                        MinWidth="70"
+                        MinHeight="32"
+                        Padding="8,0"
+                        Background="{DynamicResource SurfaceDark}"
+                        BorderBrush="{DynamicResource PanelBorder}"
+                        BorderThickness="1"
+                        CornerRadius="3">
+                  <TextBlock Text="{Binding AdminLevelText}"
+                             Foreground="{DynamicResource TextPrimary}"
+                             VerticalAlignment="Center"/>
+                </Border>
                 <TextBlock Grid.Row="1" Grid.Column="4" Grid.ColumnSpan="3" Text="{Binding BoundsText}" Foreground="{DynamicResource TextDim}" VerticalAlignment="Center"/>
               </Grid>
 
               <Grid ColumnDefinitions="*,*,*,*" RowDefinitions="Auto,Auto" ColumnSpacing="8" RowSpacing="4">
-                <TextBlock Text="West" Foreground="{DynamicResource TextPrimary}"/>
-                <TextBlock Grid.Column="1" Text="South" Foreground="{DynamicResource TextPrimary}"/>
-                <TextBlock Grid.Column="2" Text="East" Foreground="{DynamicResource TextPrimary}"/>
-                <TextBlock Grid.Column="3" Text="North" Foreground="{DynamicResource TextPrimary}"/>
+                <TextBlock Text="{DynamicResource Ui.MapPack.West}" Foreground="{DynamicResource TextPrimary}"/>
+                <TextBlock Grid.Column="1" Text="{DynamicResource Ui.MapPack.South}" Foreground="{DynamicResource TextPrimary}"/>
+                <TextBlock Grid.Column="2" Text="{DynamicResource Ui.MapPack.East}" Foreground="{DynamicResource TextPrimary}"/>
+                <TextBlock Grid.Column="3" Text="{DynamicResource Ui.MapPack.North}" Foreground="{DynamicResource TextPrimary}"/>
                 <NumericUpDown Grid.Row="1" Minimum="-180" Maximum="180" Increment="0.1" Value="{Binding West}"/>
                 <NumericUpDown Grid.Row="1" Grid.Column="1" Minimum="-85" Maximum="85" Increment="0.1" Value="{Binding South}"/>
                 <NumericUpDown Grid.Row="1" Grid.Column="2" Minimum="-180" Maximum="180" Increment="0.1" Value="{Binding East}"/>
                 <NumericUpDown Grid.Row="1" Grid.Column="3" Minimum="-85" Maximum="85" Increment="0.1" Value="{Binding North}"/>
               </Grid>
-              <Button Content="Apply Bounds To Map Preview" HorizontalAlignment="Left" Click="OnApplyBoundsClicked"/>
+              <Button Content="{DynamicResource Ui.MapPack.ApplyBounds}" HorizontalAlignment="Left" Click="OnApplyBoundsClicked"/>
             </StackPanel>
           </Border>
 
           <Border BorderBrush="{DynamicResource PanelBorderStrong}" BorderThickness="1" CornerRadius="6" Padding="10" Background="{DynamicResource SurfaceDark}">
             <StackPanel Spacing="8">
-              <TextBlock Text="Step 2: Base Layers" Classes="sectionHeader"/>
+              <TextBlock Text="{DynamicResource Ui.MapPack.Step.BaseLayers}" Classes="sectionHeader"/>
               <WrapPanel>
-                <CheckBox Content="OSM raster tiles" IsChecked="{Binding IncludeOsm}" Margin="0,0,12,6"/>
-                <CheckBox Content="Terrain raster tiles" IsChecked="{Binding IncludeTerrain}" Margin="0,0,12,6"/>
-                <CheckBox Content="Satellite raster tiles" IsChecked="{Binding IncludeSatellite}" Margin="0,0,12,6"/>
-                <CheckBox Content="Contour tiles" IsChecked="{Binding IncludeContours}" Margin="0,0,12,6"/>
-                <CheckBox Content="Ultra-fine contours" IsChecked="{Binding IncludeUltraFineContours}" IsEnabled="{Binding IncludeContours}" Margin="0,0,12,6"/>
+                <CheckBox Content="{DynamicResource Ui.MapPack.Layer.Osm}" IsChecked="{Binding IncludeOsm}" Margin="0,0,12,6"/>
+                <CheckBox Content="{DynamicResource Ui.MapPack.Layer.Terrain}" IsChecked="{Binding IncludeTerrain}" Margin="0,0,12,6"/>
+                <CheckBox Content="{DynamicResource Ui.MapPack.Layer.Satellite}" IsChecked="{Binding IncludeSatellite}" Margin="0,0,12,6"/>
+                <CheckBox Content="{DynamicResource Ui.MapPack.Layer.Contours}" IsChecked="{Binding IncludeContours}" Margin="0,0,12,6"/>
+                <CheckBox Content="{DynamicResource Ui.MapPack.Layer.UltraFineContours}" IsChecked="{Binding IncludeUltraFineContours}" IsEnabled="{Binding IncludeContours}" Margin="0,0,12,6"/>
               </WrapPanel>
               <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="10" RowSpacing="4">
-                <TextBlock Text="Min zoom" Foreground="{DynamicResource TextPrimary}"/>
-                <TextBlock Grid.Column="1" Text="Max zoom" Foreground="{DynamicResource TextPrimary}"/>
+                <TextBlock Text="{DynamicResource Ui.MapPack.MinZoom}" Foreground="{DynamicResource TextPrimary}"/>
+                <TextBlock Grid.Column="1" Text="{DynamicResource Ui.MapPack.MaxZoom}" Foreground="{DynamicResource TextPrimary}"/>
                 <ComboBox Grid.Row="1" ItemsSource="{Binding AvailableZoomLevels}" SelectedItem="{Binding MinimumZoom}"/>
                 <ComboBox Grid.Row="1" Grid.Column="1" ItemsSource="{Binding AvailableZoomLevels}" SelectedItem="{Binding MaximumZoom}"/>
               </Grid>
@@ -157,33 +169,39 @@
           <Border BorderBrush="{DynamicResource PanelBorderStrong}" BorderThickness="1" CornerRadius="6" Padding="10" Background="{DynamicResource SurfaceDark}">
             <StackPanel Spacing="8">
               <Grid ColumnDefinitions="*,Auto">
-                <TextBlock Text="Step 3: POI Separation" Classes="sectionHeader"/>
-                <CheckBox Grid.Column="1" Content="Enable POI" IsChecked="{Binding EnablePoiSeparation}"/>
+                <TextBlock Text="{DynamicResource Ui.MapPack.Step.Poi}" Classes="sectionHeader"/>
+                <CheckBox Grid.Column="1" Content="{DynamicResource Ui.MapPack.EnablePoi}" IsChecked="{Binding EnablePoiSeparation}"/>
               </Grid>
               <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8" IsEnabled="{Binding EnablePoiSeparation}">
-                <TextBox Text="{Binding PbfPath, UpdateSourceTrigger=PropertyChanged}" Watermark="Local or downloaded .osm.pbf"/>
-                <Button Grid.Column="1" Content="Pick PBF" Click="OnPickPbfClicked"/>
+                <TextBox Text="{Binding PbfPath, UpdateSourceTrigger=PropertyChanged}" Watermark="{DynamicResource Ui.MapPack.PbfPathWatermark}"/>
+                <Button Grid.Column="1" Content="{DynamicResource Ui.MapPack.PickPbf}" Click="OnPickPbfClicked"/>
               </Grid>
               <WrapPanel IsEnabled="{Binding EnablePoiSeparation}">
-                <CheckBox Content="Generate pois.jsonl" IsChecked="{Binding GenerateFullPoisJsonl}" Margin="0,0,12,6"/>
-                <CheckBox Content="Generate tile index" IsChecked="{Binding GenerateTileIndex}" Margin="0,0,12,6"/>
-                <CheckBox Content="Labels" IsChecked="{Binding IncludePoiLabels}" Margin="0,0,12,6"/>
-                <CheckBox Content="Original OSM tags" IsChecked="{Binding IncludeOriginalOsmTags}" Margin="0,0,12,6"/>
-                <CheckBox Content="Preview overlay" IsChecked="{Binding ShowPoiPreview}" Margin="0,0,12,6"/>
+                <CheckBox Content="{DynamicResource Ui.MapPack.GeneratePois}" IsChecked="{Binding GenerateFullPoisJsonl}" Margin="0,0,12,6"/>
+                <CheckBox Content="{DynamicResource Ui.MapPack.GenerateTileIndex}" IsChecked="{Binding GenerateTileIndex}" Margin="0,0,12,6"/>
+                <CheckBox Content="{DynamicResource Ui.MapPack.Labels}" IsChecked="{Binding IncludePoiLabels}" Margin="0,0,12,6"/>
+                <CheckBox Content="{DynamicResource Ui.MapPack.OriginalOsmTags}" IsChecked="{Binding IncludeOriginalOsmTags}" Margin="0,0,12,6"/>
+                <CheckBox Content="{DynamicResource Ui.MapPack.PreviewOverlay}" IsChecked="{Binding ShowPoiPreview}" Margin="0,0,12,6"/>
               </WrapPanel>
               <Grid ColumnDefinitions="*,*,*,*" RowDefinitions="Auto,Auto" ColumnSpacing="8" RowSpacing="4" IsEnabled="{Binding EnablePoiSeparation}">
-                <TextBlock Text="POI min zoom" Foreground="{DynamicResource TextPrimary}"/>
-                <TextBlock Grid.Column="1" Text="POI max zoom" Foreground="{DynamicResource TextPrimary}"/>
-                <TextBlock Grid.Column="2" Text="Max per tile" Foreground="{DynamicResource TextPrimary}"/>
-                <TextBlock Grid.Column="3" Text="Preview limit" Foreground="{DynamicResource TextPrimary}"/>
+                <TextBlock Text="{DynamicResource Ui.MapPack.PoiMinZoom}" Foreground="{DynamicResource TextPrimary}"/>
+                <TextBlock Grid.Column="1" Text="{DynamicResource Ui.MapPack.PoiMaxZoom}" Foreground="{DynamicResource TextPrimary}"/>
+                <TextBlock Grid.Column="2" Text="{DynamicResource Ui.MapPack.MaxPerTile}" Foreground="{DynamicResource TextPrimary}"/>
+                <TextBlock Grid.Column="3" Text="{DynamicResource Ui.MapPack.PreviewLimit}" Foreground="{DynamicResource TextPrimary}"/>
                 <ComboBox Grid.Row="1" ItemsSource="{Binding AvailablePoiZoomLevels}" SelectedItem="{Binding PoiIndexMinimumZoom}"/>
                 <ComboBox Grid.Row="1" Grid.Column="1" ItemsSource="{Binding AvailablePoiZoomLevels}" SelectedItem="{Binding PoiIndexMaximumZoom}"/>
                 <NumericUpDown Grid.Row="1" Grid.Column="2" Minimum="1" Maximum="5000" Increment="25" Value="{Binding MaxPoiPerTile}"/>
                 <NumericUpDown Grid.Row="1" Grid.Column="3" Minimum="1" Maximum="5000" Increment="100" Value="{Binding PoiPreviewLimit}"/>
               </Grid>
               <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8" IsEnabled="{Binding EnablePoiSeparation}">
-                <TextBlock Text="Output format" Foreground="{DynamicResource TextPrimary}" VerticalAlignment="Center"/>
-                <ComboBox Grid.Column="1" ItemsSource="{Binding AvailablePoiOutputFormats}" SelectedItem="{Binding PoiOutputFormat}" Width="160"/>
+                <TextBlock Text="{DynamicResource Ui.MapPack.OutputFormat}" Foreground="{DynamicResource TextPrimary}" VerticalAlignment="Center"/>
+                <ComboBox Grid.Column="1" ItemsSource="{Binding AvailablePoiOutputFormats}" SelectedItem="{Binding SelectedPoiOutputFormat}" Width="160">
+                  <ComboBox.ItemTemplate>
+                    <DataTemplate x:DataType="vm:PoiOutputFormatOptionViewModel">
+                      <TextBlock Text="{Binding Label}"/>
+                    </DataTemplate>
+                  </ComboBox.ItemTemplate>
+                </ComboBox>
               </Grid>
               <ItemsControl ItemsSource="{Binding PoiTypes}" IsEnabled="{Binding EnablePoiSeparation}">
                 <ItemsControl.ItemsPanel>
@@ -198,28 +216,28 @@
                 </ItemsControl.ItemTemplate>
               </ItemsControl>
               <StackPanel Orientation="Horizontal" Spacing="8">
-                <Button Content="Load POI Preview" Command="{Binding LoadPoiPreviewCommand}"/>
-                <TextBlock Text="{Binding PreviewPoiCount, StringFormat='Preview POI: {0:N0}'}" Foreground="{DynamicResource TextDim}" VerticalAlignment="Center"/>
+                <Button Content="{DynamicResource Ui.MapPack.LoadPoiPreview}" Command="{Binding LoadPoiPreviewCommand}"/>
+                <TextBlock Text="{Binding PreviewPoiCountText}" Foreground="{DynamicResource TextDim}" VerticalAlignment="Center"/>
               </StackPanel>
             </StackPanel>
           </Border>
 
           <Border BorderBrush="{DynamicResource PanelBorderStrong}" BorderThickness="1" CornerRadius="6" Padding="10" Background="{DynamicResource SurfaceDark}">
             <StackPanel Spacing="8">
-              <TextBlock Text="Step 4: Estimate" Classes="sectionHeader"/>
-              <Button Content="Refresh Estimate" HorizontalAlignment="Left" Command="{Binding EstimateCommand}"/>
+              <TextBlock Text="{DynamicResource Ui.MapPack.Step.Estimate}" Classes="sectionHeader"/>
+              <Button Content="{DynamicResource Ui.MapPack.RefreshEstimate}" HorizontalAlignment="Left" Command="{Binding EstimateCommand}"/>
               <TextBlock Text="{Binding EstimateText}" Foreground="{DynamicResource TextDim}" TextWrapping="Wrap"/>
             </StackPanel>
           </Border>
 
           <Border BorderBrush="{DynamicResource PanelBorderStrong}" BorderThickness="1" CornerRadius="6" Padding="10" Background="{DynamicResource SurfaceDark}">
             <StackPanel Spacing="8">
-              <TextBlock Text="Step 5: Export" Classes="sectionHeader"/>
+              <TextBlock Text="{DynamicResource Ui.MapPack.Step.Export}" Classes="sectionHeader"/>
               <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                <TextBox Text="{Binding OutputDirectory, UpdateSourceTrigger=PropertyChanged}" Watermark="SD card or output folder"/>
-                <Button Grid.Column="1" Content="Pick Folder" Click="OnPickOutputFolderClicked"/>
+                <TextBox Text="{Binding OutputDirectory, UpdateSourceTrigger=PropertyChanged}" Watermark="{DynamicResource Ui.MapPack.OutputWatermark}"/>
+                <Button Grid.Column="1" Content="{DynamicResource Ui.MapPack.PickFolder}" Click="OnPickOutputFolderClicked"/>
               </Grid>
-              <TextBlock Text="Existing raster tile folders are exported under /maps/base and /maps/contour. POI overlay data is written under /maps/poi."
+              <TextBlock Text="{DynamicResource Ui.MapPack.ExportHint}"
                          Classes="dialogHint"
                          TextWrapping="Wrap"/>
             </StackPanel>
@@ -234,10 +252,10 @@
             <TextBlock Text="{Binding OutputDirectory}" Foreground="{DynamicResource TextDim}" FontSize="10" TextWrapping="Wrap"/>
           </StackPanel>
           <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
-            <Button Content="Cancel Task" Command="{Binding CancelCommand}" IsEnabled="{Binding IsBusy}"/>
-            <Button Content="Close" Click="OnCloseClicked"/>
-            <Button Content="Build Raster Cache" IsEnabled="{Binding HasTileSelection}" Click="OnBuildRasterCacheClicked"/>
-            <Button Content="Export Map Pack" Classes="primary" IsEnabled="{Binding CanExport}" Click="OnExportClicked"/>
+            <Button Content="{DynamicResource Ui.MapPack.CancelTask}" Command="{Binding CancelCommand}" IsEnabled="{Binding IsBusy}"/>
+            <Button Content="{DynamicResource Ui.MapPack.Close}" Click="OnCloseClicked"/>
+            <Button Content="{DynamicResource Ui.MapPack.BuildRasterCache}" IsEnabled="{Binding HasTileSelection}" Click="OnBuildRasterCacheClicked"/>
+            <Button Content="{DynamicResource Ui.MapPack.ExportMapPack}" Classes="primary" IsEnabled="{Binding CanExport}" Click="OnExportClicked"/>
           </StackPanel>
         </Grid>
       </Border>

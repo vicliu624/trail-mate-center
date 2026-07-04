@@ -283,11 +283,13 @@ public sealed class MapViewModel : INotifyPropertyChanged
 
             _isOfflineCacheSelectionMode = value;
             OnPropertyChanged(nameof(IsOfflineCacheSelectionMode));
+            OnPropertyChanged(nameof(CanClearOfflineCacheSelection));
         }
     }
     public bool HasOfflineCacheSelection => _offlineCacheSelectionBounds.HasValue;
     public bool IsOfflineCacheRunning => _isOfflineCacheRunning;
     public bool CanRunOfflineCache => !_isOfflineCacheRunning && _offlineCacheSelectionBounds.HasValue;
+    public bool CanClearOfflineCacheSelection => _offlineCacheSelectionBounds.HasValue || _isOfflineCacheSelectionMode;
     public string OfflineCacheStatusText => _offlineCacheStatusText;
     public bool ShowPoiPreview
     {
@@ -618,6 +620,7 @@ public sealed class MapViewModel : INotifyPropertyChanged
         RefreshOfflineSelectionOverlay();
         OnPropertyChanged(nameof(HasOfflineCacheSelection));
         OnPropertyChanged(nameof(CanRunOfflineCache));
+        OnPropertyChanged(nameof(CanClearOfflineCacheSelection));
         SetOfflineCacheStatus("Selection cleared.");
     }
 
@@ -2827,6 +2830,7 @@ public sealed class MapViewModel : INotifyPropertyChanged
         RefreshOfflineSelectionOverlay();
         OnPropertyChanged(nameof(HasOfflineCacheSelection));
         OnPropertyChanged(nameof(CanRunOfflineCache));
+        OnPropertyChanged(nameof(CanClearOfflineCacheSelection));
         if (!string.IsNullOrWhiteSpace(statusText))
         {
             SetOfflineCacheStatus(statusText);

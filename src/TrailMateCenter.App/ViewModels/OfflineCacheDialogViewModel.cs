@@ -1,6 +1,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using System.Collections.Generic;
 using System.Linq;
+using TrailMateCenter.Localization;
 using TrailMateCenter.Maps;
 
 namespace TrailMateCenter.ViewModels;
@@ -38,6 +39,22 @@ public sealed record PoiTypeOptionDefinition(string Id, string Label, bool Selec
 
 public static class PoiTypeCatalog
 {
+    private static readonly IReadOnlyDictionary<string, string> ResourceKeys = new Dictionary<string, string>
+    {
+        ["water"] = "Ui.PoiType.Water",
+        ["camp"] = "Ui.PoiType.Camp",
+        ["shelter"] = "Ui.PoiType.Shelter",
+        ["peak"] = "Ui.PoiType.Peak",
+        ["viewpoint"] = "Ui.PoiType.Viewpoint",
+        ["trailhead"] = "Ui.PoiType.Trailhead",
+        ["parking"] = "Ui.PoiType.Parking",
+        ["toilet"] = "Ui.PoiType.Toilet",
+        ["ranger"] = "Ui.PoiType.Ranger",
+        ["emergency"] = "Ui.PoiType.Emergency",
+        ["bridge"] = "Ui.PoiType.Bridge",
+        ["ford"] = "Ui.PoiType.Ford",
+    };
+
     public static readonly IReadOnlyList<PoiTypeOptionDefinition> DefaultTypes =
     [
         new("water", "Water", true),
@@ -56,7 +73,21 @@ public static class PoiTypeCatalog
 
     public static PoiTypeOptionViewModel CreateOption(PoiTypeOptionDefinition definition)
     {
-        return new PoiTypeOptionViewModel(definition.Id, definition.Label, definition.Selected);
+        return CreateOption(definition, definition.Selected);
+    }
+
+    public static PoiTypeOptionViewModel CreateOption(PoiTypeOptionDefinition definition, bool isSelected)
+    {
+        return new PoiTypeOptionViewModel(definition.Id, GetLabel(definition), isSelected);
+    }
+
+    private static string GetLabel(PoiTypeOptionDefinition definition)
+    {
+        if (!ResourceKeys.TryGetValue(definition.Id, out var key))
+            return definition.Label;
+
+        var value = LocalizationService.Instance.GetString(key);
+        return string.Equals(value, key, StringComparison.Ordinal) ? definition.Label : value;
     }
 }
 

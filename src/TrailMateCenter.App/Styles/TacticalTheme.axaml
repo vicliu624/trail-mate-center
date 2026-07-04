@@ -1,4 +1,5 @@
-<Styles xmlns="https://github.com/avaloniaui">
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
   <Style Selector="Window">
     <Setter Property="Background" Value="{DynamicResource AppBackground}"/>
     <Setter Property="FontFamily" Value="{DynamicResource FontSans}"/>
@@ -89,8 +90,65 @@
   <Style Selector="CheckBox">
     <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
     <Setter Property="FontSize" Value="13"/>
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Grid ColumnDefinitions="Auto,*" MinHeight="24">
+          <Border x:Name="SelectionBox"
+                  Width="18"
+                  Height="18"
+                  CornerRadius="3"
+                  BorderThickness="1.5"
+                  Background="{DynamicResource SurfaceDark}"
+                  BorderBrush="#6A7F96"
+                  VerticalAlignment="Center">
+            <Grid>
+              <Path x:Name="CheckGlyph"
+                    Data="M4,9 L8,13 L15,5"
+                    Stroke="#0B0F14"
+                    StrokeThickness="2.2"
+                    StrokeLineCap="Round"
+                    StrokeJoin="Round"
+                    IsVisible="False"/>
+              <Path x:Name="IndeterminateGlyph"
+                    Data="M4,9 L14,9"
+                    Stroke="#0B0F14"
+                    StrokeThickness="2.2"
+                    StrokeLineCap="Round"
+                    IsVisible="False"/>
+            </Grid>
+          </Border>
+          <TextBlock x:Name="CheckBoxText"
+                     Grid.Column="1"
+                     Margin="8,0,0,0"
+                     VerticalAlignment="Center"
+                     Text="{TemplateBinding Content}"/>
+        </Grid>
+      </ControlTemplate>
+    </Setter>
   </Style>
-  <Style Selector="CheckBox /template/ ContentPresenter">
+  <Style Selector="CheckBox:pointerover /template/ Border#SelectionBox">
+    <Setter Property="Background" Value="#182434"/>
+    <Setter Property="BorderBrush" Value="#9CB8D4"/>
+  </Style>
+  <Style Selector="CheckBox:pressed /template/ Border#SelectionBox">
+    <Setter Property="Background" Value="#0D141D"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource AccentInfo}"/>
+  </Style>
+  <Style Selector="CheckBox:checked /template/ Border#SelectionBox">
+    <Setter Property="Background" Value="{DynamicResource AccentInfo}"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource AccentInfo}"/>
+  </Style>
+  <Style Selector="CheckBox:checked /template/ Path#CheckGlyph">
+    <Setter Property="IsVisible" Value="True"/>
+  </Style>
+  <Style Selector="CheckBox:indeterminate /template/ Border#SelectionBox">
+    <Setter Property="Background" Value="{DynamicResource AccentInfo}"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource AccentInfo}"/>
+  </Style>
+  <Style Selector="CheckBox:indeterminate /template/ Path#IndeterminateGlyph">
+    <Setter Property="IsVisible" Value="True"/>
+  </Style>
+  <Style Selector="CheckBox /template/ TextBlock#CheckBoxText">
     <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
     <Setter Property="Opacity" Value="1"/>
   </Style>
@@ -98,7 +156,15 @@
     <Setter Property="Foreground" Value="{DynamicResource TextDim}"/>
     <Setter Property="Opacity" Value="0.85"/>
   </Style>
-  <Style Selector="CheckBox:disabled /template/ ContentPresenter">
+  <Style Selector="CheckBox:disabled /template/ Border#SelectionBox">
+    <Setter Property="Background" Value="#0D131A"/>
+    <Setter Property="BorderBrush" Value="#3F4C5A"/>
+  </Style>
+  <Style Selector="CheckBox:disabled:checked /template/ Border#SelectionBox">
+    <Setter Property="Background" Value="#314354"/>
+    <Setter Property="BorderBrush" Value="#5F758D"/>
+  </Style>
+  <Style Selector="CheckBox:disabled /template/ TextBlock#CheckBoxText">
     <Setter Property="Foreground" Value="{DynamicResource TextDim}"/>
     <Setter Property="Opacity" Value="1"/>
   </Style>

@@ -1,6 +1,7 @@
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
+using TrailMateCenter.Localization;
 using TrailMateCenter.ViewModels;
 
 namespace TrailMateCenter.Views;
@@ -8,6 +9,7 @@ namespace TrailMateCenter.Views;
 public partial class MapPackBuilderDialog : Window
 {
     private readonly MainWindowViewModel _ownerViewModel;
+    private static LocalizationService Loc => LocalizationService.Instance;
 
     public MapPackBuilderDialog()
     {
@@ -42,10 +44,10 @@ public partial class MapPackBuilderDialog : Window
         var files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
         {
             AllowMultiple = false,
-            Title = "Select OSM PBF file",
+            Title = Loc.GetString("Ui.MapPack.FilePicker.PbfTitle"),
             FileTypeFilter =
             [
-                new FilePickerFileType("OSM PBF")
+                new FilePickerFileType(Loc.GetString("Ui.MapPack.FileType.Osmpbf"))
                 {
                     Patterns = ["*.osm.pbf", "*.pbf"],
                 },
@@ -66,10 +68,10 @@ public partial class MapPackBuilderDialog : Window
         var files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
         {
             AllowMultiple = false,
-            Title = "Select GeoJSON boundary",
+            Title = Loc.GetString("Ui.MapPack.FilePicker.BoundaryTitle"),
             FileTypeFilter =
             [
-                new FilePickerFileType("GeoJSON")
+                new FilePickerFileType(Loc.GetString("Ui.MapPack.FileType.GeoJson"))
                 {
                     Patterns = ["*.geojson", "*.json"],
                     MimeTypes = ["application/geo+json", "application/json"],
@@ -91,7 +93,7 @@ public partial class MapPackBuilderDialog : Window
         var folders = await StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
         {
             AllowMultiple = false,
-            Title = "Select output folder or SD card root",
+            Title = Loc.GetString("Ui.MapPack.FilePicker.OutputTitle"),
         });
 
         var path = folders.FirstOrDefault()?.TryGetLocalPath();
@@ -113,8 +115,8 @@ public partial class MapPackBuilderDialog : Window
 
         var result = await _ownerViewModel.ExportMapPackAsync(ViewModel.BuildPlan());
         ViewModel.StatusText = result.Success
-            ? $"Export complete: {result.TargetMapRoot}"
-            : $"Export failed: {result.ErrorMessage ?? "unknown"}";
+            ? Loc.Format("Ui.MapPack.Status.ExportComplete", result.TargetMapRoot)
+            : Loc.Format("Ui.MapPack.Status.ExportFailed", result.ErrorMessage ?? Loc.GetString("Ui.MapPack.Unknown"));
     }
 
     private async void OnBuildRasterCacheClicked(object? sender, RoutedEventArgs e)
@@ -123,7 +125,7 @@ public partial class MapPackBuilderDialog : Window
             return;
 
         ViewModel.ApplyManualBounds();
-        ViewModel.StatusText = "Raster cache task started on the map.";
+        ViewModel.StatusText = Loc.GetString("Ui.MapPack.Status.RasterCacheStarted");
         await _ownerViewModel.Map.RunOfflineCacheForSelectionAsync(ViewModel.ToOfflineCacheBuildOptions() with
         {
             EnablePoiSeparation = false,
@@ -139,7 +141,7 @@ public partial class MapPackBuilderDialog : Window
         var folders = await StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
         {
             AllowMultiple = false,
-            Title = "Select output folder or SD card root",
+            Title = Loc.GetString("Ui.MapPack.FilePicker.OutputTitle"),
         });
 
         var path = folders.FirstOrDefault()?.TryGetLocalPath();
