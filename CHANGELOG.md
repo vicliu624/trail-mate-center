@@ -6,6 +6,10 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 
 ## [Unreleased]
 
+## [0.0.3-alpha] - 2026-07-04
+
+- 支持通过行政区导出地图
+
 ## [0.0.2-alpha] - 2026-04-23
 
 ### Added
@@ -30,6 +34,7 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 
 - Initial alpha release.
 
-[Unreleased]: https://github.com/vicliu624/trail-mate-center/compare/v0.0.2-alpha...HEAD
+[Unreleased]: https://github.com/vicliu624/trail-mate-center/compare/v0.0.3-alpha...HEAD
+[0.0.3-alpha]: https://github.com/vicliu624/trail-mate-center/compare/v0.0.2-alpha...v0.0.3-alpha
 [0.0.2-alpha]: https://github.com/vicliu624/trail-mate-center/compare/v0.0.1-alpha...v0.0.2-alpha
 [0.0.1-alpha]: https://github.com/vicliu624/trail-mate-center/releases/tag/v0.0.1-alpha
