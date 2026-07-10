@@ -308,6 +308,8 @@
   <x:String x:Key="Status.OfflineCache.ExportDone">导出完成：复制 {0} 张，源可用 {1} 张，跳过 {2} 张</x:String>
   <x:String x:Key="Status.OfflineCache.PoiExportDone">POI 导出完成：{0} 个 POI，{1} 个索引文件。</x:String>
   <x:String x:Key="Status.OfflineCache.PoiExportFailed">POI 导出失败：{0}</x:String>
+  <x:String x:Key="Status.OfflineCache.PlaceSearchExportDone">地点搜索包导出完成：{0} 个地点，{1} 条名称。</x:String>
+  <x:String x:Key="Status.OfflineCache.PlaceSearchExportFailed">地点搜索包导出失败：{0}</x:String>
   <x:String x:Key="Status.OfflineCache.ExportUnreadableEntries">另有 {0} 个文件项无法读取，已跳过。</x:String>
   <x:String x:Key="Status.OfflineCache.ExportSourceIncomplete">地图包仍缺少 {0} / {1} 张瓦片，请检查网络后重新导出。</x:String>
   <x:String x:Key="Status.OfflineCache.ExportFailed">离线地图导出失败: {0}</x:String>
@@ -893,6 +895,7 @@
   <x:String x:Key="Ui.MapPack.Status.ExportPreparing">正在准备导出目录和图层...</x:String>
   <x:String x:Key="Ui.MapPack.Status.ExportLayerProgress">正在导出 {0} Z{1}：已处理 {2:N0}/{3:N0} 个瓦片，已复制 {4:N0}，已跳过 {5:N0}</x:String>
   <x:String x:Key="Ui.MapPack.Status.ExportPoiProgress">正在导出 POI：已扫描 {0:N0} 个 OSM 元素，已提取 {1:N0} 个 POI</x:String>
+  <x:String x:Key="Ui.MapPack.Status.ExportPlaceSearchProgress">正在导出地点搜索：已扫描 {0:N0} 个 OSM 元素，已提取 {1:N0} 个地点</x:String>
   <x:String x:Key="Ui.MapPack.Status.ExportFinalizing">正在写入清单并完成导出...</x:String>
   <x:String x:Key="Ui.MapPack.Status.ExportCompleted">地图包导出完成。</x:String>
   <x:String x:Key="Ui.MapPack.Status.ExportFailedShort">地图包导出失败。</x:String>

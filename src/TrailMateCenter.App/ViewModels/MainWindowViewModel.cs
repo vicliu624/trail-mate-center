@@ -16,6 +16,7 @@ using TrailMateCenter.Localization;
 using TrailMateCenter.Maps;
 using TrailMateCenter.Models;
 using TrailMateCenter.Osm;
+using TrailMateCenter.Places;
 using TrailMateCenter.Protocol;
 using TrailMateCenter.Services;
 using TrailMateCenter.StateMachine;
@@ -1160,11 +1161,17 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         RemoveOfflineCacheRegionCommand.NotifyCanExecuteChanged();
     }
 
-    private async Task SaveOfflineCacheRegionsAsync()
+    private async Task SaveOfflineCacheRegionsAsync(bool allowEmpty = false)
     {
         var regions = OfflineCacheRegions
             .Select(item => item.ToSettings())
             .ToList();
+        if (regions.Count == 0 && !allowEmpty)
+        {
+            _logger.LogWarning("Refusing to persist an empty map cache region list without an explicit clear operation.");
+            return;
+        }
+
         await _sqliteStore.SaveMapCacheRegionsAsync(regions, CancellationToken.None);
     }
 
@@ -1375,11 +1382,23 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         OfflineCacheExportStatusText = loc.GetString("Ui.MapPack.Status.PreparingTiles");
         selectedRegion.MarkExportStarted(targetRoot);
         await SaveOfflineCacheRegionsAsync();
-        var exportProgress = CreateRegionExportProgress(null, selectedRegion);
+        var exportProgress = CreateRegionExportProgress(
+            new Progress<OfflineCacheExportProgress>(progress =>
+            {
+                OfflineCacheExportStatusText = BuildOfflineCacheProgressStatus(loc, progress);
+            }),
+            selectedRegion);
         try
         {
             await PrepareOfflineCacheRegionTilesForExportAsync(selectedRegion, cancellationToken);
             var region = selectedRegion.ToSettings();
+            region = await EnsurePlaceSearchPbfSourceAsync(
+                region,
+                status => OfflineCacheExportStatusText = status,
+                cancellationToken);
+            selectedRegion.ApplySettings(region);
+            await SaveOfflineCacheRegionsAsync();
+
             OfflineCacheExportStatusText = loc.GetString("Status.OfflineCache.ExportInProgress");
             var result = await Task.Run(
                 () => ExportOfflineCacheRegion(region, GetOfflineCacheRoot(), targetRoot, cancellationToken, exportProgress),
@@ -1387,28 +1406,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
 
             if (result.Success)
             {
-                var statusText = loc.Format(
-                    "Status.OfflineCache.ExportDone",
-                    result.CopiedTiles,
-                    result.SourceTiles,
-                    result.SkippedTiles);
-                if (result.PoiEnabled)
-                {
-                    statusText = result.PoiSuccess
-                        ? $"{statusText} {loc.Format("Status.OfflineCache.PoiExportDone", result.PoiCount, result.PoiTileFiles)}"
-                        : $"{statusText} {loc.Format("Status.OfflineCache.PoiExportFailed", result.PoiErrorMessage ?? "unknown")}";
-                }
-                if (result.UnreadableEntries > 0)
-                {
-                    statusText = $"{statusText} {loc.Format("Status.OfflineCache.ExportUnreadableEntries", result.UnreadableEntries)}";
-                }
-
-                if (result.MissingSourceTiles > 0)
-                {
-                    statusText = $"{statusText} {loc.Format("Status.OfflineCache.ExportSourceIncomplete", result.MissingSourceTiles, result.ExpectedTiles)}";
-                }
-
-                OfflineCacheExportStatusText = statusText;
+                OfflineCacheExportStatusText = BuildOfflineCacheExportStatus(loc, result);
                 selectedRegion.ApplyExportResult(
                     true,
                     result.ExpectedTiles,
@@ -1538,6 +1536,13 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         exportProgress?.Report(OfflineCacheExportProgress.Preparing());
         try
         {
+            region = await EnsurePlaceSearchPbfSourceAsync(
+                region,
+                status => OfflineCacheExportStatusText = status,
+                cancellationToken);
+            exportTaskRegion.ApplySettings(region);
+            await SaveOfflineCacheRegionsAsync();
+
             var result = await Task.Run(
                 () => ExportOfflineCacheRegion(region, GetOfflineCacheRoot(), targetRoot, cancellationToken, exportProgress),
                 cancellationToken);
@@ -1597,6 +1602,12 @@ public sealed partial class MainWindowViewModel : ViewModelBase
                 ? $"{statusText} {loc.Format("Status.OfflineCache.PoiExportDone", result.PoiCount, result.PoiTileFiles)}"
                 : $"{statusText} {loc.Format("Status.OfflineCache.PoiExportFailed", result.PoiErrorMessage ?? "unknown")}";
         }
+        if (result.PlaceSearchEnabled)
+        {
+            statusText = result.PlaceSearchSuccess
+                ? $"{statusText} {loc.Format("Status.OfflineCache.PlaceSearchExportDone", result.PlaceSearchCount, result.PlaceSearchNameRows)}"
+                : $"{statusText} {loc.Format("Status.OfflineCache.PlaceSearchExportFailed", result.PlaceSearchErrorMessage ?? "unknown")}";
+        }
         if (result.UnreadableEntries > 0)
         {
             statusText = $"{statusText} {loc.Format("Status.OfflineCache.ExportUnreadableEntries", result.UnreadableEntries)}";
@@ -1608,6 +1619,35 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         }
 
         return statusText;
+    }
+
+    private static string BuildOfflineCacheProgressStatus(
+        LocalizationService loc,
+        OfflineCacheExportProgress progress)
+    {
+        return progress.Kind switch
+        {
+            OfflineCacheExportProgressKind.Layer => loc.Format(
+                "Ui.MapPack.Status.ExportLayerProgress",
+                loc.GetString(progress.LayerResourceKey),
+                progress.Zoom,
+                progress.Completed,
+                progress.Total,
+                progress.CopiedTiles,
+                progress.SkippedTiles),
+            OfflineCacheExportProgressKind.Poi => loc.Format(
+                "Ui.MapPack.Status.ExportPoiProgress",
+                progress.ProcessedElements,
+                progress.ExtractedPoiCount),
+            OfflineCacheExportProgressKind.PlaceSearch => loc.Format(
+                "Ui.MapPack.Status.ExportPlaceSearchProgress",
+                progress.ProcessedElements,
+                progress.ExtractedPoiCount),
+            OfflineCacheExportProgressKind.Finalizing => loc.GetString("Ui.MapPack.Status.ExportFinalizing"),
+            OfflineCacheExportProgressKind.Completed => loc.GetString("Ui.MapPack.Status.ExportCompleted"),
+            OfflineCacheExportProgressKind.Failed => loc.GetString("Ui.MapPack.Status.ExportFailedShort"),
+            _ => loc.GetString("Status.OfflineCache.ExportInProgress"),
+        };
     }
 
     private bool TryApplySelectedOfflineCacheRegion(bool focusMap)
@@ -1781,6 +1821,32 @@ public sealed partial class MainWindowViewModel : ViewModelBase
                     .GetResult();
             }
 
+            PlaceSearchPackExportResult? placeSearchResult = null;
+            if (HasPlaceSearchSource(buildOptions))
+            {
+                progress?.Report(OfflineCacheExportProgress.PlaceSearch(0, 0));
+                var placeService = new PlaceSearchPackExportService();
+                placeSearchResult = placeService.ExportFromPbfAsync(
+                        new PlaceSearchPackExportRequest
+                        {
+                            OutputRoot = ResolveMapPackOutputRoot(mapsRoot, destinationRoot),
+                            PbfPath = buildOptions.PoiPbfPath,
+                            Bounds = new GeoBounds(bounds.West, bounds.South, bounds.East, bounds.North),
+                            BoundaryGeoJson = region.BoundaryGeoJson,
+                            AreaName = region.Name,
+                            AreaAdminLevel = region.AdminLevel,
+                            SourceProvider = region.PoiSourceProvider,
+                            SourceDownloadUrl = region.PoiSourceDownloadUrl,
+                        },
+                        progress: new Progress<PlaceExtractionProgress>(p =>
+                        {
+                            progress?.Report(OfflineCacheExportProgress.PlaceSearch(p.ProcessedElements, p.ExtractedPlaceCount));
+                        }),
+                        cancellationToken: cancellationToken)
+                    .GetAwaiter()
+                    .GetResult();
+            }
+
             progress?.Report(OfflineCacheExportProgress.Finalizing());
 
             return OfflineCacheRegionExportResult.Ok(
@@ -1790,7 +1856,8 @@ public sealed partial class MainWindowViewModel : ViewModelBase
                 stats.CopiedTiles,
                 stats.SkippedTiles,
                 stats.UnreadableEntries,
-                poiResult);
+                poiResult,
+                placeSearchResult);
         }
         catch (OperationCanceledException)
         {
@@ -1823,6 +1890,111 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         var mapsRoot = Path.Combine(normalizedRoot, "maps");
         Directory.CreateDirectory(mapsRoot);
         return mapsRoot;
+    }
+
+    private static string ResolveMapPackOutputRoot(string mapsRoot, string destinationRoot)
+    {
+        var parent = Path.GetDirectoryName(mapsRoot);
+        return string.IsNullOrWhiteSpace(parent) ? destinationRoot : parent;
+    }
+
+    private static bool HasPlaceSearchSource(OfflineCacheBuildOptions buildOptions)
+    {
+        return !string.IsNullOrWhiteSpace(buildOptions.PoiPbfPath);
+    }
+
+    private static async Task<MapCacheRegionSettings> EnsurePlaceSearchPbfSourceAsync(
+        MapCacheRegionSettings region,
+        Action<string>? setStatus,
+        CancellationToken cancellationToken)
+    {
+        var localPbfPath = region.PoiPbfPath?.Trim() ?? string.Empty;
+        if (!string.IsNullOrWhiteSpace(localPbfPath) && File.Exists(localPbfPath))
+        {
+            return region with { PoiPbfPath = localPbfPath };
+        }
+
+        var sourceUrl = region.PoiSourceDownloadUrl?.Trim() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(sourceUrl))
+        {
+            return region with { PoiPbfPath = localPbfPath };
+        }
+
+        var loc = LocalizationService.Instance;
+        var sourceName = string.IsNullOrWhiteSpace(region.Name) ? BuildPlaceSearchSourceName(sourceUrl) : region.Name.Trim();
+        var source = new GeofabrikRegionRecord
+        {
+            Id = BuildPlaceSearchSourceId(sourceUrl, sourceName),
+            Name = sourceName,
+            DisplayName = sourceName,
+            PbfUrl = sourceUrl,
+            Bounds = new GeoBounds(region.West, region.South, region.East, region.North),
+            BoundaryGeoJson = region.BoundaryGeoJson ?? string.Empty,
+        };
+
+        setStatus?.Invoke(loc.Format("Ui.MapPack.Status.DownloadingRegion", source.DisplayName));
+        var downloadService = new GeofabrikPbfDownloadService();
+        var entry = await downloadService
+            .DownloadAsync(
+                source,
+                forceRefresh: false,
+                progress: new Progress<GeofabrikDownloadProgress>(progress =>
+                {
+                    var text = progress.Percent.HasValue
+                        ? loc.Format(
+                            "Ui.MapPack.Status.DownloadingPbfPercent",
+                            progress.Percent.Value,
+                            ExportEstimator.FormatBytes(progress.BytesReceived),
+                            ExportEstimator.FormatBytes(progress.TotalBytes ?? 0))
+                        : loc.Format("Ui.MapPack.Status.DownloadingPbfBytes", ExportEstimator.FormatBytes(progress.BytesReceived));
+                    setStatus?.Invoke(text);
+                }),
+                cancellationToken);
+
+        setStatus?.Invoke(loc.Format(
+            "Ui.MapPack.Status.PbfReady",
+            Path.GetFileName(entry.LocalPath),
+            ExportEstimator.FormatBytes(entry.SizeBytes)));
+
+        return region with
+        {
+            PoiPbfPath = entry.LocalPath,
+            PoiSourceProvider = string.IsNullOrWhiteSpace(region.PoiSourceProvider)
+                ? "geofabrik"
+                : region.PoiSourceProvider.Trim(),
+            PoiSourceDownloadUrl = entry.Url,
+        };
+    }
+
+    private static string BuildPlaceSearchSourceName(string sourceUrl)
+    {
+        try
+        {
+            var fileName = Path.GetFileName(new Uri(sourceUrl).LocalPath);
+            if (!string.IsNullOrWhiteSpace(fileName))
+                return fileName;
+        }
+        catch
+        {
+        }
+
+        return "OSM PBF";
+    }
+
+    private static string BuildPlaceSearchSourceId(string sourceUrl, string fallback)
+    {
+        try
+        {
+            var uri = new Uri(sourceUrl);
+            var id = uri.AbsolutePath.Trim('/').Replace('/', '-');
+            if (!string.IsNullOrWhiteSpace(id))
+                return id;
+        }
+        catch
+        {
+        }
+
+        return string.IsNullOrWhiteSpace(fallback) ? "osm-pbf" : fallback.Trim();
     }
 
     private static long CountExpectedExportTiles(
@@ -2285,20 +2457,23 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         if (index < 0)
             return;
 
+        if (Map.IsOfflineCacheRunning)
+            Map.CancelOfflineCache();
+
         OfflineCacheRegions.RemoveAt(index);
         UntrackOfflineCacheRegion(removed);
         SelectedOfflineCacheRegion = OfflineCacheRegions.Count == 0
             ? null
             : OfflineCacheRegions[Math.Min(index, OfflineCacheRegions.Count - 1)];
 
-        _ = PersistOfflineCacheRegionsSafeAsync();
+        _ = PersistOfflineCacheRegionsSafeAsync(allowEmpty: OfflineCacheRegions.Count == 0);
     }
 
-    private async Task PersistOfflineCacheRegionsSafeAsync()
+    private async Task PersistOfflineCacheRegionsSafeAsync(bool allowEmpty = false)
     {
         try
         {
-            await SaveOfflineCacheRegionsAsync();
+            await SaveOfflineCacheRegionsAsync(allowEmpty);
         }
         catch (Exception ex)
         {
@@ -2391,8 +2566,11 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             nameof(MapCacheRegionViewModel.EnablePoiSeparation) or
             nameof(MapCacheRegionViewModel.MinimumZoom) or
             nameof(MapCacheRegionViewModel.MaximumZoom) or
+            nameof(MapCacheRegionViewModel.PoiPbfPath) or
+            nameof(MapCacheRegionViewModel.PoiSourceDownloadUrl) or
             nameof(MapCacheRegionViewModel.ExportOutputDirectory) or
-            nameof(MapCacheRegionViewModel.ExportState))
+            nameof(MapCacheRegionViewModel.ExportState) or
+            nameof(MapCacheRegionViewModel.NeedsPlaceSearchBackfill))
         {
             NotifyOfflineCacheBuildAvailabilityChanged();
         }
@@ -2951,9 +3129,10 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         Preparing = 0,
         Layer = 1,
         Poi = 2,
-        Finalizing = 3,
-        Completed = 4,
-        Failed = 5,
+        PlaceSearch = 3,
+        Finalizing = 4,
+        Completed = 5,
+        Failed = 6,
     }
 
     public readonly record struct OfflineCacheExportProgress(
@@ -2992,6 +3171,11 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             return new OfflineCacheExportProgress(OfflineCacheExportProgressKind.Poi, string.Empty, 0, 0, 0, 0, 0, processedElements, extractedPoiCount);
         }
 
+        public static OfflineCacheExportProgress PlaceSearch(long processedElements, long extractedPlaceCount)
+        {
+            return new OfflineCacheExportProgress(OfflineCacheExportProgressKind.PlaceSearch, string.Empty, 0, 0, 0, 0, 0, processedElements, extractedPlaceCount);
+        }
+
         public static OfflineCacheExportProgress Finalizing()
         {
             return new OfflineCacheExportProgress(OfflineCacheExportProgressKind.Finalizing, string.Empty, 0, 0, 0, 0, 0, 0, 0);
@@ -3021,6 +3205,11 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         long PoiCount,
         int PoiTileFiles,
         string? PoiErrorMessage,
+        bool PlaceSearchEnabled,
+        bool PlaceSearchSuccess,
+        long PlaceSearchCount,
+        long PlaceSearchNameRows,
+        string? PlaceSearchErrorMessage,
         string? ErrorMessage)
     {
         public long MissingSourceTiles => Math.Max(0, ExpectedTiles - SourceTiles);
@@ -3032,7 +3221,8 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             long copiedTiles,
             long skippedTiles,
             long unreadableEntries,
-            PoiExportResult? poiResult)
+            PoiExportResult? poiResult,
+            PlaceSearchPackExportResult? placeSearchResult)
         {
             return new OfflineCacheRegionExportResult(
                 Success: true,
@@ -3047,6 +3237,11 @@ public sealed partial class MainWindowViewModel : ViewModelBase
                 PoiCount: poiResult?.SourcePoiCount ?? 0,
                 PoiTileFiles: poiResult?.TileFilesWritten ?? 0,
                 PoiErrorMessage: poiResult?.ErrorMessage,
+                PlaceSearchEnabled: placeSearchResult is not null,
+                PlaceSearchSuccess: placeSearchResult?.Success == true,
+                PlaceSearchCount: placeSearchResult?.PlaceCount ?? 0,
+                PlaceSearchNameRows: placeSearchResult?.NameRowsWritten ?? 0,
+                PlaceSearchErrorMessage: placeSearchResult?.ErrorMessage,
                 ErrorMessage: null);
         }
 
@@ -3065,6 +3260,11 @@ public sealed partial class MainWindowViewModel : ViewModelBase
                 PoiCount: 0,
                 PoiTileFiles: 0,
                 PoiErrorMessage: null,
+                PlaceSearchEnabled: false,
+                PlaceSearchSuccess: false,
+                PlaceSearchCount: 0,
+                PlaceSearchNameRows: 0,
+                PlaceSearchErrorMessage: null,
                 ErrorMessage: errorMessage);
         }
     }

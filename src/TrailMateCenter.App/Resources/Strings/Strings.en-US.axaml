@@ -713,6 +713,8 @@
   <x:String x:Key="Status.OfflineCache.ExportDone">Export complete: copied {0} tiles, source available {1}, skipped {2}</x:String>
   <x:String x:Key="Status.OfflineCache.PoiExportDone">POI exported: {0} POI, {1} index files.</x:String>
   <x:String x:Key="Status.OfflineCache.PoiExportFailed">POI export failed: {0}</x:String>
+  <x:String x:Key="Status.OfflineCache.PlaceSearchExportDone">Place search pack exported: {0} places, {1} names.</x:String>
+  <x:String x:Key="Status.OfflineCache.PlaceSearchExportFailed">Place search pack export failed: {0}</x:String>
   <x:String x:Key="Status.OfflineCache.ExportUnreadableEntries">{0} unreadable entries were skipped.</x:String>
   <x:String x:Key="Status.OfflineCache.ExportSourceIncomplete">The map pack is still missing {0} / {1} tiles. Check the network and export again.</x:String>
   <x:String x:Key="Status.OfflineCache.ExportDoneWithUnreadable">Export complete: copied {0} tiles, source available {1}, skipped {2}; unreadable entries skipped {3}</x:String>
@@ -894,6 +896,7 @@
   <x:String x:Key="Ui.MapPack.Status.ExportPreparing">Preparing export folders and layers...</x:String>
   <x:String x:Key="Ui.MapPack.Status.ExportLayerProgress">Exporting {0} Z{1}: processed {2:N0}/{3:N0} tiles, copied {4:N0}, skipped {5:N0}</x:String>
   <x:String x:Key="Ui.MapPack.Status.ExportPoiProgress">Exporting POI: scanned {0:N0} OSM elements, extracted {1:N0} POI</x:String>
+  <x:String x:Key="Ui.MapPack.Status.ExportPlaceSearchProgress">Exporting place search: scanned {0:N0} OSM elements, extracted {1:N0} places</x:String>
   <x:String x:Key="Ui.MapPack.Status.ExportFinalizing">Writing manifests and finishing export...</x:String>
   <x:String x:Key="Ui.MapPack.Status.ExportCompleted">Map pack export complete.</x:String>
   <x:String x:Key="Ui.MapPack.Status.ExportFailedShort">Map pack export failed.</x:String>
