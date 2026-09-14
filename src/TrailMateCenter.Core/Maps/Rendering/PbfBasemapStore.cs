@@ -58,7 +58,7 @@ internal sealed class PbfBasemapStore : IDisposable
             if (geo is not Node { Id: not null, Latitude: not null, Longitude: not null } n) return;
             var (x, y) = Project(n.Longitude.Value, n.Latitude.Value);
             Execute("INSERT OR REPLACE INTO nodes VALUES($id,$x,$y)", ("$id", n.Id.GetValueOrDefault()), ("$x", x), ("$y", y));
-            AddLabel(n, _factory.CreatePoint(new Coordinate(x, y)));
+            AddLabel(n, _factory.CreatePoint(new Coordinate(x, y)), requiredEnvelope);
         }, progress, token);
 
         Scan(pbfPath, "ways", geo =>
@@ -90,7 +90,7 @@ internal sealed class PbfBasemapStore : IDisposable
                 if (!geometry.IsValid) geometry = geometry.Buffer(0);
             }
             AddFeature(kind, geometry, way.Id);
-            AddLabel(way, geometry);
+            AddLabel(way, geometry, requiredEnvelope);
         }, progress, token);
 
         Scan(pbfPath, "relations", geo =>
@@ -145,7 +145,7 @@ internal sealed class PbfBasemapStore : IDisposable
                 Execute("DELETE FROM features WHERE way_id=$way AND kind=$kind", ("$way", member.Id), ("$kind", kind));
             }
             AddFeature(kind, geometry);
-            AddLabel(relation, geometry);
+            AddLabel(relation, geometry, requiredEnvelope);
             }
             catch (Exception ex) when (ex is InvalidDataException or TopologyException)
             {
@@ -200,7 +200,7 @@ internal sealed class PbfBasemapStore : IDisposable
         while (rows.Read()) yield return (rows.GetString(0), rows.GetDouble(1), rows.GetDouble(2), rows.GetInt32(3));
     }
 
-    private void AddLabel(OsmGeo source, Geometry geometry)
+    private void AddLabel(OsmGeo source, Geometry geometry, Envelope? requestedArea)
     {
         var name = Tag(source, "name:zh") ?? Tag(source, "name");
         if (string.IsNullOrWhiteSpace(name) || geometry.IsEmpty) return;
@@ -223,6 +223,13 @@ internal sealed class PbfBasemapStore : IDisposable
             ? new NetTopologySuite.LinearReferencing.LengthIndexedLine(line).ExtractPoint(line.Length / 2)
             : geometry.InteriorPoint.Coordinate;
         if (anchor is null) return;
+        // Keep a regional pack identifiable at world zooms using its actual OSM
+        // city name. This is an AOI focus rule, not fabricated global map data.
+        if (place == "city" && requestedArea?.Contains(anchor) == true)
+        {
+            minZoom = 1;
+            priority = -1;
+        }
         var id = ++_labelId;
         Execute("INSERT INTO labels VALUES($id,$name,$x,$y,$z,$priority)",
             ("$id", id), ("$name", name), ("$x", anchor.X), ("$y", anchor.Y), ("$z", minZoom), ("$priority", priority));
