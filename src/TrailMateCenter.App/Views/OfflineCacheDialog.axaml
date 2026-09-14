@@ -1,6 +1,7 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:TrailMateCenter.ViewModels"
+        xmlns:controls="using:TrailMateCenter.Views.Controls"
         x:Class="TrailMateCenter.Views.OfflineCacheDialog"
         x:DataType="vm:OfflineCacheDialogViewModel"
         Width="620"
@@ -163,30 +164,15 @@
                       Margin="0,0,12,6"/>
           </WrapPanel>
 
-          <Grid ColumnDefinitions="*,*,*"
+          <StackPanel IsEnabled="{Binding EnablePoiSeparation}"><controls:PoiZoomSelector DataContext="{Binding PoiZooms}"/></StackPanel>
+          <Grid ColumnDefinitions="*"
                 RowDefinitions="Auto,Auto"
                 ColumnSpacing="10"
                 RowSpacing="4"
                 IsEnabled="{Binding EnablePoiSeparation}">
-            <TextBlock Text="{DynamicResource Ui.Dashboard.OfflineCacheDialog.PoiMinZoom}"
+            <TextBlock Text="{DynamicResource Ui.Dashboard.OfflineCacheDialog.PoiMaxPerTile}"
                        Foreground="{DynamicResource TextPrimary}"/>
-            <TextBlock Grid.Column="1"
-                       Text="{DynamicResource Ui.Dashboard.OfflineCacheDialog.PoiMaxZoom}"
-                       Foreground="{DynamicResource TextPrimary}"/>
-            <TextBlock Grid.Column="2"
-                       Text="{DynamicResource Ui.Dashboard.OfflineCacheDialog.PoiMaxPerTile}"
-                       Foreground="{DynamicResource TextPrimary}"/>
-            <ComboBox Grid.Row="1"
-                      ItemsSource="{Binding AvailablePoiZoomLevels}"
-                      SelectedItem="{Binding PoiIndexMinimumZoom}"
-                      MinWidth="110"/>
-            <ComboBox Grid.Row="1"
-                      Grid.Column="1"
-                      ItemsSource="{Binding AvailablePoiZoomLevels}"
-                      SelectedItem="{Binding PoiIndexMaximumZoom}"
-                      MinWidth="110"/>
             <NumericUpDown Grid.Row="1"
-                           Grid.Column="2"
                            Minimum="1"
                            Maximum="5000"
                            Increment="25"

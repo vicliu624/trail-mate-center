@@ -1,6 +1,7 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:TrailMateCenter.ViewModels"
+        xmlns:controls="using:TrailMateCenter.Views.Controls"
         x:Class="TrailMateCenter.Views.MapPackBuilderDialog"
         x:DataType="vm:MapPackBuilderViewModel"
         Width="860"
@@ -190,15 +191,12 @@
                 <CheckBox Content="{DynamicResource Ui.MapPack.OriginalOsmTags}" IsChecked="{Binding IncludeOriginalOsmTags}" Margin="0,0,12,6"/>
                 <CheckBox Content="{DynamicResource Ui.MapPack.PreviewOverlay}" IsChecked="{Binding ShowPoiPreview}" Margin="0,0,12,6"/>
               </WrapPanel>
-              <Grid ColumnDefinitions="*,*,*,*" RowDefinitions="Auto,Auto" ColumnSpacing="8" RowSpacing="4" IsEnabled="{Binding EnablePoiSeparation}">
-                <TextBlock Text="{DynamicResource Ui.MapPack.PoiMinZoom}" Foreground="{DynamicResource TextPrimary}"/>
-                <TextBlock Grid.Column="1" Text="{DynamicResource Ui.MapPack.PoiMaxZoom}" Foreground="{DynamicResource TextPrimary}"/>
-                <TextBlock Grid.Column="2" Text="{DynamicResource Ui.MapPack.MaxPerTile}" Foreground="{DynamicResource TextPrimary}"/>
-                <TextBlock Grid.Column="3" Text="{DynamicResource Ui.MapPack.PreviewLimit}" Foreground="{DynamicResource TextPrimary}"/>
-                <ComboBox Grid.Row="1" ItemsSource="{Binding AvailablePoiZoomLevels}" SelectedItem="{Binding PoiIndexMinimumZoom}"/>
-                <ComboBox Grid.Row="1" Grid.Column="1" ItemsSource="{Binding AvailablePoiZoomLevels}" SelectedItem="{Binding PoiIndexMaximumZoom}"/>
-                <NumericUpDown Grid.Row="1" Grid.Column="2" Minimum="1" Maximum="5000" Increment="25" Value="{Binding MaxPoiPerTile}"/>
-                <NumericUpDown Grid.Row="1" Grid.Column="3" Minimum="1" Maximum="5000" Increment="100" Value="{Binding PoiPreviewLimit}"/>
+              <StackPanel IsEnabled="{Binding EnablePoiSeparation}"><controls:PoiZoomSelector DataContext="{Binding PoiZooms}"/></StackPanel>
+              <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="8" RowSpacing="4" IsEnabled="{Binding EnablePoiSeparation}">
+                <TextBlock Text="{DynamicResource Ui.MapPack.MaxPerTile}" Foreground="{DynamicResource TextPrimary}"/>
+                <TextBlock Grid.Column="1" Text="{DynamicResource Ui.MapPack.PreviewLimit}" Foreground="{DynamicResource TextPrimary}"/>
+                <NumericUpDown Grid.Row="1" Minimum="1" Maximum="5000" Increment="25" Value="{Binding MaxPoiPerTile}"/>
+                <NumericUpDown Grid.Row="1" Grid.Column="1" Minimum="1" Maximum="5000" Increment="100" Value="{Binding PoiPreviewLimit}"/>
               </Grid>
               <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8" IsEnabled="{Binding EnablePoiSeparation}">
                 <TextBlock Text="{DynamicResource Ui.MapPack.OutputFormat}" Foreground="{DynamicResource TextPrimary}" VerticalAlignment="Center"/>

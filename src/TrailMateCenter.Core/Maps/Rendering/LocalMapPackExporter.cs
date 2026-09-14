@@ -6,7 +6,7 @@ namespace TrailMateCenter.Maps.Rendering;
 public sealed record LocalMapPackProgress(string Stage, long Completed, long Total, int Zoom = 0, string Layer = "osm");
 public sealed record LocalMapPackResult(string MapsRoot, long TileCount, PoiExportResult Poi, string? PreviousMapsRoot);
 
-/// <summary>Produces a complete text-free map pack before replacing the destination maps directory.</summary>
+/// <summary>Produces a complete map pack with raster text complementary to independent POI zooms.</summary>
 public sealed class LocalMapPackExporter
 {
     public static void Validate(MapPackExportPlan plan)
@@ -58,6 +58,13 @@ public sealed class LocalMapPackExporter
             var total = layers.Sum(l => l.MaxZoom < plan.BaseLayers.MinimumZoom ? 0 :
                 ExportEstimator.CountTiles(plan.Area.Bounds, plan.BaseLayers.MinimumZoom, l.MaxZoom));
             long completed = 0;
+            var independentPolicy = (plan.Poi.IndexOptions with
+            {
+                EnabledZoomLevels = plan.Poi.IndexOptions.Normalize().EnabledZoomLevels!
+                    .Where(z => z >= plan.BaseLayers.MinimumZoom && z <= plan.BaseLayers.MaximumZoom).ToArray(),
+            }).Normalize();
+            var labelledLevels = Enumerable.Range(plan.BaseLayers.MinimumZoom, plan.BaseLayers.MaximumZoom - plan.BaseLayers.MinimumZoom + 1)
+                .Where(z => !independentPolicy.IsEnabledAtZoom(z)).ToArray();
             var sourceIssueCount = 0;
             BasemapSourceIssue[] sourceIssues = [];
             if (layers.Count > 0)
@@ -82,7 +89,8 @@ public sealed class LocalMapPackExporter
                             cancellationToken.ThrowIfCancellationRequested();
                             var tile = new TileCoordinate(z, x, y);
                             PbfTileRenderer.Render(store, tile, layer.Terrain,
-                                Path.Combine(stagedMaps, "base", layer.Name, z.ToString(), x.ToString(), $"{y}.png"), cancellationToken);
+                                Path.Combine(stagedMaps, "base", layer.Name, z.ToString(), x.ToString(), $"{y}.png"), cancellationToken,
+                                bakeLabels: !independentPolicy.IsEnabledAtZoom(z));
                             completed++;
                             progress?.Report(new("tiles", completed, total, z, layer.Name));
                         }
@@ -96,7 +104,7 @@ public sealed class LocalMapPackExporter
                 BoundaryGeoJson = plan.Area.BoundaryGeoJson, AreaName = plan.Area.Name, AreaAdminLevel = plan.Area.AdminLevel,
                 SourceProvider = plan.Poi.SourceProvider, SourceDownloadUrl = plan.Poi.SourceDownloadUrl,
                 SelectedPoiTypes = plan.Poi.SelectedPoiTypes,
-                IndexOptions = plan.Poi.IndexOptions with
+                IndexOptions = independentPolicy with
                 {
                     GenerateFullPoisJsonl = plan.Poi.GenerateFullPoisJsonl,
                     GenerateTileIndex = plan.Poi.GenerateTileIndex,
@@ -117,14 +125,15 @@ public sealed class LocalMapPackExporter
 
             await File.WriteAllTextAsync(Path.Combine(stagedMaps, "map-pack.json"), JsonSerializer.Serialize(new
             {
-                version = 1, generator = "TrailMateCenter", style = PbfTileRenderer.StyleVersion,
-                text_in_basemap = false, poi_symbols_in_basemap = false, tile_size = 256,
+                version = 2, generator = "TrailMateCenter", style = PbfTileRenderer.StyleVersion,
+                text_in_basemap = labelledLevels.Length > 0, poi_symbols_in_basemap = false, tile_size = 256,
+                labelled_zoom_levels = labelledLevels, text_free_zoom_levels = independentPolicy.EnabledZoomLevels,
                 scheme = "web-mercator-xyz", coordinates = "WGS84", source = Path.GetFileName(plan.Poi.PbfPath),
                 source_sha256 = sourceHash, area = plan.Area, base_layers = layers.Select(l => l.Name).ToArray(),
                 min_zoom = plan.BaseLayers.MinimumZoom, max_zoom = plan.BaseLayers.MaximumZoom,
                 source_diagnostics = sourceDiagnostics,
                 attribution = "© OpenStreetMap contributors; ODbL 1.0; https://www.openstreetmap.org/copyright",
-                notes = "Regional PBF geometry only. No text, POI symbols, hillshade or global ocean fill. Coastlines are outlines. Terrain is a land-cover palette; optional contours are separate.",
+                notes = "Raster text is rendered only at labelled_zoom_levels; independent POI zooms are text-free. Regional PBF coverage only, no hillshade or global ocean fill. Coastlines are outlines. Terrain is a land-cover palette; optional contours are separate.",
             }, new JsonSerializerOptions { WriteIndented = true }), cancellationToken).ConfigureAwait(false);
 
             // No cancellation once publication begins. Preserve the old pack for recovery.

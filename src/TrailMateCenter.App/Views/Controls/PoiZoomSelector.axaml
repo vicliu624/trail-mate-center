@@ -1,0 +1,27 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="clr-namespace:TrailMateCenter.ViewModels"
+             x:Class="TrailMateCenter.Views.Controls.PoiZoomSelector"
+             x:DataType="vm:PoiZoomSelectionViewModel">
+  <StackPanel Spacing="6">
+    <TextBlock Text="{DynamicResource Ui.MapPack.PoiLevels}"/>
+    <ItemsControl ItemsSource="{Binding Levels}">
+      <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+      <ItemsControl.ItemTemplate>
+        <DataTemplate x:DataType="vm:PoiZoomLevelOptionViewModel">
+          <CheckBox Content="{Binding Zoom}" IsChecked="{Binding IsSelected}" IsEnabled="{Binding IsAvailable}" Margin="0,0,12,4" MinWidth="42"/>
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
+    </ItemsControl>
+    <WrapPanel>
+      <Button Content="{DynamicResource Ui.MapPack.PoiSelectAll}" Command="{Binding SelectAllCommand}" Margin="0,0,6,4"/>
+      <Button Content="{DynamicResource Ui.MapPack.PoiClear}" Command="{Binding ClearCommand}" Margin="0,0,12,4"/>
+      <ComboBox ItemsSource="{Binding AvailableLevels}" SelectedItem="{Binding RangeStart}" MinWidth="62" Margin="0,0,6,4"/>
+      <TextBlock Text="—" VerticalAlignment="Center" Margin="0,0,6,4"/>
+      <ComboBox ItemsSource="{Binding AvailableLevels}" SelectedItem="{Binding RangeEnd}" MinWidth="62" Margin="0,0,6,4"/>
+      <Button Content="{DynamicResource Ui.MapPack.PoiSelectRange}" Command="{Binding SelectRangeCommand}" Margin="0,0,6,4"/>
+    </WrapPanel>
+    <TextBlock Text="{Binding Summary}" TextWrapping="Wrap"/>
+    <TextBlock Text="{DynamicResource Ui.MapPack.PoiLevelsHint}" TextWrapping="Wrap"/>
+  </StackPanel>
+</UserControl>

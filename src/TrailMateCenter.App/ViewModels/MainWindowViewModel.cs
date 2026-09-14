@@ -1660,6 +1660,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
                 GenerateTileIndexedPoiFiles = region.GenerateTileIndexedPoiFiles,
                 PoiIndexMinimumZoom = region.PoiIndexMinimumZoom,
                 PoiIndexMaximumZoom = region.PoiIndexMaximumZoom,
+                PoiEnabledZoomLevels = region.PoiEnabledZoomLevels,
                 MaxPoiPerTile = region.MaxPoiPerTile,
                 IncludePoiLabels = region.IncludePoiLabels,
                 IncludeOriginalOsmTags = region.IncludeOriginalOsmTags,
@@ -1833,6 +1834,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
                 {
                     MinZoom = region.PoiIndexMinimumZoom,
                     MaxZoom = region.PoiIndexMaximumZoom,
+                    EnabledZoomLevels = region.PoiEnabledZoomLevels,
                     MaxPoiPerTile = region.MaxPoiPerTile,
                     IncludeLabels = region.IncludePoiLabels,
                     IncludeOriginalTags = region.IncludeOriginalOsmTags,
@@ -2006,6 +2008,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             GenerateTileIndexedPoiFiles = plan.Poi.GenerateTileIndex,
             PoiIndexMinimumZoom = plan.Poi.IndexOptions.MinZoom,
             PoiIndexMaximumZoom = plan.Poi.IndexOptions.MaxZoom,
+            PoiEnabledZoomLevels = plan.Poi.IndexOptions.Normalize().EnabledZoomLevels,
             MaxPoiPerTile = plan.Poi.IndexOptions.MaxPoiPerTile,
             IncludePoiLabels = plan.Poi.IndexOptions.IncludeLabels,
             IncludeOriginalOsmTags = plan.Poi.IndexOptions.IncludeOriginalTags,

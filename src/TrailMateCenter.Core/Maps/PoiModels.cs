@@ -22,6 +22,8 @@ public enum PoiOutputFormat
 
 public sealed record PoiIndexOptions
 {
+    // Null migrates a legacy range; an explicit empty collection disables POI.
+    public IReadOnlyList<int>? EnabledZoomLevels { get; init; }
     public int MinZoom { get; init; } = 10;
     public int MaxZoom { get; init; } = 17;
     public int MaxPoiPerTile { get; init; } = 200;
@@ -37,14 +39,22 @@ public sealed record PoiIndexOptions
         var maxZoom = Math.Clamp(MaxZoom, TileMath.MinimumZoom, TileMath.MaximumZoom);
         if (maxZoom < minZoom)
             (minZoom, maxZoom) = (maxZoom, minZoom);
+        var levels = (EnabledZoomLevels ?? Enumerable.Range(minZoom, maxZoom - minZoom + 1).ToArray())
+            .Where(z => z >= TileMath.MinimumZoom && z <= TileMath.MaximumZoom)
+            .Distinct().Order().ToArray();
 
         return this with
         {
-            MinZoom = minZoom,
-            MaxZoom = maxZoom,
+            EnabledZoomLevels = levels,
+            MinZoom = levels.Length == 0 ? 0 : levels[0],
+            MaxZoom = levels.Length == 0 ? 0 : levels[^1],
             MaxPoiPerTile = Math.Max(1, MaxPoiPerTile),
         };
     }
+
+    public bool IsEnabledAtZoom(int zoom) => EnabledZoomLevels is { } levels
+        ? levels.Contains(zoom)
+        : zoom >= Math.Min(MinZoom, MaxZoom) && zoom <= Math.Max(MinZoom, MaxZoom);
 }
 
 public sealed record PoiSourceInfo
@@ -85,7 +95,7 @@ public sealed record PoiIndexWriteSummary
 public sealed record PoiManifest
 {
     [JsonPropertyName("version")]
-    public int Version { get; init; } = 1;
+    public int Version { get; init; } = 2;
 
     [JsonPropertyName("generator")]
     public string Generator { get; init; } = "TrailMateCenter";
@@ -156,6 +166,8 @@ public sealed record PoiManifestBounds
 
 public sealed record PoiManifestIndex
 {
+    [JsonPropertyName("enabled_zoom_levels")]
+    public IReadOnlyList<int> EnabledZoomLevels { get; init; } = Array.Empty<int>();
     [JsonPropertyName("scheme")]
     public string Scheme { get; init; } = "web-mercator-xyz";
 

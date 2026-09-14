@@ -69,6 +69,7 @@ public sealed record OfflineCacheBuildOptions
     public bool GenerateTileIndexedPoiFiles { get; init; } = true;
     public int PoiIndexMinimumZoom { get; init; } = 10;
     public int PoiIndexMaximumZoom { get; init; } = 17;
+    public IReadOnlyList<int>? PoiEnabledZoomLevels { get; init; }
     public int MaxPoiPerTile { get; init; } = 200;
     public bool IncludePoiLabels { get; init; } = true;
     public bool IncludeOriginalOsmTags { get; init; }
@@ -85,6 +86,10 @@ public sealed record OfflineCacheBuildOptions
         }
 
         var normalizedPoiOptions = ToPoiIndexOptions();
+        normalizedPoiOptions = (normalizedPoiOptions with
+        {
+            EnabledZoomLevels = normalizedPoiOptions.EnabledZoomLevels!.Where(z => z >= minZoom && z <= maxZoom).ToArray(),
+        }).Normalize();
         return this with
         {
             IncludeUltraFineContours = IncludeContours && IncludeUltraFineContours,
@@ -94,6 +99,7 @@ public sealed record OfflineCacheBuildOptions
             GenerateFullPoisJsonl = GenerateFullPoisJsonl,
             PoiIndexMinimumZoom = normalizedPoiOptions.MinZoom,
             PoiIndexMaximumZoom = normalizedPoiOptions.MaxZoom,
+            PoiEnabledZoomLevels = normalizedPoiOptions.EnabledZoomLevels,
             MaxPoiPerTile = normalizedPoiOptions.MaxPoiPerTile,
             PoiPbfPath = string.IsNullOrWhiteSpace(PoiPbfPath) ? string.Empty : PoiPbfPath.Trim(),
             SelectedPoiTypes = SelectedPoiTypes
@@ -120,6 +126,7 @@ public sealed record OfflineCacheBuildOptions
         {
             MinZoom = PoiIndexMinimumZoom,
             MaxZoom = PoiIndexMaximumZoom,
+            EnabledZoomLevels = PoiEnabledZoomLevels,
             MaxPoiPerTile = MaxPoiPerTile,
             IncludeLabels = IncludePoiLabels,
             IncludeOriginalTags = IncludeOriginalOsmTags,
@@ -191,6 +198,7 @@ public sealed class MapViewModel : INotifyPropertyChanged
     private bool _isOfflineCacheRunning;
     private string _offlineCacheStatusText = string.Empty;
     private bool _showPoiPreview;
+    private PoiIndexOptions _poiPreviewPolicy = new PoiIndexOptions().Normalize();
     private int _poiPreviewLimit = 800;
     private int _poiPreviewLoadedCount;
     private int _poiPreviewVisibleCount;
@@ -2390,6 +2398,8 @@ public sealed class MapViewModel : INotifyPropertyChanged
         List<PoiPreviewSample> samples,
         int limit)
     {
+        var zoom = GetCurrentZoom();
+        if (!_poiPreviewPolicy.IsEnabledAtZoom(zoom)) return Array.Empty<IFeature>();
         var selectedTypes = PoiPreviewTypes
             .Where(static option => option.IsSelected)
             .Select(static option => option.Id)
@@ -2398,7 +2408,8 @@ public sealed class MapViewModel : INotifyPropertyChanged
             return Array.Empty<IFeature>();
 
         var viewportBounds = TryGetViewportLonLatBounds();
-        var query = samples.Where(p => selectedTypes.Contains(p.Type));
+        var query = samples.Where(p => selectedTypes.Contains(p.Type) &&
+            PoiPriorityRules.Default.ShouldIncludeAtZoom(new PoiRecord { Priority = p.Priority }, zoom));
         if (viewportBounds.HasValue)
         {
             var bounds = viewportBounds.Value.Normalize();
@@ -2428,7 +2439,7 @@ public sealed class MapViewModel : INotifyPropertyChanged
                 SymbolScale = poi.Priority >= 85 ? 0.92 : 0.72,
             });
 
-            if (!string.IsNullOrWhiteSpace(poi.Name) && GetCurrentZoom() >= 12)
+            if (_poiPreviewPolicy.IncludeLabels && !string.IsNullOrWhiteSpace(poi.Name))
             {
                 feature.Styles.Add(new LabelStyle
                 {
@@ -2446,6 +2457,12 @@ public sealed class MapViewModel : INotifyPropertyChanged
         }
 
         return features;
+    }
+
+    public void SetPoiPreviewPolicy(PoiIndexOptions policy)
+    {
+        _poiPreviewPolicy = policy.Normalize();
+        RefreshPoiPreviewLayer();
     }
 
     private GeoBounds? TryGetViewportLonLatBounds()

@@ -10,7 +10,7 @@ namespace TrailMateCenter.Maps.Rendering;
 
 internal sealed record BasemapSourceIssue(long? RelationId, string Reason, GeoBounds KnownMemberBounds);
 
-/// <summary>Disk-backed geometry staging. No labels or point symbols enter this store.</summary>
+/// <summary>Disk-backed geometry and label staging. The renderer chooses labels per zoom.</summary>
 internal sealed class PbfBasemapStore : IDisposable
 {
     private readonly SqliteConnection _db;
@@ -18,6 +18,7 @@ internal sealed class PbfBasemapStore : IDisposable
     private readonly WKBWriter _writer = new();
     private readonly WKBReader _reader = new();
     private long _featureId;
+    private long _labelId;
     private readonly List<BasemapSourceIssue> _sourceIssues = new();
     public IReadOnlyList<BasemapSourceIssue> SourceIssues => _sourceIssues;
     public int SourceIssueCount { get; private set; }
@@ -36,6 +37,8 @@ internal sealed class PbfBasemapStore : IDisposable
             CREATE TABLE features(id INTEGER PRIMARY KEY, kind TEXT NOT NULL, geometry BLOB NOT NULL, minzoom INTEGER NOT NULL, way_id INTEGER, draw_order INTEGER NOT NULL);
             CREATE INDEX feature_way ON features(way_id,kind);
             CREATE VIRTUAL TABLE feature_bounds USING rtree(id,minx,maxx,miny,maxy);
+            CREATE TABLE labels(id INTEGER PRIMARY KEY, name TEXT NOT NULL, x REAL NOT NULL, y REAL NOT NULL, minzoom INTEGER NOT NULL, priority INTEGER NOT NULL);
+            CREATE VIRTUAL TABLE label_bounds USING rtree(id,minx,maxx,miny,maxy);
             """;
         command.ExecuteNonQuery();
     }
@@ -55,6 +58,7 @@ internal sealed class PbfBasemapStore : IDisposable
             if (geo is not Node { Id: not null, Latitude: not null, Longitude: not null } n) return;
             var (x, y) = Project(n.Longitude.Value, n.Latitude.Value);
             Execute("INSERT OR REPLACE INTO nodes VALUES($id,$x,$y)", ("$id", n.Id.GetValueOrDefault()), ("$x", x), ("$y", y));
+            AddLabel(n, _factory.CreatePoint(new Coordinate(x, y)));
         }, progress, token);
 
         Scan(pbfPath, "ways", geo =>
@@ -86,6 +90,7 @@ internal sealed class PbfBasemapStore : IDisposable
                 if (!geometry.IsValid) geometry = geometry.Buffer(0);
             }
             AddFeature(kind, geometry, way.Id);
+            AddLabel(way, geometry);
         }, progress, token);
 
         Scan(pbfPath, "relations", geo =>
@@ -140,6 +145,7 @@ internal sealed class PbfBasemapStore : IDisposable
                 Execute("DELETE FROM features WHERE way_id=$way AND kind=$kind", ("$way", member.Id), ("$kind", kind));
             }
             AddFeature(kind, geometry);
+            AddLabel(relation, geometry);
             }
             catch (Exception ex) when (ex is InvalidDataException or TopologyException)
             {
@@ -175,6 +181,52 @@ internal sealed class PbfBasemapStore : IDisposable
         command.Parameters.AddWithValue("$zoom", zoom);
         using var rows = command.ExecuteReader();
         while (rows.Read()) yield return (rows.GetString(0), _reader.Read((byte[])rows[1]));
+    }
+
+    public IEnumerable<(string Name, double X, double Y, int Priority)> QueryLabels(Envelope bounds, int zoom)
+    {
+        using var command = _db.CreateCommand();
+        command.CommandText = """
+            SELECT l.name,l.x,l.y,l.priority FROM label_bounds b JOIN labels l ON l.id=b.id
+            WHERE b.maxx >= $left AND b.minx <= $right AND b.maxy >= $top AND b.miny <= $bottom
+                AND l.minzoom <= $zoom ORDER BY l.priority,l.id
+            """;
+        command.Parameters.AddWithValue("$left", bounds.MinX);
+        command.Parameters.AddWithValue("$right", bounds.MaxX);
+        command.Parameters.AddWithValue("$top", bounds.MinY);
+        command.Parameters.AddWithValue("$bottom", bounds.MaxY);
+        command.Parameters.AddWithValue("$zoom", zoom);
+        using var rows = command.ExecuteReader();
+        while (rows.Read()) yield return (rows.GetString(0), rows.GetDouble(1), rows.GetDouble(2), rows.GetInt32(3));
+    }
+
+    private void AddLabel(OsmGeo source, Geometry geometry)
+    {
+        var name = Tag(source, "name:zh") ?? Tag(source, "name");
+        if (string.IsNullOrWhiteSpace(name) || geometry.IsEmpty) return;
+        var place = Tag(source, "place");
+        var (minZoom, priority) = place switch
+        {
+            "country" => (1, 0), "state" or "province" => (4, 1),
+            "city" => (5, 2), "town" => (9, 3), "suburb" or "quarter" => (11, 4),
+            "village" => (12, 5), "hamlet" or "neighbourhood" => (14, 6),
+            _ => Classify(source) switch
+            {
+                "highway" => (10, 7), "road" => (12, 8), "street" => (14, 9),
+                "water" or "green" or "forest" => (12, 10),
+                "river" => (13, 11), "building" => (16, 13),
+                _ => (15, 12),
+            },
+        };
+        // Area labels stay inside their geometry; line labels use the length midpoint.
+        var anchor = geometry is LineString line
+            ? new NetTopologySuite.LinearReferencing.LengthIndexedLine(line).ExtractPoint(line.Length / 2)
+            : geometry.InteriorPoint.Coordinate;
+        if (anchor is null) return;
+        var id = ++_labelId;
+        Execute("INSERT INTO labels VALUES($id,$name,$x,$y,$z,$priority)",
+            ("$id", id), ("$name", name), ("$x", anchor.X), ("$y", anchor.Y), ("$z", minZoom), ("$priority", priority));
+        Execute("INSERT INTO label_bounds VALUES($id,$x,$x,$y,$y)", ("$id", id), ("$x", anchor.X), ("$y", anchor.Y));
     }
 
     private static bool HasClosedLinework(IReadOnlyCollection<Geometry> lines)

@@ -825,7 +825,13 @@
   <x:String x:Key="Ui.MapPack.MaxZoom">Max zoom</x:String>
   <x:String x:Key="Ui.MapPack.Step.Poi">Step 3: POI Separation</x:String>
   <x:String x:Key="Ui.MapPack.EnablePoi">Enable POI</x:String>
-  <x:String x:Key="Ui.MapPack.LocalTextFreeHint">Builds a text-free basemap locally from the selected PBF with separate POIs for heading-up display. Road and place names are also omitted from the basemap. Select OSM or Terrain; satellite imagery is unavailable in this mode. Terrain uses land-cover colours; select contours separately.</x:String>
+  <x:String x:Key="Ui.MapPack.PoiLevels">Zoom levels with independent POIs</x:String>
+  <x:String x:Key="Ui.MapPack.PoiSelectAll">Select all</x:String>
+  <x:String x:Key="Ui.MapPack.PoiClear">Clear</x:String>
+  <x:String x:Key="Ui.MapPack.PoiSelectRange">Select range</x:String>
+  <x:String x:Key="Ui.MapPack.PoiLevelsHint">Checked: text-free tiles with independent POIs. Unchecked: labelled tiles without independent POIs. Clear uses labelled tiles at every level; “—” means none selected.</x:String>
+  <x:String x:Key="Ui.MapPack.Estimate.PoiSelected">POIs: {0}; enabled levels: {1}; max {2} per tile</x:String>
+  <x:String x:Key="Ui.MapPack.LocalTextFreeHint">Builds maps locally from the selected PBF. Selected POI levels use text-free tiles and device-rendered POIs; other levels bake place and road names into the tiles. The default independent POI levels are z16–18. Select OSM or Terrain; satellite imagery is unavailable in this mode. Terrain uses land-cover colours; select contours separately.</x:String>
   <x:String x:Key="Ui.MapPack.PbfPathWatermark">Local or downloaded .osm.pbf</x:String>
   <x:String x:Key="Ui.MapPack.PickPbf">Pick PBF</x:String>
   <x:String x:Key="Ui.MapPack.GeneratePois">Generate pois.jsonl</x:String>
@@ -891,7 +897,7 @@
   <x:String x:Key="Ui.MapPack.Status.PreparingTiles">Downloading missing map tiles...</x:String>
   <x:String x:Key="Ui.MapPack.Status.TilesReady">Map tiles are ready. Starting export...</x:String>
   <x:String x:Key="Ui.MapPack.Status.ExportPreparing">Preparing export folders and layers...</x:String>
-  <x:String x:Key="Ui.MapPack.Status.LocalRendering">Building the text-free map from local data; {0:N0} objects processed in the current stage...</x:String>
+  <x:String x:Key="Ui.MapPack.Status.LocalRendering">Building the local map using its zoom policy; {0:N0} objects processed in the current stage...</x:String>
   <x:String x:Key="Ui.MapPack.Status.ExportLayerProgress">Exporting {0} Z{1}: processed {2:N0}/{3:N0} tiles, copied {4:N0}, skipped {5:N0}</x:String>
   <x:String x:Key="Ui.MapPack.Status.ExportPoiProgress">Exporting POI: scanned {0:N0} OSM elements, extracted {1:N0} POI</x:String>
   <x:String x:Key="Ui.MapPack.Status.ExportFinalizing">Writing manifests and finishing export...</x:String>

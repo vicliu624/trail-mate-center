@@ -28,6 +28,8 @@ public sealed partial class MapPackBuilderViewModel : ObservableObject
         GeofabrikPbfDownloadService? pbfDownloadService = null)
     {
         _map = map ?? throw new ArgumentNullException(nameof(map));
+        PoiZooms.SetBounds(MinimumZoom, MaximumZoom);
+        PoiZooms.SelectionChanged += OnExportInputChanged;
         _adminAreaProvider = adminAreaProvider ?? new CachedNominatimAdminAreaProvider();
         _geofabrikCatalogProvider = geofabrikCatalogProvider ?? new GeofabrikCatalogProvider();
         _pbfDownloadService = pbfDownloadService ?? new GeofabrikPbfDownloadService();
@@ -51,6 +53,7 @@ public sealed partial class MapPackBuilderViewModel : ObservableObject
             ApplyBounds(new GeoBounds(10, 55, 25, 69.5), T("Ui.MapPack.DefaultSweden"), 2, string.Empty);
         }
 
+        _map.SetPoiPreviewPolicy(BuildPoiIndexOptions());
         UpdateEstimate();
     }
 
@@ -65,6 +68,7 @@ public sealed partial class MapPackBuilderViewModel : ObservableObject
     public ObservableCollection<AdminAreaOptionViewModel> AdminAreas { get; } = new();
     public ObservableCollection<GeofabrikRegionOptionViewModel> GeofabrikRegions { get; } = new();
     public ObservableCollection<PoiTypeOptionViewModel> PoiTypes { get; } = new();
+    public PoiZoomSelectionViewModel PoiZooms { get; } = new();
 
     [ObservableProperty]
     private string _packName = T("Ui.MapPack.DefaultPackName");
@@ -371,6 +375,7 @@ public sealed partial class MapPackBuilderViewModel : ObservableObject
             GenerateTileIndexedPoiFiles = GenerateTileIndex,
             PoiIndexMinimumZoom = PoiIndexMinimumZoom,
             PoiIndexMaximumZoom = PoiIndexMaximumZoom,
+            PoiEnabledZoomLevels = PoiZooms.EnabledZoomLevels,
             MaxPoiPerTile = MaxPoiPerTile,
             IncludePoiLabels = IncludePoiLabels,
             IncludeOriginalOsmTags = IncludeOriginalOsmTags,
@@ -528,7 +533,7 @@ public sealed partial class MapPackBuilderViewModel : ObservableObject
             estimate.Layers.Select(l => F("Ui.MapPack.Estimate.Layer", l.Name, l.TileCount, ExportEstimator.FormatBytes(l.EstimatedBytes)))
                 .Append(F("Ui.MapPack.Estimate.Total", estimate.TotalTileCount, ExportEstimator.FormatBytes(estimate.EstimatedTileBytes)))
                 .Append(EnablePoiSeparation
-                    ? F("Ui.MapPack.Estimate.Poi", SelectedPoiTypeText(), PoiIndexMinimumZoom, PoiIndexMaximumZoom, MaxPoiPerTile)
+                    ? F("Ui.MapPack.Estimate.PoiSelected", SelectedPoiTypeText(), PoiZooms.Summary, MaxPoiPerTile)
                     : T("Ui.MapPack.Estimate.PoiDisabled")));
     }
 
@@ -604,6 +609,7 @@ public sealed partial class MapPackBuilderViewModel : ObservableObject
         {
             MinZoom = PoiIndexMinimumZoom,
             MaxZoom = PoiIndexMaximumZoom,
+            EnabledZoomLevels = PoiZooms.EnabledZoomLevels,
             MaxPoiPerTile = MaxPoiPerTile,
             IncludeLabels = IncludePoiLabels,
             IncludeOriginalTags = IncludeOriginalOsmTags,
@@ -842,6 +848,11 @@ public sealed partial class MapPackBuilderViewModel : ObservableObject
 
     private void OnExportInputChanged()
     {
+        PoiZooms.SetBounds(MinimumZoom, MaximumZoom);
+        _map.SetPoiPreviewPolicy(BuildPoiIndexOptions() with
+        {
+            EnabledZoomLevels = EnablePoiSeparation ? PoiZooms.EnabledZoomLevels : Array.Empty<int>(),
+        });
         OnPropertyChanged(nameof(HasTileSelection));
         OnPropertyChanged(nameof(HasPoiExportSelection));
         OnPropertyChanged(nameof(CanExport));

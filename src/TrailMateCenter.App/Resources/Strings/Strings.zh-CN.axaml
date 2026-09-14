@@ -824,7 +824,13 @@
   <x:String x:Key="Ui.MapPack.MaxZoom">最大缩放</x:String>
   <x:String x:Key="Ui.MapPack.Step.Poi">步骤 3：POI 分离</x:String>
   <x:String x:Key="Ui.MapPack.EnablePoi">启用 POI</x:String>
-  <x:String x:Key="Ui.MapPack.LocalTextFreeHint">启用后，从所选 PBF 本地生成无文字底图并导出独立 POI，适合航向朝上显示。道路名和地区名也不会画入底图。请选择 OSM 或 Terrain；此模式不支持卫星图。Terrain 使用土地覆盖配色，等高线需单独选择。</x:String>
+  <x:String x:Key="Ui.MapPack.PoiLevels">启用独立 POI 的缩放级别</x:String>
+  <x:String x:Key="Ui.MapPack.PoiSelectAll">全选</x:String>
+  <x:String x:Key="Ui.MapPack.PoiClear">清空</x:String>
+  <x:String x:Key="Ui.MapPack.PoiSelectRange">选择区间</x:String>
+  <x:String x:Key="Ui.MapPack.PoiLevelsHint">勾选：无文字瓦片 + 独立 POI。未勾选：带文字瓦片，不显示独立 POI。清空表示所有级别使用带字瓦片；“—”表示未选择任何级别。</x:String>
+  <x:String x:Key="Ui.MapPack.Estimate.PoiSelected">POI：{0}；启用级别：{1}；每瓦片最多 {2} 个</x:String>
+  <x:String x:Key="Ui.MapPack.LocalTextFreeHint">从所选 PBF 本地生成地图。仅勾选的 POI 级别移除瓦片文字，交由设备绘制独立 POI；其余级别直接在瓦片上绘制地名、道路名等文字。默认 z16–18 使用独立 POI。请选择 OSM 或 Terrain；此模式不支持卫星图。Terrain 使用土地覆盖配色，等高线需单独选择。</x:String>
   <x:String x:Key="Ui.MapPack.PbfPathWatermark">本地或已下载的 .osm.pbf</x:String>
   <x:String x:Key="Ui.MapPack.PickPbf">选择 PBF</x:String>
   <x:String x:Key="Ui.MapPack.GeneratePois">生成 pois.jsonl</x:String>
@@ -890,7 +896,7 @@
   <x:String x:Key="Ui.MapPack.Status.PreparingTiles">正在下载缺失的地图瓦片...</x:String>
   <x:String x:Key="Ui.MapPack.Status.TilesReady">地图瓦片已准备好，正在开始导出...</x:String>
   <x:String x:Key="Ui.MapPack.Status.ExportPreparing">正在准备导出目录和图层...</x:String>
-  <x:String x:Key="Ui.MapPack.Status.LocalRendering">正在从本地数据生成无文字地图，当前阶段已处理 {0:N0} 个对象...</x:String>
+  <x:String x:Key="Ui.MapPack.Status.LocalRendering">正在按缩放级别规则生成本地地图，当前阶段已处理 {0:N0} 个对象...</x:String>
   <x:String x:Key="Ui.MapPack.Status.ExportLayerProgress">正在导出 {0} Z{1}：已处理 {2:N0}/{3:N0} 个瓦片，已复制 {4:N0}，已跳过 {5:N0}</x:String>
   <x:String x:Key="Ui.MapPack.Status.ExportPoiProgress">正在导出 POI：已扫描 {0:N0} 个 OSM 元素，已提取 {1:N0} 个 POI</x:String>
   <x:String x:Key="Ui.MapPack.Status.ExportFinalizing">正在写入清单并完成导出...</x:String>

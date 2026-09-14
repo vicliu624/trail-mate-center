@@ -25,6 +25,7 @@ public sealed record MapCacheRegionSettings
     public bool GenerateTileIndexedPoiFiles { get; init; } = true;
     public int PoiIndexMinimumZoom { get; init; } = 10;
     public int PoiIndexMaximumZoom { get; init; } = 17;
+    public IReadOnlyList<int>? PoiEnabledZoomLevels { get; init; }
     public int MaxPoiPerTile { get; init; } = 200;
     public bool IncludePoiLabels { get; init; } = true;
     public bool IncludeOriginalOsmTags { get; init; }

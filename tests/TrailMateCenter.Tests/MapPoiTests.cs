@@ -248,7 +248,8 @@ public sealed class MapPoiTests
             },
             DateTimeOffset.Parse("2026-06-12T00:00:00Z"));
 
-        Assert.Equal(1, manifest.Version);
+        Assert.Equal(2, manifest.Version);
+        Assert.Equal(Enumerable.Range(10, 8), manifest.Index.EnabledZoomLevels);
         Assert.Equal("TrailMateCenter", manifest.Generator);
         Assert.Equal("web-mercator-xyz", manifest.Index.Scheme);
         Assert.Equal(10, manifest.Index.MinZoom);
