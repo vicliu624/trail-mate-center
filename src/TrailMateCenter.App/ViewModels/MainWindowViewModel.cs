@@ -1463,6 +1463,10 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         CancellationToken cancellationToken)
     {
         var options = region.ToBuildOptions();
+        if (options.EnablePoiSeparation && options.IncludeSatellite)
+            throw new InvalidOperationException("Local PBF rendering cannot produce satellite imagery. Deselect Satellite.");
+        if (options.EnablePoiSeparation)
+            options = options with { IncludeOsm = false, IncludeTerrain = false, IncludeSatellite = false };
         var hasRasterLayers = options.IncludeOsm ||
                               options.IncludeTerrain ||
                               options.IncludeSatellite ||
@@ -1476,7 +1480,8 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         {
             EnablePoiSeparation = false,
         }, cancellationToken);
-        await RefreshOfflineCacheRegionHealthAsync(region, cancellationToken);
+        if (!region.EnablePoiSeparation)
+            await RefreshOfflineCacheRegionHealthAsync(region, cancellationToken);
     }
 
     public async Task<OfflineCacheRegionExportResult> ResumeSelectedOfflineCacheRegionExportAsync(
@@ -1636,6 +1641,8 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     {
         try
         {
+            if (region.EnablePoiSeparation)
+                return ExportLocalMapPack(region, cacheRoot, destinationRoot, cancellationToken, progress);
             var mapsRoot = ResolveMapsExportRoot(destinationRoot);
             var bounds = (region.West, region.South, region.East, region.North);
             var buildOptions = new OfflineCacheBuildOptions
@@ -1785,6 +1792,72 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         {
             return OfflineCacheRegionExportResult.Fail(ex.Message);
         }
+    }
+
+    private static OfflineCacheRegionExportResult ExportLocalMapPack(
+        MapCacheRegionSettings region, string cacheRoot, string destinationRoot,
+        CancellationToken cancellationToken, IProgress<OfflineCacheExportProgress>? progress)
+    {
+        var bounds = (region.West, region.South, region.East, region.North);
+        var plan = new MapPackExportPlan
+        {
+            Name = region.Name,
+            OutputDirectory = destinationRoot,
+            Area = new MapPackAreaSelection
+            {
+                Name = region.Name,
+                AdminLevel = region.AdminLevel,
+                Bounds = new GeoBounds(region.West, region.South, region.East, region.North),
+                BoundaryGeoJson = region.BoundaryGeoJson,
+            },
+            BaseLayers = new MapPackBaseLayerSelection
+            {
+                IncludeOsm = region.IncludeOsm,
+                IncludeTerrain = region.IncludeTerrain,
+                IncludeSatellite = region.IncludeSatellite,
+                IncludeContours = region.IncludeContours,
+                IncludeUltraFineContours = region.IncludeUltraFineContours,
+                MinimumZoom = region.MinimumZoom,
+                MaximumZoom = region.MaximumZoom,
+            },
+            Poi = new MapPackPoiSelection
+            {
+                EnablePoiSeparation = true,
+                PbfPath = region.PoiPbfPath,
+                SourceProvider = region.PoiSourceProvider,
+                SourceDownloadUrl = region.PoiSourceDownloadUrl,
+                GenerateFullPoisJsonl = region.GenerateFullPoisJsonl,
+                GenerateTileIndex = region.GenerateTileIndexedPoiFiles,
+                SelectedPoiTypes = region.SelectedPoiTypes,
+                IndexOptions = new PoiIndexOptions
+                {
+                    MinZoom = region.PoiIndexMinimumZoom,
+                    MaxZoom = region.PoiIndexMaximumZoom,
+                    MaxPoiPerTile = region.MaxPoiPerTile,
+                    IncludeLabels = region.IncludePoiLabels,
+                    IncludeOriginalTags = region.IncludeOriginalOsmTags,
+                    OutputFormat = region.PoiOutputFormat == "compact" ? PoiOutputFormat.Compact : PoiOutputFormat.Readable,
+                },
+            },
+        };
+        var contourStats = new ExportCopyStats();
+        var localProgress = new Progress<TrailMateCenter.Maps.Rendering.LocalMapPackProgress>(p =>
+            progress?.Report(p.Stage == "tiles"
+                ? OfflineCacheExportProgress.Layer(p.Layer == "terrain" ? "Ui.MapPack.Layer.Terrain" : "Ui.MapPack.Layer.Osm",
+                    p.Zoom, p.Completed, p.Total, p.Completed, 0)
+                : new OfflineCacheExportProgress(OfflineCacheExportProgressKind.LocalRendering,
+                    string.Empty, 0, 0, 0, 0, 0, p.Completed, 0)));
+        var result = new TrailMateCenter.Maps.Rendering.LocalMapPackExporter().ExportAsync(plan, localProgress,
+            (stagedMaps, token) =>
+            {
+                ExportTrailMateContours(Path.Combine(cacheRoot, "contours", "tiles"), Path.Combine(stagedMaps, "contour"),
+                    region.MinimumZoom, region.MaximumZoom, bounds, contourStats, "Ui.MapPack.Layer.Contours", progress, token);
+                if (contourStats.SourceTiles < contourStats.ExpectedTiles || contourStats.UnreadableEntries > 0 || contourStats.SkippedTiles > 0)
+                    throw new InvalidDataException("Contour cache is incomplete. Finish generating contours or deselect Contours before exporting.");
+                return Task.CompletedTask;
+            }, cancellationToken).GetAwaiter().GetResult();
+        var count = result.TileCount + contourStats.CopiedTiles;
+        return OfflineCacheRegionExportResult.Ok(result.MapsRoot, count, count, count, 0, 0, result.Poi);
     }
 
     private static string ResolveMapsExportRoot(string destinationRoot)
@@ -2671,6 +2744,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         Finalizing = 3,
         Completed = 4,
         Failed = 5,
+        LocalRendering = 6,
     }
 
     public readonly record struct OfflineCacheExportProgress(

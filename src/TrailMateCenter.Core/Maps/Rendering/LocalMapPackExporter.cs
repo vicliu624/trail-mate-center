@@ -1,0 +1,145 @@
+using System.Security.Cryptography;
+using System.Text.Json;
+
+namespace TrailMateCenter.Maps.Rendering;
+
+public sealed record LocalMapPackProgress(string Stage, long Completed, long Total, int Zoom = 0, string Layer = "osm");
+public sealed record LocalMapPackResult(string MapsRoot, long TileCount, PoiExportResult Poi, string? PreviousMapsRoot);
+
+/// <summary>Produces a complete text-free map pack before replacing the destination maps directory.</summary>
+public sealed class LocalMapPackExporter
+{
+    public static void Validate(MapPackExportPlan plan)
+    {
+        if (!plan.Poi.EnablePoiSeparation) throw new ArgumentException("Local rendering requires independent POI export.");
+        if (!File.Exists(plan.Poi.PbfPath)) throw new FileNotFoundException("Select a local OSM PBF before building the text-free map.", plan.Poi.PbfPath);
+        if (plan.BaseLayers.IncludeSatellite) throw new ArgumentException("Local PBF rendering cannot produce satellite imagery. Deselect Satellite.");
+        if (plan.Poi.SelectedPoiTypes.Count == 0) throw new ArgumentException("Select at least one POI category.");
+        if (!plan.Poi.GenerateTileIndex) throw new ArgumentException("Enable the tile POI index for an SD map pack.");
+        if (string.IsNullOrWhiteSpace(plan.OutputDirectory)) throw new ArgumentException("Select a map pack output directory.");
+        var b = plan.Area.Bounds;
+        if (!double.IsFinite(b.West) || !double.IsFinite(b.East) || !double.IsFinite(b.North) || !double.IsFinite(b.South) ||
+            b.West >= b.East || b.South >= b.North)
+            throw new ArgumentException("Select a non-empty map area that does not cross the antimeridian.");
+        if (plan.BaseLayers.MinimumZoom < 0 || plan.BaseLayers.MaximumZoom > 18 || plan.BaseLayers.MinimumZoom > plan.BaseLayers.MaximumZoom)
+            throw new ArgumentException("Map zoom levels must be between 0 and 18 in ascending order.");
+        if (plan.BaseLayers.IncludeContours && !plan.BaseLayers.IncludeOsm && !plan.BaseLayers.IncludeTerrain)
+            throw new ArgumentException("Select an OSM or Terrain base layer for a local map pack with contours.");
+        if (plan.BaseLayers.IncludeTerrain && !plan.BaseLayers.IncludeOsm && plan.BaseLayers.MinimumZoom > 17)
+            throw new ArgumentException("Terrain tiles support zoom levels up to 17. Select OSM for zoom 18.");
+        var target = ResolveMapsRoot(plan.OutputDirectory);
+        if (Path.GetFullPath(plan.Poi.PbfPath).StartsWith(target + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
+            throw new ArgumentException("The source PBF must be outside the destination maps directory.");
+    }
+
+    public async Task<LocalMapPackResult> ExportAsync(MapPackExportPlan plan,
+        IProgress<LocalMapPackProgress>? progress = null,
+        Func<string, CancellationToken, Task>? addContours = null,
+        CancellationToken cancellationToken = default)
+    {
+        Validate(plan);
+        if (plan.BaseLayers.IncludeContours && addContours is null)
+            throw new ArgumentException("Contour generation is unavailable.");
+        var target = ResolveMapsRoot(plan.OutputDirectory);
+        var parent = Path.GetDirectoryName(target)!;
+        Directory.CreateDirectory(parent);
+        var work = Path.Combine(parent, $".map-pack-{Guid.NewGuid():N}");
+        var stagedMaps = Path.Combine(work, "maps");
+        Directory.CreateDirectory(stagedMaps);
+        try
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            string sourceHash;
+            await using (var input = File.OpenRead(plan.Poi.PbfPath))
+                sourceHash = Convert.ToHexString(await SHA256.HashDataAsync(input, cancellationToken));
+            var layers = new List<(string Name, bool Terrain, int MaxZoom)>();
+            if (plan.BaseLayers.IncludeOsm) layers.Add(("osm", false, plan.BaseLayers.MaximumZoom));
+            if (plan.BaseLayers.IncludeTerrain) layers.Add(("terrain", true, Math.Min(17, plan.BaseLayers.MaximumZoom)));
+            var total = layers.Sum(l => l.MaxZoom < plan.BaseLayers.MinimumZoom ? 0 :
+                ExportEstimator.CountTiles(plan.Area.Bounds, plan.BaseLayers.MinimumZoom, l.MaxZoom));
+            long completed = 0;
+            if (layers.Count > 0)
+            {
+                await Task.Run(() =>
+                {
+                    using var store = new PbfBasemapStore(Path.Combine(work, "geometry.sqlite"));
+                    store.Import(plan.Poi.PbfPath, (stage, count) => progress?.Report(new(stage, count, 0)), cancellationToken);
+                    var (west, north) = PbfBasemapStore.Project(plan.Area.Bounds.West, plan.Area.Bounds.North);
+                    var (east, south) = PbfBasemapStore.Project(plan.Area.Bounds.East, plan.Area.Bounds.South);
+                    if (!store.Query(new NetTopologySuite.Geometries.Envelope(west, east, north, south), plan.BaseLayers.MaximumZoom).Any())
+                        throw new InvalidDataException("The PBF has no drawable map geometry in the selected area and zoom range.");
+                    foreach (var layer in layers)
+                    for (var z = plan.BaseLayers.MinimumZoom; z <= layer.MaxZoom; z++)
+                    {
+                        var range = TileMath.BoundsToTileRange(plan.Area.Bounds, z);
+                        for (var x = range.MinX; x <= range.MaxX; x++)
+                        for (var y = range.MinY; y <= range.MaxY; y++)
+                        {
+                            cancellationToken.ThrowIfCancellationRequested();
+                            var tile = new TileCoordinate(z, x, y);
+                            PbfTileRenderer.Render(store, tile, layer.Terrain,
+                                Path.Combine(stagedMaps, "base", layer.Name, z.ToString(), x.ToString(), $"{y}.png"), cancellationToken);
+                            completed++;
+                            progress?.Report(new("tiles", completed, total, z, layer.Name));
+                        }
+                    }
+                }, cancellationToken).ConfigureAwait(false);
+            }
+
+            var poi = await new MapPoiExportService().ExportFromPbfAsync(new PoiExportRequest
+            {
+                MapsRoot = stagedMaps, PbfPath = plan.Poi.PbfPath, Bounds = plan.Area.Bounds,
+                BoundaryGeoJson = plan.Area.BoundaryGeoJson, AreaName = plan.Area.Name, AreaAdminLevel = plan.Area.AdminLevel,
+                SourceProvider = plan.Poi.SourceProvider, SourceDownloadUrl = plan.Poi.SourceDownloadUrl,
+                SelectedPoiTypes = plan.Poi.SelectedPoiTypes,
+                IndexOptions = plan.Poi.IndexOptions with
+                {
+                    GenerateFullPoisJsonl = plan.Poi.GenerateFullPoisJsonl,
+                    GenerateTileIndex = plan.Poi.GenerateTileIndex,
+                },
+            }, new Progress<Osm.OsmPoiExtractionProgress>(p => progress?.Report(new("poi", p.ProcessedElements, 0))), cancellationToken).ConfigureAwait(false);
+            if (!poi.Success) throw new InvalidDataException(poi.ErrorMessage);
+            if (plan.BaseLayers.IncludeContours) await addContours!(stagedMaps, cancellationToken).ConfigureAwait(false);
+
+            await File.WriteAllTextAsync(Path.Combine(stagedMaps, "map-pack.json"), JsonSerializer.Serialize(new
+            {
+                version = 1, generator = "TrailMateCenter", style = PbfTileRenderer.StyleVersion,
+                text_in_basemap = false, poi_symbols_in_basemap = false, tile_size = 256,
+                scheme = "web-mercator-xyz", coordinates = "WGS84", source = Path.GetFileName(plan.Poi.PbfPath),
+                source_sha256 = sourceHash, area = plan.Area, base_layers = layers.Select(l => l.Name).ToArray(),
+                min_zoom = plan.BaseLayers.MinimumZoom, max_zoom = plan.BaseLayers.MaximumZoom,
+                attribution = "© OpenStreetMap contributors; ODbL 1.0; https://www.openstreetmap.org/copyright",
+                notes = "Regional PBF geometry only. No text, POI symbols, hillshade or global ocean fill. Coastlines are outlines. Terrain is a land-cover palette; optional contours are separate.",
+            }, new JsonSerializerOptions { WriteIndented = true }), cancellationToken).ConfigureAwait(false);
+
+            // No cancellation once publication begins. Preserve the old pack for recovery.
+            cancellationToken.ThrowIfCancellationRequested();
+            string? backup = null;
+            if (Directory.Exists(target))
+            {
+                backup = target + $".previous-{DateTime.UtcNow:yyyyMMddHHmmss}-{Guid.NewGuid():N}";
+                Directory.Move(target, backup);
+            }
+            try { Directory.Move(stagedMaps, target); }
+            catch
+            {
+                if (backup is not null) Directory.Move(backup, target);
+                throw;
+            }
+            return new LocalMapPackResult(target, completed, poi with { PoiRoot = Path.Combine(target, "poi") }, backup);
+        }
+        finally
+        {
+            // This unique directory is owned exclusively by this export operation.
+            try { if (Directory.Exists(work)) Directory.Delete(work, recursive: true); }
+            catch (IOException) { /* Leave only this export's staging directory for later cleanup. */ }
+            catch (UnauthorizedAccessException) { /* A cleanup error must not disguise the export outcome. */ }
+        }
+    }
+
+    private static string ResolveMapsRoot(string output)
+    {
+        var full = Path.GetFullPath(output).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+        return string.Equals(Path.GetFileName(full), "maps", StringComparison.OrdinalIgnoreCase) ? full : Path.Combine(full, "maps");
+    }
+}

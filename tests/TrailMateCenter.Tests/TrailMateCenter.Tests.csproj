@@ -18,6 +18,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\\..\\src\\TrailMateCenter.Core\\TrailMateCenter.Core.csproj" />
+    <ProjectReference Include="..\\..\\src\\TrailMateCenter.App\\TrailMateCenter.App.csproj" />
   </ItemGroup>
 
   <ItemGroup>
