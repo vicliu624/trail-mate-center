@@ -122,7 +122,9 @@ public sealed class LocalMapPackTests : IDisposable
             BaseLayers = new MapPackBaseLayerSelection { IncludeOsm = true, MinimumZoom = Tile.Z, MaximumZoom = Tile.Z },
             Poi = new MapPackPoiSelection
             {
-                EnablePoiSeparation = true, PbfPath = pbf, SelectedPoiTypes = ["water"],
+                EnablePoiSeparation = true,
+                PbfPath = pbf,
+                SelectedPoiTypes = ["water"],
                 IndexOptions = new PoiIndexOptions { MinZoom = Tile.Z, MaxZoom = Tile.Z },
             },
         };
@@ -130,7 +132,68 @@ public sealed class LocalMapPackTests : IDisposable
 
     private static string TilePath(string maps) => Path.Combine(maps, "base", "osm", Tile.Z.ToString(), Tile.X.ToString(), $"{Tile.Y}.png");
 
-    private static void WriteFixture(string path, string label)
+    [Fact]
+    public async Task TouchingInnerRings_AreNodedAndBothHolesRemainVisible()
+    {
+        var plan = Plan("touching-holes", "Water");
+        WriteFixture(plan.Poi.PbfPath, "Water", touchingHoles: true);
+        var result = await new LocalMapPackExporter().ExportAsync(plan);
+        using var bitmap = SKBitmap.Decode(TilePath(result.MapsRoot));
+        var background = bitmap.GetPixel(5, 5);
+        Assert.Equal(background, bitmap.GetPixel(80, 175));
+        Assert.Equal(background, bitmap.GetPixel(80, 152));
+        Assert.Equal(SKColor.Parse("#91c9e5"), bitmap.GetPixel(40, 140));
+    }
+
+    [Fact]
+    public async Task TrulyOpenInnerRing_StillFailsWithoutPublishing()
+    {
+        var plan = Plan("open-hole", "Water");
+        WriteFixture(plan.Poi.PbfPath, "Water", openHole: true);
+        var error = await Assert.ThrowsAsync<InvalidDataException>(() => new LocalMapPackExporter().ExportAsync(plan));
+        Assert.Contains("incomplete polygon rings", error.Message);
+        Assert.False(Directory.Exists(Path.Combine(plan.OutputDirectory, "maps")));
+    }
+
+    [Fact]
+    public async Task ClosedRetracedOuter_PreservesBothAreasWithoutFillingTheConnector()
+    {
+        var plan = Plan("retraced-outer", "Water");
+        WriteFixture(plan.Poi.PbfPath, "Water", retracedOuter: true);
+        var result = await new LocalMapPackExporter().ExportAsync(plan);
+        using var bitmap = SKBitmap.Decode(TilePath(result.MapsRoot));
+        Assert.Equal(SKColor.Parse("#91c9e5"), bitmap.GetPixel(40, 140));
+        Assert.Equal(SKColor.Parse("#91c9e5"), bitmap.GetPixel(200, 175));
+        Assert.Equal(bitmap.GetPixel(5, 5), bitmap.GetPixel(170, 175));
+        Assert.Equal(bitmap.GetPixel(5, 5), bitmap.GetPixel(80, 175));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task InvalidRelationOutsideRequestedArea_IsReportedWithoutBlockingValidMap(bool missingOuter)
+    {
+        var plan = Plan("outside-source-issue", "Water");
+        WriteFixture(plan.Poi.PbfPath, "Water", openHole: !missingOuter, relationOutsideArea: true, missingOuter: missingOuter);
+        var result = await new LocalMapPackExporter().ExportAsync(plan);
+        using var report = JsonDocument.Parse(await File.ReadAllTextAsync(Path.Combine(result.MapsRoot, "source-geometry-warnings.json")));
+        Assert.Equal(1, report.RootElement.GetProperty("ignored_invalid_relations_outside_requested_area").GetInt32());
+        Assert.Equal(200, report.RootElement.GetProperty("examples")[0].GetProperty("RelationId").GetInt32());
+        using var bitmap = SKBitmap.Decode(TilePath(result.MapsRoot));
+        Assert.NotEqual(bitmap.GetPixel(5, 5), bitmap.GetPixel(128, 80));
+    }
+
+    [Fact]
+    public async Task MissingOuterInsideRequestedArea_StillFails()
+    {
+        var plan = Plan("missing-outer-inside", "Water");
+        WriteFixture(plan.Poi.PbfPath, "Water", missingOuter: true);
+        var error = await Assert.ThrowsAsync<InvalidDataException>(() => new LocalMapPackExporter().ExportAsync(plan));
+        Assert.Contains("no outer polygon area", error.Message);
+        Assert.False(Directory.Exists(Path.Combine(plan.OutputDirectory, "maps")));
+    }
+
+    private static void WriteFixture(string path, string label, bool touchingHoles = false, bool openHole = false, bool retracedOuter = false, bool relationOutsideArea = false, bool missingOuter = false)
     {
         using var output = File.Create(path);
         var target = new PBFOsmStreamTarget(output, true);
@@ -138,7 +201,8 @@ public sealed class LocalMapPackTests : IDisposable
         var pixels = new (double X, double Y)[]
         {
             (-20,80), (276,80), (30,130), (150,130), (150,225), (30,225),
-            (60,160), (100,160), (100,190), (60,190), (200,50),
+            (60,160), (100,160), (100,190), (60,190), (200,50), (100,145), (60,145),
+            (190,130), (230,130), (230,225), (190,225),
         };
         for (var i = 0; i < pixels.Length; i++)
         {
@@ -146,20 +210,44 @@ public sealed class LocalMapPackTests : IDisposable
             var y = (Tile.Y + pixels[i].Y / 256) / (1 << Tile.Z);
             target.AddNode(new Node
             {
-                Id = i + 1, Longitude = x * 360 - 180,
-                Latitude = Math.Atan(Math.Sinh(Math.PI * (1 - 2 * y))) * 180 / Math.PI,
-                Version = 1, Visible = true, ChangeSetId = 1, UserId = 1, UserName = "fixture", TimeStamp = new DateTime(2020, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                Id = i + 1,
+                Longitude = x * 360 - 180,
+                Latitude = Math.Atan(Math.Sinh(Math.PI * (1 - 2 * y))) * 180 / Math.PI + (relationOutsideArea && i >= 2 && i != 10 ? 1 : 0),
+                Version = 1,
+                Visible = true,
+                ChangeSetId = 1,
+                UserId = 1,
+                UserName = "fixture",
+                TimeStamp = new DateTime(2020, 1, 1, 0, 0, 0, DateTimeKind.Utc),
                 Tags = i == 10 ? new TagsCollection(new Tag("amenity", "drinking_water"), new Tag("name", label)) : new TagsCollection(),
             });
         }
-        target.AddWay(new Way { Id = 100, Nodes = [1,2], Version = 1, Tags = new TagsCollection(new Tag("highway", "primary"), new Tag("name", label)) });
-        target.AddWay(new Way { Id = 101, Nodes = [3,4,5,6,3], Version = 1, Tags = new TagsCollection(new Tag("natural", "water")) });
-        target.AddWay(new Way { Id = 102, Nodes = [7,8,9,10,7], Version = 1, Tags = new TagsCollection() });
+        target.AddWay(new Way { Id = 100, Nodes = [1, 2], Version = 1, Tags = new TagsCollection(new Tag("highway", "primary"), new Tag("name", label)) });
+        target.AddWay(new Way { Id = 101, Nodes = retracedOuter ? [3, 4, 5, 6, 3, 14] : [3, 4, 5, 6, 3], Version = 1, Tags = new TagsCollection(new Tag("natural", "water")) });
+        target.AddWay(new Way { Id = 102, Nodes = openHole ? [7, 8, 9, 10] : [7, 8, 9, 10, 7], Version = 1, Tags = new TagsCollection() });
+        var members = new List<RelationMember>
+        {
+            new() { Id = 101, Type = OsmGeoType.Way, Role = "outer" },
+            new() { Id = 102, Type = OsmGeoType.Way, Role = "inner" },
+        };
+        if (touchingHoles)
+        {
+            // Closed rings share the first node and an entire edge, as in OSM relation 15689579.
+            target.AddWay(new Way { Id = 103, Nodes = [7, 8, 12, 13, 7], Version = 1, Tags = new TagsCollection() });
+            members.Add(new RelationMember { Id = 103, Type = OsmGeoType.Way, Role = "inner" });
+        }
+        if (retracedOuter)
+        {
+            target.AddWay(new Way { Id = 104, Nodes = [14, 15, 16, 17, 14, 3], Version = 1, Tags = new TagsCollection() });
+            members.Add(new RelationMember { Id = 104, Type = OsmGeoType.Way, Role = "outer" });
+        }
+        if (missingOuter) members.RemoveAll(member => member.Role == "outer");
         target.AddRelation(new Relation
         {
-            Id = 200, Version = 1,
+            Id = 200,
+            Version = 1,
             Tags = new TagsCollection(new Tag("type", "multipolygon"), new Tag("natural", "water"), new Tag("name", label)),
-            Members = [new RelationMember { Id = 101, Type = OsmGeoType.Way, Role = "outer" }, new RelationMember { Id = 102, Type = OsmGeoType.Way, Role = "inner" }],
+            Members = members.ToArray(),
         });
         target.Flush();
         target.Close();

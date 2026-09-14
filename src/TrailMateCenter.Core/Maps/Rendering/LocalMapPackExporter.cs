@@ -58,12 +58,16 @@ public sealed class LocalMapPackExporter
             var total = layers.Sum(l => l.MaxZoom < plan.BaseLayers.MinimumZoom ? 0 :
                 ExportEstimator.CountTiles(plan.Area.Bounds, plan.BaseLayers.MinimumZoom, l.MaxZoom));
             long completed = 0;
+            var sourceIssueCount = 0;
+            BasemapSourceIssue[] sourceIssues = [];
             if (layers.Count > 0)
             {
                 await Task.Run(() =>
                 {
                     using var store = new PbfBasemapStore(Path.Combine(work, "geometry.sqlite"));
-                    store.Import(plan.Poi.PbfPath, (stage, count) => progress?.Report(new(stage, count, 0)), cancellationToken);
+                    store.Import(plan.Poi.PbfPath, (stage, count) => progress?.Report(new(stage, count, 0)), cancellationToken, plan.Area.Bounds);
+                    sourceIssueCount = store.SourceIssueCount;
+                    sourceIssues = store.SourceIssues.ToArray();
                     var (west, north) = PbfBasemapStore.Project(plan.Area.Bounds.West, plan.Area.Bounds.North);
                     var (east, south) = PbfBasemapStore.Project(plan.Area.Bounds.East, plan.Area.Bounds.South);
                     if (!store.Query(new NetTopologySuite.Geometries.Envelope(west, east, north, south), plan.BaseLayers.MaximumZoom).Any())
@@ -101,6 +105,16 @@ public sealed class LocalMapPackExporter
             if (!poi.Success) throw new InvalidDataException(poi.ErrorMessage);
             if (plan.BaseLayers.IncludeContours) await addContours!(stagedMaps, cancellationToken).ConfigureAwait(false);
 
+            var sourceDiagnostics = new
+            {
+                ignored_invalid_relations_outside_requested_area = sourceIssueCount,
+                examples = sourceIssues,
+                examples_truncated = sourceIssueCount > sourceIssues.Length,
+            };
+            if (sourceIssueCount > 0)
+                await File.WriteAllTextAsync(Path.Combine(stagedMaps, "source-geometry-warnings.json"),
+                    JsonSerializer.Serialize(sourceDiagnostics, new JsonSerializerOptions { WriteIndented = true }), cancellationToken).ConfigureAwait(false);
+
             await File.WriteAllTextAsync(Path.Combine(stagedMaps, "map-pack.json"), JsonSerializer.Serialize(new
             {
                 version = 1, generator = "TrailMateCenter", style = PbfTileRenderer.StyleVersion,
@@ -108,6 +122,7 @@ public sealed class LocalMapPackExporter
                 scheme = "web-mercator-xyz", coordinates = "WGS84", source = Path.GetFileName(plan.Poi.PbfPath),
                 source_sha256 = sourceHash, area = plan.Area, base_layers = layers.Select(l => l.Name).ToArray(),
                 min_zoom = plan.BaseLayers.MinimumZoom, max_zoom = plan.BaseLayers.MaximumZoom,
+                source_diagnostics = sourceDiagnostics,
                 attribution = "© OpenStreetMap contributors; ODbL 1.0; https://www.openstreetmap.org/copyright",
                 notes = "Regional PBF geometry only. No text, POI symbols, hillshade or global ocean fill. Coastlines are outlines. Terrain is a land-cover palette; optional contours are separate.",
             }, new JsonSerializerOptions { WriteIndented = true }), cancellationToken).ConfigureAwait(false);

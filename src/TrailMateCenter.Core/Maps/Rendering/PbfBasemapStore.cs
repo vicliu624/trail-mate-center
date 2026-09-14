@@ -2,10 +2,13 @@ using Microsoft.Data.Sqlite;
 using NetTopologySuite.Geometries;
 using NetTopologySuite.IO;
 using NetTopologySuite.Operation.Polygonize;
+using NetTopologySuite.Operation.Union;
 using OsmSharp;
 using OsmSharp.Streams;
 
 namespace TrailMateCenter.Maps.Rendering;
+
+internal sealed record BasemapSourceIssue(long? RelationId, string Reason, GeoBounds KnownMemberBounds);
 
 /// <summary>Disk-backed geometry staging. No labels or point symbols enter this store.</summary>
 internal sealed class PbfBasemapStore : IDisposable
@@ -15,6 +18,9 @@ internal sealed class PbfBasemapStore : IDisposable
     private readonly WKBWriter _writer = new();
     private readonly WKBReader _reader = new();
     private long _featureId;
+    private readonly List<BasemapSourceIssue> _sourceIssues = new();
+    public IReadOnlyList<BasemapSourceIssue> SourceIssues => _sourceIssues;
+    public int SourceIssueCount { get; private set; }
 
     public PbfBasemapStore(string path)
     {
@@ -34,8 +40,15 @@ internal sealed class PbfBasemapStore : IDisposable
         command.ExecuteNonQuery();
     }
 
-    public void Import(string pbfPath, Action<string, long>? progress, CancellationToken token)
+    public void Import(string pbfPath, Action<string, long>? progress, CancellationToken token, GeoBounds? requiredArea = null)
     {
+        Envelope? requiredEnvelope = null;
+        if (requiredArea is { } area)
+        {
+            var (left, top) = Project(area.West, area.North);
+            var (right, bottom) = Project(area.East, area.South);
+            requiredEnvelope = new Envelope(left, right, top, bottom);
+        }
         // Separate scans also support PBFs whose elements aren't node/way/relation ordered.
         Scan(pbfPath, "nodes", geo =>
         {
@@ -80,8 +93,9 @@ internal sealed class PbfBasemapStore : IDisposable
             if (geo is not Relation { Members: not null } relation || Tag(relation, "type") != "multipolygon") return;
             var kind = Classify(relation);
             if (kind is null || !IsArea(kind)) return;
-            var outer = new Polygonizer();
-            var inner = new Polygonizer();
+            var outerLines = new List<Geometry>();
+            var innerLines = new List<Geometry>();
+            string? missingMember = null;
             foreach (var member in relation.Members)
             {
                 token.ThrowIfCancellationRequested();
@@ -91,14 +105,30 @@ internal sealed class PbfBasemapStore : IDisposable
                 command.Parameters.AddWithValue("$id", member.Id);
                 var bytes = command.ExecuteScalar() as byte[];
                 if (bytes is null)
-                    throw new InvalidDataException($"PBF relation {relation.Id} has a missing way {member.Id}.");
-                (member.Role == "inner" ? inner : outer).Add(_reader.Read(bytes));
+                {
+                    missingMember = $"PBF relation {relation.Id} has a missing way {member.Id}.";
+                    continue;
+                }
+                (member.Role == "inner" ? innerLines : outerLines).Add(_reader.Read(bytes));
             }
-            if (outer.GetDangles().Count > 0 || outer.GetCutEdges().Count > 0 ||
-                inner.GetDangles().Count > 0 || inner.GetCutEdges().Count > 0)
+            var memberEnvelope = new Envelope();
+            foreach (var line in outerLines.Concat(innerLines)) memberEnvelope.ExpandToInclude(line.EnvelopeInternal);
+            try
+            {
+            if (missingMember is not null) throw new InvalidDataException(missingMember);
+            // Check source closure before dissolving retraced edges. A closed
+            // boundary can leave non-area cut edges after noding (e.g. two
+            // forest lobes joined by a segment traversed in both directions).
+            // Those are not evidence of missing source geometry.
+            if (!HasClosedLinework(outerLines) || !HasClosedLinework(innerLines))
                 throw new InvalidDataException($"PBF relation {relation.Id} has incomplete polygon rings.");
+            var outer = PolygonizeRings(outerLines);
+            var inner = PolygonizeRings(innerLines);
+            if (outer.GetInvalidRingLines().Count > 0 || inner.GetInvalidRingLines().Count > 0)
+                throw new InvalidDataException($"PBF relation {relation.Id} has invalid polygon rings after noding.");
             var shells = outer.GetPolygons().Cast<Geometry>().ToArray();
-            if (shells.Length == 0) return;
+            if (shells.Length == 0)
+                throw new InvalidDataException($"PBF relation {relation.Id} has no outer polygon area.");
             var geometry = _factory.BuildGeometry(shells).Union();
             var holes = inner.GetPolygons().Cast<Geometry>().ToArray();
             if (holes.Length > 0) geometry = geometry.Difference(_factory.BuildGeometry(holes).Union());
@@ -110,6 +140,23 @@ internal sealed class PbfBasemapStore : IDisposable
                 Execute("DELETE FROM features WHERE way_id=$way AND kind=$kind", ("$way", member.Id), ("$kind", kind));
             }
             AddFeature(kind, geometry);
+            }
+            catch (Exception ex) when (ex is InvalidDataException or TopologyException)
+            {
+                // A regional PBF includes unrelated areas. Only geometries whose
+                // known, complete members are disjoint from the requested area
+                // may be omitted. Unknown extents and missing members still fail.
+                if (requiredEnvelope is null || memberEnvelope.IsNull || missingMember is not null || memberEnvelope.Intersects(requiredEnvelope))
+                    throw;
+                SourceIssueCount++;
+                if (_sourceIssues.Count < 100)
+                {
+                    static double Latitude(double y) => Math.Atan(Math.Sinh(Math.PI * (1 - 2 * y))) * 180 / Math.PI;
+                    _sourceIssues.Add(new BasemapSourceIssue(relation.Id, ex.Message,
+                        new GeoBounds(memberEnvelope.MinX * 360 - 180, Latitude(memberEnvelope.MaxY),
+                            memberEnvelope.MaxX * 360 - 180, Latitude(memberEnvelope.MinY))));
+                }
+            }
         }, progress, token);
     }
 
@@ -128,6 +175,37 @@ internal sealed class PbfBasemapStore : IDisposable
         command.Parameters.AddWithValue("$zoom", zoom);
         using var rows = command.ExecuteReader();
         while (rows.Read()) yield return (rows.GetString(0), _reader.Read((byte[])rows[1]));
+    }
+
+    private static bool HasClosedLinework(IReadOnlyCollection<Geometry> lines)
+    {
+        // Every endpoint must have even degree for the source ways to form
+        // closed walks. This accepts split ways and touching closed rings, but
+        // never snaps endpoints or supplies a missing closing segment.
+        var unmatched = new HashSet<(double X, double Y)>();
+        foreach (var geometry in lines)
+        {
+            if (geometry is not LineString line || line.NumPoints < 2) return false;
+            var first = line.GetCoordinateN(0);
+            var last = line.GetCoordinateN(line.NumPoints - 1);
+            if (!unmatched.Add((first.X, first.Y))) unmatched.Remove((first.X, first.Y));
+            if (!unmatched.Add((last.X, last.Y))) unmatched.Remove((last.X, last.Y));
+        }
+        return unmatched.Count == 0;
+    }
+
+    private static Polygonizer PolygonizeRings(IReadOnlyCollection<Geometry> lines)
+    {
+        var polygonizer = new Polygonizer();
+        if (lines.Count > 0)
+        {
+            // OSM ways can share vertices and coincident edges inside a LineString.
+            // Polygonizer requires noded linework (edges meet only at endpoints).
+            // UnaryUnion splits at intersections and dissolves duplicate segments,
+            // without snapping coordinates or inventing closures for open rings.
+            polygonizer.Add(UnaryUnionOp.Union(lines));
+        }
+        return polygonizer;
     }
 
     public static (double X, double Y) Project(double longitude, double latitude)
