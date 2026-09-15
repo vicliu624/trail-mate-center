@@ -19,6 +19,7 @@ internal sealed class PbfBasemapStore : IDisposable
     private readonly WKBReader _reader = new();
     private long _featureId;
     private long _labelId;
+    private long _annotationId;
     private readonly List<BasemapSourceIssue> _sourceIssues = new();
     public IReadOnlyList<BasemapSourceIssue> SourceIssues => _sourceIssues;
     public int SourceIssueCount { get; private set; }
@@ -39,11 +40,13 @@ internal sealed class PbfBasemapStore : IDisposable
             CREATE VIRTUAL TABLE feature_bounds USING rtree(id,minx,maxx,miny,maxy);
             CREATE TABLE labels(id INTEGER PRIMARY KEY, name TEXT NOT NULL, x REAL NOT NULL, y REAL NOT NULL, minzoom INTEGER NOT NULL, priority INTEGER NOT NULL);
             CREATE VIRTUAL TABLE label_bounds USING rtree(id,minx,maxx,miny,maxy);
+            CREATE TABLE annotation_features(id INTEGER PRIMARY KEY, feature_id TEXT NOT NULL, kind INTEGER NOT NULL, category TEXT NOT NULL, name TEXT NOT NULL, ref TEXT, geometry BLOB NOT NULL, minzoom INTEGER NOT NULL, priority INTEGER NOT NULL);
+            CREATE VIRTUAL TABLE annotation_bounds USING rtree(id,minx,maxx,miny,maxy);
             """;
         command.ExecuteNonQuery();
     }
 
-    public void Import(string pbfPath, Action<string, long>? progress, CancellationToken token, GeoBounds? requiredArea = null)
+    public void Import(string pbfPath, Action<string, long>? progress, CancellationToken token, GeoBounds? requiredArea = null, bool includeAnnotations = false)
     {
         Envelope? requiredEnvelope = null;
         if (requiredArea is { } area)
@@ -58,7 +61,9 @@ internal sealed class PbfBasemapStore : IDisposable
             if (geo is not Node { Id: not null, Latitude: not null, Longitude: not null } n) return;
             var (x, y) = Project(n.Longitude.Value, n.Latitude.Value);
             Execute("INSERT OR REPLACE INTO nodes VALUES($id,$x,$y)", ("$id", n.Id.GetValueOrDefault()), ("$x", x), ("$y", y));
-            AddLabel(n, _factory.CreatePoint(new Coordinate(x, y)), requiredEnvelope);
+            var point = _factory.CreatePoint(new Coordinate(x, y));
+            AddLabel(n, point, requiredEnvelope);
+            if (includeAnnotations) AddAnnotationFeature(n, point, requiredEnvelope);
         }, progress, token);
 
         Scan(pbfPath, "ways", geo =>
@@ -81,7 +86,11 @@ internal sealed class PbfBasemapStore : IDisposable
             var line = _factory.CreateLineString(coordinates);
             Execute("INSERT OR REPLACE INTO ways VALUES($id,$g)", ("$id", way.Id.GetValueOrDefault()), ("$g", _writer.Write(line)));
             var kind = Classify(way);
-            if (kind is null) return;
+            if (kind is null)
+            {
+                if (includeAnnotations) AddAnnotationFeature(way, line, requiredEnvelope);
+                return;
+            }
             Geometry geometry = line;
             if (IsArea(kind))
             {
@@ -91,6 +100,7 @@ internal sealed class PbfBasemapStore : IDisposable
             }
             AddFeature(kind, geometry, way.Id);
             AddLabel(way, geometry, requiredEnvelope);
+            if (includeAnnotations) AddAnnotationFeature(way, geometry, requiredEnvelope);
         }, progress, token);
 
         Scan(pbfPath, "relations", geo =>
@@ -146,6 +156,7 @@ internal sealed class PbfBasemapStore : IDisposable
             }
             AddFeature(kind, geometry);
             AddLabel(relation, geometry, requiredEnvelope);
+            if (includeAnnotations) AddAnnotationFeature(relation, geometry, requiredEnvelope);
             }
             catch (Exception ex) when (ex is InvalidDataException or TopologyException)
             {
@@ -234,6 +245,59 @@ internal sealed class PbfBasemapStore : IDisposable
         Execute("INSERT INTO labels VALUES($id,$name,$x,$y,$z,$priority)",
             ("$id", id), ("$name", name), ("$x", anchor.X), ("$y", anchor.Y), ("$z", minZoom), ("$priority", priority));
         Execute("INSERT INTO label_bounds VALUES($id,$x,$x,$y,$y)", ("$id", id), ("$x", anchor.X), ("$y", anchor.Y));
+    }
+
+    private void AddAnnotationFeature(OsmGeo source, Geometry geometry, Envelope? requestedArea)
+    {
+        if (source.Id is null || geometry.IsEmpty) return;
+        var bounds = geometry.EnvelopeInternal;
+        var focus = geometry is Point && requestedArea?.Contains(geometry.Coordinate) == true;
+        // Mercator envelope area is only used for cartographic salience, not a
+        // measurement shown to the user. The latitude correction avoids polar inflation.
+        var y = (bounds.MinY + bounds.MaxY) / 2;
+        var cosLatitude = 1 / Math.Cosh(Math.PI * (1 - 2 * y));
+        var metres = 40075016.68557849 * cosLatitude;
+        var largeArea = PbfBasemapStore.IsArea(Classify(source) ?? "") && bounds.Area * metres * metres >= 100_000_000;
+        var classification = Osm.OsmAnnotationClassifier.Classify(source.Tags, focus, largeArea);
+        if (classification is null) return;
+        if (requestedArea is not null && !bounds.Intersects(requestedArea) && classification.Rule.MinimumZoom > 8) return;
+        if (classification.Rule.Kind != MapAnnotationKind.Road && geometry is LineString { IsClosed: true, NumPoints: >= 4 } ring)
+        {
+            geometry = _factory.CreatePolygon(ring.Coordinates);
+            if (!geometry.IsValid) geometry = geometry.Buffer(0);
+            if (geometry.IsEmpty) return;
+        }
+        var id = ++_annotationId;
+        var featureId = $"{source.Type.ToString().ToLowerInvariant()}/{source.Id.Value}";
+        Execute("INSERT INTO annotation_features VALUES($id,$feature,$kind,$category,$name,$ref,$g,$z,$priority)",
+            ("$id", id), ("$feature", featureId), ("$kind", (int)classification.Rule.Kind), ("$category", classification.Rule.Category),
+            ("$name", classification.Name), ("$ref", (object?)classification.Reference ?? DBNull.Value), ("$g", _writer.Write(geometry)),
+            ("$z", classification.Rule.MinimumZoom), ("$priority", classification.Rule.Priority));
+        Execute("INSERT INTO annotation_bounds VALUES($id,$a,$b,$c,$d)", ("$id", id),
+            ("$a", bounds.MinX), ("$b", bounds.MaxX), ("$c", bounds.MinY), ("$d", bounds.MaxY));
+    }
+
+    public IEnumerable<MapAnnotationFeature> QueryAnnotations(Envelope bounds, int zoom)
+    {
+        using var command = _db.CreateCommand();
+        command.CommandText = """
+            SELECT a.feature_id,a.kind,a.category,a.name,a.ref,a.geometry
+            FROM annotation_bounds b JOIN annotation_features a ON a.id=b.id
+            WHERE b.maxx >= $left AND b.minx <= $right AND b.maxy >= $top AND b.miny <= $bottom
+                AND a.minzoom <= $zoom ORDER BY a.priority DESC,a.feature_id
+            """;
+        command.Parameters.AddWithValue("$left", bounds.MinX);
+        command.Parameters.AddWithValue("$right", bounds.MaxX);
+        command.Parameters.AddWithValue("$top", bounds.MinY);
+        command.Parameters.AddWithValue("$bottom", bounds.MaxY);
+        command.Parameters.AddWithValue("$zoom", zoom);
+        using var rows = command.ExecuteReader();
+        while (rows.Read())
+        {
+            var rule = MapAnnotationPolicy.Find((MapAnnotationKind)rows.GetInt32(1), rows.GetString(2))
+                ?? throw new InvalidDataException("Unknown staged annotation class.");
+            yield return new(rows.GetString(0), rule, rows.GetString(3), rows.IsDBNull(4) ? null : rows.GetString(4), _reader.Read((byte[])rows[5]));
+        }
     }
 
     private static bool HasClosedLinework(IReadOnlyCollection<Geometry> lines)

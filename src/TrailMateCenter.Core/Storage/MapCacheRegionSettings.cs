@@ -18,6 +18,7 @@ public sealed record MapCacheRegionSettings
     public int MinimumZoom { get; init; } = 0;
     public int MaximumZoom { get; init; } = 18;
     public bool EnablePoiSeparation { get; init; }
+    public Maps.MapAnnotationOptions? Annotations { get; init; }
     public string PoiPbfPath { get; init; } = string.Empty;
     public string PoiSourceProvider { get; init; } = "local";
     public string PoiSourceDownloadUrl { get; init; } = string.Empty;

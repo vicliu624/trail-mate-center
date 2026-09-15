@@ -64,6 +64,7 @@ public sealed record OfflineCacheBuildOptions
     public int MinimumZoom { get; init; } = DefaultMinimumZoom;
     public int MaximumZoom { get; init; } = DefaultMaximumZoom;
     public bool EnablePoiSeparation { get; init; }
+    public MapAnnotationOptions? Annotations { get; init; }
     public string PoiPbfPath { get; init; } = string.Empty;
     public bool GenerateFullPoisJsonl { get; init; } = true;
     public bool GenerateTileIndexedPoiFiles { get; init; } = true;
@@ -78,8 +79,9 @@ public sealed record OfflineCacheBuildOptions
 
     public OfflineCacheBuildOptions Normalize()
     {
-        var minZoom = Math.Clamp(MinimumZoom, DefaultMinimumZoom, DefaultMaximumZoom);
-        var maxZoom = Math.Clamp(MaximumZoom, DefaultMinimumZoom, DefaultMaximumZoom);
+        var floorZoom = Annotations is null ? DefaultMinimumZoom : 1;
+        var minZoom = Math.Clamp(MinimumZoom, floorZoom, DefaultMaximumZoom);
+        var maxZoom = Math.Clamp(MaximumZoom, floorZoom, DefaultMaximumZoom);
         if (maxZoom < minZoom)
         {
             (minZoom, maxZoom) = (maxZoom, minZoom);

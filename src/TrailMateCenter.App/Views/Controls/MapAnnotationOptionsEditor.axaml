@@ -1,0 +1,30 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="clr-namespace:TrailMateCenter.ViewModels"
+             xmlns:maps="clr-namespace:TrailMateCenter.Maps;assembly=TrailMateCenter.Core"
+             x:Class="TrailMateCenter.Views.Controls.MapAnnotationOptionsEditor"
+             x:DataType="vm:MapAnnotationOptionsViewModel">
+  <StackPanel Spacing="8">
+    <CheckBox Content="{DynamicResource Ui.MapPack.Annotations.Enabled}" IsChecked="{Binding Enabled}"/>
+    <TextBlock Text="{DynamicResource Ui.MapPack.Annotations.Hint}" TextWrapping="Wrap"/>
+    <StackPanel IsEnabled="{Binding Enabled}" Spacing="8">
+      <ComboBox SelectedValue="{Binding Preset}" SelectedValueBinding="{ReflectionBinding Tag}" HorizontalAlignment="Stretch">
+        <ComboBoxItem Content="{DynamicResource Ui.MapPack.Annotations.Outdoor}" Tag="{x:Static maps:MapAnnotationPreset.Outdoor}"/>
+        <ComboBoxItem Content="{DynamicResource Ui.MapPack.Annotations.Urban}" Tag="{x:Static maps:MapAnnotationPreset.Urban}"/>
+      </ComboBox>
+      <Grid ColumnDefinitions="*,90,90" RowDefinitions="Auto,Auto,Auto,Auto" ColumnSpacing="8" RowSpacing="6">
+        <TextBlock Grid.Column="1" Text="{DynamicResource Ui.MapPack.Annotations.Minimum}"/>
+        <TextBlock Grid.Column="2" Text="{DynamicResource Ui.MapPack.Annotations.Maximum}"/>
+        <CheckBox Grid.Row="1" Content="{DynamicResource Ui.MapPack.Annotations.Places}" IsChecked="{Binding PlacesEnabled}"/>
+        <ComboBox Grid.Row="1" Grid.Column="1" ItemsSource="{Binding ZoomLevels}" SelectedItem="{Binding PlaceMinimumZoom}"/>
+        <ComboBox Grid.Row="1" Grid.Column="2" ItemsSource="{Binding ZoomLevels}" SelectedItem="{Binding PlaceMaximumZoom}"/>
+        <CheckBox Grid.Row="2" Content="{DynamicResource Ui.MapPack.Annotations.Roads}" IsChecked="{Binding RoadsEnabled}"/>
+        <ComboBox Grid.Row="2" Grid.Column="1" ItemsSource="{Binding ZoomLevels}" SelectedItem="{Binding RoadMinimumZoom}"/>
+        <ComboBox Grid.Row="2" Grid.Column="2" ItemsSource="{Binding ZoomLevels}" SelectedItem="{Binding RoadMaximumZoom}"/>
+        <CheckBox Grid.Row="3" Content="{DynamicResource Ui.MapPack.Annotations.Pois}" IsChecked="{Binding PoisEnabled}"/>
+        <ComboBox Grid.Row="3" Grid.Column="1" ItemsSource="{Binding ZoomLevels}" SelectedItem="{Binding PoiMinimumZoom}"/>
+        <ComboBox Grid.Row="3" Grid.Column="2" ItemsSource="{Binding ZoomLevels}" SelectedItem="{Binding PoiMaximumZoom}"/>
+      </Grid>
+    </StackPanel>
+  </StackPanel>
+</UserControl>

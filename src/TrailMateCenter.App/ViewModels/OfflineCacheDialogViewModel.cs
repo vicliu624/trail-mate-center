@@ -162,6 +162,7 @@ public sealed partial class OfflineCacheDialogViewModel : ObservableObject
     {
         PoiZooms.SetBounds(MinimumZoom, MaximumZoom);
         PoiZooms.SelectionChanged += OnSelectionChanged;
+        AnnotationOptions.Changed += OnSelectionChanged;
         foreach (var definition in PoiTypeCatalog.DefaultTypes)
         {
             var option = PoiTypeCatalog.CreateOption(definition);
@@ -181,11 +182,13 @@ public sealed partial class OfflineCacheDialogViewModel : ObservableObject
         [PoiOutputFormat.Readable, PoiOutputFormat.Compact];
     public List<PoiTypeOptionViewModel> PoiTypes { get; } = new();
     public PoiZoomSelectionViewModel PoiZooms { get; } = new();
+    public MapAnnotationOptionsViewModel AnnotationOptions { get; } = new();
 
     public OfflineCacheBuildOptions ToBuildOptions()
     {
         return new OfflineCacheBuildOptions
         {
+            Annotations = AnnotationOptions.ToOptions(),
             IncludeOsm = IncludeOsm,
             IncludeTerrain = IncludeTerrain,
             IncludeSatellite = IncludeSatellite,

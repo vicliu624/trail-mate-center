@@ -730,6 +730,7 @@ public partial class DashboardView : UserControl
             };
             dialogVm.PoiZooms.SetBounds(defaults.MinimumZoom, defaults.MaximumZoom);
             dialogVm.PoiZooms.LoadSelection(defaults.PoiEnabledZoomLevels, defaults.PoiIndexMinimumZoom, defaults.PoiIndexMaximumZoom);
+            dialogVm.AnnotationOptions.Load(defaults.Annotations);
             foreach (var option in dialogVm.PoiTypes)
             {
                 option.IsSelected = defaults.SelectedPoiTypes.Contains(option.Id, StringComparer.OrdinalIgnoreCase);

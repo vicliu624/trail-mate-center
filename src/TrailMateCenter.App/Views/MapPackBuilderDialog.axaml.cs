@@ -120,18 +120,20 @@ public partial class MapPackBuilderDialog : Window
         {
             ViewModel.ApplyManualBounds();
             var plan = ViewModel.BuildPlan();
-            if (plan.Poi.EnablePoiSeparation)
+            var localRendering = plan.Annotations is not null || plan.Poi.EnablePoiSeparation;
+            if (localRendering)
                 TrailMateCenter.Maps.Rendering.LocalMapPackExporter.Validate(plan);
             exportTaskRegion = await _ownerViewModel.RegisterMapPackExportTaskAsync(plan, cancellationToken);
-            if (ViewModel.HasTileSelection && (!plan.Poi.EnablePoiSeparation || plan.BaseLayers.IncludeContours))
+            if (ViewModel.HasTileSelection && (!localRendering || plan.BaseLayers.IncludeContours))
             {
                 ViewModel.ApplyTilePreparationProgress();
                 await _ownerViewModel.Map.RunOfflineCacheForSelectionAsync(ViewModel.ToOfflineCacheBuildOptions() with
                 {
-                    IncludeOsm = !plan.Poi.EnablePoiSeparation && plan.BaseLayers.IncludeOsm,
-                    IncludeTerrain = !plan.Poi.EnablePoiSeparation && plan.BaseLayers.IncludeTerrain,
-                    IncludeSatellite = !plan.Poi.EnablePoiSeparation && plan.BaseLayers.IncludeSatellite,
+                    IncludeOsm = !localRendering && plan.BaseLayers.IncludeOsm,
+                    IncludeTerrain = !localRendering && plan.BaseLayers.IncludeTerrain,
+                    IncludeSatellite = !localRendering && plan.BaseLayers.IncludeSatellite,
                     EnablePoiSeparation = false,
+                    Annotations = null,
                 }, cancellationToken);
                 cancellationToken.ThrowIfCancellationRequested();
                 ViewModel.ApplyTilePreparationComplete();

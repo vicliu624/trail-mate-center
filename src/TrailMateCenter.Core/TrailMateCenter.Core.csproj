@@ -26,5 +26,8 @@
   <ItemGroup>
     <Protobuf Include="Protos\\meshtastic\\*.proto" ProtoRoot="Protos" GrpcServices="None" />
   </ItemGroup>
+  <ItemGroup>
+    <Content Include="Resources/AnnotationFonts/*" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
 
 </Project>

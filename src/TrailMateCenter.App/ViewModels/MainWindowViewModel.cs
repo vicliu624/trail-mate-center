@@ -1641,7 +1641,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     {
         try
         {
-            if (region.EnablePoiSeparation)
+            if (region.EnablePoiSeparation || region.Annotations is not null)
                 return ExportLocalMapPack(region, cacheRoot, destinationRoot, cancellationToken, progress);
             var mapsRoot = ResolveMapsExportRoot(destinationRoot);
             var bounds = (region.West, region.South, region.East, region.North);
@@ -1661,6 +1661,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
                 PoiIndexMinimumZoom = region.PoiIndexMinimumZoom,
                 PoiIndexMaximumZoom = region.PoiIndexMaximumZoom,
                 PoiEnabledZoomLevels = region.PoiEnabledZoomLevels,
+                Annotations = region.Annotations,
                 MaxPoiPerTile = region.MaxPoiPerTile,
                 IncludePoiLabels = region.IncludePoiLabels,
                 IncludeOriginalOsmTags = region.IncludeOriginalOsmTags,
@@ -1804,6 +1805,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         {
             Name = region.Name,
             OutputDirectory = destinationRoot,
+            Annotations = region.Annotations,
             Area = new MapPackAreaSelection
             {
                 Name = region.Name,
@@ -2009,6 +2011,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             PoiIndexMinimumZoom = plan.Poi.IndexOptions.MinZoom,
             PoiIndexMaximumZoom = plan.Poi.IndexOptions.MaxZoom,
             PoiEnabledZoomLevels = plan.Poi.IndexOptions.Normalize().EnabledZoomLevels,
+            Annotations = plan.Annotations,
             MaxPoiPerTile = plan.Poi.IndexOptions.MaxPoiPerTile,
             IncludePoiLabels = plan.Poi.IndexOptions.IncludeLabels,
             IncludeOriginalOsmTags = plan.Poi.IndexOptions.IncludeOriginalTags,

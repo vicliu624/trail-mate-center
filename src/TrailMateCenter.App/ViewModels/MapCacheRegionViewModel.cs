@@ -65,6 +65,7 @@ public sealed partial class MapCacheRegionViewModel : ObservableObject
 
     [ObservableProperty]
     private bool _enablePoiSeparation;
+    [ObservableProperty] private MapAnnotationOptions? _annotations;
 
     [ObservableProperty]
     private string _poiPbfPath = string.Empty;
@@ -349,6 +350,7 @@ public sealed partial class MapCacheRegionViewModel : ObservableObject
             PoiIndexMinimumZoom = options.PoiIndexMinimumZoom,
             PoiIndexMaximumZoom = options.PoiIndexMaximumZoom,
             PoiEnabledZoomLevels = options.PoiEnabledZoomLevels,
+            Annotations = options.Annotations,
             MaxPoiPerTile = options.MaxPoiPerTile,
             IncludePoiLabels = options.IncludePoiLabels,
             IncludeOriginalOsmTags = options.IncludeOriginalOsmTags,
@@ -386,6 +388,7 @@ public sealed partial class MapCacheRegionViewModel : ObservableObject
             PoiIndexMinimumZoom = settings.PoiIndexMinimumZoom,
             PoiIndexMaximumZoom = settings.PoiIndexMaximumZoom,
             PoiEnabledZoomLevels = settings.PoiEnabledZoomLevels,
+            Annotations = settings.Annotations,
             MaxPoiPerTile = settings.MaxPoiPerTile,
             IncludePoiLabels = settings.IncludePoiLabels,
             IncludeOriginalOsmTags = settings.IncludeOriginalOsmTags,
@@ -419,6 +422,7 @@ public sealed partial class MapCacheRegionViewModel : ObservableObject
             PoiIndexMinimumZoom = options.PoiIndexMinimumZoom,
             PoiIndexMaximumZoom = options.PoiIndexMaximumZoom,
             PoiEnabledZoomLevels = options.PoiEnabledZoomLevels,
+            Annotations = options.Annotations,
             MaxPoiPerTile = options.MaxPoiPerTile,
             IncludePoiLabels = options.IncludePoiLabels,
             IncludeOriginalOsmTags = options.IncludeOriginalOsmTags,
@@ -456,6 +460,7 @@ public sealed partial class MapCacheRegionViewModel : ObservableObject
             PoiIndexMinimumZoom = settings.PoiIndexMinimumZoom,
             PoiIndexMaximumZoom = settings.PoiIndexMaximumZoom,
             PoiEnabledZoomLevels = settings.PoiEnabledZoomLevels,
+            Annotations = settings.Annotations,
             MaxPoiPerTile = settings.MaxPoiPerTile,
             IncludePoiLabels = settings.IncludePoiLabels,
             IncludeOriginalOsmTags = settings.IncludeOriginalOsmTags,
@@ -478,6 +483,7 @@ public sealed partial class MapCacheRegionViewModel : ObservableObject
     {
         var normalized = options.Normalize();
         var hasChanged = IncludeOsm != normalized.IncludeOsm ||
+                         Annotations != normalized.Annotations ||
                          IncludeTerrain != normalized.IncludeTerrain ||
                          IncludeSatellite != normalized.IncludeSatellite ||
                          IncludeContours != normalized.IncludeContours ||
@@ -505,6 +511,7 @@ public sealed partial class MapCacheRegionViewModel : ObservableObject
         MinimumZoom = normalized.MinimumZoom;
         MaximumZoom = normalized.MaximumZoom;
         EnablePoiSeparation = normalized.EnablePoiSeparation;
+        Annotations = normalized.Annotations;
         PoiPbfPath = normalized.PoiPbfPath;
         GenerateFullPoisJsonl = normalized.GenerateFullPoisJsonl;
         GenerateTileIndexedPoiFiles = normalized.GenerateTileIndexedPoiFiles;
@@ -539,6 +546,7 @@ public sealed partial class MapCacheRegionViewModel : ObservableObject
             PoiIndexMinimumZoom = PoiIndexMinimumZoom,
             PoiIndexMaximumZoom = PoiIndexMaximumZoom,
             PoiEnabledZoomLevels = PoiEnabledZoomLevels,
+            Annotations = Annotations,
             MaxPoiPerTile = MaxPoiPerTile,
             IncludePoiLabels = IncludePoiLabels,
             IncludeOriginalOsmTags = IncludeOriginalOsmTags,

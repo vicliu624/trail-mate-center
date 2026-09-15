@@ -824,6 +824,17 @@
   <x:String x:Key="Ui.MapPack.MaxZoom">最大缩放</x:String>
   <x:String x:Key="Ui.MapPack.Step.Poi">步骤 3：POI 分离</x:String>
   <x:String x:Key="Ui.MapPack.EnablePoi">启用 POI</x:String>
+  <x:String x:Key="Ui.MapPack.Annotations.Enabled">全无字底图 + 动态地图标注</x:String>
+  <x:String x:Key="Ui.MapPack.Annotations.PreviewStatus">本地 z{0} 样式预览：道路名 {1}、地名 {2}、设施名称 {3}。</x:String>
+  <x:String x:Key="Ui.MapPack.Annotations.PreviewHint">点击加载预览，以最高导出级别预览选区中心的本地无字底图和标注。预览使用当前类别规则；设备上的排布会随实际视野和屏幕变化。修改设置后请重新加载预览。</x:String>
+  <x:String x:Key="Ui.MapPack.Annotations.Hint">按道路、地名和设施分别设置标注范围。文字透明背景，无白色描边。启用后，以下新标注规则取代旧 POI 级别、类别与数量设置。</x:String>
+  <x:String x:Key="Ui.MapPack.Annotations.Outdoor">户外：地形地名、道路与户外服务</x:String>
+  <x:String x:Key="Ui.MapPack.Annotations.Urban">城市：增加商店与餐饮等附近设施</x:String>
+  <x:String x:Key="Ui.MapPack.Annotations.Minimum">最低级别</x:String>
+  <x:String x:Key="Ui.MapPack.Annotations.Maximum">最高级别</x:String>
+  <x:String x:Key="Ui.MapPack.Annotations.Places">地名与区域名</x:String>
+  <x:String x:Key="Ui.MapPack.Annotations.Roads">道路与街道名</x:String>
+  <x:String x:Key="Ui.MapPack.Annotations.Pois">设施与兴趣点</x:String>
   <x:String x:Key="Ui.MapPack.PoiLevels">启用独立 POI 的缩放级别</x:String>
   <x:String x:Key="Ui.MapPack.PoiSelectAll">全选</x:String>
   <x:String x:Key="Ui.MapPack.PoiClear">清空</x:String>

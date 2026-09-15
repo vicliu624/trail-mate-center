@@ -825,6 +825,17 @@
   <x:String x:Key="Ui.MapPack.MaxZoom">Max zoom</x:String>
   <x:String x:Key="Ui.MapPack.Step.Poi">Step 3: POI Separation</x:String>
   <x:String x:Key="Ui.MapPack.EnablePoi">Enable POI</x:String>
+  <x:String x:Key="Ui.MapPack.Annotations.Enabled">Text-free basemap with dynamic map annotations</x:String>
+  <x:String x:Key="Ui.MapPack.Annotations.PreviewStatus">Local z{0} style preview: {1} road names, {2} places, {3} facility names.</x:String>
+  <x:String x:Key="Ui.MapPack.Annotations.PreviewHint">Load preview to render the selection center at the highest export zoom using local geometry and current annotation rules. Device placement varies with its viewport and screen. Reload after changing settings.</x:String>
+  <x:String x:Key="Ui.MapPack.Annotations.Hint">Configure place, road and facility labels independently. Text has a transparent background and no white halo. These rules replace legacy POI zoom, category and count settings when enabled.</x:String>
+  <x:String x:Key="Ui.MapPack.Annotations.Outdoor">Outdoor: places, roads and outdoor services</x:String>
+  <x:String x:Key="Ui.MapPack.Annotations.Urban">Urban: include nearby shops and food venues</x:String>
+  <x:String x:Key="Ui.MapPack.Annotations.Minimum">Min zoom</x:String>
+  <x:String x:Key="Ui.MapPack.Annotations.Maximum">Max zoom</x:String>
+  <x:String x:Key="Ui.MapPack.Annotations.Places">Place and area names</x:String>
+  <x:String x:Key="Ui.MapPack.Annotations.Roads">Road and street names</x:String>
+  <x:String x:Key="Ui.MapPack.Annotations.Pois">Facilities and points of interest</x:String>
   <x:String x:Key="Ui.MapPack.PoiLevels">Zoom levels with independent POIs</x:String>
   <x:String x:Key="Ui.MapPack.PoiSelectAll">Select all</x:String>
   <x:String x:Key="Ui.MapPack.PoiClear">Clear</x:String>
