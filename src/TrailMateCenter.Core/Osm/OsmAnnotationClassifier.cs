@@ -33,8 +33,11 @@ public static class OsmAnnotationClassifier
             if (place == "city" && Tag("capital") == "4") return Result(MapAnnotationKind.Place, "regional_capital");
             var category = place switch
             {
-                "province" => "state", "hamlet" => "village", "neighborhood" => "neighbourhood",
-                "locality" => "quarter", _ => place,
+                "province" => "state",
+                "hamlet" => "village",
+                "neighborhood" => "neighbourhood",
+                "locality" => "quarter",
+                _ => place,
             };
             if (category is not null && Result(MapAnnotationKind.Place, category) is { } location) return location;
             if (Tag("leisure") == "park") return Result(MapAnnotationKind.Place, "park");
@@ -47,12 +50,16 @@ public static class OsmAnnotationClassifier
             ("drinking_water", _, _) or (_, _, "spring") => "water",
             (_, "camp_site", _) => "camp",
             ("shelter", _, _) or (_, "alpine_hut" or "wilderness_hut", _) => "shelter",
-            (_, _, "peak") => "peak", (_, "viewpoint", _) => "viewpoint",
-            ("parking", _, _) => "parking", ("toilets", _, _) => "toilet",
+            (_, _, "peak") => "peak",
+            (_, "viewpoint", _) => "viewpoint",
+            ("parking", _, _) => "parking",
+            ("toilets", _, _) => "toilet",
             ("hospital" or "clinic", _, _) => "emergency",
             ("school" or "university" or "college", _, _) => "school",
-            ("ranger_station", _, _) => "ranger", (_, "information", _) => "info",
-            ("restaurant" or "cafe" or "fast_food", _, _) => "food", _ => null,
+            ("ranger_station", _, _) => "ranger",
+            (_, "information", _) => "info",
+            ("restaurant" or "cafe" or "fast_food", _, _) => "food",
+            _ => null,
         };
         poi ??= Tag("emergency") is "phone" or "rescue_station" or "mountain_rescue" ? "emergency" : null;
         poi ??= Tag("highway") == "trailhead" ? "trailhead" : null;

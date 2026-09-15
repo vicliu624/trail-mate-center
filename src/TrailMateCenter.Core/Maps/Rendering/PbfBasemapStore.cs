@@ -130,33 +130,33 @@ internal sealed class PbfBasemapStore : IDisposable
             foreach (var line in outerLines.Concat(innerLines)) memberEnvelope.ExpandToInclude(line.EnvelopeInternal);
             try
             {
-            if (missingMember is not null) throw new InvalidDataException(missingMember);
-            // Check source closure before dissolving retraced edges. A closed
-            // boundary can leave non-area cut edges after noding (e.g. two
-            // forest lobes joined by a segment traversed in both directions).
-            // Those are not evidence of missing source geometry.
-            if (!HasClosedLinework(outerLines) || !HasClosedLinework(innerLines))
-                throw new InvalidDataException($"PBF relation {relation.Id} has incomplete polygon rings.");
-            var outer = PolygonizeRings(outerLines);
-            var inner = PolygonizeRings(innerLines);
-            if (outer.GetInvalidRingLines().Count > 0 || inner.GetInvalidRingLines().Count > 0)
-                throw new InvalidDataException($"PBF relation {relation.Id} has invalid polygon rings after noding.");
-            var shells = outer.GetPolygons().Cast<Geometry>().ToArray();
-            if (shells.Length == 0)
-                throw new InvalidDataException($"PBF relation {relation.Id} has no outer polygon area.");
-            var geometry = _factory.BuildGeometry(shells).Union();
-            var holes = inner.GetPolygons().Cast<Geometry>().ToArray();
-            if (holes.Length > 0) geometry = geometry.Difference(_factory.BuildGeometry(holes).Union());
-            // A tagged outer way must not fill a relation's holes underneath the relation.
-            foreach (var member in relation.Members.Where(m => m.Type == OsmGeoType.Way))
-            {
-                Execute("DELETE FROM feature_bounds WHERE id IN (SELECT id FROM features WHERE way_id=$way AND kind=$kind)",
-                    ("$way", member.Id), ("$kind", kind));
-                Execute("DELETE FROM features WHERE way_id=$way AND kind=$kind", ("$way", member.Id), ("$kind", kind));
-            }
-            AddFeature(kind, geometry);
-            AddLabel(relation, geometry, requiredEnvelope);
-            if (includeAnnotations) AddAnnotationFeature(relation, geometry, requiredEnvelope);
+                if (missingMember is not null) throw new InvalidDataException(missingMember);
+                // Check source closure before dissolving retraced edges. A closed
+                // boundary can leave non-area cut edges after noding (e.g. two
+                // forest lobes joined by a segment traversed in both directions).
+                // Those are not evidence of missing source geometry.
+                if (!HasClosedLinework(outerLines) || !HasClosedLinework(innerLines))
+                    throw new InvalidDataException($"PBF relation {relation.Id} has incomplete polygon rings.");
+                var outer = PolygonizeRings(outerLines);
+                var inner = PolygonizeRings(innerLines);
+                if (outer.GetInvalidRingLines().Count > 0 || inner.GetInvalidRingLines().Count > 0)
+                    throw new InvalidDataException($"PBF relation {relation.Id} has invalid polygon rings after noding.");
+                var shells = outer.GetPolygons().Cast<Geometry>().ToArray();
+                if (shells.Length == 0)
+                    throw new InvalidDataException($"PBF relation {relation.Id} has no outer polygon area.");
+                var geometry = _factory.BuildGeometry(shells).Union();
+                var holes = inner.GetPolygons().Cast<Geometry>().ToArray();
+                if (holes.Length > 0) geometry = geometry.Difference(_factory.BuildGeometry(holes).Union());
+                // A tagged outer way must not fill a relation's holes underneath the relation.
+                foreach (var member in relation.Members.Where(m => m.Type == OsmGeoType.Way))
+                {
+                    Execute("DELETE FROM feature_bounds WHERE id IN (SELECT id FROM features WHERE way_id=$way AND kind=$kind)",
+                        ("$way", member.Id), ("$kind", kind));
+                    Execute("DELETE FROM features WHERE way_id=$way AND kind=$kind", ("$way", member.Id), ("$kind", kind));
+                }
+                AddFeature(kind, geometry);
+                AddLabel(relation, geometry, requiredEnvelope);
+                if (includeAnnotations) AddAnnotationFeature(relation, geometry, requiredEnvelope);
             }
             catch (Exception ex) when (ex is InvalidDataException or TopologyException)
             {
@@ -218,14 +218,21 @@ internal sealed class PbfBasemapStore : IDisposable
         var place = Tag(source, "place");
         var (minZoom, priority) = place switch
         {
-            "country" => (1, 0), "state" or "province" => (4, 1),
-            "city" => (5, 2), "town" => (9, 3), "suburb" or "quarter" => (11, 4),
-            "village" => (12, 5), "hamlet" or "neighbourhood" => (14, 6),
+            "country" => (1, 0),
+            "state" or "province" => (4, 1),
+            "city" => (5, 2),
+            "town" => (9, 3),
+            "suburb" or "quarter" => (11, 4),
+            "village" => (12, 5),
+            "hamlet" or "neighbourhood" => (14, 6),
             _ => Classify(source) switch
             {
-                "highway" => (10, 7), "road" => (12, 8), "street" => (14, 9),
+                "highway" => (10, 7),
+                "road" => (12, 8),
+                "street" => (14, 9),
                 "water" or "green" or "forest" => (12, 10),
-                "river" => (13, 11), "building" => (16, 13),
+                "river" => (13, 11),
+                "building" => (16, 13),
                 _ => (15, 12),
             },
         };
@@ -398,14 +405,30 @@ internal sealed class PbfBasemapStore : IDisposable
     internal static bool IsArea(string kind) => kind is "water" or "building" or "forest" or "green" or "farmland" or "builtup";
     private static int DrawOrder(string kind) => kind switch
     {
-        "builtup" => 0, "farmland" => 1, "forest" => 2, "green" => 3, "water" => 4,
-        "building" => 5, "river" or "coastline" => 6, "path" => 7, "rail" => 8,
-        "street" => 9, "road" => 10, "highway" => 11, _ => 0,
+        "builtup" => 0,
+        "farmland" => 1,
+        "forest" => 2,
+        "green" => 3,
+        "water" => 4,
+        "building" => 5,
+        "river" or "coastline" => 6,
+        "path" => 7,
+        "rail" => 8,
+        "street" => 9,
+        "road" => 10,
+        "highway" => 11,
+        _ => 0,
     };
     private static int MinimumZoom(string kind) => kind switch
     {
-        "building" => 15, "street" => 12, "path" => 13, "rail" => 10,
-        "river" => 10, "road" => 8, "builtup" => 9, _ => 0,
+        "building" => 15,
+        "street" => 12,
+        "path" => 13,
+        "rail" => 10,
+        "river" => 10,
+        "road" => 8,
+        "builtup" => 9,
+        _ => 0,
     };
 
     public void Dispose() => _db.Dispose();

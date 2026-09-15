@@ -36,23 +36,23 @@ public static class MapAnnotationPreviewRenderer
         canvas.Clear(SKColor.Parse("#f1eee8"));
         var candidates = new List<(MapAnnotationCandidate Data, float X, float Y)>();
         for (var x = (int)Math.Floor(left / 256); x <= Math.Floor((left + width - 1) / 256); x++)
-        for (var y = (int)Math.Floor(top / 256); y <= Math.Floor((top + height - 1) / 256); y++)
-        {
-            token.ThrowIfCancellationRequested();
-            var tile = new TileCoordinate(zoom, x, y);
-            var file = Path.Combine(work, $"{zoom}-{x}-{y}.png");
-            PbfTileRenderer.Render(store, tile, false, file, token, bakeLabels: false);
-            using var raster = SKBitmap.Decode(file);
-            canvas.DrawBitmap(raster, (float)(x * 256.0 - left), (float)(y * 256.0 - top));
-            foreach (var feature in store.QueryAnnotations(MapAnnotationCandidateBuilder.TileEnvelope(tile), zoom))
-            foreach (var candidate in MapAnnotationCandidateBuilder.Build(feature, tile, options))
+            for (var y = (int)Math.Floor(top / 256); y <= Math.Floor((top + height - 1) / 256); y++)
             {
-                var (px, py) = PbfBasemapStore.Project(candidate.Longitude, candidate.Latitude);
-                var sx = (float)(px * scale - left); var sy = (float)(py * scale - top);
-                if (sx >= 0 && sy >= 0 && sx < width && sy < height && !string.IsNullOrWhiteSpace(candidate.Name))
-                    candidates.Add((candidate, sx, sy));
+                token.ThrowIfCancellationRequested();
+                var tile = new TileCoordinate(zoom, x, y);
+                var file = Path.Combine(work, $"{zoom}-{x}-{y}.png");
+                PbfTileRenderer.Render(store, tile, false, file, token, bakeLabels: false);
+                using var raster = SKBitmap.Decode(file);
+                canvas.DrawBitmap(raster, (float)(x * 256.0 - left), (float)(y * 256.0 - top));
+                foreach (var feature in store.QueryAnnotations(MapAnnotationCandidateBuilder.TileEnvelope(tile), zoom))
+                    foreach (var candidate in MapAnnotationCandidateBuilder.Build(feature, tile, options))
+                    {
+                        var (px, py) = PbfBasemapStore.Project(candidate.Longitude, candidate.Latitude);
+                        var sx = (float)(px * scale - left); var sy = (float)(py * scale - top);
+                        if (sx >= 0 && sy >= 0 && sx < width && sy < height && !string.IsNullOrWhiteSpace(candidate.Name))
+                            candidates.Add((candidate, sx, sy));
+                    }
             }
-        }
         var fontPath = Path.Combine(AppContext.BaseDirectory, "Resources", "AnnotationFonts", "NotoSansCJKsc-Regular.otf");
         using var face = SKTypeface.FromFile(fontPath) ?? throw new FileNotFoundException("Bundled preview font is missing.", fontPath);
         using var font = new SKFont(face, 16);

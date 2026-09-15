@@ -21,7 +21,7 @@ public sealed class HybridMapPackTests
     [Fact]
     public void RendererFontContainsActualChineseGlyphs()
     {
-        using var typeface = SKFontManager.Default.MatchCharacter('昆');
+        using var typeface = SKTypeface.FromFile(Path.Combine(AppContext.BaseDirectory, "Resources", "AnnotationFonts", "NotoSansCJKsc-Regular.otf"));
         Assert.NotNull(typeface);
         using var font = new SKFont(typeface, 12);
         Assert.All(font.GetGlyphs("昆明饮水点道路"), glyph => Assert.NotEqual((ushort)0, glyph));

@@ -78,7 +78,8 @@ public sealed partial class PoiZoomSelectionViewModel : ObservableObject
 
     [RelayCommand] private void SelectAll() => SetSelection(AvailableLevels);
     [RelayCommand] private void Clear() => SetSelection(Array.Empty<int>());
-    [RelayCommand] private void SelectRange()
+    [RelayCommand]
+    private void SelectRange()
     {
         var min = Math.Min(RangeStart, RangeEnd);
         var max = Math.Max(RangeStart, RangeEnd);

@@ -87,21 +87,21 @@ public sealed class LocalMapPackExporter
                     if (layers.Count > 0 && !store.Query(new NetTopologySuite.Geometries.Envelope(west, east, north, south), plan.BaseLayers.MaximumZoom).Any())
                         throw new InvalidDataException("The PBF has no drawable map geometry in the selected area and zoom range.");
                     foreach (var layer in layers)
-                    for (var z = plan.BaseLayers.MinimumZoom; z <= layer.MaxZoom; z++)
-                    {
-                        var range = TileMath.BoundsToTileRange(plan.Area.Bounds, z);
-                        for (var x = range.MinX; x <= range.MaxX; x++)
-                        for (var y = range.MinY; y <= range.MaxY; y++)
+                        for (var z = plan.BaseLayers.MinimumZoom; z <= layer.MaxZoom; z++)
                         {
-                            cancellationToken.ThrowIfCancellationRequested();
-                            var tile = new TileCoordinate(z, x, y);
-                            PbfTileRenderer.Render(store, tile, layer.Terrain,
-                                Path.Combine(stagedMaps, "base", layer.Name, z.ToString(), x.ToString(), $"{y}.png"), cancellationToken,
-                                bakeLabels: plan.Annotations is null && !independentPolicy.IsEnabledAtZoom(z));
-                            completed++;
-                            progress?.Report(new("tiles", completed, total, z, layer.Name));
+                            var range = TileMath.BoundsToTileRange(plan.Area.Bounds, z);
+                            for (var x = range.MinX; x <= range.MaxX; x++)
+                                for (var y = range.MinY; y <= range.MaxY; y++)
+                                {
+                                    cancellationToken.ThrowIfCancellationRequested();
+                                    var tile = new TileCoordinate(z, x, y);
+                                    PbfTileRenderer.Render(store, tile, layer.Terrain,
+                                        Path.Combine(stagedMaps, "base", layer.Name, z.ToString(), x.ToString(), $"{y}.png"), cancellationToken,
+                                        bakeLabels: plan.Annotations is null && !independentPolicy.IsEnabledAtZoom(z));
+                                    completed++;
+                                    progress?.Report(new("tiles", completed, total, z, layer.Name));
+                                }
                         }
-                    }
                     if (plan.Annotations is not null)
                     {
                         progress?.Report(new("annotations", 0, total));
@@ -116,13 +116,22 @@ public sealed class LocalMapPackExporter
 
             var poi = annotations is not null ? new PoiExportResult
             {
-                Success = true, PoiRoot = Path.Combine(stagedMaps, "poi"), SourcePoiCount = annotations.PoiFeatures,
-                IndexRowsWritten = annotations.Rows, TileFilesWritten = annotations.TileFiles, WasAnyTileClipped = annotations.ClippedTiles > 0,
+                Success = true,
+                PoiRoot = Path.Combine(stagedMaps, "poi"),
+                SourcePoiCount = annotations.PoiFeatures,
+                IndexRowsWritten = annotations.Rows,
+                TileFilesWritten = annotations.TileFiles,
+                WasAnyTileClipped = annotations.ClippedTiles > 0,
             } : await new MapPoiExportService().ExportFromPbfAsync(new PoiExportRequest
             {
-                MapsRoot = stagedMaps, PbfPath = plan.Poi.PbfPath, Bounds = plan.Area.Bounds,
-                BoundaryGeoJson = plan.Area.BoundaryGeoJson, AreaName = plan.Area.Name, AreaAdminLevel = plan.Area.AdminLevel,
-                SourceProvider = plan.Poi.SourceProvider, SourceDownloadUrl = plan.Poi.SourceDownloadUrl,
+                MapsRoot = stagedMaps,
+                PbfPath = plan.Poi.PbfPath,
+                Bounds = plan.Area.Bounds,
+                BoundaryGeoJson = plan.Area.BoundaryGeoJson,
+                AreaName = plan.Area.Name,
+                AreaAdminLevel = plan.Area.AdminLevel,
+                SourceProvider = plan.Poi.SourceProvider,
+                SourceDownloadUrl = plan.Poi.SourceDownloadUrl,
                 SelectedPoiTypes = plan.Poi.SelectedPoiTypes,
                 IndexOptions = independentPolicy with
                 {
@@ -151,13 +160,23 @@ public sealed class LocalMapPackExporter
 
             await File.WriteAllTextAsync(Path.Combine(stagedMaps, "map-pack.json"), JsonSerializer.Serialize(new
             {
-                version = plan.Annotations is null ? 2 : 3, generator = "TrailMateCenter", style = PbfTileRenderer.StyleVersion,
-                text_in_basemap = labelledLevels.Length > 0, poi_symbols_in_basemap = false, tile_size = 256,
-                labelled_zoom_levels = labelledLevels, text_free_zoom_levels = plan.Annotations is null ? independentPolicy.EnabledZoomLevels : allLevels,
+                version = plan.Annotations is null ? 2 : 3,
+                generator = "TrailMateCenter",
+                style = PbfTileRenderer.StyleVersion,
+                text_in_basemap = labelledLevels.Length > 0,
+                poi_symbols_in_basemap = false,
+                tile_size = 256,
+                labelled_zoom_levels = labelledLevels,
+                text_free_zoom_levels = plan.Annotations is null ? independentPolicy.EnabledZoomLevels : allLevels,
                 annotation_policy = plan.Annotations is null ? null : MapAnnotationPolicy.Version,
-                scheme = "web-mercator-xyz", coordinates = "WGS84", source = Path.GetFileName(plan.Poi.PbfPath),
-                source_sha256 = sourceHash, area = plan.Area, base_layers = layers.Select(l => l.Name).ToArray(),
-                min_zoom = plan.BaseLayers.MinimumZoom, max_zoom = plan.BaseLayers.MaximumZoom,
+                scheme = "web-mercator-xyz",
+                coordinates = "WGS84",
+                source = Path.GetFileName(plan.Poi.PbfPath),
+                source_sha256 = sourceHash,
+                area = plan.Area,
+                base_layers = layers.Select(l => l.Name).ToArray(),
+                min_zoom = plan.BaseLayers.MinimumZoom,
+                max_zoom = plan.BaseLayers.MaximumZoom,
                 source_diagnostics = sourceDiagnostics,
                 attribution = "© OpenStreetMap contributors; ODbL 1.0; https://www.openstreetmap.org/copyright",
                 notes = "Raster text is rendered only at labelled_zoom_levels; independent POI zooms are text-free. Regional PBF coverage only, no hillshade or global ocean fill. Coastlines are outlines. Terrain is a land-cover palette; optional contours are separate.",

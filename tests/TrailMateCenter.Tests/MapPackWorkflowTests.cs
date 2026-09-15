@@ -167,6 +167,62 @@ public sealed class MapPackWorkflowTests
     }
 
     [Fact]
+    public async Task GeofabrikCatalogProvider_PrefersNearCoveringCountryOverContinent()
+    {
+        var root = CreateTempRoot();
+        try
+        {
+            const string catalog = """
+                {
+                  "type": "FeatureCollection",
+                  "features": [
+                    {
+                      "type": "Feature",
+                      "properties": {
+                        "id": "asia",
+                        "name": "Asia",
+                        "urls": { "pbf": "https://download.geofabrik.de/asia-latest.osm.pbf" }
+                      },
+                      "geometry": {
+                        "type": "Polygon",
+                        "coordinates": [[[40,-10],[180,-10],[180,85],[40,85],[40,-10]]]
+                      }
+                    },
+                    {
+                      "type": "Feature",
+                      "properties": {
+                        "id": "china",
+                        "parent": "asia",
+                        "name": "China",
+                        "urls": { "pbf": "https://download.geofabrik.de/asia/china-latest.osm.pbf" }
+                      },
+                      "geometry": {
+                        "type": "Polygon",
+                        "coordinates": [[[73,14],[135,14],[135,54],[73,54],[73,14]]]
+                      }
+                    }
+                  ]
+                }
+                """;
+
+            var provider = new GeofabrikCatalogProvider(
+                new HttpClient(new FakeHttpHandler(catalog)),
+                root,
+                new Uri("https://example.test/index-v1.json"));
+
+            var matches = await provider.FindCoveringRegionsAsync(new GeoBounds(73.5, 8.7, 134.8, 53.6));
+
+            Assert.NotEmpty(matches);
+            Assert.Equal("china", matches[0].Id);
+            Assert.Equal("https://download.geofabrik.de/asia/china-latest.osm.pbf", matches[0].PbfUrl);
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
     public async Task NominatimProvider_UsesCacheAfterFirstSearch()
     {
         var root = CreateTempRoot();

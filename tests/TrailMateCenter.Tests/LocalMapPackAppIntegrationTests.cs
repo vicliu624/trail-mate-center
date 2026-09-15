@@ -14,10 +14,22 @@ public sealed class LocalMapPackAppIntegrationTests
         var bounds = plan.Area.Bounds;
         var region = new MapCacheRegionSettings
         {
-            Name = "App export", West = bounds.West, South = bounds.South, East = bounds.East, North = bounds.North,
-            IncludeOsm = true, IncludeTerrain = false, IncludeSatellite = false, IncludeContours = false,
-            MinimumZoom = 16, MaximumZoom = 16, EnablePoiSeparation = true,
-            PoiPbfPath = plan.Poi.PbfPath, SelectedPoiTypes = ["water"], PoiIndexMinimumZoom = 16, PoiIndexMaximumZoom = 16,
+            Name = "App export",
+            West = bounds.West,
+            South = bounds.South,
+            East = bounds.East,
+            North = bounds.North,
+            IncludeOsm = true,
+            IncludeTerrain = false,
+            IncludeSatellite = false,
+            IncludeContours = false,
+            MinimumZoom = 16,
+            MaximumZoom = 16,
+            EnablePoiSeparation = true,
+            PoiPbfPath = plan.Poi.PbfPath,
+            SelectedPoiTypes = ["water"],
+            PoiIndexMinimumZoom = 16,
+            PoiIndexMaximumZoom = 16,
         };
         var result = Export(region, Path.Combine(plan.OutputDirectory, "nonexistent-cache"), plan.OutputDirectory);
         Assert.True(result.Success, result.ErrorMessage);
@@ -35,10 +47,19 @@ public sealed class LocalMapPackAppIntegrationTests
         var b = plan.Area.Bounds;
         var region = new MapCacheRegionSettings
         {
-            West = b.West, South = b.South, East = b.East, North = b.North,
-            IncludeOsm = true, IncludeTerrain = false, IncludeSatellite = false, IncludeContours = false,
-            MinimumZoom = 16, MaximumZoom = 16, EnablePoiSeparation = true,
-            PoiPbfPath = plan.Poi.PbfPath, SelectedPoiTypes = [],
+            West = b.West,
+            South = b.South,
+            East = b.East,
+            North = b.North,
+            IncludeOsm = true,
+            IncludeTerrain = false,
+            IncludeSatellite = false,
+            IncludeContours = false,
+            MinimumZoom = 16,
+            MaximumZoom = 16,
+            EnablePoiSeparation = true,
+            PoiPbfPath = plan.Poi.PbfPath,
+            SelectedPoiTypes = [],
         };
         var result = Export(region, "unused", plan.OutputDirectory);
         Assert.False(result.Success);
@@ -60,9 +81,17 @@ public sealed class LocalMapPackAppIntegrationTests
         using (var output = File.Create(Path.Combine(path, "19335.png"))) data.SaveTo(output);
         var region = new MapCacheRegionSettings
         {
-            West = b.West, South = b.South, East = b.East, North = b.North,
-            IncludeOsm = true, IncludeTerrain = false, IncludeSatellite = false, IncludeContours = false,
-            MinimumZoom = 16, MaximumZoom = 16, EnablePoiSeparation = false,
+            West = b.West,
+            South = b.South,
+            East = b.East,
+            North = b.North,
+            IncludeOsm = true,
+            IncludeTerrain = false,
+            IncludeSatellite = false,
+            IncludeContours = false,
+            MinimumZoom = 16,
+            MaximumZoom = 16,
+            EnablePoiSeparation = false,
         };
         var result = Export(region, cache, plan.OutputDirectory);
         Assert.True(result.Success, result.ErrorMessage);

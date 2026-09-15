@@ -41,12 +41,12 @@ public static class LvglAnnotationFontWriter
                 canvas.Clear(SKColors.Transparent);
                 canvas.DrawText(text, -left, -top, SKTextAlign.Left, font, paint);
                 for (var y = 0; y < height; y++)
-                for (var x = 0; x < width; x++)
-                {
-                    var index = y * width + x;
-                    var alpha = (bitmap.GetPixel(x, y).Alpha * 3 + 127) / 255;
-                    bytes[4 + index / 4] |= (byte)(alpha << (6 - (index % 4) * 2));
-                }
+                    for (var x = 0; x < width; x++)
+                    {
+                        var index = y * width + x;
+                        var alpha = (bitmap.GetPixel(x, y).Alpha * 3 + 127) / 255;
+                        bytes[4 + index / 4] |= (byte)(alpha << (6 - (index % 4) * 2));
+                    }
             }
             glyphs.Add(bytes);
         }

@@ -11,8 +11,14 @@ public sealed class MapAnnotationOptionsViewModelTests
     {
         var editor = new MapAnnotationOptionsViewModel
         {
-            Preset = MapAnnotationPreset.Urban, PlacesEnabled = true, RoadsEnabled = true, PoisEnabled = false,
-            RoadMinimumZoom = 18, RoadMaximumZoom = 12, PlaceMinimumZoom = 1, PlaceMaximumZoom = 15,
+            Preset = MapAnnotationPreset.Urban,
+            PlacesEnabled = true,
+            RoadsEnabled = true,
+            PoisEnabled = false,
+            RoadMinimumZoom = 18,
+            RoadMaximumZoom = 12,
+            PlaceMinimumZoom = 1,
+            PlaceMaximumZoom = 15,
         };
         var saved = editor.ToOptions()!;
         Assert.Equal(new MapAnnotationZoomRange(12, 18), saved.RoadZooms);

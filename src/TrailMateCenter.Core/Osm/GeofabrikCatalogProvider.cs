@@ -29,6 +29,7 @@ public sealed record GeofabrikCatalogResult
 public sealed class GeofabrikCatalogProvider
 {
     private const string DefaultCatalogUrl = "https://download.geofabrik.de/index-v1.json";
+    private const double MinimumTargetCoverageRatio = 0.85;
     private static readonly TimeSpan DefaultCacheTtl = TimeSpan.FromDays(7);
 
     private static readonly JsonSerializerOptions JsonOptions = new()
@@ -145,7 +146,7 @@ public sealed class GeofabrikCatalogProvider
             .Where(region =>
                 !string.IsNullOrWhiteSpace(region.PbfUrl) &&
                 HasUsableBounds(region.Bounds) &&
-                Contains(region.Bounds, target))
+                IsSuitableMatch(region.Bounds, target))
             .OrderBy(static region => Area(region.Bounds))
             .ThenBy(static region => region.DisplayName, StringComparer.OrdinalIgnoreCase)
             .Take(Math.Max(1, limit))
@@ -317,6 +318,29 @@ public sealed class GeofabrikCatalogProvider
                inner.East <= outer.East + Tolerance &&
                inner.South >= outer.South - Tolerance &&
                inner.North <= outer.North + Tolerance;
+    }
+
+    private static bool IsSuitableMatch(GeoBounds regionBounds, GeoBounds targetBounds)
+    {
+        return Contains(regionBounds, targetBounds) ||
+               TargetCoverageRatio(regionBounds, targetBounds) >= MinimumTargetCoverageRatio;
+    }
+
+    private static double TargetCoverageRatio(GeoBounds regionBounds, GeoBounds targetBounds)
+    {
+        var region = regionBounds.Normalize();
+        var target = targetBounds.Normalize();
+        var targetArea = Area(target);
+        if (targetArea <= double.Epsilon)
+            return 0;
+
+        var west = Math.Max(region.West, target.West);
+        var east = Math.Min(region.East, target.East);
+        var south = Math.Max(region.South, target.South);
+        var north = Math.Min(region.North, target.North);
+        var width = Math.Max(0, east - west);
+        var height = Math.Max(0, north - south);
+        return (width * height) / targetArea;
     }
 
     private static double Area(GeoBounds bounds)

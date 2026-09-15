@@ -32,7 +32,10 @@ public sealed partial class MapAnnotationOptionsViewModel : ObservableObject
         static MapAnnotationZoomRange Range(int a, int b) => new(Math.Clamp(Math.Min(a, b), 1, 18), Math.Clamp(Math.Max(a, b), 1, 18));
         return new()
         {
-            Preset = Preset, PlacesEnabled = PlacesEnabled, RoadsEnabled = RoadsEnabled, PoisEnabled = PoisEnabled,
+            Preset = Preset,
+            PlacesEnabled = PlacesEnabled,
+            RoadsEnabled = RoadsEnabled,
+            PoisEnabled = PoisEnabled,
             PlaceZooms = Range(PlaceMinimumZoom, PlaceMaximumZoom),
             RoadZooms = Range(RoadMinimumZoom, RoadMaximumZoom),
             PoiZooms = Range(PoiMinimumZoom, PoiMaximumZoom),

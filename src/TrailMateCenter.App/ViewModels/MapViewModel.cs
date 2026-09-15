@@ -709,10 +709,18 @@ public sealed class MapViewModel : INotifyPropertyChanged
 
     public void CancelOfflineCache()
     {
+        var cancelRequested = false;
         lock (_offlineCacheGate)
         {
-            _offlineCacheRunCts?.Cancel();
+            if (_offlineCacheRunCts is not null && !_offlineCacheRunCts.IsCancellationRequested)
+            {
+                _offlineCacheRunCts.Cancel();
+                cancelRequested = true;
+            }
         }
+
+        if (cancelRequested)
+            SetOfflineCacheStatus("Offline cache cancel requested...");
     }
 
     public Task RunOfflineCacheForSelectionAsync()
@@ -806,7 +814,7 @@ public sealed class MapViewModel : INotifyPropertyChanged
                     if (range.IsEmpty)
                         continue;
 
-                    var tiles = GetIntersectingTiles(range, zoom, preparedSelection);
+                    var tiles = GetIntersectingTiles(range, zoom, preparedSelection, token);
                     var tileCount = tiles.Count;
                     if (tileCount <= 0)
                         continue;
@@ -886,7 +894,7 @@ public sealed class MapViewModel : INotifyPropertyChanged
                     if (range.IsEmpty)
                         continue;
 
-                    var tiles = GetIntersectingTiles(range, zoom, preparedSelection);
+                    var tiles = GetIntersectingTiles(range, zoom, preparedSelection, token);
                     var mapTileCount = tiles.Count;
                     if (mapTileCount <= 0)
                         continue;
@@ -1760,7 +1768,11 @@ public sealed class MapViewModel : INotifyPropertyChanged
         return new TileRange(xMin, xMax, yMin, yMax);
     }
 
-    private static List<(int X, int Y)> GetIntersectingTiles(TileRange range, int zoom, IPreparedGeometry? preparedSelection)
+    private static List<(int X, int Y)> GetIntersectingTiles(
+        TileRange range,
+        int zoom,
+        IPreparedGeometry? preparedSelection,
+        CancellationToken cancellationToken)
     {
         if (range.IsEmpty)
             return new List<(int X, int Y)>();
@@ -1768,8 +1780,10 @@ public sealed class MapViewModel : INotifyPropertyChanged
         var tiles = new List<(int X, int Y)>((range.MaxX - range.MinX + 1) * (range.MaxY - range.MinY + 1));
         for (var x = range.MinX; x <= range.MaxX; x++)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             for (var y = range.MinY; y <= range.MaxY; y++)
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 if (preparedSelection is not null && !IntersectsTile(preparedSelection, zoom, x, y))
                     continue;
 

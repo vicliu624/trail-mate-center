@@ -2,16 +2,21 @@ using Avalonia.Threading;
 using Avalonia.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Mapsui.Projections;
 using Microsoft.Extensions.Logging;
+using NetTopologySuite.Geometries;
+using NetTopologySuite.Geometries.Prepared;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Globalization;
 using System.Linq;
+using System.Text.Json;
 using TrailMateCenter.Localization;
 using TrailMateCenter.Maps;
 using TrailMateCenter.Models;
 using TrailMateCenter.Osm;
+using TrailMateCenter.Places;
 using TrailMateCenter.Protocol;
 using TrailMateCenter.Services;
 using TrailMateCenter.StateMachine;
@@ -1156,11 +1161,17 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         RemoveOfflineCacheRegionCommand.NotifyCanExecuteChanged();
     }
 
-    private async Task SaveOfflineCacheRegionsAsync()
+    private async Task SaveOfflineCacheRegionsAsync(bool allowEmpty = false)
     {
         var regions = OfflineCacheRegions
             .Select(item => item.ToSettings())
             .ToList();
+        if (regions.Count == 0 && !allowEmpty)
+        {
+            _logger.LogWarning("Refusing to persist an empty map cache region list without an explicit clear operation.");
+            return;
+        }
+
         await _sqliteStore.SaveMapCacheRegionsAsync(regions, CancellationToken.None);
     }
 
@@ -1371,11 +1382,23 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         OfflineCacheExportStatusText = loc.GetString("Ui.MapPack.Status.PreparingTiles");
         selectedRegion.MarkExportStarted(targetRoot);
         await SaveOfflineCacheRegionsAsync();
-        var exportProgress = CreateRegionExportProgress(null, selectedRegion);
+        var exportProgress = CreateRegionExportProgress(
+            new Progress<OfflineCacheExportProgress>(progress =>
+            {
+                OfflineCacheExportStatusText = BuildOfflineCacheProgressStatus(loc, progress);
+            }),
+            selectedRegion);
         try
         {
             await PrepareOfflineCacheRegionTilesForExportAsync(selectedRegion, cancellationToken);
             var region = selectedRegion.ToSettings();
+            region = await EnsurePlaceSearchPbfSourceAsync(
+                region,
+                status => OfflineCacheExportStatusText = status,
+                cancellationToken);
+            selectedRegion.ApplySettings(region);
+            await SaveOfflineCacheRegionsAsync();
+
             OfflineCacheExportStatusText = loc.GetString("Status.OfflineCache.ExportInProgress");
             var result = await Task.Run(
                 () => ExportOfflineCacheRegion(region, GetOfflineCacheRoot(), targetRoot, cancellationToken, exportProgress),
@@ -1383,28 +1406,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
 
             if (result.Success)
             {
-                var statusText = loc.Format(
-                    "Status.OfflineCache.ExportDone",
-                    result.CopiedTiles,
-                    result.SourceTiles,
-                    result.SkippedTiles);
-                if (result.PoiEnabled)
-                {
-                    statusText = result.PoiSuccess
-                        ? $"{statusText} {loc.Format("Status.OfflineCache.PoiExportDone", result.PoiCount, result.PoiTileFiles)}"
-                        : $"{statusText} {loc.Format("Status.OfflineCache.PoiExportFailed", result.PoiErrorMessage ?? "unknown")}";
-                }
-                if (result.UnreadableEntries > 0)
-                {
-                    statusText = $"{statusText} {loc.Format("Status.OfflineCache.ExportUnreadableEntries", result.UnreadableEntries)}";
-                }
-
-                if (result.MissingSourceTiles > 0)
-                {
-                    statusText = $"{statusText} {loc.Format("Status.OfflineCache.ExportSourceIncomplete", result.MissingSourceTiles, result.ExpectedTiles)}";
-                }
-
-                OfflineCacheExportStatusText = statusText;
+                OfflineCacheExportStatusText = BuildOfflineCacheExportStatus(loc, result);
                 selectedRegion.ApplyExportResult(
                     true,
                     result.ExpectedTiles,
@@ -1539,6 +1541,13 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         exportProgress?.Report(OfflineCacheExportProgress.Preparing());
         try
         {
+            region = await EnsurePlaceSearchPbfSourceAsync(
+                region,
+                status => OfflineCacheExportStatusText = status,
+                cancellationToken);
+            exportTaskRegion.ApplySettings(region);
+            await SaveOfflineCacheRegionsAsync();
+
             var result = await Task.Run(
                 () => ExportOfflineCacheRegion(region, GetOfflineCacheRoot(), targetRoot, cancellationToken, exportProgress),
                 cancellationToken);
@@ -1598,6 +1607,12 @@ public sealed partial class MainWindowViewModel : ViewModelBase
                 ? $"{statusText} {loc.Format("Status.OfflineCache.PoiExportDone", result.PoiCount, result.PoiTileFiles)}"
                 : $"{statusText} {loc.Format("Status.OfflineCache.PoiExportFailed", result.PoiErrorMessage ?? "unknown")}";
         }
+        if (result.PlaceSearchEnabled)
+        {
+            statusText = result.PlaceSearchSuccess
+                ? $"{statusText} {loc.Format("Status.OfflineCache.PlaceSearchExportDone", result.PlaceSearchCount, result.PlaceSearchNameRows)}"
+                : $"{statusText} {loc.Format("Status.OfflineCache.PlaceSearchExportFailed", result.PlaceSearchErrorMessage ?? "unknown")}";
+        }
         if (result.UnreadableEntries > 0)
         {
             statusText = $"{statusText} {loc.Format("Status.OfflineCache.ExportUnreadableEntries", result.UnreadableEntries)}";
@@ -1611,6 +1626,35 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         return statusText;
     }
 
+    private static string BuildOfflineCacheProgressStatus(
+        LocalizationService loc,
+        OfflineCacheExportProgress progress)
+    {
+        return progress.Kind switch
+        {
+            OfflineCacheExportProgressKind.Layer => loc.Format(
+                "Ui.MapPack.Status.ExportLayerProgress",
+                loc.GetString(progress.LayerResourceKey),
+                progress.Zoom,
+                progress.Completed,
+                progress.Total,
+                progress.CopiedTiles,
+                progress.SkippedTiles),
+            OfflineCacheExportProgressKind.Poi => loc.Format(
+                "Ui.MapPack.Status.ExportPoiProgress",
+                progress.ProcessedElements,
+                progress.ExtractedPoiCount),
+            OfflineCacheExportProgressKind.PlaceSearch => loc.Format(
+                "Ui.MapPack.Status.ExportPlaceSearchProgress",
+                progress.ProcessedElements,
+                progress.ExtractedPoiCount),
+            OfflineCacheExportProgressKind.Finalizing => loc.GetString("Ui.MapPack.Status.ExportFinalizing"),
+            OfflineCacheExportProgressKind.Completed => loc.GetString("Ui.MapPack.Status.ExportCompleted"),
+            OfflineCacheExportProgressKind.Failed => loc.GetString("Ui.MapPack.Status.ExportFailedShort"),
+            _ => loc.GetString("Status.OfflineCache.ExportInProgress"),
+        };
+    }
+
     private bool TryApplySelectedOfflineCacheRegion(bool focusMap)
     {
         if (SelectedOfflineCacheRegion is null)
@@ -1621,12 +1665,17 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             SelectedOfflineCacheRegion.South,
             SelectedOfflineCacheRegion.East,
             SelectedOfflineCacheRegion.North);
-        Map.SetOfflineCacheSelectionBounds(bounds, SelectedOfflineCacheRegion.Name);
-
-        if (focusMap)
+        if (string.IsNullOrWhiteSpace(SelectedOfflineCacheRegion.BoundaryGeoJson) ||
+            !Map.SetOfflineCacheSelectionGeoJson(SelectedOfflineCacheRegion.BoundaryGeoJson, SelectedOfflineCacheRegion.Name, focusMap))
         {
-            Map.IsOfflineCacheSelectionMode = false;
-            Map.FocusOnBounds(bounds);
+            Map.SetOfflineCacheSelectionBounds(bounds, SelectedOfflineCacheRegion.Name);
+            if (focusMap)
+            {
+                Map.IsOfflineCacheSelectionMode = false;
+                Map.FocusOnBounds(bounds);
+            }
+
+            return true;
         }
 
         return true;
@@ -1670,8 +1719,9 @@ public sealed partial class MainWindowViewModel : ViewModelBase
                     : PoiOutputFormat.Readable,
                 SelectedPoiTypes = region.SelectedPoiTypes,
             }.Normalize();
+            var tileSelector = OfflineTileSelector.FromRegion(region);
             var stats = new ExportCopyStats();
-            stats.ProgressTotalTiles = CountExpectedExportTiles(buildOptions, bounds);
+            stats.ProgressTotalTiles = CountExpectedExportTiles(buildOptions, bounds, tileSelector);
             progress?.Report(OfflineCacheExportProgress.Preparing());
 
             var osmMinZoom = Math.Max(buildOptions.MinimumZoom, OfflineCacheBuildOptions.DefaultMinimumZoom);
@@ -1687,6 +1737,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
                     minZoom: osmMinZoom,
                     maxZoom: osmMaxZoom,
                     bounds: bounds,
+                    tileSelector: tileSelector,
                     stats: stats,
                     layerResourceKey: "Ui.MapPack.Layer.Osm",
                     progress: progress,
@@ -1706,6 +1757,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
                     minZoom: terrainMinZoom,
                     maxZoom: terrainMaxZoom,
                     bounds: bounds,
+                    tileSelector: tileSelector,
                     stats: stats,
                     layerResourceKey: "Ui.MapPack.Layer.Terrain",
                     progress: progress,
@@ -1725,6 +1777,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
                     minZoom: satelliteMinZoom,
                     maxZoom: satelliteMaxZoom,
                     bounds: bounds,
+                    tileSelector: tileSelector,
                     stats: stats,
                     layerResourceKey: "Ui.MapPack.Layer.Satellite",
                     progress: progress,
@@ -1741,6 +1794,8 @@ public sealed partial class MainWindowViewModel : ViewModelBase
                     minZoom: contourMinZoom,
                     maxZoom: contourMaxZoom,
                     bounds: bounds,
+                    allowUltraFineContours: buildOptions.IncludeUltraFineContours,
+                    tileSelector: tileSelector,
                     stats: stats,
                     layerResourceKey: "Ui.MapPack.Layer.Contours",
                     progress: progress,
@@ -1775,6 +1830,32 @@ public sealed partial class MainWindowViewModel : ViewModelBase
                     .GetResult();
             }
 
+            PlaceSearchPackExportResult? placeSearchResult = null;
+            if (HasPlaceSearchSource(buildOptions))
+            {
+                progress?.Report(OfflineCacheExportProgress.PlaceSearch(0, 0));
+                var placeService = new PlaceSearchPackExportService();
+                placeSearchResult = placeService.ExportFromPbfAsync(
+                        new PlaceSearchPackExportRequest
+                        {
+                            OutputRoot = ResolveMapPackOutputRoot(mapsRoot, destinationRoot),
+                            PbfPath = buildOptions.PoiPbfPath,
+                            Bounds = new GeoBounds(bounds.West, bounds.South, bounds.East, bounds.North),
+                            BoundaryGeoJson = region.BoundaryGeoJson,
+                            AreaName = region.Name,
+                            AreaAdminLevel = region.AdminLevel,
+                            SourceProvider = region.PoiSourceProvider,
+                            SourceDownloadUrl = region.PoiSourceDownloadUrl,
+                        },
+                        progress: new Progress<PlaceExtractionProgress>(p =>
+                        {
+                            progress?.Report(OfflineCacheExportProgress.PlaceSearch(p.ProcessedElements, p.ExtractedPlaceCount));
+                        }),
+                        cancellationToken: cancellationToken)
+                    .GetAwaiter()
+                    .GetResult();
+            }
+
             progress?.Report(OfflineCacheExportProgress.Finalizing());
 
             return OfflineCacheRegionExportResult.Ok(
@@ -1784,7 +1865,8 @@ public sealed partial class MainWindowViewModel : ViewModelBase
                 stats.CopiedTiles,
                 stats.SkippedTiles,
                 stats.UnreadableEntries,
-                poiResult);
+                poiResult,
+                placeSearchResult);
         }
         catch (OperationCanceledException)
         {
@@ -1855,13 +1937,30 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             (stagedMaps, token) =>
             {
                 ExportTrailMateContours(Path.Combine(cacheRoot, "contours", "tiles"), Path.Combine(stagedMaps, "contour"),
-                    region.MinimumZoom, region.MaximumZoom, bounds, contourStats, "Ui.MapPack.Layer.Contours", progress, token);
+                    region.MinimumZoom, region.MaximumZoom, bounds, region.IncludeUltraFineContours,
+                    OfflineTileSelector.FromRegion(region), contourStats, "Ui.MapPack.Layer.Contours", progress, token);
                 if (contourStats.SourceTiles < contourStats.ExpectedTiles || contourStats.UnreadableEntries > 0 || contourStats.SkippedTiles > 0)
                     throw new InvalidDataException("Contour cache is incomplete. Finish generating contours or deselect Contours before exporting.");
                 return Task.CompletedTask;
             }, cancellationToken).GetAwaiter().GetResult();
         var count = result.TileCount + contourStats.CopiedTiles;
-        return OfflineCacheRegionExportResult.Ok(result.MapsRoot, count, count, count, 0, 0, result.Poi);
+        progress?.Report(OfflineCacheExportProgress.PlaceSearch(0, 0));
+        var placeSearchResult = new PlaceSearchPackExportService().ExportFromPbfAsync(
+            new PlaceSearchPackExportRequest
+            {
+                OutputRoot = ResolveMapPackOutputRoot(result.MapsRoot, destinationRoot),
+                PbfPath = region.PoiPbfPath,
+                Bounds = plan.Area.Bounds,
+                BoundaryGeoJson = region.BoundaryGeoJson,
+                AreaName = region.Name,
+                AreaAdminLevel = region.AdminLevel,
+                SourceProvider = region.PoiSourceProvider,
+                SourceDownloadUrl = region.PoiSourceDownloadUrl,
+            },
+            progress: new Progress<PlaceExtractionProgress>(p =>
+                progress?.Report(OfflineCacheExportProgress.PlaceSearch(p.ProcessedElements, p.ExtractedPlaceCount))),
+            cancellationToken: cancellationToken).GetAwaiter().GetResult();
+        return OfflineCacheRegionExportResult.Ok(result.MapsRoot, count, count, count, 0, 0, result.Poi, placeSearchResult);
     }
 
     private static string ResolveMapsExportRoot(string destinationRoot)
@@ -1887,23 +1986,130 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         return mapsRoot;
     }
 
+    private static string ResolveMapPackOutputRoot(string mapsRoot, string destinationRoot)
+    {
+        var parent = Path.GetDirectoryName(mapsRoot);
+        return string.IsNullOrWhiteSpace(parent) ? destinationRoot : parent;
+    }
+
+    private static bool HasPlaceSearchSource(OfflineCacheBuildOptions buildOptions)
+    {
+        return !string.IsNullOrWhiteSpace(buildOptions.PoiPbfPath);
+    }
+
+    private static async Task<MapCacheRegionSettings> EnsurePlaceSearchPbfSourceAsync(
+        MapCacheRegionSettings region,
+        Action<string>? setStatus,
+        CancellationToken cancellationToken)
+    {
+        var localPbfPath = region.PoiPbfPath?.Trim() ?? string.Empty;
+        if (!string.IsNullOrWhiteSpace(localPbfPath) && File.Exists(localPbfPath))
+        {
+            return region with { PoiPbfPath = localPbfPath };
+        }
+
+        var sourceUrl = region.PoiSourceDownloadUrl?.Trim() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(sourceUrl))
+        {
+            return region with { PoiPbfPath = localPbfPath };
+        }
+
+        var loc = LocalizationService.Instance;
+        var sourceName = string.IsNullOrWhiteSpace(region.Name) ? BuildPlaceSearchSourceName(sourceUrl) : region.Name.Trim();
+        var source = new GeofabrikRegionRecord
+        {
+            Id = BuildPlaceSearchSourceId(sourceUrl, sourceName),
+            Name = sourceName,
+            DisplayName = sourceName,
+            PbfUrl = sourceUrl,
+            Bounds = new GeoBounds(region.West, region.South, region.East, region.North),
+            BoundaryGeoJson = region.BoundaryGeoJson ?? string.Empty,
+        };
+
+        setStatus?.Invoke(loc.Format("Ui.MapPack.Status.DownloadingRegion", source.DisplayName));
+        var downloadService = new GeofabrikPbfDownloadService();
+        var entry = await downloadService
+            .DownloadAsync(
+                source,
+                forceRefresh: false,
+                progress: new Progress<GeofabrikDownloadProgress>(progress =>
+                {
+                    var text = progress.Percent.HasValue
+                        ? loc.Format(
+                            "Ui.MapPack.Status.DownloadingPbfPercent",
+                            progress.Percent.Value,
+                            ExportEstimator.FormatBytes(progress.BytesReceived),
+                            ExportEstimator.FormatBytes(progress.TotalBytes ?? 0))
+                        : loc.Format("Ui.MapPack.Status.DownloadingPbfBytes", ExportEstimator.FormatBytes(progress.BytesReceived));
+                    setStatus?.Invoke(text);
+                }),
+                cancellationToken);
+
+        setStatus?.Invoke(loc.Format(
+            "Ui.MapPack.Status.PbfReady",
+            Path.GetFileName(entry.LocalPath),
+            ExportEstimator.FormatBytes(entry.SizeBytes)));
+
+        return region with
+        {
+            PoiPbfPath = entry.LocalPath,
+            PoiSourceProvider = string.IsNullOrWhiteSpace(region.PoiSourceProvider)
+                ? "geofabrik"
+                : region.PoiSourceProvider.Trim(),
+            PoiSourceDownloadUrl = entry.Url,
+        };
+    }
+
+    private static string BuildPlaceSearchSourceName(string sourceUrl)
+    {
+        try
+        {
+            var fileName = Path.GetFileName(new Uri(sourceUrl).LocalPath);
+            if (!string.IsNullOrWhiteSpace(fileName))
+                return fileName;
+        }
+        catch
+        {
+        }
+
+        return "OSM PBF";
+    }
+
+    private static string BuildPlaceSearchSourceId(string sourceUrl, string fallback)
+    {
+        try
+        {
+            var uri = new Uri(sourceUrl);
+            var id = uri.AbsolutePath.Trim('/').Replace('/', '-');
+            if (!string.IsNullOrWhiteSpace(id))
+                return id;
+        }
+        catch
+        {
+        }
+
+        return string.IsNullOrWhiteSpace(fallback) ? "osm-pbf" : fallback.Trim();
+    }
+
     private static long CountExpectedExportTiles(
         OfflineCacheBuildOptions buildOptions,
-        (double West, double South, double East, double North) bounds)
+        (double West, double South, double East, double North) bounds,
+        OfflineTileSelector tileSelector)
     {
         var total = 0L;
 
         static long CountBaseTiles(
             int minZoom,
             int maxZoom,
-            (double West, double South, double East, double North) bounds)
+            (double West, double South, double East, double North) bounds,
+            OfflineTileSelector tileSelector)
         {
             var total = 0L;
             for (var zoom = minZoom; zoom <= maxZoom; zoom++)
             {
                 var range = GetOfflineRange(bounds, zoom);
                 if (!range.IsEmpty)
-                    total += range.TileCount;
+                    total += tileSelector.CountTiles(range, zoom);
             }
 
             return total;
@@ -1912,17 +2118,17 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         var osmMinZoom = Math.Max(buildOptions.MinimumZoom, OfflineCacheBuildOptions.DefaultMinimumZoom);
         var osmMaxZoom = Math.Min(buildOptions.MaximumZoom, OfflineCacheBuildOptions.DefaultMaximumZoom);
         if (buildOptions.IncludeOsm && osmMinZoom <= osmMaxZoom)
-            total += CountBaseTiles(osmMinZoom, osmMaxZoom, bounds);
+            total += CountBaseTiles(osmMinZoom, osmMaxZoom, bounds, tileSelector);
 
         var terrainMinZoom = Math.Max(buildOptions.MinimumZoom, OfflineCacheBuildOptions.DefaultMinimumZoom);
         var terrainMaxZoom = Math.Min(buildOptions.MaximumZoom, OfflineCacheBuildOptions.TerrainMaximumZoom);
         if (buildOptions.IncludeTerrain && terrainMinZoom <= terrainMaxZoom)
-            total += CountBaseTiles(terrainMinZoom, terrainMaxZoom, bounds);
+            total += CountBaseTiles(terrainMinZoom, terrainMaxZoom, bounds, tileSelector);
 
         var satelliteMinZoom = Math.Max(buildOptions.MinimumZoom, OfflineCacheBuildOptions.DefaultMinimumZoom);
         var satelliteMaxZoom = Math.Min(buildOptions.MaximumZoom, OfflineCacheBuildOptions.DefaultMaximumZoom);
         if (buildOptions.IncludeSatellite && satelliteMinZoom <= satelliteMaxZoom)
-            total += CountBaseTiles(satelliteMinZoom, satelliteMaxZoom, bounds);
+            total += CountBaseTiles(satelliteMinZoom, satelliteMaxZoom, bounds, tileSelector);
 
         var contourMinZoom = Math.Max(buildOptions.MinimumZoom, OfflineCacheBuildOptions.DefaultMinimumZoom);
         var contourMaxZoom = Math.Min(buildOptions.MaximumZoom, OfflineCacheBuildOptions.DefaultMaximumZoom);
@@ -1930,12 +2136,13 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         {
             for (var zoom = contourMinZoom; zoom <= contourMaxZoom; zoom++)
             {
-                if (GetTrailMateContourProfileForZoom(zoom) is null)
+                var profiles = GetContourProfilesForZoom(zoom, buildOptions.IncludeUltraFineContours);
+                if (profiles.Count == 0)
                     continue;
 
                 var range = GetOfflineRange(bounds, zoom);
                 if (!range.IsEmpty)
-                    total += range.TileCount;
+                    total += tileSelector.CountTiles(range, zoom) * profiles.Count;
             }
         }
 
@@ -1951,6 +2158,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         int minZoom,
         int maxZoom,
         (double West, double South, double East, double North) bounds,
+        OfflineTileSelector tileSelector,
         ExportCopyStats stats,
         string layerResourceKey,
         IProgress<OfflineCacheExportProgress>? progress,
@@ -1966,7 +2174,11 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             if (range.IsEmpty)
                 continue;
 
-            stats.ExpectedTiles += range.TileCount;
+            var expectedTiles = tileSelector.CountTiles(range, zoom);
+            if (expectedTiles <= 0)
+                continue;
+
+            stats.ExpectedTiles += expectedTiles;
             CopyTilesInRange(
                 sourceRoot,
                 targetRoot,
@@ -1975,6 +2187,8 @@ public sealed partial class MainWindowViewModel : ViewModelBase
                 convertToPng,
                 zoom,
                 range,
+                expectedTiles,
+                tileSelector,
                 stats,
                 layerResourceKey,
                 progress,
@@ -2045,6 +2259,8 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         int minZoom,
         int maxZoom,
         (double West, double South, double East, double North) bounds,
+        bool allowUltraFineContours,
+        OfflineTileSelector tileSelector,
         ExportCopyStats stats,
         string layerResourceKey,
         IProgress<OfflineCacheExportProgress>? progress,
@@ -2056,46 +2272,39 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            var profile = GetTrailMateContourProfileForZoom(zoom);
-            if (profile is null)
+            var profiles = GetContourProfilesForZoom(zoom, allowUltraFineContours);
+            if (profiles.Count == 0)
                 continue;
 
             var range = GetOfflineRange(bounds, zoom);
             if (range.IsEmpty)
                 continue;
 
-            var profileSourceRoot = Path.Combine(contourRoot, profile);
-            var profileTargetRoot = Path.Combine(targetRoot, profile);
-            stats.ExpectedTiles += range.TileCount;
-            CopyTilesInRange(
-                profileSourceRoot,
-                profileTargetRoot,
-                "png",
-                "png",
-                false,
-                zoom,
-                range,
-                stats,
-                layerResourceKey,
-                progress,
-                cancellationToken);
+            var expectedTiles = tileSelector.CountTiles(range, zoom);
+            if (expectedTiles <= 0)
+                continue;
+
+            foreach (var profile in profiles)
+            {
+                var profileSourceRoot = Path.Combine(contourRoot, profile);
+                var profileTargetRoot = Path.Combine(targetRoot, profile);
+                stats.ExpectedTiles += expectedTiles;
+                CopyTilesInRange(
+                    profileSourceRoot,
+                    profileTargetRoot,
+                    "png",
+                    "png",
+                    false,
+                    zoom,
+                    range,
+                    expectedTiles,
+                    tileSelector,
+                    stats,
+                    layerResourceKey,
+                    progress,
+                    cancellationToken);
+            }
         }
-    }
-
-    private static string? GetTrailMateContourProfileForZoom(int zoom)
-    {
-        if (zoom <= 7)
-            return null;
-        if (zoom is 8 or 10)
-            return "major-500";
-        if (zoom is 9 or 11)
-            return "major-200";
-        if (zoom is >= 12 and <= 14)
-            return "major-100";
-        if (zoom is 15 or 16)
-            return "major-50";
-
-        return "major-25";
     }
 
     private static void CopyTilesInRange(
@@ -2106,6 +2315,8 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         bool convertToPng,
         int zoom,
         TileRange range,
+        long expectedTiles,
+        OfflineTileSelector tileSelector,
         ExportCopyStats stats,
         string layerResourceKey,
         IProgress<OfflineCacheExportProgress>? progress,
@@ -2113,9 +2324,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     {
         var zoomText = zoom.ToString(CultureInfo.InvariantCulture);
         var sourceZoomRoot = Path.Combine(sourceRoot, zoomText);
-        var totalColumns = Math.Max(1, range.MaxX - range.MinX + 1);
-        var tilesPerColumn = Math.Max(1L, (long)range.MaxY - range.MinY + 1);
-        var totalTiles = Math.Max(1L, range.TileCount);
+        var totalTiles = Math.Max(1L, expectedTiles);
         var progressTotalTiles = Math.Max(1L, stats.ProgressTotalTiles);
         if (!Directory.Exists(sourceZoomRoot))
         {
@@ -2143,7 +2352,12 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         for (var x = range.MinX; x <= range.MaxX; x++)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            var columnTiles = Math.Min(tilesPerColumn, totalTiles - processedZoomTiles);
+            var columnTiles = Math.Min(
+                tileSelector.CountTilesInColumn(range, zoom, x, cancellationToken),
+                totalTiles - processedZoomTiles);
+            if (columnTiles <= 0)
+                continue;
+
             processedZoomTiles += columnTiles;
             stats.ProcessedTiles += columnTiles;
             var processedTiles = Math.Min(stats.ProcessedTiles, progressTotalTiles);
@@ -2177,6 +2391,8 @@ public sealed partial class MainWindowViewModel : ViewModelBase
                     if (!int.TryParse(fileName, NumberStyles.Integer, CultureInfo.InvariantCulture, out var y))
                         continue;
                     if (y < range.MinY || y > range.MaxY)
+                        continue;
+                    if (!tileSelector.IncludesTile(zoom, x, y))
                         continue;
 
                     stats.SourceTiles++;
@@ -2337,20 +2553,23 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         if (index < 0)
             return;
 
+        if (Map.IsOfflineCacheRunning)
+            Map.CancelOfflineCache();
+
         OfflineCacheRegions.RemoveAt(index);
         UntrackOfflineCacheRegion(removed);
         SelectedOfflineCacheRegion = OfflineCacheRegions.Count == 0
             ? null
             : OfflineCacheRegions[Math.Min(index, OfflineCacheRegions.Count - 1)];
 
-        _ = PersistOfflineCacheRegionsSafeAsync();
+        _ = PersistOfflineCacheRegionsSafeAsync(allowEmpty: OfflineCacheRegions.Count == 0);
     }
 
-    private async Task PersistOfflineCacheRegionsSafeAsync()
+    private async Task PersistOfflineCacheRegionsSafeAsync(bool allowEmpty = false)
     {
         try
         {
-            await SaveOfflineCacheRegionsAsync();
+            await SaveOfflineCacheRegionsAsync(allowEmpty);
         }
         catch (Exception ex)
         {
@@ -2443,8 +2662,11 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             nameof(MapCacheRegionViewModel.EnablePoiSeparation) or
             nameof(MapCacheRegionViewModel.MinimumZoom) or
             nameof(MapCacheRegionViewModel.MaximumZoom) or
+            nameof(MapCacheRegionViewModel.PoiPbfPath) or
+            nameof(MapCacheRegionViewModel.PoiSourceDownloadUrl) or
             nameof(MapCacheRegionViewModel.ExportOutputDirectory) or
-            nameof(MapCacheRegionViewModel.ExportState))
+            nameof(MapCacheRegionViewModel.ExportState) or
+            nameof(MapCacheRegionViewModel.NeedsPlaceSearchBackfill))
         {
             NotifyOfflineCacheBuildAvailabilityChanged();
         }
@@ -2494,6 +2716,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             region.North);
         var options = region.ToBuildOptions();
         var root = GetOfflineCacheRoot();
+        var tileSelector = OfflineTileSelector.FromRegion(region.ToSettings());
 
         var osm = InspectBaseLayer(
             Path.Combine(root, "tilecache"),
@@ -2502,6 +2725,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             Math.Min(options.MaximumZoom, OfflineCacheBuildOptions.DefaultMaximumZoom),
             options.IncludeOsm,
             bounds,
+            tileSelector,
             cancellationToken);
         var terrain = InspectBaseLayer(
             Path.Combine(root, "terrain-cache"),
@@ -2510,6 +2734,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             Math.Min(options.MaximumZoom, OfflineCacheBuildOptions.TerrainMaximumZoom),
             options.IncludeTerrain,
             bounds,
+            tileSelector,
             cancellationToken);
         var satellite = InspectBaseLayer(
             Path.Combine(root, "satellite-cache"),
@@ -2518,6 +2743,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             Math.Min(options.MaximumZoom, OfflineCacheBuildOptions.DefaultMaximumZoom),
             options.IncludeSatellite,
             bounds,
+            tileSelector,
             cancellationToken);
         var contour = InspectContourLayer(
             root,
@@ -2526,6 +2752,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             options.IncludeUltraFineContours,
             options.MinimumZoom,
             options.MaximumZoom,
+            tileSelector,
             cancellationToken);
 
         var existingTiles = osm.ExistingTiles + terrain.ExistingTiles + satellite.ExistingTiles + contour.ExistingTiles;
@@ -2550,6 +2777,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         int maxZoom,
         bool enabled,
         (double West, double South, double East, double North) bounds,
+        OfflineTileSelector tileSelector,
         CancellationToken cancellationToken)
     {
         if (!enabled)
@@ -2567,8 +2795,12 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             if (range.IsEmpty)
                 continue;
 
-            expectedTiles += range.TileCount;
-            existingTiles += CountExistingTiles(cacheRoot, extension, zoom, range, cancellationToken);
+            var expectedForZoom = tileSelector.CountTiles(range, zoom, cancellationToken);
+            if (expectedForZoom <= 0)
+                continue;
+
+            expectedTiles += expectedForZoom;
+            existingTiles += CountExistingTiles(cacheRoot, extension, zoom, range, tileSelector, cancellationToken);
         }
 
         return new CacheLayerCoverage(existingTiles, expectedTiles);
@@ -2581,6 +2813,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         bool includeUltraFineContours,
         int minZoom,
         int maxZoom,
+        OfflineTileSelector tileSelector,
         CancellationToken cancellationToken)
     {
         if (!includeContours)
@@ -2603,11 +2836,15 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             if (range.IsEmpty)
                 continue;
 
-            expectedTiles += range.TileCount * profiles.Count;
+            var expectedForZoom = tileSelector.CountTiles(range, zoom, cancellationToken);
+            if (expectedForZoom <= 0)
+                continue;
+
+            expectedTiles += expectedForZoom * profiles.Count;
             foreach (var profile in profiles)
             {
                 var profileRoot = Path.Combine(contourRoot, profile);
-                existingTiles += CountExistingTiles(profileRoot, "png", zoom, range, cancellationToken);
+                existingTiles += CountExistingTiles(profileRoot, "png", zoom, range, tileSelector, cancellationToken);
             }
         }
 
@@ -2619,6 +2856,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         string extension,
         int zoom,
         TileRange range,
+        OfflineTileSelector tileSelector,
         CancellationToken cancellationToken)
     {
         var count = 0L;
@@ -2654,6 +2892,8 @@ public sealed partial class MainWindowViewModel : ViewModelBase
                         continue;
                     if (y < range.MinY || y > range.MaxY)
                         continue;
+                    if (!tileSelector.IncludesTile(zoom, x, y))
+                        continue;
                     count++;
                 }
                 catch (Exception ex) when (IsSkippableFileSystemException(ex))
@@ -2681,6 +2921,244 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             (yMin, yMax) = (yMax, yMin);
 
         return new TileRange(xMin, xMax, yMin, yMax);
+    }
+
+    private sealed class OfflineTileSelector
+    {
+        private readonly IPreparedGeometry? _preparedSelection;
+
+        private OfflineTileSelector(IPreparedGeometry? preparedSelection)
+        {
+            _preparedSelection = preparedSelection;
+        }
+
+        public static OfflineTileSelector FromRegion(MapCacheRegionSettings region)
+        {
+            return new OfflineTileSelector(TryCreatePreparedBoundary(region.BoundaryGeoJson));
+        }
+
+        public long CountTiles(TileRange range, int zoom, CancellationToken cancellationToken = default)
+        {
+            if (range.IsEmpty)
+                return 0;
+            if (_preparedSelection is null)
+                return range.TileCount;
+
+            var total = 0L;
+            for (var x = range.MinX; x <= range.MaxX; x++)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                total += CountTilesInColumn(range, zoom, x, cancellationToken);
+            }
+
+            return total;
+        }
+
+        public long CountTilesInColumn(
+            TileRange range,
+            int zoom,
+            int x,
+            CancellationToken cancellationToken = default)
+        {
+            if (range.IsEmpty || x < range.MinX || x > range.MaxX)
+                return 0;
+            if (_preparedSelection is null)
+                return Math.Max(0, range.MaxY - range.MinY + 1);
+
+            var total = 0L;
+            for (var y = range.MinY; y <= range.MaxY; y++)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                if (IncludesTile(zoom, x, y))
+                    total++;
+            }
+
+            return total;
+        }
+
+        public bool IncludesTile(int zoom, int x, int y)
+        {
+            return _preparedSelection is null || IntersectsTile(_preparedSelection, zoom, x, y);
+        }
+    }
+
+    private static IPreparedGeometry? TryCreatePreparedBoundary(string? geoJson)
+    {
+        if (string.IsNullOrWhiteSpace(geoJson))
+            return null;
+
+        try
+        {
+            using var document = JsonDocument.Parse(geoJson);
+            var polygons = new List<Polygon>();
+            CollectGeoJsonPolygons(document.RootElement, polygons);
+            if (polygons.Count == 0)
+                return null;
+
+            Geometry geometry = polygons.Count == 1
+                ? polygons[0]
+                : new MultiPolygon(polygons.ToArray());
+            if (!geometry.IsValid)
+                geometry = geometry.Buffer(0);
+            return geometry.IsEmpty ? null : PreparedGeometryFactory.Prepare(geometry);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private static bool IntersectsTile(IPreparedGeometry preparedSelection, int zoom, int x, int y)
+    {
+        var bounds = ContourTileMath.TileToBounds(x, y, zoom);
+        var (westX, southY) = SphericalMercator.FromLonLat(bounds.West, bounds.South);
+        var (eastX, northY) = SphericalMercator.FromLonLat(bounds.East, bounds.North);
+        var minX = Math.Min(westX, eastX);
+        var maxX = Math.Max(westX, eastX);
+        var minY = Math.Min(southY, northY);
+        var maxY = Math.Max(southY, northY);
+
+        var tilePolygon = new Polygon(new LinearRing(new[]
+        {
+            new Coordinate(minX, minY),
+            new Coordinate(maxX, minY),
+            new Coordinate(maxX, maxY),
+            new Coordinate(minX, maxY),
+            new Coordinate(minX, minY),
+        }));
+        return preparedSelection.Intersects(tilePolygon);
+    }
+
+    private static void CollectGeoJsonPolygons(JsonElement element, List<Polygon> output)
+    {
+        if (element.ValueKind != JsonValueKind.Object)
+            return;
+        if (!element.TryGetProperty("type", out var typeElement) ||
+            typeElement.ValueKind != JsonValueKind.String)
+        {
+            return;
+        }
+
+        var type = typeElement.GetString();
+        if (string.Equals(type, "FeatureCollection", StringComparison.OrdinalIgnoreCase) &&
+            element.TryGetProperty("features", out var features) &&
+            features.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var feature in features.EnumerateArray())
+                CollectGeoJsonPolygons(feature, output);
+            return;
+        }
+
+        if (string.Equals(type, "Feature", StringComparison.OrdinalIgnoreCase) &&
+            element.TryGetProperty("geometry", out var geometry))
+        {
+            CollectGeoJsonPolygons(geometry, output);
+            return;
+        }
+
+        if (!element.TryGetProperty("coordinates", out var coordinates))
+            return;
+
+        if (string.Equals(type, "Polygon", StringComparison.OrdinalIgnoreCase))
+        {
+            var polygon = TryParseGeoJsonPolygon(coordinates);
+            if (polygon is not null)
+                output.Add(polygon);
+            return;
+        }
+
+        if (string.Equals(type, "MultiPolygon", StringComparison.OrdinalIgnoreCase) &&
+            coordinates.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var polygonElement in coordinates.EnumerateArray())
+            {
+                var polygon = TryParseGeoJsonPolygon(polygonElement);
+                if (polygon is not null)
+                    output.Add(polygon);
+            }
+        }
+    }
+
+    private static Polygon? TryParseGeoJsonPolygon(JsonElement polygonElement)
+    {
+        if (polygonElement.ValueKind != JsonValueKind.Array)
+            return null;
+
+        var rings = new List<LinearRing>();
+        foreach (var ringElement in polygonElement.EnumerateArray())
+        {
+            var coords = ParseGeoJsonRing(ringElement);
+            if (coords.Length >= 4)
+                rings.Add(new LinearRing(coords));
+        }
+
+        return rings.Count == 0
+            ? null
+            : new Polygon(rings[0], rings.Skip(1).ToArray());
+    }
+
+    private static Coordinate[] ParseGeoJsonRing(JsonElement ringElement)
+    {
+        if (ringElement.ValueKind != JsonValueKind.Array)
+            return Array.Empty<Coordinate>();
+
+        var coords = new List<Coordinate>();
+        foreach (var pointElement in ringElement.EnumerateArray())
+        {
+            if (!TryReadGeoJsonPosition(pointElement, out var lon, out var lat))
+                continue;
+
+            var (x, y) = SphericalMercator.FromLonLat(lon, lat);
+            coords.Add(new Coordinate(x, y));
+        }
+
+        if (coords.Count > 0 &&
+            (Math.Abs(coords[0].X - coords[^1].X) > 0.001 ||
+             Math.Abs(coords[0].Y - coords[^1].Y) > 0.001))
+        {
+            coords.Add(coords[0]);
+        }
+
+        return coords.ToArray();
+    }
+
+    private static bool TryReadGeoJsonPosition(JsonElement pointElement, out double lon, out double lat)
+    {
+        lon = 0;
+        lat = 0;
+        if (pointElement.ValueKind != JsonValueKind.Array)
+            return false;
+
+        var values = pointElement.EnumerateArray().Take(2).ToArray();
+        if (values.Length < 2)
+            return false;
+        if (!TryReadJsonDouble(values[0], out lon))
+            return false;
+        if (!TryReadJsonDouble(values[1], out lat))
+            return false;
+
+        return IsValidLonLat(lon, lat);
+    }
+
+    private static bool TryReadJsonDouble(JsonElement element, out double value)
+    {
+        if (element.ValueKind == JsonValueKind.Number)
+            return element.TryGetDouble(out value);
+        if (element.ValueKind == JsonValueKind.String)
+            return double.TryParse(element.GetString(), NumberStyles.Float, CultureInfo.InvariantCulture, out value);
+
+        value = 0;
+        return false;
+    }
+
+    private static bool IsValidLonLat(double lon, double lat)
+    {
+        return !double.IsNaN(lon) &&
+               !double.IsInfinity(lon) &&
+               !double.IsNaN(lat) &&
+               !double.IsInfinity(lat) &&
+               lon is >= -180 and <= 180 &&
+               lat is >= -90 and <= 90;
     }
 
     private static IReadOnlyList<string> GetContourProfilesForZoom(int zoom, bool allowUltraFineContours)
@@ -2747,10 +3225,11 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         Preparing = 0,
         Layer = 1,
         Poi = 2,
-        Finalizing = 3,
-        Completed = 4,
-        Failed = 5,
-        LocalRendering = 6,
+        PlaceSearch = 3,
+        Finalizing = 4,
+        Completed = 5,
+        Failed = 6,
+        LocalRendering = 7,
     }
 
     public readonly record struct OfflineCacheExportProgress(
@@ -2789,6 +3268,11 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             return new OfflineCacheExportProgress(OfflineCacheExportProgressKind.Poi, string.Empty, 0, 0, 0, 0, 0, processedElements, extractedPoiCount);
         }
 
+        public static OfflineCacheExportProgress PlaceSearch(long processedElements, long extractedPlaceCount)
+        {
+            return new OfflineCacheExportProgress(OfflineCacheExportProgressKind.PlaceSearch, string.Empty, 0, 0, 0, 0, 0, processedElements, extractedPlaceCount);
+        }
+
         public static OfflineCacheExportProgress Finalizing()
         {
             return new OfflineCacheExportProgress(OfflineCacheExportProgressKind.Finalizing, string.Empty, 0, 0, 0, 0, 0, 0, 0);
@@ -2818,6 +3302,11 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         long PoiCount,
         int PoiTileFiles,
         string? PoiErrorMessage,
+        bool PlaceSearchEnabled,
+        bool PlaceSearchSuccess,
+        long PlaceSearchCount,
+        long PlaceSearchNameRows,
+        string? PlaceSearchErrorMessage,
         string? ErrorMessage)
     {
         public long MissingSourceTiles => Math.Max(0, ExpectedTiles - SourceTiles);
@@ -2829,7 +3318,8 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             long copiedTiles,
             long skippedTiles,
             long unreadableEntries,
-            PoiExportResult? poiResult)
+            PoiExportResult? poiResult,
+            PlaceSearchPackExportResult? placeSearchResult)
         {
             return new OfflineCacheRegionExportResult(
                 Success: true,
@@ -2844,6 +3334,11 @@ public sealed partial class MainWindowViewModel : ViewModelBase
                 PoiCount: poiResult?.SourcePoiCount ?? 0,
                 PoiTileFiles: poiResult?.TileFilesWritten ?? 0,
                 PoiErrorMessage: poiResult?.ErrorMessage,
+                PlaceSearchEnabled: placeSearchResult is not null,
+                PlaceSearchSuccess: placeSearchResult?.Success == true,
+                PlaceSearchCount: placeSearchResult?.PlaceCount ?? 0,
+                PlaceSearchNameRows: placeSearchResult?.NameRowsWritten ?? 0,
+                PlaceSearchErrorMessage: placeSearchResult?.ErrorMessage,
                 ErrorMessage: null);
         }
 
@@ -2862,6 +3357,11 @@ public sealed partial class MainWindowViewModel : ViewModelBase
                 PoiCount: 0,
                 PoiTileFiles: 0,
                 PoiErrorMessage: null,
+                PlaceSearchEnabled: false,
+                PlaceSearchSuccess: false,
+                PlaceSearchCount: 0,
+                PlaceSearchNameRows: 0,
+                PlaceSearchErrorMessage: null,
                 ErrorMessage: errorMessage);
         }
     }

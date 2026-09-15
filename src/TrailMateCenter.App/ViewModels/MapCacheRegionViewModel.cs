@@ -193,6 +193,9 @@ public sealed partial class MapCacheRegionViewModel : ObservableObject
             South,
             East,
             North);
+    public string SelectionShapeText => string.IsNullOrWhiteSpace(BoundaryGeoJson)
+        ? T("Ui.Dashboard.OfflineCacheRegionsDialog.Shape.Rectangle")
+        : T("Ui.Dashboard.OfflineCacheRegionsDialog.Shape.Boundary");
 
     public string BuildTargetsText
     {
@@ -235,16 +238,31 @@ public sealed partial class MapCacheRegionViewModel : ObservableObject
             if (string.IsNullOrWhiteSpace(ExportOutputDirectory))
                 return false;
 
+            if (NeedsPlaceSearchBackfill)
+                return true;
+
             return NormalizeExportState(ExportState) is ExportStateExporting or
                 ExportStatePartial or
                 ExportStateFailed or
                 ExportStateCanceled;
         }
     }
+
+    public bool NeedsPlaceSearchBackfill =>
+        HasPlaceSearchSourceReference &&
+        !HasPlaceSearchPack(ExportOutputDirectory);
+
+    private bool HasPlaceSearchSourceReference =>
+        !string.IsNullOrWhiteSpace(PoiPbfPath) ||
+        !string.IsNullOrWhiteSpace(PoiSourceDownloadUrl);
+
     public string ExportTaskText
     {
         get
         {
+            if (NeedsPlaceSearchBackfill)
+                return T("Ui.Dashboard.OfflineCacheRegionsDialog.ExportTask.Partial");
+
             var state = NormalizeExportState(ExportState);
             return state switch
             {
@@ -707,6 +725,7 @@ public sealed partial class MapCacheRegionViewModel : ObservableObject
     partial void OnSouthChanged(double value) => OnPropertyChanged(nameof(BoundsText));
     partial void OnEastChanged(double value) => OnPropertyChanged(nameof(BoundsText));
     partial void OnNorthChanged(double value) => OnPropertyChanged(nameof(BoundsText));
+    partial void OnBoundaryGeoJsonChanged(string value) => OnPropertyChanged(nameof(SelectionShapeText));
     partial void OnMinimumZoomChanged(int value)
     {
         var clamped = Math.Clamp(
@@ -753,6 +772,9 @@ public sealed partial class MapCacheRegionViewModel : ObservableObject
         OnPropertyChanged(nameof(BuildTargetsText));
         OnPropertyChanged(nameof(PoiSummaryText));
     }
+
+    partial void OnPoiPbfPathChanged(string value) => NotifyExportTaskChanged();
+    partial void OnPoiSourceDownloadUrlChanged(string value) => NotifyExportTaskChanged();
 
     partial void OnPoiIndexMinimumZoomChanged(int value)
     {
@@ -847,6 +869,7 @@ public sealed partial class MapCacheRegionViewModel : ObservableObject
     {
         OnPropertyChanged(nameof(HasExportTask));
         OnPropertyChanged(nameof(CanResumeExport));
+        OnPropertyChanged(nameof(NeedsPlaceSearchBackfill));
         OnPropertyChanged(nameof(ExportTaskText));
         OnPropertyChanged(nameof(ExportTaskDetailText));
         OnPropertyChanged(nameof(ExportTaskColor));
@@ -876,6 +899,41 @@ public sealed partial class MapCacheRegionViewModel : ObservableObject
             ExportStateCanceled => ExportStateCanceled,
             _ => ExportStateNone,
         };
+    }
+
+    private static bool HasPlaceSearchPack(string? exportOutputDirectory)
+    {
+        if (string.IsNullOrWhiteSpace(exportOutputDirectory))
+            return false;
+
+        var root = exportOutputDirectory.Trim();
+        if (string.Equals(Path.GetFileName(root), "maps", StringComparison.OrdinalIgnoreCase))
+        {
+            root = Path.GetDirectoryName(root) ?? root;
+        }
+
+        var placesRoot = Path.Combine(root, "places");
+        if (!Directory.Exists(placesRoot))
+            return false;
+
+        var packsRoot = Path.Combine(placesRoot, "packs");
+        if (!Directory.Exists(packsRoot))
+            return false;
+
+        try
+        {
+            return Directory.EnumerateDirectories(packsRoot)
+                .Where(static path => !Path.GetFileName(path).StartsWith(".", StringComparison.Ordinal))
+                .Any(static path =>
+                    File.Exists(Path.Combine(path, "manifest.json")) &&
+                    File.Exists(Path.Combine(path, "places.bin")) &&
+                    File.Exists(Path.Combine(path, "names.bin")) &&
+                    File.Exists(Path.Combine(path, "licenses.json")));
+        }
+        catch
+        {
+            return false;
+        }
     }
 
     private static PoiOutputFormat ParsePoiOutputFormat(string? value)

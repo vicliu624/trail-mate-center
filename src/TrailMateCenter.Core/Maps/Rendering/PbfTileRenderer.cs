@@ -38,8 +38,12 @@ internal static class PbfTileRenderer
             {
                 using var casing = new SKPaint
                 {
-                    IsAntialias = true, Style = SKPaintStyle.Stroke, Color = SKColor.Parse("#b6afa1"),
-                    StrokeWidth = width + 1.2f, StrokeCap = SKStrokeCap.Round, StrokeJoin = SKStrokeJoin.Round,
+                    IsAntialias = true,
+                    Style = SKPaintStyle.Stroke,
+                    Color = SKColor.Parse("#b6afa1"),
+                    StrokeWidth = width + 1.2f,
+                    StrokeCap = SKStrokeCap.Round,
+                    StrokeJoin = SKStrokeJoin.Round,
                 };
                 canvas.DrawPath(geometryPath, casing);
             }
@@ -71,8 +75,9 @@ internal static class PbfTileRenderer
         var bounds = new Envelope(firstX * cellWidth / scale, (lastX + 1) * cellWidth / scale,
             firstY * cellHeight / scale, (lastY + 1) * cellHeight / scale);
         var occupied = new HashSet<(long X, long Y)>();
-        using var typeface = SKFontManager.Default.MatchCharacter('昆')
-            ?? throw new InvalidOperationException("A Chinese font is required to render map labels. Install a CJK font and retry.");
+        var fontPath = Path.Combine(AppContext.BaseDirectory, "Resources", "AnnotationFonts", "NotoSansCJKsc-Regular.otf");
+        using var typeface = SKTypeface.FromFile(fontPath)
+            ?? throw new InvalidOperationException("The bundled map-label font is missing. Reinstall Center and retry.");
         using var font = new SKFont(typeface, 12);
         using var halo = new SKPaint { IsAntialias = true, Color = SKColors.White, Style = SKPaintStyle.Stroke, StrokeWidth = 3, StrokeJoin = SKStrokeJoin.Round };
         using var ink = new SKPaint { IsAntialias = true, Color = SKColor.Parse("#343c40") };
@@ -135,16 +140,28 @@ internal static class PbfTileRenderer
         var factor = Math.Clamp((zoom - 8) / 8f, 0.25f, 1.5f);
         return kind switch
         {
-            "highway" => 5 * factor, "road" => 4 * factor, "street" => 3 * factor,
-            "path" => 1.2f, "river" => 1.5f * factor, _ => 1,
+            "highway" => 5 * factor,
+            "road" => 4 * factor,
+            "street" => 3 * factor,
+            "path" => 1.2f,
+            "river" => 1.5f * factor,
+            _ => 1,
         };
     }
 
     private static SKColor Color(string kind, bool terrain) => SKColor.Parse(kind switch
     {
-        "water" or "river" or "coastline" => "#91c9e5", "building" => "#c7b9ac",
-        "forest" => terrain ? "#b2c993" : "#bad5aa", "green" => "#d0e3b3",
-        "farmland" => "#e8e3bb", "builtup" => "#e1dcd4", "highway" => "#edb877",
-        "road" => "#f8df9b", "street" => "#ffffff", "path" => "#a57f57", "rail" => "#888888", _ => "#aaaaaa",
+        "water" or "river" or "coastline" => "#91c9e5",
+        "building" => "#c7b9ac",
+        "forest" => terrain ? "#b2c993" : "#bad5aa",
+        "green" => "#d0e3b3",
+        "farmland" => "#e8e3bb",
+        "builtup" => "#e1dcd4",
+        "highway" => "#edb877",
+        "road" => "#f8df9b",
+        "street" => "#ffffff",
+        "path" => "#a57f57",
+        "rail" => "#888888",
+        _ => "#aaaaaa",
     });
 }

@@ -9,7 +9,7 @@ public sealed class LvglAnnotationFontTests
     public void SubsetWritesBoundedUncompressedTablesAndRejectsInvalidUnicode()
     {
         var directory = Path.Combine(Path.GetTempPath(), "TrailMateCenter.Tests", Guid.NewGuid().ToString("N"));
-        var source = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Fonts), "msyh.ttc");
+        var source = Path.Combine(AppContext.BaseDirectory, "Resources", "AnnotationFonts", "NotoSansCJKsc-Regular.otf");
         var output = Path.Combine(directory, "font.bin");
         try
         {

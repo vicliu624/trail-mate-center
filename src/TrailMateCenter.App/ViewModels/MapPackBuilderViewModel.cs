@@ -316,6 +316,13 @@ public sealed partial class MapPackBuilderViewModel : ObservableObject
                 IsExportProgressIndeterminate = true;
                 ExportProgressText = F("Ui.MapPack.Status.LocalRendering", progress.ProcessedElements);
                 break;
+            case MainWindowViewModel.OfflineCacheExportProgressKind.PlaceSearch:
+                IsExportProgressIndeterminate = true;
+                ExportProgressText = F(
+                    "Ui.MapPack.Status.ExportPlaceSearchProgress",
+                    progress.ProcessedElements,
+                    progress.ExtractedPoiCount);
+                break;
             case MainWindowViewModel.OfflineCacheExportProgressKind.Finalizing:
                 IsExportProgressIndeterminate = true;
                 ExportProgressText = T("Ui.MapPack.Status.ExportFinalizing");

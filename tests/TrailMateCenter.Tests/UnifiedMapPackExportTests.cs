@@ -58,7 +58,8 @@ public sealed class UnifiedMapPackExportTests
         await File.WriteAllTextAsync(Path.Combine(maps, "keep.txt"), "existing");
         await Assert.ThrowsAsync<IOException>(() => new LocalMapPackExporter().ExportAsync(plan with
         {
-            Annotations = new(), BaseLayers = plan.BaseLayers with { IncludeContours = true },
+            Annotations = new(),
+            BaseLayers = plan.BaseLayers with { IncludeContours = true },
         }, addContours: (_, _) => throw new IOException("contours unavailable")));
         Assert.Equal("existing", await File.ReadAllTextAsync(Path.Combine(maps, "keep.txt")));
         Assert.False(Directory.Exists(Path.Combine(maps, "poi")));

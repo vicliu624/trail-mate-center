@@ -1,10 +1,11 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="using:TrailMateCenter.Views.Controls"
         xmlns:vm="using:TrailMateCenter.ViewModels"
         x:Class="TrailMateCenter.Views.OfflineCacheRegionsDialog"
         x:DataType="vm:MainWindowViewModel"
-        Width="560"
-        MinWidth="520"
+        Width="760"
+        MinWidth="680"
         MinHeight="430"
         SizeToContent="Height"
         WindowStartupLocation="CenterOwner"
@@ -54,13 +55,18 @@
                         BorderBrush="{DynamicResource PanelBorder}"
                         BorderThickness="1"
                         CornerRadius="4">
-                  <StackPanel Spacing="4">
+                  <Grid ColumnDefinitions="*,168"
+                        ColumnSpacing="10">
+                    <StackPanel Grid.Column="0" Spacing="4">
                     <TextBlock Text="{Binding Name}"
                                FontWeight="SemiBold"
                                Foreground="{DynamicResource TextPrimary}"/>
                     <TextBlock Text="{Binding BoundsText}"
                                Foreground="{DynamicResource TextPrimary}"
                                Opacity="0.8"
+                               FontSize="11"/>
+                    <TextBlock Text="{Binding SelectionShapeText}"
+                               Foreground="{DynamicResource TextDim}"
                                FontSize="11"/>
                     <TextBlock Text="{Binding BuildTargetsText}"
                                Foreground="{DynamicResource TextDim}"
@@ -135,12 +141,24 @@
                                  Height="6"
                                  Value="{Binding ExportTaskPercent}"
                                  IsVisible="{Binding HasExportTask}"/>
-                    <TextBlock Text="{Binding ExportTaskDetailText}"
-                               Foreground="{DynamicResource TextDim}"
-                               FontSize="10"
-                               TextWrapping="Wrap"
-                               IsVisible="{Binding HasExportTask}"/>
-                  </StackPanel>
+                      <TextBlock Text="{Binding ExportTaskDetailText}"
+                                 Foreground="{DynamicResource TextDim}"
+                                 FontSize="10"
+                                 TextWrapping="Wrap"
+                                 IsVisible="{Binding HasExportTask}"/>
+                    </StackPanel>
+                    <controls:MapRegionPreviewControl Grid.Column="1"
+                                                      Width="160"
+                                                      Height="112"
+                                                      Margin="0,2,0,0"
+                                                      HorizontalAlignment="Right"
+                                                      VerticalAlignment="Top"
+                                                      West="{Binding West}"
+                                                      South="{Binding South}"
+                                                      East="{Binding East}"
+                                                      North="{Binding North}"
+                                                      BoundaryGeoJson="{Binding BoundaryGeoJson}"/>
+                  </Grid>
                 </Border>
               </DataTemplate>
             </ListBox.ItemTemplate>
