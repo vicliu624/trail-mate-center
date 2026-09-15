@@ -1,6 +1,7 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:TrailMateCenter.ViewModels"
+        xmlns:controls="using:TrailMateCenter.Views.Controls"
         x:Class="TrailMateCenter.Views.MapPackBuilderDialog"
         x:DataType="vm:MapPackBuilderViewModel"
         Width="860"
@@ -176,30 +177,31 @@
             <StackPanel Spacing="8">
               <Grid ColumnDefinitions="*,Auto">
                 <TextBlock Text="{DynamicResource Ui.MapPack.Step.Poi}" Classes="sectionHeader"/>
-                <CheckBox Grid.Column="1" Content="{DynamicResource Ui.MapPack.EnablePoi}" IsChecked="{Binding EnablePoiSeparation}"/>
+                <CheckBox Grid.Column="1" IsVisible="{Binding !AnnotationOptions.Enabled}" Content="{DynamicResource Ui.MapPack.EnablePoi}" IsChecked="{Binding EnablePoiSeparation}"/>
               </Grid>
-              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8" IsEnabled="{Binding EnablePoiSeparation}">
+              <TextBlock Text="{DynamicResource Ui.MapPack.LocalTextFreeHint}" TextWrapping="Wrap" IsVisible="{Binding !AnnotationOptions.Enabled}"/>
+              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
                 <TextBox Text="{Binding PbfPath, UpdateSourceTrigger=PropertyChanged}" Watermark="{DynamicResource Ui.MapPack.PbfPathWatermark}"/>
                 <Button Grid.Column="1" Content="{DynamicResource Ui.MapPack.PickPbf}" Click="OnPickPbfClicked"/>
               </Grid>
-              <WrapPanel IsEnabled="{Binding EnablePoiSeparation}">
+              <WrapPanel IsVisible="{Binding !AnnotationOptions.Enabled}" IsEnabled="{Binding EnablePoiSeparation}">
                 <CheckBox Content="{DynamicResource Ui.MapPack.GeneratePois}" IsChecked="{Binding GenerateFullPoisJsonl}" Margin="0,0,12,6"/>
                 <CheckBox Content="{DynamicResource Ui.MapPack.GenerateTileIndex}" IsChecked="{Binding GenerateTileIndex}" Margin="0,0,12,6"/>
                 <CheckBox Content="{DynamicResource Ui.MapPack.Labels}" IsChecked="{Binding IncludePoiLabels}" Margin="0,0,12,6"/>
                 <CheckBox Content="{DynamicResource Ui.MapPack.OriginalOsmTags}" IsChecked="{Binding IncludeOriginalOsmTags}" Margin="0,0,12,6"/>
                 <CheckBox Content="{DynamicResource Ui.MapPack.PreviewOverlay}" IsChecked="{Binding ShowPoiPreview}" Margin="0,0,12,6"/>
               </WrapPanel>
-              <Grid ColumnDefinitions="*,*,*,*" RowDefinitions="Auto,Auto" ColumnSpacing="8" RowSpacing="4" IsEnabled="{Binding EnablePoiSeparation}">
-                <TextBlock Text="{DynamicResource Ui.MapPack.PoiMinZoom}" Foreground="{DynamicResource TextPrimary}"/>
-                <TextBlock Grid.Column="1" Text="{DynamicResource Ui.MapPack.PoiMaxZoom}" Foreground="{DynamicResource TextPrimary}"/>
-                <TextBlock Grid.Column="2" Text="{DynamicResource Ui.MapPack.MaxPerTile}" Foreground="{DynamicResource TextPrimary}"/>
-                <TextBlock Grid.Column="3" Text="{DynamicResource Ui.MapPack.PreviewLimit}" Foreground="{DynamicResource TextPrimary}"/>
-                <ComboBox Grid.Row="1" ItemsSource="{Binding AvailablePoiZoomLevels}" SelectedItem="{Binding PoiIndexMinimumZoom}"/>
-                <ComboBox Grid.Row="1" Grid.Column="1" ItemsSource="{Binding AvailablePoiZoomLevels}" SelectedItem="{Binding PoiIndexMaximumZoom}"/>
-                <NumericUpDown Grid.Row="1" Grid.Column="2" Minimum="1" Maximum="5000" Increment="25" Value="{Binding MaxPoiPerTile}"/>
-                <NumericUpDown Grid.Row="1" Grid.Column="3" Minimum="1" Maximum="5000" Increment="100" Value="{Binding PoiPreviewLimit}"/>
+              <controls:MapAnnotationOptionsEditor DataContext="{Binding AnnotationOptions}"/>
+              <Image Source="{Binding AnnotationPreviewImage}" Stretch="Uniform" MaxHeight="222"/>
+              <TextBlock IsVisible="{Binding AnnotationOptions.Enabled}" Text="{DynamicResource Ui.MapPack.Annotations.PreviewHint}" TextWrapping="Wrap"/>
+              <StackPanel IsVisible="{Binding !AnnotationOptions.Enabled}" IsEnabled="{Binding EnablePoiSeparation}"><controls:PoiZoomSelector DataContext="{Binding PoiZooms}"/></StackPanel>
+              <Grid IsVisible="{Binding !AnnotationOptions.Enabled}" ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="8" RowSpacing="4" IsEnabled="{Binding EnablePoiSeparation}">
+                <TextBlock Text="{DynamicResource Ui.MapPack.MaxPerTile}" Foreground="{DynamicResource TextPrimary}"/>
+                <TextBlock Grid.Column="1" Text="{DynamicResource Ui.MapPack.PreviewLimit}" Foreground="{DynamicResource TextPrimary}"/>
+                <NumericUpDown Grid.Row="1" Minimum="1" Maximum="5000" Increment="25" Value="{Binding MaxPoiPerTile}"/>
+                <NumericUpDown Grid.Row="1" Grid.Column="1" Minimum="1" Maximum="5000" Increment="100" Value="{Binding PoiPreviewLimit}"/>
               </Grid>
-              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8" IsEnabled="{Binding EnablePoiSeparation}">
+              <Grid IsVisible="{Binding !AnnotationOptions.Enabled}" ColumnDefinitions="Auto,*" ColumnSpacing="8" IsEnabled="{Binding EnablePoiSeparation}">
                 <TextBlock Text="{DynamicResource Ui.MapPack.OutputFormat}" Foreground="{DynamicResource TextPrimary}" VerticalAlignment="Center"/>
                 <ComboBox Grid.Column="1" ItemsSource="{Binding AvailablePoiOutputFormats}" SelectedItem="{Binding SelectedPoiOutputFormat}" Width="160">
                   <ComboBox.ItemTemplate>
@@ -209,7 +211,7 @@
                   </ComboBox.ItemTemplate>
                 </ComboBox>
               </Grid>
-              <ItemsControl ItemsSource="{Binding PoiTypes}" IsEnabled="{Binding EnablePoiSeparation}">
+              <ItemsControl IsVisible="{Binding !AnnotationOptions.Enabled}" ItemsSource="{Binding PoiTypes}" IsEnabled="{Binding EnablePoiSeparation}">
                 <ItemsControl.ItemsPanel>
                   <ItemsPanelTemplate>
                     <WrapPanel/>

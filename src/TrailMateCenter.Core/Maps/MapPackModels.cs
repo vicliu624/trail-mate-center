@@ -44,6 +44,9 @@ public sealed record MapPackExportPlan
     public MapPackAreaSelection Area { get; init; } = new();
     public MapPackBaseLayerSelection BaseLayers { get; init; } = new();
     public MapPackPoiSelection Poi { get; init; } = new();
+    // Null is the legacy hybrid/POI contract. The new mode has independent
+    // place/road/facility policies and always uses text-free raster tiles.
+    public MapAnnotationOptions? Annotations { get; init; }
     public string OutputDirectory { get; init; } = string.Empty;
 }
 

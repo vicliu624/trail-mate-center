@@ -18,6 +18,7 @@ public sealed record MapCacheRegionSettings
     public int MinimumZoom { get; init; } = 0;
     public int MaximumZoom { get; init; } = 18;
     public bool EnablePoiSeparation { get; init; }
+    public Maps.MapAnnotationOptions? Annotations { get; init; }
     public string PoiPbfPath { get; init; } = string.Empty;
     public string PoiSourceProvider { get; init; } = "local";
     public string PoiSourceDownloadUrl { get; init; } = string.Empty;
@@ -25,6 +26,7 @@ public sealed record MapCacheRegionSettings
     public bool GenerateTileIndexedPoiFiles { get; init; } = true;
     public int PoiIndexMinimumZoom { get; init; } = 10;
     public int PoiIndexMaximumZoom { get; init; } = 17;
+    public IReadOnlyList<int>? PoiEnabledZoomLevels { get; init; }
     public int MaxPoiPerTile { get; init; } = 200;
     public bool IncludePoiLabels { get; init; } = true;
     public bool IncludeOriginalOsmTags { get; init; }

@@ -150,6 +150,7 @@ public sealed class PoiIndexWriter
             },
             Index = new PoiManifestIndex
             {
+                EnabledZoomLevels = options.EnabledZoomLevels!,
                 MinZoom = options.MinZoom,
                 MaxZoom = options.MaxZoom,
                 MaxPoiPerTile = options.MaxPoiPerTile,
@@ -203,7 +204,7 @@ public sealed class PoiIndexWriter
         var clippedByZoom = new Dictionary<int, long>();
         if (options.GenerateTileIndex)
         {
-            for (var zoom = options.MinZoom; zoom <= options.MaxZoom; zoom++)
+            foreach (var zoom in options.EnabledZoomLevels!)
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
@@ -427,7 +428,7 @@ public sealed class PoiIndexWriter
             if (!_options.GenerateTileIndex)
                 return;
 
-            for (var zoom = _options.MinZoom; zoom <= _options.MaxZoom; zoom++)
+            foreach (var zoom in _options.EnabledZoomLevels!)
             {
                 if (!_priorityRules.ShouldIncludeAtZoom(normalized, zoom))
                     continue;

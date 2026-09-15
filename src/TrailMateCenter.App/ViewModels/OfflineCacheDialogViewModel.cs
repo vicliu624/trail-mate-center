@@ -160,6 +160,9 @@ public sealed partial class OfflineCacheDialogViewModel : ObservableObject
 
     public OfflineCacheDialogViewModel()
     {
+        PoiZooms.SetBounds(MinimumZoom, MaximumZoom);
+        PoiZooms.SelectionChanged += OnSelectionChanged;
+        AnnotationOptions.Changed += OnSelectionChanged;
         foreach (var definition in PoiTypeCatalog.DefaultTypes)
         {
             var option = PoiTypeCatalog.CreateOption(definition);
@@ -178,11 +181,14 @@ public sealed partial class OfflineCacheDialogViewModel : ObservableObject
     public IReadOnlyList<PoiOutputFormat> AvailablePoiOutputFormats { get; } =
         [PoiOutputFormat.Readable, PoiOutputFormat.Compact];
     public List<PoiTypeOptionViewModel> PoiTypes { get; } = new();
+    public PoiZoomSelectionViewModel PoiZooms { get; } = new();
+    public MapAnnotationOptionsViewModel AnnotationOptions { get; } = new();
 
     public OfflineCacheBuildOptions ToBuildOptions()
     {
         return new OfflineCacheBuildOptions
         {
+            Annotations = AnnotationOptions.ToOptions(),
             IncludeOsm = IncludeOsm,
             IncludeTerrain = IncludeTerrain,
             IncludeSatellite = IncludeSatellite,
@@ -196,6 +202,7 @@ public sealed partial class OfflineCacheDialogViewModel : ObservableObject
             GenerateTileIndexedPoiFiles = GenerateTileIndexedPoiFiles,
             PoiIndexMinimumZoom = PoiIndexMinimumZoom,
             PoiIndexMaximumZoom = PoiIndexMaximumZoom,
+            PoiEnabledZoomLevels = PoiZooms.EnabledZoomLevels,
             MaxPoiPerTile = MaxPoiPerTile,
             IncludePoiLabels = IncludePoiLabels,
             IncludeOriginalOsmTags = IncludeOriginalOsmTags,
@@ -228,6 +235,7 @@ public sealed partial class OfflineCacheDialogViewModel : ObservableObject
 
         if (MaximumZoom < clamped)
             MaximumZoom = clamped;
+        OnSelectionChanged();
     }
 
     partial void OnMaximumZoomChanged(int value)
@@ -244,6 +252,7 @@ public sealed partial class OfflineCacheDialogViewModel : ObservableObject
 
         if (MinimumZoom > clamped)
             MinimumZoom = clamped;
+        OnSelectionChanged();
     }
 
     partial void OnPoiIndexMinimumZoomChanged(int value)
@@ -288,6 +297,7 @@ public sealed partial class OfflineCacheDialogViewModel : ObservableObject
 
     private void OnSelectionChanged()
     {
+        PoiZooms.SetBounds(MinimumZoom, MaximumZoom);
         OnPropertyChanged(nameof(HasTileSelection));
         OnPropertyChanged(nameof(HasSelectedPoiTypes));
         OnPropertyChanged(nameof(HasPoiSelection));

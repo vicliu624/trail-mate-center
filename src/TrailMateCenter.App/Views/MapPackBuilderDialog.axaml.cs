@@ -120,13 +120,20 @@ public partial class MapPackBuilderDialog : Window
         {
             ViewModel.ApplyManualBounds();
             var plan = ViewModel.BuildPlan();
+            var localRendering = plan.Annotations is not null || plan.Poi.EnablePoiSeparation;
+            if (localRendering)
+                TrailMateCenter.Maps.Rendering.LocalMapPackExporter.Validate(plan);
             exportTaskRegion = await _ownerViewModel.RegisterMapPackExportTaskAsync(plan, cancellationToken);
-            if (ViewModel.HasTileSelection)
+            if (ViewModel.HasTileSelection && (!localRendering || plan.BaseLayers.IncludeContours))
             {
                 ViewModel.ApplyTilePreparationProgress();
                 await _ownerViewModel.Map.RunOfflineCacheForSelectionAsync(ViewModel.ToOfflineCacheBuildOptions() with
                 {
+                    IncludeOsm = !localRendering && plan.BaseLayers.IncludeOsm,
+                    IncludeTerrain = !localRendering && plan.BaseLayers.IncludeTerrain,
+                    IncludeSatellite = !localRendering && plan.BaseLayers.IncludeSatellite,
                     EnablePoiSeparation = false,
+                    Annotations = null,
                 }, cancellationToken);
                 cancellationToken.ThrowIfCancellationRequested();
                 ViewModel.ApplyTilePreparationComplete();
@@ -141,6 +148,11 @@ public partial class MapPackBuilderDialog : Window
         {
             await _ownerViewModel.MarkMapPackExportTaskCanceledAsync(exportTaskRegion);
             ViewModel.ApplyOperationCanceled();
+        }
+        catch (Exception ex)
+        {
+            await _ownerViewModel.MarkMapPackExportTaskCanceledAsync(exportTaskRegion);
+            ViewModel.StatusText = Loc.Format("Ui.MapPack.Status.ExportFailed", ex.Message);
         }
         finally
         {

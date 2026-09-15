@@ -1,6 +1,7 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:TrailMateCenter.ViewModels"
+        xmlns:controls="using:TrailMateCenter.Views.Controls"
         x:Class="TrailMateCenter.Views.OfflineCacheDialog"
         x:DataType="vm:OfflineCacheDialogViewModel"
         Width="620"
@@ -134,13 +135,13 @@
             <TextBlock Text="{DynamicResource Ui.Dashboard.OfflineCacheDialog.Poi}"
                        Classes="sectionHeader"/>
             <CheckBox Grid.Column="1"
+                      IsVisible="{Binding !AnnotationOptions.Enabled}"
                       Content="{DynamicResource Ui.Dashboard.OfflineCacheDialog.PoiEnable}"
                       IsChecked="{Binding EnablePoiSeparation}"/>
           </Grid>
 
           <Grid ColumnDefinitions="*,Auto"
-                ColumnSpacing="8"
-                IsEnabled="{Binding EnablePoiSeparation}">
+                ColumnSpacing="8">
             <TextBox Text="{Binding PoiPbfPath, UpdateSourceTrigger=PropertyChanged}"
                      Watermark="{DynamicResource Ui.Dashboard.OfflineCacheDialog.PoiPbfPath}"/>
             <Button Grid.Column="1"
@@ -148,7 +149,7 @@
                     Click="OnPickPbfClicked"/>
           </Grid>
 
-          <WrapPanel IsEnabled="{Binding EnablePoiSeparation}">
+          <WrapPanel IsVisible="{Binding !AnnotationOptions.Enabled}" IsEnabled="{Binding EnablePoiSeparation}">
             <CheckBox Content="{DynamicResource Ui.Dashboard.OfflineCacheDialog.PoiFullJsonl}"
                       IsChecked="{Binding GenerateFullPoisJsonl}"
                       Margin="0,0,12,6"/>
@@ -163,30 +164,17 @@
                       Margin="0,0,12,6"/>
           </WrapPanel>
 
-          <Grid ColumnDefinitions="*,*,*"
+          <controls:MapAnnotationOptionsEditor DataContext="{Binding AnnotationOptions}"/>
+          <StackPanel IsVisible="{Binding !AnnotationOptions.Enabled}" IsEnabled="{Binding EnablePoiSeparation}"><controls:PoiZoomSelector DataContext="{Binding PoiZooms}"/></StackPanel>
+          <Grid ColumnDefinitions="*"
+                IsVisible="{Binding !AnnotationOptions.Enabled}"
                 RowDefinitions="Auto,Auto"
                 ColumnSpacing="10"
                 RowSpacing="4"
                 IsEnabled="{Binding EnablePoiSeparation}">
-            <TextBlock Text="{DynamicResource Ui.Dashboard.OfflineCacheDialog.PoiMinZoom}"
+            <TextBlock Text="{DynamicResource Ui.Dashboard.OfflineCacheDialog.PoiMaxPerTile}"
                        Foreground="{DynamicResource TextPrimary}"/>
-            <TextBlock Grid.Column="1"
-                       Text="{DynamicResource Ui.Dashboard.OfflineCacheDialog.PoiMaxZoom}"
-                       Foreground="{DynamicResource TextPrimary}"/>
-            <TextBlock Grid.Column="2"
-                       Text="{DynamicResource Ui.Dashboard.OfflineCacheDialog.PoiMaxPerTile}"
-                       Foreground="{DynamicResource TextPrimary}"/>
-            <ComboBox Grid.Row="1"
-                      ItemsSource="{Binding AvailablePoiZoomLevels}"
-                      SelectedItem="{Binding PoiIndexMinimumZoom}"
-                      MinWidth="110"/>
-            <ComboBox Grid.Row="1"
-                      Grid.Column="1"
-                      ItemsSource="{Binding AvailablePoiZoomLevels}"
-                      SelectedItem="{Binding PoiIndexMaximumZoom}"
-                      MinWidth="110"/>
             <NumericUpDown Grid.Row="1"
-                           Grid.Column="2"
                            Minimum="1"
                            Maximum="5000"
                            Increment="25"
@@ -195,6 +183,7 @@
           </Grid>
 
           <Grid ColumnDefinitions="Auto,*"
+                IsVisible="{Binding !AnnotationOptions.Enabled}"
                 ColumnSpacing="8"
                 IsEnabled="{Binding EnablePoiSeparation}">
             <TextBlock Text="{DynamicResource Ui.Dashboard.OfflineCacheDialog.PoiOutputFormat}"
@@ -207,6 +196,7 @@
           </Grid>
 
           <ItemsControl ItemsSource="{Binding PoiTypes}"
+                        IsVisible="{Binding !AnnotationOptions.Enabled}"
                         IsEnabled="{Binding EnablePoiSeparation}">
             <ItemsControl.ItemsPanel>
               <ItemsPanelTemplate>
