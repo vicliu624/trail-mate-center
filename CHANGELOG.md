@@ -6,6 +6,27 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 
 ## [Unreleased]
 
+### Added
+
+- Added local map rendering from regional OpenStreetMap `.osm.pbf` data, producing 256×256 PNG tiles in the Trail Mate SD-card layout without relying on third-party rendered basemaps.
+- Added full-zoom text-free map packs with separate road, place, and facility annotations. Road annotations include simplified tile-local geometry so names can be placed on visible road segments.
+- Added outdoor and urban annotation presets, with independent enable switches and zoom ranges for place names, road names, and points of interest in map-pack and offline-cache dialogs.
+- Added automatic LVGL font-subset generation for exported annotation names, including font manifests, coverage ranges, and the bundled Noto font license. Required font resources are exported alongside the map for copying to an SD card.
+- Added a local map-style preview showing text-free geometry and annotations with transparent text backgrounds and no white halo.
+
+### Changed
+
+- New map-pack configurations use unified dynamic annotations. Existing configurations retain their legacy POI and hybrid raster-label settings until explicitly changed.
+- Saved map regions and resumed exports preserve annotation presets and all three annotation groups' settings. Disabling facility POIs no longer disables road or place annotations in the unified mode.
+- Unified annotation packs use version 3 of the annotation manifest; legacy POI packs remain supported by the export workflow. Devices need firmware that supports the version 3 format to display the new annotations.
+- Map exports stage their output before replacing the destination map and retain the previous map directory for recovery. Content-addressed font packages preserve unrelated font and language resources.
+
+### Fixed
+
+- Fixed local PBF exports failing on valid multipolygon boundaries with shared inner-ring edges or retraced segments. Invalid relations with complete known bounds outside the requested area are reported without blocking the export; missing members and relevant invalid geometry still fail validation.
+- Fixed stale POI index levels surviving a legacy POI re-export after their zoom levels were disabled.
+- Fixed the map-pack export action preparing online basemap tiles when unified local annotations were enabled but the legacy POI switch was off.
+
 ## [0.0.3-alpha] - 2026-07-04
 
 - 支持通过行政区导出地图
