@@ -248,6 +248,7 @@ public sealed class SqliteStore
         await EnsureColumnAsync(connection, "map_cache_regions", "poi_include_tags", "INTEGER NOT NULL DEFAULT 0", cancellationToken);
         await EnsureColumnAsync(connection, "map_cache_regions", "poi_output_format", "TEXT NOT NULL DEFAULT 'readable'", cancellationToken);
         await EnsureColumnAsync(connection, "map_cache_regions", "poi_selected_types", "TEXT NOT NULL DEFAULT ''", cancellationToken);
+        await EnsureColumnAsync(connection, "map_cache_regions", "tmap_plan_json", "TEXT", cancellationToken);
         await EnsureColumnAsync(connection, "map_cache_regions", "export_output_directory", "TEXT NOT NULL DEFAULT ''", cancellationToken);
         await EnsureColumnAsync(connection, "map_cache_regions", "export_state", "TEXT NOT NULL DEFAULT 'none'", cancellationToken);
         await EnsureColumnAsync(connection, "map_cache_regions", "export_processed_tiles", "INTEGER NOT NULL DEFAULT 0", cancellationToken);
@@ -927,6 +928,8 @@ public sealed class SqliteStore
                     IncludeOriginalOsmTags = ReadBool(reader, "poi_include_tags", defaultValue: false),
                     PoiOutputFormat = ReadNullableString(reader, "poi_output_format") ?? "readable",
                     SelectedPoiTypes = DeserializePoiTypes(ReadNullableString(reader, "poi_selected_types")),
+                    TmapPlan = ReadNullableString(reader, "tmap_plan_json") is { Length: > 0 } tmapJson
+                        ? System.Text.Json.JsonSerializer.Deserialize<Maps.MapPackExportPlan>(tmapJson) : null,
                     ExportOutputDirectory = ReadNullableString(reader, "export_output_directory") ?? string.Empty,
                     ExportState = ReadNullableString(reader, "export_state") ?? "none",
                     ExportProcessedTiles = ReadNullableLong(reader, "export_processed_tiles") ?? 0,
@@ -978,7 +981,7 @@ public sealed class SqliteStore
                         enable_poi_separation, poi_pbf_path, poi_source_provider, poi_source_download_url,
                         poi_generate_full, poi_generate_index, poi_min_zoom, poi_max_zoom,
                         poi_max_per_tile, poi_include_labels, poi_include_tags, poi_output_format, poi_selected_types,
-                        export_output_directory, export_state, export_processed_tiles, export_expected_tiles, export_source_tiles,
+                        tmap_plan_json, export_output_directory, export_state, export_processed_tiles, export_expected_tiles, export_source_tiles,
                         export_copied_tiles, export_skipped_tiles, export_missing_tiles, export_unreadable_entries,
                         export_last_error, export_updated_at,
                         sort_order
@@ -989,7 +992,7 @@ public sealed class SqliteStore
                         $enable_poi_separation, $poi_pbf_path, $poi_source_provider, $poi_source_download_url,
                         $poi_generate_full, $poi_generate_index, $poi_min_zoom, $poi_max_zoom,
                         $poi_max_per_tile, $poi_include_labels, $poi_include_tags, $poi_output_format, $poi_selected_types,
-                        $export_output_directory, $export_state, $export_processed_tiles, $export_expected_tiles, $export_source_tiles,
+                        $tmap_plan_json, $export_output_directory, $export_state, $export_processed_tiles, $export_expected_tiles, $export_source_tiles,
                         $export_copied_tiles, $export_skipped_tiles, $export_missing_tiles, $export_unreadable_entries,
                         $export_last_error, $export_updated_at,
                         $sort_order
@@ -1023,6 +1026,7 @@ public sealed class SqliteStore
                 insert.Parameters.AddWithValue("$poi_include_tags", region.IncludeOriginalOsmTags ? 1 : 0);
                 insert.Parameters.AddWithValue("$poi_output_format", string.IsNullOrWhiteSpace(region.PoiOutputFormat) ? "readable" : region.PoiOutputFormat.Trim());
                 insert.Parameters.AddWithValue("$poi_selected_types", SerializePoiTypes(region.SelectedPoiTypes));
+                insert.Parameters.AddWithValue("$tmap_plan_json", region.TmapPlan is null ? DBNull.Value : System.Text.Json.JsonSerializer.Serialize(region.TmapPlan));
                 insert.Parameters.AddWithValue("$export_output_directory", region.ExportOutputDirectory ?? string.Empty);
                 insert.Parameters.AddWithValue("$export_state", string.IsNullOrWhiteSpace(region.ExportState) ? "none" : region.ExportState.Trim());
                 insert.Parameters.AddWithValue("$export_processed_tiles", Math.Max(0, region.ExportProcessedTiles));

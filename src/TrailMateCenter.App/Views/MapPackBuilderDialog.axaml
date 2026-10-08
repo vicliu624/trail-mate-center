@@ -58,6 +58,26 @@
                     Margin="0,12,0,10"
                     VerticalScrollBarVisibility="Auto">
         <StackPanel Spacing="10">
+          <Border BorderBrush="{DynamicResource PanelBorderStrong}" BorderThickness="1" CornerRadius="6" Padding="10">
+            <StackPanel Spacing="6">
+              <CheckBox Content="{DynamicResource Ui.MapPack.TmapOutput}" IsChecked="{Binding ExportTmap}"/>
+              <StackPanel IsVisible="{Binding ExportTmap}" Spacing="6">
+                <TextBlock Text="{DynamicResource Ui.MapPack.TmapHint}" TextWrapping="Wrap" Classes="dialogHint"/>
+                <ComboBox SelectedIndex="{Binding TmapTierIndex}">
+                  <ComboBoxItem Content="{DynamicResource Ui.MapPack.TmapCustom}"/>
+                  <ComboBoxItem Content="{DynamicResource Ui.MapPack.TmapWorld}"/>
+                  <ComboBoxItem Content="{DynamicResource Ui.MapPack.TmapCountry}"/>
+                  <ComboBoxItem Content="{DynamicResource Ui.MapPack.TmapAdmin}"/>
+                </ComboBox>
+                <TextBox Text="{Binding TmapFileName}" Watermark="{DynamicResource Ui.MapPack.TmapFileName}"/>
+                <TextBox Text="{Binding TmapPackageKey}" Watermark="{DynamicResource Ui.MapPack.TmapPackageKey}"/>
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                  <TextBox Text="{Binding TmapCountryCode}" Watermark="{DynamicResource Ui.MapPack.TmapCountryCode}"/>
+                  <TextBox Grid.Column="1" Text="{Binding TmapAdminCode}" Watermark="{DynamicResource Ui.MapPack.TmapAdminCode}"/>
+                </Grid>
+              </StackPanel>
+            </StackPanel>
+          </Border>
           <Border BorderBrush="{DynamicResource PanelBorderStrong}" BorderThickness="1" CornerRadius="6" Padding="10" Background="{DynamicResource SurfaceDark}">
             <StackPanel Spacing="8">
               <TextBlock Text="{DynamicResource Ui.MapPack.Step.Area}" Classes="sectionHeader"/>

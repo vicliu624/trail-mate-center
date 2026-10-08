@@ -48,6 +48,7 @@ public sealed record MapPackExportPlan
     // place/road/facility policies and always uses text-free raster tiles.
     public MapAnnotationOptions? Annotations { get; init; }
     public string OutputDirectory { get; init; } = string.Empty;
+    public Tmap.TmapOptions? Tmap { get; init; }
 }
 
 public sealed record MapLayerEstimate(string Name, long TileCount, long EstimatedBytes);

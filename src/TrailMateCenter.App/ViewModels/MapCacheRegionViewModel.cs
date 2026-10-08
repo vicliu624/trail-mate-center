@@ -249,6 +249,7 @@ public sealed partial class MapCacheRegionViewModel : ObservableObject
     }
 
     public bool NeedsPlaceSearchBackfill =>
+        TmapPlan is null &&
         HasPlaceSearchSourceReference &&
         !HasPlaceSearchPack(ExportOutputDirectory);
 
@@ -344,6 +345,7 @@ public sealed partial class MapCacheRegionViewModel : ObservableObject
         var options = ToBuildOptions();
         return new MapCacheRegionSettings
         {
+            TmapPlan = TmapPlan,
             Id = string.IsNullOrWhiteSpace(Id) ? Guid.NewGuid().ToString("N") : Id.Trim(),
             Name = string.IsNullOrWhiteSpace(Name) ? "Area" : Name.Trim(),
             West = West,
@@ -416,6 +418,7 @@ public sealed partial class MapCacheRegionViewModel : ObservableObject
 
         return new MapCacheRegionViewModel
         {
+            TmapPlan = settings.TmapPlan,
             Id = string.IsNullOrWhiteSpace(settings.Id) ? Guid.NewGuid().ToString("N") : settings.Id.Trim(),
             Name = settings.Name ?? string.Empty,
             West = settings.West,
@@ -462,6 +465,7 @@ public sealed partial class MapCacheRegionViewModel : ObservableObject
 
     public void ApplySettings(MapCacheRegionSettings settings)
     {
+        TmapPlan = settings.TmapPlan;
         var options = new OfflineCacheBuildOptions
         {
             IncludeOsm = settings.IncludeOsm,
@@ -496,6 +500,8 @@ public sealed partial class MapCacheRegionViewModel : ObservableObject
         PoiSourceProvider = string.IsNullOrWhiteSpace(settings.PoiSourceProvider) ? "local" : settings.PoiSourceProvider.Trim();
         PoiSourceDownloadUrl = settings.PoiSourceDownloadUrl ?? string.Empty;
     }
+
+    public MapPackExportPlan? TmapPlan { get; private set; }
 
     public void ApplyBuildOptions(OfflineCacheBuildOptions options)
     {

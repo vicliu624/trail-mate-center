@@ -1,0 +1,167 @@
+using NetTopologySuite.Geometries;
+using SkiaSharp;
+using TrailMateCenter.Maps.Rendering;
+using TrailMateCenter.Osm;
+using TrailMateCenter.Places;
+
+namespace TrailMateCenter.Maps.Tmap;
+
+public sealed class TmapPackExporter
+{
+    public static void Validate(MapPackExportPlan plan)
+    {
+        var options = plan.Tmap ?? throw new ArgumentException("TMAP options are required.");
+        if (!File.Exists(plan.Poi.PbfPath)) throw new FileNotFoundException("Select the local OSM PBF for this region.", plan.Poi.PbfPath);
+        if (plan.BaseLayers.IncludeSatellite) throw new ArgumentException("PBF rendering does not contain satellite imagery. Use the TMAP raster import command for licensed imagery.");
+        if (string.IsNullOrWhiteSpace(plan.OutputDirectory) || string.IsNullOrWhiteSpace(options.PackageKey)) throw new ArgumentException("Output directory and stable package key are required.");
+        if (Path.GetFileName(options.FileName) != options.FileName || !options.FileName.EndsWith(".tmap", StringComparison.OrdinalIgnoreCase) || options.FileName.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
+            throw new ArgumentException("Choose a simple .tmap filename, without directories.");
+        var b = plan.Area.Bounds;
+        if (!double.IsFinite(b.West) || !double.IsFinite(b.East) || !double.IsFinite(b.South) || !double.IsFinite(b.North) ||
+            b.West < -180 || b.East > 180 || b.South < -90 || b.North > 90 || b.West >= b.East || b.South >= b.North)
+            throw new ArgumentException("Select valid WGS84 bounds. Split an antimeridian-crossing area into separate packs.");
+        var l = plan.BaseLayers;
+        if (l.MinimumZoom < 0 || l.MaximumZoom > 18 || l.MinimumZoom > l.MaximumZoom) throw new ArgumentException("PBF rendering supports z0–18.");
+        if (options.Tier != TmapRegionTier.Custom && (l.MinimumZoom, l.MaximumZoom) != TmapOptions.Zooms(options.Tier))
+            throw new ArgumentException("Zoom range does not match the world/country/administrative-region preset.");
+        if (options.MaximumOutputBytes <= 0) throw new ArgumentOutOfRangeException(nameof(options.MaximumOutputBytes));
+        // Conservative raw preflight estimate; deduplication savings are known only after staging.
+        var layers = (l.IncludeOsm ? 1L : 0) + (l.IncludeTerrain ? 1L : 0);
+        var bytes = checked(ExportEstimator.CountTiles(b, l.MinimumZoom, l.MaximumZoom) * layers * 131072L);
+        if (bytes > options.MaximumOutputBytes) throw new IOException($"Native raster payload alone requires {bytes:N0} bytes, exceeding the output budget.");
+        if (Path.GetFullPath(Path.Combine(plan.OutputDirectory, options.FileName)).Equals(Path.GetFullPath(plan.Poi.PbfPath), StringComparison.OrdinalIgnoreCase))
+            throw new ArgumentException("The output must not replace the source PBF.");
+    }
+
+    public Task<TmapBuildResult> ExportAsync(MapPackExportPlan plan, IProgress<LocalMapPackProgress>? progress = null,
+        Func<string, CancellationToken, Task>? addContours = null, CancellationToken cancellationToken = default)
+    {
+        Validate(plan);
+        if (plan.BaseLayers.IncludeContours && addContours is null) throw new ArgumentException("Contour input is unavailable.");
+        return Task.Run(async () =>
+        {
+            var temporary = Path.Combine(Path.GetFullPath(plan.OutputDirectory), ".tmap-source-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(temporary);
+            try
+            {
+                using var builder = new TmapBuilder(temporary, plan.Tmap!.MaximumOutputBytes, cancellationToken);
+                using var store = new PbfBasemapStore(Path.Combine(temporary, "geometry.sqlite"));
+                store.Import(plan.Poi.PbfPath, (stage, n) => progress?.Report(new(stage, n, 0)), cancellationToken, plan.Area.Bounds, includeAnnotations: true);
+                var polygon = GeoJsonPointInPolygonFilter.TryCreate(plan.Area.BoundaryGeoJson);
+                var (west, north) = PbfBasemapStore.Project(plan.Area.Bounds.West, plan.Area.Bounds.North);
+                var (east, south) = PbfBasemapStore.Project(plan.Area.Bounds.East, plan.Area.Bounds.South);
+                // Full source features, before zoom/class display quotas, including ways and relations.
+                foreach (var f in store.QueryAnnotations(new Envelope(west, east, north, south), 29))
+                {
+                    cancellationToken.ThrowIfCancellationRequested(); var p = f.Geometry.InteriorPoint.Coordinate; if (p is null) continue;
+                    var lat = Latitude(p.Y); var lon = p.X * 360 - 180;
+                    if (!plan.Area.Bounds.Contains(lat, lon) || polygon is not null && !polygon.Contains(lat, lon)) continue;
+                    var names = new[] { f.Name, f.Reference ?? "" }.Where(x => !string.IsNullOrWhiteSpace(x)).ToArray();
+                    builder.AddPlace(new(StableId(f.Id), lat, lon, f.Rule.Category, names, f.Rule.Priority, Kind(f.Rule.Kind), f.Rule.MinimumZoom));
+                }
+                // Preserve all named node aliases, independent of the annotation classification policy.
+                await new OsmPlaceExtractor().ExtractToAsync(new PlaceExtractionOptions
+                { PbfPath = plan.Poi.PbfPath, Bounds = plan.Area.Bounds, BoundaryGeoJson = plan.Area.BoundaryGeoJson }, place =>
+                {
+                    builder.AddPlace(new(TmapFormat.OsmId(place.OsmType, place.OsmId!.Value), place.Latitude, place.Longitude, place.Category, place.Names, place.Rank));
+                    return ValueTask.CompletedTask;
+                }, cancellationToken: cancellationToken).ConfigureAwait(false);
+
+                var layers = new List<int>(); if (plan.BaseLayers.IncludeOsm) layers.Add(1); if (plan.BaseLayers.IncludeTerrain) layers.Add(2);
+                var total = ExportEstimator.CountTiles(plan.Area.Bounds, plan.BaseLayers.MinimumZoom, plan.BaseLayers.MaximumZoom) * layers.Count;
+                long done = 0;
+                for (var z = plan.BaseLayers.MinimumZoom; z <= plan.BaseLayers.MaximumZoom; z++)
+                {
+                    var range = TileMath.BoundsToTileRange(plan.Area.Bounds, z);
+                    for (var x = range.MinX; x <= range.MaxX; x++)
+                        for (var y = range.MinY; y <= range.MaxY; y++)
+                        {
+                            cancellationToken.ThrowIfCancellationRequested(); var tile = new TileCoordinate(z, x, y);
+                            foreach (var layer in layers)
+                            {
+                                PbfTileRenderer.Render(store, tile, layer == 2, "", cancellationToken, pixelSink: bitmap => builder.AddTile(layer, z, x, y, Pixels(bitmap, false)));
+                                progress?.Report(new("tiles", ++done, total, z, layer == 2 ? "terrain" : "osm"));
+                            }
+                            // Bounded display candidates; every searchable place was already staged above.
+                            var selected = new List<(MapAnnotationCandidate Candidate, byte[] Id)>(200);
+                            foreach (var feature in store.QueryAnnotations(MapAnnotationCandidateBuilder.TileEnvelope(tile), z))
+                            {
+                                var anchor = feature.Geometry.InteriorPoint.Coordinate;
+                                if (anchor is null || !plan.Area.Bounds.Contains(Latitude(anchor.Y), anchor.X * 360 - 180) ||
+                                    polygon is not null && !polygon.Contains(Latitude(anchor.Y), anchor.X * 360 - 180)) continue;
+                                foreach (var candidate in MapAnnotationCandidateBuilder.Build(feature, tile, plan.Annotations ?? new MapAnnotationOptions()))
+                                {
+                                    selected.Add((candidate, StableId(feature.Id)));
+                                    if (selected.Count >= 200) break;
+                                }
+                                if (selected.Count >= 200) break;
+                            }
+                            foreach (var (candidate, id) in selected)
+                            {
+                                var path = new List<(double, double)>(); var points = candidate.Path;
+                                if (points is not null)
+                                    for (var i = 0; i < points.Length; i += 2)
+                                    { var scale = 256.0 * (1 << z); path.Add((Latitude((y * 256.0 + points[i + 1]) / scale), (x * 256.0 + points[i]) / scale * 360 - 180)); }
+                                builder.AddAnnotation(z, x, y, id, Kind(candidate.Kind), candidate.Priority, candidate.Latitude, candidate.Longitude, path);
+                            }
+                        }
+                }
+                if (plan.BaseLayers.IncludeContours)
+                {
+                    var maps = Path.Combine(temporary, "maps"); Directory.CreateDirectory(maps);
+                    await addContours!(maps, cancellationToken).ConfigureAwait(false);
+                    ImportRasterDirectory(builder, maps, cancellationToken);
+                }
+                progress?.Report(new("tmap-indexes", 0, 0));
+                return builder.Complete(Path.Combine(plan.OutputDirectory, plan.Tmap.FileName), plan.Area, plan.Tmap);
+            }
+            finally { try { Directory.Delete(temporary, recursive: true); } catch (IOException) { } catch (UnauthorizedAccessException) { } }
+        }, cancellationToken);
+    }
+    internal static int Kind(MapAnnotationKind kind) => kind switch { MapAnnotationKind.Place => 2, MapAnnotationKind.Road => 3, _ => 1 };
+    internal static byte[] StableId(string feature) { var parts = feature.Split('/'); return TmapFormat.OsmId(parts[0], long.Parse(parts[1], System.Globalization.CultureInfo.InvariantCulture)); }
+    private static double Latitude(double y) => Math.Atan(Math.Sinh(Math.PI * (1 - 2 * y))) * 180 / Math.PI;
+    public static byte[] Pixels(SKBitmap bitmap, bool alpha)
+    {
+        if (bitmap.Width != 256 || bitmap.Height != 256) throw new InvalidDataException("TMAP raster tiles must be 256×256.");
+        var result = new byte[256 * 256 * (alpha ? 4 : 2)]; var offset = 0;
+        if (!alpha && bitmap.ColorType == SKColorType.Rgba8888 && bitmap.AlphaType == SKAlphaType.Opaque)
+        {
+            var source = bitmap.GetPixelSpan();
+            for (var y = 0; y < 256; y++)
+                for (var x = 0; x < 256; x++)
+                {
+                    var at = y * bitmap.RowBytes + x * 4;
+                    var rgb565 = (source[at] >> 3 << 11) | (source[at + 1] >> 2 << 5) | (source[at + 2] >> 3);
+                    result[offset++] = (byte)rgb565; result[offset++] = (byte)(rgb565 >> 8);
+                }
+            return result;
+        }
+        for (var y = 0; y < 256; y++) for (var x = 0; x < 256; x++)
+        {
+            var p = bitmap.GetPixel(x, y);
+            if (alpha) { result[offset++] = p.Red; result[offset++] = p.Green; result[offset++] = p.Blue; result[offset++] = p.Alpha; }
+            else { if (p.Alpha != 255) throw new InvalidDataException("An opaque base tile contains transparent pixels."); TmapFormat.Put16(result, offset, (p.Red >> 3 << 11) | (p.Green >> 2 << 5) | (p.Blue >> 3)); offset += 2; }
+        }
+        return result;
+    }
+    public static void ImportRasterDirectory(TmapBuilder builder, string mapsRoot, CancellationToken token = default)
+    {
+        var layers = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
+        { ["base/osm"] = 1, ["base/terrain"] = 2, ["base/satellite"] = 3, ["contour/major-500"] = 100, ["contour/major-200"] = 101,
+            ["contour/major-100"] = 102, ["contour/major-50"] = 103, ["contour/major-25"] = 104, ["contour/minor-100"] = 110,
+            ["contour/minor-50"] = 111, ["contour/minor-20"] = 112, ["contour/minor-10"] = 113, ["contour/minor-5"] = 114 };
+        foreach (var (folder, layer) in layers)
+        {
+            var root = Path.Combine(mapsRoot, folder); if (!Directory.Exists(root)) continue;
+            foreach (var file in Directory.EnumerateFiles(root, "*.png", SearchOption.AllDirectories))
+            {
+                token.ThrowIfCancellationRequested(); var parts = Path.GetRelativePath(root, file).Split(Path.DirectorySeparatorChar);
+                if (parts.Length != 3 || !int.TryParse(parts[0], out var z) || !int.TryParse(parts[1], out var x) || !int.TryParse(Path.GetFileNameWithoutExtension(parts[2]), out var y))
+                    throw new InvalidDataException("Invalid XYZ tile path: " + file);
+                using var bitmap = SKBitmap.Decode(file) ?? throw new InvalidDataException("Cannot decode " + file);
+                builder.AddTile(layer, z, x, y, Pixels(bitmap, layer >= 100), layer >= 100);
+            }
+        }
+    }
+}

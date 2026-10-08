@@ -2,6 +2,7 @@ namespace TrailMateCenter.Storage;
 
 public sealed record MapCacheRegionSettings
 {
+    public Maps.MapPackExportPlan? TmapPlan { get; init; }
     public string Id { get; init; } = Guid.NewGuid().ToString("N");
     public string Name { get; init; } = "Area";
     public double West { get; init; }

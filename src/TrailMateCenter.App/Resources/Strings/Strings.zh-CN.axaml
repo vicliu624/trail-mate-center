@@ -1,6 +1,17 @@
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
   <x:String x:Key="App.Title">TrailMate 指挥中心</x:String>
+  <x:String x:Key="Ui.MapPack.TmapOutput">制作 TMAP 单文件离线地图</x:String>
+  <x:String x:Key="Ui.MapPack.TmapHint">包含原始像素、独立标注和全包地点搜索。需要支持 TMAP 的设备固件；当前不包含道路导航路网。国家包适用于中国、美国、俄罗斯、加拿大、澳大利亚等大国。</x:String>
+  <x:String x:Key="Ui.MapPack.TmapCustom">自定义缩放范围</x:String>
+  <x:String x:Key="Ui.MapPack.TmapWorld">全球：0–7 级</x:String>
+  <x:String x:Key="Ui.MapPack.TmapCountry">大国：8–12 级</x:String>
+  <x:String x:Key="Ui.MapPack.TmapAdmin">一级行政区：13–17 级</x:String>
+  <x:String x:Key="Ui.MapPack.TmapFileName">输出文件名，例如 cn-yunnan.tmap</x:String>
+  <x:String x:Key="Ui.MapPack.TmapPackageKey">稳定地图包标识，例如 cn-yunnan</x:String>
+  <x:String x:Key="Ui.MapPack.TmapCountryCode">国家代码，例如 CN</x:String>
+  <x:String x:Key="Ui.MapPack.TmapAdminCode">行政区代码，例如 CN-YN</x:String>
+  <x:String x:Key="Ui.MapPack.TmapEstimate">{0:N0} 张底图；未去重 RGB565 像素约 {1}。相同像素块共享后体积会减少，索引、POI、等高线和暂存空间另计。</x:String>
   <x:String x:Key="App.Brand">TrailMate 指挥中心</x:String>
 
   <x:String x:Key="Common.Unknown">未知</x:String>

@@ -120,8 +120,10 @@ public partial class MapPackBuilderDialog : Window
         {
             ViewModel.ApplyManualBounds();
             var plan = ViewModel.BuildPlan();
-            var localRendering = plan.Annotations is not null || plan.Poi.EnablePoiSeparation;
-            if (localRendering)
+            var localRendering = plan.Tmap is not null || plan.Annotations is not null || plan.Poi.EnablePoiSeparation;
+            if (plan.Tmap is not null)
+                TrailMateCenter.Maps.Tmap.TmapPackExporter.Validate(plan);
+            else if (localRendering)
                 TrailMateCenter.Maps.Rendering.LocalMapPackExporter.Validate(plan);
             exportTaskRegion = await _ownerViewModel.RegisterMapPackExportTaskAsync(plan, cancellationToken);
             if (ViewModel.HasTileSelection && (!localRendering || plan.BaseLayers.IncludeContours))

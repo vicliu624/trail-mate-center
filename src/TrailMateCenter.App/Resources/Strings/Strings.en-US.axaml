@@ -1,6 +1,17 @@
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
   <x:String x:Key="App.Title">TrailMate Center</x:String>
+  <x:String x:Key="Ui.MapPack.TmapOutput">Build a single-file TMAP offline map</x:String>
+  <x:String x:Key="Ui.MapPack.TmapHint">Includes native pixels, separate annotations and package-wide place search. Requires TMAP-capable firmware. Road routing data is not included yet. Country presets cover large countries such as China, USA, Russia, Canada and Australia.</x:String>
+  <x:String x:Key="Ui.MapPack.TmapCustom">Custom zoom range</x:String>
+  <x:String x:Key="Ui.MapPack.TmapWorld">World: zoom 0–7</x:String>
+  <x:String x:Key="Ui.MapPack.TmapCountry">Large country: zoom 8–12</x:String>
+  <x:String x:Key="Ui.MapPack.TmapAdmin">First-level administrative region: zoom 13–17</x:String>
+  <x:String x:Key="Ui.MapPack.TmapFileName">Output filename, e.g. cn-yunnan.tmap</x:String>
+  <x:String x:Key="Ui.MapPack.TmapPackageKey">Stable package key, e.g. cn-yunnan</x:String>
+  <x:String x:Key="Ui.MapPack.TmapCountryCode">Country code, e.g. CN</x:String>
+  <x:String x:Key="Ui.MapPack.TmapAdminCode">Administrative code, e.g. CN-YN</x:String>
+  <x:String x:Key="Ui.MapPack.TmapEstimate">{0:N0} base tiles; approximately {1} RGB565 pixels before deduplication. Shared identical pixels reduce size; indexes, POIs, contours and staging space are additional.</x:String>
   <x:String x:Key="App.Brand">TrailMate Center</x:String>
 
   <x:String x:Key="Common.Unknown">Unknown</x:String>
