@@ -1,5 +1,7 @@
 # 三种 TMAP 制作、桌面展示与资源预算
 
+用户操作教程维护在 `C:/Users/vicliu/Projects/trail-mate.wiki/6.2 TMAP Maps and Terrain.md`，Wiki 侧边栏已增加入口。当前 TMAP 地形源固定为 Tilezen Terrarium，没有来源选择控件，Copernicus 尚未实现；打开制作窗口仍需勾选 TMAP 输出与地形层。中英文界面已区分 TMAP 分类目录和旧 PNG/JSON 导出提示，并说明配套 OSM POI 包、首次联网及缓存。
+
 ## 数据流
 
 - OSM：本地 PBF → 磁盘几何库 → 无文字底图 → RGB565LE；完整地点、别名、搜索与显示标注进入 OSM TMAP。

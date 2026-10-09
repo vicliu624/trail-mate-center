@@ -184,6 +184,7 @@
                 <CheckBox Content="{DynamicResource Ui.MapPack.Layer.Contours}" IsChecked="{Binding IncludeContours}" Margin="0,0,12,6"/>
                 <CheckBox Content="{DynamicResource Ui.MapPack.Layer.UltraFineContours}" IsChecked="{Binding IncludeUltraFineContours}" IsEnabled="{Binding IncludeContours}" Margin="0,0,12,6"/>
               </WrapPanel>
+              <TextBlock IsVisible="{Binding ExportTmap}" Text="{DynamicResource Ui.MapPack.TmapSources}" TextWrapping="Wrap" Classes="dialogHint"/>
               <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="10" RowSpacing="4">
                 <TextBlock Text="{DynamicResource Ui.MapPack.MinZoom}" Foreground="{DynamicResource TextPrimary}"/>
                 <TextBlock Grid.Column="1" Text="{DynamicResource Ui.MapPack.MaxZoom}" Foreground="{DynamicResource TextPrimary}"/>
@@ -268,8 +269,10 @@
                 <Button Grid.Column="1" Content="{DynamicResource Ui.MapPack.PickFolder}" Click="OnPickOutputFolderClicked"/>
               </Grid>
               <TextBlock Text="{DynamicResource Ui.MapPack.ExportHint}"
+                         IsVisible="{Binding !ExportTmap}"
                          Classes="dialogHint"
                          TextWrapping="Wrap"/>
+              <TextBlock Text="{DynamicResource Ui.MapPack.TmapExportHint}" IsVisible="{Binding ExportTmap}" Classes="dialogHint" TextWrapping="Wrap"/>
             </StackPanel>
           </Border>
         </StackPanel>
