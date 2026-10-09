@@ -1406,6 +1406,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
 
             if (result.Success)
             {
+                if (region.TmapPlan?.Tmap is not null) Map.ReloadTmapPackages();
                 OfflineCacheExportStatusText = BuildOfflineCacheExportStatus(loc, result);
                 selectedRegion.ApplyExportResult(
                     true,
@@ -1465,9 +1466,12 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         CancellationToken cancellationToken)
     {
         var options = region.ToBuildOptions();
-        if (options.EnablePoiSeparation && options.IncludeSatellite)
+        var isTmap = region.ToSettings().TmapPlan?.Tmap is not null;
+        if (!isTmap && options.EnablePoiSeparation && options.IncludeSatellite)
             throw new InvalidOperationException("Local PBF rendering cannot produce satellite imagery. Deselect Satellite.");
-        if (options.EnablePoiSeparation)
+        if (isTmap)
+            options = options with { IncludeOsm = false, IncludeTerrain = false, IncludeSatellite = false };
+        else if (options.EnablePoiSeparation)
             options = options with { IncludeOsm = false, IncludeTerrain = false, IncludeSatellite = false };
         var hasRasterLayers = options.IncludeOsm ||
                               options.IncludeTerrain ||
@@ -1554,6 +1558,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
                     : ExportOfflineCacheRegion(region, GetOfflineCacheRoot(), targetRoot, cancellationToken, exportProgress),
                 cancellationToken);
 
+            if (result.Success && plan.Tmap is not null) Map.ReloadTmapPackages();
             OfflineCacheExportStatusText = result.Success
                 ? BuildOfflineCacheExportStatus(loc, result)
                 : loc.Format("Status.OfflineCache.ExportFailed", result.ErrorMessage ?? "unknown");
@@ -1902,7 +1907,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
                     throw new InvalidDataException("Contour cache is incomplete.");
                 return Task.CompletedTask;
             }, token).GetAwaiter().GetResult();
-        return OfflineCacheRegionExportResult.Ok(result.FilePath, result.TileCount, result.TileCount, result.TileCount, 0, 0,
+        return OfflineCacheRegionExportResult.Ok(TrailMateCenter.Maps.Tmap.TmapLayout.Root(plan.OutputDirectory), result.TileCount, result.TileCount, result.TileCount, 0, 0,
             new PoiExportResult { Success = true, PoiRoot = result.FilePath, SourcePoiCount = result.PoiCount },
             new PlaceSearchPackExportResult { Success = true, PlaceRoot = result.FilePath, PlaceCount = result.PoiCount, NameRowsWritten = result.NameCount });
     }

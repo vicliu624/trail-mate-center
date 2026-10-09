@@ -199,7 +199,9 @@
                 <TextBlock Text="{DynamicResource Ui.MapPack.Step.Poi}" Classes="sectionHeader"/>
                 <CheckBox Grid.Column="1" IsVisible="{Binding !AnnotationOptions.Enabled}" Content="{DynamicResource Ui.MapPack.EnablePoi}" IsChecked="{Binding EnablePoiSeparation}"/>
               </Grid>
-              <TextBlock Text="{DynamicResource Ui.MapPack.LocalTextFreeHint}" TextWrapping="Wrap" IsVisible="{Binding !AnnotationOptions.Enabled}"/>
+              <StackPanel IsVisible="{Binding !ExportTmap}">
+                <TextBlock Text="{DynamicResource Ui.MapPack.LocalTextFreeHint}" TextWrapping="Wrap" IsVisible="{Binding !AnnotationOptions.Enabled}"/>
+              </StackPanel>
               <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
                 <TextBox Text="{Binding PbfPath, UpdateSourceTrigger=PropertyChanged}" Watermark="{DynamicResource Ui.MapPack.PbfPathWatermark}"/>
                 <Button Grid.Column="1" Content="{DynamicResource Ui.MapPack.PickPbf}" Click="OnPickPbfClicked"/>

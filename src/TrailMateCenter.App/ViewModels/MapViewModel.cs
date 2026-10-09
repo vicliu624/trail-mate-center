@@ -4,6 +4,7 @@ using Mapsui;
 using Mapsui.Extensions;
 using Mapsui.Layers;
 using Mapsui.Styles;
+using Mapsui.Widgets.ButtonWidgets;
 using Mapsui.Tiling.Fetcher;
 using Mapsui.Tiling.Layers;
 using Mapsui.Tiling.Rendering;
@@ -173,10 +174,10 @@ public sealed class MapViewModel : INotifyPropertyChanged
     private readonly MemoryLayer _offlineSelectionLayer;
     private readonly MemoryLayer _offlineRouteLayer;
     private readonly MemoryLayer _poiPreviewLayer;
-    private readonly Dictionary<MapBaseLayerKind, TileLayer> _baseLayers = new();
+    private readonly Dictionary<MapBaseLayerKind, Layer> _baseLayers = new();
     private readonly TileLayer _gibsLayer;
     private readonly Action<Mapsui.Logging.LogLevel, string, Exception?> _mapsuiLogSink;
-    private readonly Dictionary<ContourKey, TileLayer> _contourLayers = new();
+    private readonly Dictionary<ContourKey, Layer> _contourLayers = new();
     private readonly ContourTileService _contourService;
     private int _contourRefreshScheduled;
     private ITileSource? _osmTileSource;
@@ -229,7 +230,7 @@ public sealed class MapViewModel : INotifyPropertyChanged
         _offlineTileHttpClient.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("TrailMateCenter", "0.1"));
 
         var osmLayer = CreateOsmLayer();
-        osmLayer.Opacity = 0.8f;
+        osmLayer.Opacity = 1;
         _baseLayers[MapBaseLayerKind.Osm] = osmLayer;
         Map.Layers.Add(osmLayer);
 
@@ -478,6 +479,13 @@ public sealed class MapViewModel : INotifyPropertyChanged
     }
 
     public void Refresh() => RefreshLayers();
+    public void ReloadTmapPackages()
+    {
+        if (!Dispatcher.UIThread.CheckAccess()) { Dispatcher.UIThread.Post(ReloadTmapPackages); return; }
+        foreach (var layer in _baseLayers.Values) layer.ClearCache();
+        foreach (var layer in _contourLayers.Values) layer.ClearCache();
+        Map.Refresh(ChangeType.Discrete);
+    }
 
     public IDisposable BeginBulkUpdate()
     {
@@ -496,7 +504,6 @@ public sealed class MapViewModel : INotifyPropertyChanged
         _lastContourQueueDiagnostic = string.Empty;
         var zoom = GetCurrentZoom();
         UpdateContourVisibility(zoom);
-        DebounceContourQueue();
         UpdateZoomInfo(zoom);
     }
 
@@ -1506,7 +1513,6 @@ public sealed class MapViewModel : INotifyPropertyChanged
         var zoom = GetCurrentZoom();
         UpdateContourVisibility(zoom);
         UpdateZoomInfo(zoom);
-        DebounceContourQueue();
     }
 
     private void EnsureWaypointPulseTimerState()
@@ -2192,34 +2198,30 @@ public sealed class MapViewModel : INotifyPropertyChanged
         return spec;
     }
 
-    private IEnumerable<TileLayer> CreateContourLayers()
+    private IEnumerable<Layer> CreateContourLayers()
     {
-        var root = GetContourRoot();
-        var schema = new GlobalSphericalMercator(0, 19, "EPSG:3857");
-        var layers = new List<TileLayer>();
-
+        var layers = new List<Layer>();
+        var semantic = 100;
         foreach (var interval in new[] { 500, 200, 100, 50, 25 })
         {
-            layers.Add(CreateContourLayer(schema, root, ContourLineKind.Major, interval, 0.85f));
+            layers.Add(CreateContourLayer(ContourLineKind.Major, interval, semantic++, 0.85f));
         }
-
+        semantic = 110;
         foreach (var interval in new[] { 100, 50, 20, 10, 5 })
         {
-            layers.Add(CreateContourLayer(schema, root, ContourLineKind.Minor, interval, 0.7f));
+            layers.Add(CreateContourLayer(ContourLineKind.Minor, interval, semantic++, 0.7f));
         }
 
         return layers;
     }
 
-    private TileLayer CreateContourLayer(ITileSchema schema, string root, ContourLineKind kind, int interval, float opacity)
+    private Layer CreateContourLayer(ContourLineKind kind, int interval, int semantic, float opacity)
     {
-        var dir = Path.Combine(root, "tiles", $"{kind.ToString().ToLowerInvariant()}-{interval}");
-        Directory.CreateDirectory(dir);
-
-        var source = new FileTileSource(schema, dir, "png", null, $"contours-{kind}-{interval}", null);
-        var layer = new TileLayer(source)
+        var layer = new Layer
         {
-            Name = $"contours-{kind}-{interval}",
+            Name = $"tmap-contours-{kind}-{interval}",
+            DataSource = new TmapMapProvider(semantic),
+            Style = null,
             Opacity = opacity,
             Enabled = false,
         };
@@ -3021,79 +3023,41 @@ public sealed class MapViewModel : INotifyPropertyChanged
         return false;
     }
 
-    private TileLayer CreateOsmLayer()
+    private Layer CreateOsmLayer()
     {
-        var cacheDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "TrailMateCenter", "tilecache");
-        Directory.CreateDirectory(cacheDir);
-        var fileCache = new FileCache(cacheDir, "png");
-        var tileSource = KnownTileSources.Create(KnownTileSource.OpenStreetMap, "TrailMateCenter", fileCache, null, 0, 19);
-        _osmTileSource = tileSource;
-
-        return new TileLayer(
-            tileSource,
-            minTiles: 100,
-            maxTiles: 400,
-            dataFetchStrategy: new MinimalDataFetchStrategy(),
-            renderFetchStrategy: new MinimalRenderFetchStrategy(),
-            minExtraTiles: 0,
-            maxExtraTiles: 0,
-            fetchTileAsFeature: null,
-            httpClient: null)
+        // Retain the zoom schema for export/contour calculations only.
+        // The displayed basemap never fetches this HTTP source.
+        _osmTileSource = KnownTileSources.Create(KnownTileSource.OpenStreetMap, "TrailMateCenter", null, null, 0, 19);
+        return new Layer
         {
-            Name = "basemap-osm",
+            Name = "tmap-osm",
+            DataSource = new TmapMapProvider(1),
+            Attribution = new HyperlinkWidget { Text = "© OpenStreetMap contributors", Url = "https://www.openstreetmap.org/copyright" },
+            Style = null,
             Enabled = true,
         };
     }
 
-    private TileLayer CreateTerrainLayer()
+    private Layer CreateTerrainLayer()
     {
-        var cacheDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "TrailMateCenter", "terrain-cache");
-        Directory.CreateDirectory(cacheDir);
-
-        var schema = new GlobalSphericalMercator(0, 17, "EPSG:3857");
-        var fileCache = new FileCache(cacheDir, "png");
-        var url = "https://tile.opentopomap.org/{z}/{x}/{y}.png";
-        var tileSource = new HttpTileSource(schema, url, name: "terrain-opentopomap", persistentCache: fileCache);
-
-        return new TileLayer(
-            tileSource,
-            minTiles: 100,
-            maxTiles: 400,
-            dataFetchStrategy: new MinimalDataFetchStrategy(),
-            renderFetchStrategy: new MinimalRenderFetchStrategy(),
-            minExtraTiles: 0,
-            maxExtraTiles: 0,
-            fetchTileAsFeature: null,
-            httpClient: null)
+        return new Layer
         {
-            Name = "basemap-terrain",
-            Opacity = 0.95f,
+            Name = "tmap-terrain",
+            DataSource = new TmapMapProvider(2),
+            Attribution = new HyperlinkWidget { Text = "© OpenStreetMap contributors | Terrain Tiles", Url = "https://registry.opendata.aws/terrain-tiles/" },
+            Style = null,
             Enabled = false,
         };
     }
 
-    private TileLayer CreateSatelliteLayer()
+    private Layer CreateSatelliteLayer()
     {
-        var cacheDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "TrailMateCenter", "satellite-cache");
-        Directory.CreateDirectory(cacheDir);
-
-        var schema = new GlobalSphericalMercator(0, 19, "EPSG:3857");
-        var fileCache = new FileCache(cacheDir, "jpg");
-        var url = "https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}";
-        var tileSource = new HttpTileSource(schema, url, name: "satellite-esri-world-imagery", persistentCache: fileCache);
-
-        return new TileLayer(
-            tileSource,
-            minTiles: 100,
-            maxTiles: 400,
-            dataFetchStrategy: new MinimalDataFetchStrategy(),
-            renderFetchStrategy: new MinimalRenderFetchStrategy(),
-            minExtraTiles: 0,
-            maxExtraTiles: 0,
-            fetchTileAsFeature: null,
-            httpClient: null)
+        return new Layer
         {
-            Name = "basemap-satellite",
+            Name = "tmap-satellite",
+            DataSource = new TmapMapProvider(3),
+            Attribution = new HyperlinkWidget { Text = "© OpenStreetMap contributors | Esri World Imagery", Url = "https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer" },
+            Style = null,
             Enabled = false,
         };
     }

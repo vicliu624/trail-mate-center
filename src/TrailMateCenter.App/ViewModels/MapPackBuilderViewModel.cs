@@ -584,7 +584,7 @@ public sealed partial class MapPackBuilderViewModel : ObservableObject
         var estimate = _estimator.Estimate(BuildPlan());
         if (ExportTmap)
         {
-            var count = ExportEstimator.CountTiles(CurrentBounds, MinimumZoom, MaximumZoom) * ((IncludeOsm ? 1L : 0) + (IncludeTerrain ? 1L : 0));
+            var count = ExportEstimator.CountTiles(CurrentBounds, MinimumZoom, MaximumZoom) * ((IncludeOsm ? 1L : 0) + (IncludeTerrain ? 1L : 0) + (IncludeSatellite ? 1L : 0));
             EstimateText = F("Ui.MapPack.TmapEstimate", count, ExportEstimator.FormatBytes(checked(count * 131072L)));
             return;
         }

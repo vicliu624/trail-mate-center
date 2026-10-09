@@ -140,6 +140,7 @@ public sealed class TmapBuilder : IDisposable
         try
         {
             WriteContainer(temporary, area, options);
+            TmapFastLabels.Append(temporary, _token, _maximumBytes, updateIdentity: false);
             _token.ThrowIfCancellationRequested();
             using (var reader = new TmapReader(temporary)) reader.ValidateAllPages(_token);
             _token.ThrowIfCancellationRequested();
@@ -355,6 +356,13 @@ public sealed class TmapBuilder : IDisposable
         uint mask = 0; using var c = Query("SELECT k FROM tiles WHERE layer=$l", ("$l", layer)); using var r = c.ExecuteReader();
         while (r.Read()) mask |= 1U << (int)(TmapFormat.FromOrderedKey((byte[])r[0]) >> 58); return mask;
     }
+    private uint AnnotationZoomMask()
+    {
+        uint mask = 0;
+        using var command = Query("SELECT DISTINCT substr(k,1,1) FROM annotations"); using var rows = command.ExecuteReader();
+        while (rows.Read()) mask |= 1U << (((byte[])rows[0])[0] >> 2);
+        return mask;
+    }
     private IEnumerable<TmapTreeEntry> TileEntries(int layer)
     {
         using var c = Query("SELECT k,off,len,codec,crc FROM tiles WHERE layer=$l ORDER BY k", ("$l", layer)); using var r = c.ExecuteReader();
@@ -387,7 +395,7 @@ public sealed class TmapBuilder : IDisposable
         {
             TmapFormat.Put32(coverage, i * 32, 1U << i); TmapFormat.Put32(coverage, i * 32 + 4, 1);
             WriteBounds(coverage.AsSpan(i * 32 + 8), area.Bounds);
-            TmapFormat.Put32(coverage, i * 32 + 24, i == 1 ? 0x3fffffffU : rasterMask);
+            TmapFormat.Put32(coverage, i * 32 + 24, i == 1 ? 0x3fffffffU : i == 2 ? AnnotationZoomMask() : rasterMask);
         }
         Tag(10, coverage);
         if (s.Length > 65536) throw new InvalidDataException("TMAP metadata exceeds profile limit.");
@@ -412,6 +420,7 @@ public sealed class TmapBuilder : IDisposable
             if (section.Type == 1) { metaOffset = offset; metaLength = length; }
         }
         foreach (var layer in _pixels.Keys) mask |= LayerZoomMask(layer);
+        mask |= AnnotationZoomMask();
         var header = new byte[256]; TmapFormat.Magic.CopyTo(header); TmapFormat.Put16(header, 8, 1); TmapFormat.Put32(header, 12, 256);
         TmapFormat.Put32(header, 16, 0x01020304); TmapFormat.Put32(header, 20, 4096); TmapFormat.Put64(header, 24, 6UL | (_pixels.Count > 0 ? 1UL : 0));
         TmapFormat.Put64(header, 32, (ulong)output.Length); TmapFormat.Put64(header, 40, 4096); TmapFormat.Put32(header, 48, (uint)_sections.Count); TmapFormat.Put32(header, 52, 64);

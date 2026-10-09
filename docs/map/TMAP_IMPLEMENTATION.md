@@ -4,12 +4,13 @@
 
 Center 已有可运行的 `.tmap` 制作链：本地 OSM PBF → 无文字原始像素 → 地点及名称 → 磁盘索引 → 单文件 → 校验 → 发布。桌面“地图包制作”和 `tools/TmapTool` 共用 Core 实现。
 
-当前生成的是 **TMAP v1，normalization_profile=2**。这是供设备端接入的格式实现，现有设备固件不会因为扩展名相同就自动支持它。
+当前生成的是 **TMAP v1，normalization_profile=2**，固件 `feature/tmap-reader` 已接入原生像素与独立标注读取。2026-10 的优化新增可选段 43/44，不改变完整 POI 和搜索格式。
 
 | 能力 | 当前状态 |
 |---|---|
-| OSM / Terrain 底图 | PBF 本地渲染为 256×256 RGB565LE |
-| 卫星影像 | 可导入已有、具备使用权限的 PNG；PBF 不生成影像 |
+| OSM 底图 | PBF 本地渲染为无文字 256×256 RGB565LE |
+| 地形底图 | PBF 土地覆盖与道路 + Tilezen 高程阴影，Center 本地生成无文字 RGB565LE |
+| 卫星影像 | 复用 Center 的 Esri World Imagery 来源与 satellite-cache，Center 转为 RGB565LE；也可导入已有 PNG |
 | 等高线 | 桌面导出复用已有缓存，存 RGBA8888；命令行可导入已有 PNG |
 | 单区域单文件 | 底图、POI、名称索引、空间索引、独立标注均在文件内 |
 | 搜索 | 精确、前缀、Unicode 单字/双字片段；支持源数据提供的别名 |
@@ -40,7 +41,11 @@ Center 已有可运行的 `.tmap` 制作链：本地 OSM PBF → 无文字原始
 
 ### 3.1 桌面
 
-在地图包制作窗口选择范围和本地 PBF，启用 TMAP 单文件导出，填写文件名、稳定包 key、国家代码及行政区代码，选择世界/大国/下级行政区预设，然后导出。PBF 路径为必填。PBF 制作不支持勾选卫星影像。
+在地图包制作窗口选择范围和本地 PBF，启用 TMAP 导出，填写文件名、稳定包 key、国家代码及行政区代码，选择世界/大国/下级行政区预设，然后导出。PBF 用于 OSM 和 POI；卫星影像来自既有网络来源，地形高程来自 Tilezen。勾选多种底图会分别生成多个 TMAP，完整 POI/名称/搜索/独立标注只放在 OSM 包中。
+
+输出目录是目标根目录：一般在其下生成 `maps/tmap/osm`、`maps/tmap/terrain`、`maps/tmap/satellite`；选中已经名为 `maps` 或 `tmap` 的目录时补齐余下层级。文件名中的地图类型和缩放信息保持清楚，例如 `china-osm-z8-12.tmap`、`china-terrain-z8-12.tmap`、`china-satellite-z8-12.tmap`。三种包使用不同的稳定 package key（原 key 加类型后缀）。
+
+即使只勾选卫星或地形，也会生成一个包含 POI/搜索/标注的 OSM 包，但不强制额外制作 OSM 像素。标注缩放掩码由实际标注键生成，与像素覆盖分离。
 
 界面的容量估计是未去重 RGB565 底图载荷；相同像素共享会减少这部分体积，索引、名称、标注和等高线会增加体积。任务保存 TMAP 制作计划；失败或取消后重试会从头构建 TMAP，不做页级断点续写。
 

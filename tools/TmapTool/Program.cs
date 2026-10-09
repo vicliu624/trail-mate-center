@@ -9,6 +9,22 @@ using var cancel = new CancellationTokenSource();
 Console.CancelKeyPress += (_, e) => { e.Cancel = true; cancel.Cancel(); };
 try
 {
+    if (args.Length == 2 && args[0] == "register")
+    {
+        TmapPackageRegistry.Register(args[1]); Console.WriteLine(JsonSerializer.Serialize(TmapPackageRegistry.Paths(), json)); return 0;
+    }
+    if (args.Length == 3 && args[0] == "fast-labels-install")
+    {
+        Console.WriteLine(JsonSerializer.Serialize(TmapFastLabels.Install(args[1], args[2], cancel.Token), json)); return 0;
+    }
+    if (args.Length == 2 && args[0] == "fast-labels-upgrade")
+    {
+        Console.WriteLine(JsonSerializer.Serialize(TmapFastLabels.Upgrade(args[1], cancel.Token), json)); return 0;
+    }
+    if (args.Length == 3 && args[0] == "fast-labels")
+    {
+        Console.WriteLine(JsonSerializer.Serialize(TmapFastLabels.Create(args[1], args[2], cancel.Token), json)); return 0;
+    }
     if (args.Length == 2 && args[0] == "china-search-check")
     {
         using var reader = new TmapReader(args[1]); var queries = CountryVerification.CheckCities(reader, cancel.Token);
@@ -97,7 +113,7 @@ try
         TmapPackExporter.ImportRasterDirectory(builder, args[1], cancel.Token);
         Console.WriteLine(JsonSerializer.Serialize(builder.Complete(args[2], plan.Area, options), json)); return 0;
     }
-    Console.Error.WriteLine("TMAP: world-osm source.mbtiles output.tmap | build plan.json | batch plans.json output-folder | verify file.tmap | search file.tmap text [Exact|Prefix|Substring] | import-rasters maps-folder file.tmap metadata.json");
+    Console.Error.WriteLine("TMAP: world-osm source.mbtiles output.tmap | build plan.json | batch plans.json output-folder | verify file.tmap | search file.tmap text [Exact|Prefix|Substring] | register file.tmap | fast-labels-upgrade file.tmap | fast-labels-install prepared.tmap destination.tmap | import-rasters maps-folder file.tmap metadata.json");
     return 2;
 }
 catch (OperationCanceledException) { Console.Error.WriteLine("Canceled; unpublished output was discarded."); return 130; }

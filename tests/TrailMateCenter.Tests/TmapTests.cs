@@ -115,7 +115,9 @@ public sealed class TmapTests : IDisposable
         p = p with { OutputDirectory = _root, Tmap = Options with { FileName = "pbf.tmap" }, Annotations = new MapAnnotationOptions() };
         var result = await new TmapPackExporter().ExportAsync(p);
         using var reader = new TmapReader(result.FilePath);
-        Assert.NotEmpty(reader.Search("测试水源")); Assert.Single(Directory.GetFiles(_root)); Assert.Empty(Directory.GetDirectories(_root));
+        Assert.NotEmpty(reader.Search("测试水源")); Assert.Single(Directory.GetFiles(_root, "*.tmap", SearchOption.AllDirectories));
+        Assert.Equal(Path.Combine(_root, "maps", "tmap", "osm", "pbf-osm.tmap"), result.FilePath);
+        Assert.Empty(Directory.GetDirectories(_root, ".tmap-*", SearchOption.TopDirectoryOnly));
         Assert.NotEqual(0U, reader.Capabilities & 4); Assert.Equal(0U, reader.Capabilities & 8);
     }
     [Theory]

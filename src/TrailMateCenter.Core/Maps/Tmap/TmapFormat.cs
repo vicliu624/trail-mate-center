@@ -113,6 +113,7 @@ public sealed record TmapOptions
 }
 public sealed record TmapBuildResult(string FilePath, long TileCount, long PoiCount, long NameCount, long FileBytes)
 {
+    public IReadOnlyList<TmapBuildResult> Packages { get; init; } = [];
     public long UniqueTilePayloads { get; init; }
     public long StoredPixelBytes { get; init; }
 }

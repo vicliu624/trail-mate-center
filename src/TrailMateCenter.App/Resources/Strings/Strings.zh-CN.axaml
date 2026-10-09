@@ -2,7 +2,7 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
   <x:String x:Key="App.Title">TrailMate 指挥中心</x:String>
   <x:String x:Key="Ui.MapPack.TmapOutput">制作 TMAP 单文件离线地图</x:String>
-  <x:String x:Key="Ui.MapPack.TmapHint">包含原始像素、独立标注和全包地点搜索。需要支持 TMAP 的设备固件；当前不包含道路导航路网。国家包适用于中国、美国、俄罗斯、加拿大、澳大利亚等大国。</x:String>
+  <x:String x:Key="Ui.MapPack.TmapHint">分别生成 OSM、无文字地形和卫星 TMAP，桌面与设备读取相同成品。完整 POI、独立标注和地点搜索保存在 OSM 包中；地形高程与卫星影像按需获取并复用缓存。需要支持 TMAP 的设备固件；当前不包含道路导航路网。</x:String>
   <x:String x:Key="Ui.MapPack.TmapCustom">自定义缩放范围</x:String>
   <x:String x:Key="Ui.MapPack.TmapWorld">全球：0–7 级</x:String>
   <x:String x:Key="Ui.MapPack.TmapCountry">大国：8–12 级</x:String>

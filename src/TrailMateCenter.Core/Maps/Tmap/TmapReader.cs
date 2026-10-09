@@ -19,9 +19,51 @@ public sealed class TmapReader : IDisposable
     public uint ZoomMask { get; }
     public byte[] PackageId { get; }
     public uint Capabilities { get; }
+    public ulong Revision { get; }
+    public double CoverageArea { get; }
+    public bool HasRasterLayer(int layer) => _sections.Values.Any(s => s.Type == 10 && s.Owner == layer);
+    public bool HasAnnotations => Section(40).Count != 0;
+    public bool HasFastLabels => _sections.ContainsKey(43) && _sections.ContainsKey(44);
+    internal IEnumerable<(int Zoom, int X, int Y)> AnnotationTiles()
+    {
+        foreach (var entry in Entries(Section(40), TmapKeyKind.Number, TmapFormat.OrderedKey(0)))
+        {
+            var key = TmapFormat.FromOrderedKey(entry.Key); var x = 0; var y = 0;
+            for (var bit = 0; bit < 29; bit++) { x |= (int)(key >> (bit * 2) & 1) << bit; y |= (int)(key >> (bit * 2 + 1) & 1) << bit; }
+            yield return ((int)(key >> 58), x, y);
+        }
+    }
+    public IReadOnlyList<TmapAnnotation> ReadDisplayAnnotations(int zoom, int x, int y)
+    {
+        if (!HasFastLabels) return ReadAnnotations(zoom, x, y);
+        var value = Find(44, TmapKeyKind.Number, TmapFormat.OrderedKey(TmapFormat.TileKey(zoom, x, y)));
+        if (value is null) return [];
+        var first = TmapFormat.U64(value, 0); var count = TmapFormat.U32(value, 8);
+        if (first == 0 || count is 0 or > 200 || first > Section(43).Count || count > Section(43).Count - first + 1 || TmapFormat.U32(value, 12) != 0)
+            throw new InvalidDataException("Invalid fast label reference.");
+        var result = new List<TmapAnnotation>();
+        for (uint i = 0; i < count; i++)
+        {
+            var b = Row(43, first + i, 176); var n = b[29]; var points = b[28];
+            if (n > 79 || points > 8 || b[32 + n] != 0 || TmapFormat.U16(b, 30) != 0) throw new InvalidDataException("Invalid fast label row.");
+            var lat = TmapFormat.I32(b, 16) / 1e7; var lon = TmapFormat.I32(b, 20) / 1e7;
+            var kind = TmapFormat.U16(b, 24);
+            if (lat is < -90 or > 90 || lon is < -180 or >= 180 || kind is < 1 or > 3) throw new InvalidDataException("Invalid fast label coordinates or kind.");
+            var path = new List<(double Latitude, double Longitude)>();
+            for (var p = 0; p < points; p++)
+            {
+                var latitude = TmapFormat.I32(b, 112 + p * 8) / 1e7; var longitude = TmapFormat.I32(b, 116 + p * 8) / 1e7;
+                if (latitude is < -90 or > 90 || longitude is < -180 or >= 180) throw new InvalidDataException("Invalid fast label path.");
+                path.Add((latitude, longitude));
+            }
+            var poi = new TmapPoiInfo(0, b.AsSpan(0, 16).ToArray(), lat, lon, 0, TmapFormat.U16(b, 26), TmapFormat.Utf8.GetString(b, 32, n));
+            result.Add(new(poi, kind, TmapFormat.U16(b, 26), lat, lon, path));
+        }
+        return result;
+    }
     public TmapReader(string path)
     {
-        _stream = File.OpenRead(path);
+        _stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read | FileShare.Delete);
         try
         {
             var h = Read(0, 256);
@@ -48,6 +90,9 @@ public sealed class TmapReader : IDisposable
                 previousEnd = offset + length;
             }
             ZoomMask = TmapFormat.U32(h, 136); PackageId = h.AsSpan(56, 16).ToArray(); Capabilities = TmapFormat.U32(h, 140);
+            Revision = TmapFormat.U64(h, 104);
+            CoverageArea = (TmapFormat.I32(h, 128) / 1e7 - TmapFormat.I32(h, 120) / 1e7) *
+                (TmapFormat.I32(h, 132) / 1e7 - TmapFormat.I32(h, 124) / 1e7);
             foreach (uint id in new uint[] { 1, 2, 20, 21, 22, 23, 24, 30, 31, 32, 40, 41, 42 }) _ = Section(id);
         }
         catch { _stream.Dispose(); throw; }

@@ -12,7 +12,6 @@ public sealed class TmapPackExporter
     {
         var options = plan.Tmap ?? throw new ArgumentException("TMAP options are required.");
         if (!File.Exists(plan.Poi.PbfPath)) throw new FileNotFoundException("Select the local OSM PBF for this region.", plan.Poi.PbfPath);
-        if (plan.BaseLayers.IncludeSatellite) throw new ArgumentException("PBF rendering does not contain satellite imagery. Use the TMAP raster import command for licensed imagery.");
         if (string.IsNullOrWhiteSpace(plan.OutputDirectory) || string.IsNullOrWhiteSpace(options.PackageKey)) throw new ArgumentException("Output directory and stable package key are required.");
         if (Path.GetFileName(options.FileName) != options.FileName || !options.FileName.EndsWith(".tmap", StringComparison.OrdinalIgnoreCase) || options.FileName.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
             throw new ArgumentException("Choose a simple .tmap filename, without directories.");
@@ -26,9 +25,13 @@ public sealed class TmapPackExporter
             throw new ArgumentException("Zoom range does not match the world/country/administrative-region preset.");
         if (options.MaximumOutputBytes <= 0) throw new ArgumentOutOfRangeException(nameof(options.MaximumOutputBytes));
         // Conservative raw preflight estimate; deduplication savings are known only after staging.
-        var layers = (l.IncludeOsm ? 1L : 0) + (l.IncludeTerrain ? 1L : 0);
+        var layers = (l.IncludeOsm ? 1L : 0) + (l.IncludeTerrain ? 1L : 0) + (l.IncludeSatellite ? 1L : 0);
         var bytes = checked(ExportEstimator.CountTiles(b, l.MinimumZoom, l.MaximumZoom) * layers * 131072L);
         if (bytes > options.MaximumOutputBytes) throw new IOException($"Native raster payload alone requires {bytes:N0} bytes, exceeding the output budget.");
+        var workingBytes = checked(bytes * 2 + 64L * 1024 * 1024);
+        var drive = new DriveInfo(Path.GetPathRoot(Path.GetFullPath(plan.OutputDirectory))!);
+        if (drive.AvailableFreeSpace < workingBytes)
+            throw new IOException($"Raster staging and publication need approximately {workingBytes:N0} free bytes before POI/source-cache overhead.");
         if (Path.GetFullPath(Path.Combine(plan.OutputDirectory, options.FileName)).Equals(Path.GetFullPath(plan.Poi.PbfPath), StringComparison.OrdinalIgnoreCase))
             throw new ArgumentException("The output must not replace the source PBF.");
     }
@@ -45,6 +48,9 @@ public sealed class TmapPackExporter
             try
             {
                 using var builder = new TmapBuilder(temporary, plan.Tmap!.MaximumOutputBytes, cancellationToken);
+                using var terrain = plan.BaseLayers.IncludeTerrain ? new TmapBuilder(temporary, plan.Tmap.MaximumOutputBytes, cancellationToken) : null;
+                using var satellite = plan.BaseLayers.IncludeSatellite ? new TmapBuilder(temporary, plan.Tmap.MaximumOutputBytes, cancellationToken) : null;
+                using var sources = new TmapRasterSources();
                 using var store = new PbfBasemapStore(Path.Combine(temporary, "geometry.sqlite"));
                 store.Import(plan.Poi.PbfPath, (stage, n) => progress?.Report(new(stage, n, 0)), cancellationToken, plan.Area.Bounds, includeAnnotations: true);
                 var polygon = GeoJsonPointInPolygonFilter.TryCreate(plan.Area.BoundaryGeoJson);
@@ -67,7 +73,7 @@ public sealed class TmapPackExporter
                     return ValueTask.CompletedTask;
                 }, cancellationToken: cancellationToken).ConfigureAwait(false);
 
-                var layers = new List<int>(); if (plan.BaseLayers.IncludeOsm) layers.Add(1); if (plan.BaseLayers.IncludeTerrain) layers.Add(2);
+                var layers = new List<int>(); if (plan.BaseLayers.IncludeOsm) layers.Add(1); if (plan.BaseLayers.IncludeTerrain) layers.Add(2); if (plan.BaseLayers.IncludeSatellite) layers.Add(3);
                 var total = ExportEstimator.CountTiles(plan.Area.Bounds, plan.BaseLayers.MinimumZoom, plan.BaseLayers.MaximumZoom) * layers.Count;
                 long done = 0;
                 for (var z = plan.BaseLayers.MinimumZoom; z <= plan.BaseLayers.MaximumZoom; z++)
@@ -79,8 +85,15 @@ public sealed class TmapPackExporter
                             cancellationToken.ThrowIfCancellationRequested(); var tile = new TileCoordinate(z, x, y);
                             foreach (var layer in layers)
                             {
-                                PbfTileRenderer.Render(store, tile, layer == 2, "", cancellationToken, pixelSink: bitmap => builder.AddTile(layer, z, x, y, Pixels(bitmap, false)));
-                                progress?.Report(new("tiles", ++done, total, z, layer == 2 ? "terrain" : "osm"));
+                                if (layer == 3)
+                                    satellite!.AddTile(3, z, x, y, await sources.Satellite(z, x, y, cancellationToken).ConfigureAwait(false));
+                                else
+                                    PbfTileRenderer.Render(store, tile, layer == 2, "", cancellationToken, pixelSink: bitmap =>
+                                    {
+                                        if (layer == 2) sources.Shade(bitmap, z, x, y, cancellationToken).GetAwaiter().GetResult();
+                                        (layer == 2 ? terrain! : builder).AddTile(layer, z, x, y, Pixels(bitmap, false));
+                                    });
+                                progress?.Report(new("tiles", ++done, total, z, layer switch { 2 => "terrain", 3 => "satellite", _ => "osm" }));
                             }
                             // Bounded display candidates; every searchable place was already staged above.
                             var selected = new List<(MapAnnotationCandidate Candidate, byte[] Id)>(200);
@@ -110,10 +123,33 @@ public sealed class TmapPackExporter
                 {
                     var maps = Path.Combine(temporary, "maps"); Directory.CreateDirectory(maps);
                     await addContours!(maps, cancellationToken).ConfigureAwait(false);
-                    ImportRasterDirectory(builder, maps, cancellationToken);
+                    ImportRasterDirectory(terrain ?? builder, maps, cancellationToken);
                 }
                 progress?.Report(new("tmap-indexes", 0, 0));
-                return builder.Complete(Path.Combine(plan.OutputDirectory, plan.Tmap.FileName), plan.Area, plan.Tmap);
+                var root = TmapLayout.Root(plan.OutputDirectory); var packages = new List<TmapBuildResult>();
+                void Stage(TmapBuilder output, string style, string attribution)
+                {
+                    var options = plan.Tmap with { FileName = TmapLayout.FileName(plan.Tmap.FileName, style),
+                        PackageKey = plan.Tmap.PackageKey + ":" + style, Attribution = attribution };
+                    var result = output.Complete(Path.Combine(temporary, style, options.FileName), plan.Area, options);
+                    packages.Add(result);
+                }
+                // One authoritative OSM package contains full POI/search and
+                // annotation data even when only imagery pixels were selected.
+                Stage(builder, "osm", plan.Tmap.Attribution);
+                if (terrain is not null) Stage(terrain, "terrain", plan.Tmap.Attribution + "; Terrain Tiles: https://github.com/tilezen/joerd/blob/master/docs/attribution.md");
+                if (satellite is not null) Stage(satellite, "satellite", "Esri World Imagery; https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer");
+                if (packages.Sum(p => p.FileBytes) > plan.Tmap.MaximumOutputBytes) throw new IOException("Combined TMAP output exceeds the configured budget.");
+                for (var i = 0; i < packages.Count; i++)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    var style = Path.GetFileName(Path.GetDirectoryName(packages[i].FilePath)!);
+                    var target = Path.Combine(root, style, Path.GetFileName(packages[i].FilePath));
+                    Directory.CreateDirectory(Path.GetDirectoryName(target)!);
+                    File.Move(packages[i].FilePath, target, true);
+                    packages[i] = packages[i] with { FilePath = target }; TmapPackageRegistry.Register(target);
+                }
+                return packages[0] with { Packages = packages, TileCount = packages.Sum(p => p.TileCount), FileBytes = packages.Sum(p => p.FileBytes) };
             }
             finally { try { Directory.Delete(temporary, recursive: true); } catch (IOException) { } catch (UnauthorizedAccessException) { } }
         }, cancellationToken);

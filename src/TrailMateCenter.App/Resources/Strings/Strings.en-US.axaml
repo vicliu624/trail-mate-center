@@ -2,7 +2,7 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
   <x:String x:Key="App.Title">TrailMate Center</x:String>
   <x:String x:Key="Ui.MapPack.TmapOutput">Build a single-file TMAP offline map</x:String>
-  <x:String x:Key="Ui.MapPack.TmapHint">Includes native pixels, separate annotations and package-wide place search. Requires TMAP-capable firmware. Road routing data is not included yet. Country presets cover large countries such as China, USA, Russia, Canada and Australia.</x:String>
+  <x:String x:Key="Ui.MapPack.TmapHint">Creates separate OSM, text-free terrain and satellite TMAP packages for desktop and device display. Full POIs, annotations and place search live in the OSM package. Elevation and imagery are fetched as needed and cached. Requires TMAP-capable firmware; road routing data is not included yet.</x:String>
   <x:String x:Key="Ui.MapPack.TmapCustom">Custom zoom range</x:String>
   <x:String x:Key="Ui.MapPack.TmapWorld">World: zoom 0–7</x:String>
   <x:String x:Key="Ui.MapPack.TmapCountry">Large country: zoom 8–12</x:String>
