@@ -94,6 +94,7 @@ public static class TmapFormat
 }
 
 public enum TmapRegionTier { Custom, World, LargeCountry, AdministrativeRegion }
+public sealed record TmapZoomRange(int MinimumZoom, int MaximumZoom);
 public sealed record TmapOptions
 {
     public uint SourceNamespaceId { get; init; } = 1;
@@ -112,6 +113,8 @@ public sealed record TmapOptions
     public bool GenerateFontPacks { get; init; } = true;
     public string? FontOutputDirectory { get; init; }
     public string? SourceCacheDirectory { get; init; }
+    public TmapZoomRange? TerrainZoomRange { get; init; }
+    public TmapZoomRange? SatelliteZoomRange { get; init; }
     public static (int Minimum, int Maximum) Zooms(TmapRegionTier tier) => tier switch
     { TmapRegionTier.World => (0, 7), TmapRegionTier.LargeCountry => (8, 12), TmapRegionTier.AdministrativeRegion => (13, 17), _ => (0, 18) };
 }

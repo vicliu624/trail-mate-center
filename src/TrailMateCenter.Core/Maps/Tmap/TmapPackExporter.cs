@@ -8,6 +8,25 @@ namespace TrailMateCenter.Maps.Tmap;
 
 public sealed class TmapPackExporter
 {
+    private static IReadOnlyList<(int Layer, int Minimum, int Maximum)> SelectedLayers(MapPackExportPlan plan)
+    {
+        var l = plan.BaseLayers;
+        var selected = new List<(int, int, int)>(3);
+        void Add(int layer, bool enabled, TmapZoomRange? range)
+        {
+            if (!enabled) return;
+            var min = range?.MinimumZoom ?? l.MinimumZoom;
+            var max = range?.MaximumZoom ?? l.MaximumZoom;
+            if (min < l.MinimumZoom || max > l.MaximumZoom || min > max)
+                throw new ArgumentException("Per-style zoom ranges must be inside the export zoom range.");
+            selected.Add((layer, min, max));
+        }
+        Add(1, l.IncludeOsm, null);
+        Add(2, l.IncludeTerrain, plan.Tmap?.TerrainZoomRange);
+        Add(3, l.IncludeSatellite, plan.Tmap?.SatelliteZoomRange);
+        return selected;
+    }
+
     public static void Validate(MapPackExportPlan plan)
     {
         var options = plan.Tmap ?? throw new ArgumentException("TMAP options are required.");
@@ -27,9 +46,8 @@ public sealed class TmapPackExporter
             throw new ArgumentException("Zoom range does not match the world/country/administrative-region preset.");
         if (options.MaximumOutputBytes <= 0) throw new ArgumentOutOfRangeException(nameof(options.MaximumOutputBytes));
         // Conservative raw preflight estimate; deduplication savings are known only after staging.
-        var layers = (l.IncludeOsm ? 1L : 0) + (l.IncludeTerrain ? 1L : 0) + (l.IncludeSatellite ? 1L : 0);
         var coverage = new TmapTileCoverage(plan.Area);
-        var bytes = checked(coverage.Count(b, l.MinimumZoom, l.MaximumZoom) * layers * 131072L);
+        var bytes = checked(SelectedLayers(plan).Sum(layer => coverage.Count(b, layer.Minimum, layer.Maximum)) * 131072L);
         if (bytes > options.MaximumOutputBytes) throw new IOException($"Native raster payload alone requires {bytes:N0} bytes, exceeding the output budget.");
         var workingBytes = checked(bytes * 2 + 64L * 1024 * 1024);
         var drive = new DriveInfo(Path.GetPathRoot(Path.GetFullPath(plan.OutputDirectory))!);
@@ -81,8 +99,8 @@ public sealed class TmapPackExporter
                     return ValueTask.CompletedTask;
                 }, cancellationToken: cancellationToken).ConfigureAwait(false);
 
-                var layers = new List<int>(); if (plan.BaseLayers.IncludeOsm) layers.Add(1); if (plan.BaseLayers.IncludeTerrain) layers.Add(2); if (plan.BaseLayers.IncludeSatellite) layers.Add(3);
-                var total = coverage.Count(plan.Area.Bounds, plan.BaseLayers.MinimumZoom, plan.BaseLayers.MaximumZoom, cancellationToken) * layers.Count;
+                var layers = SelectedLayers(plan);
+                var total = layers.Sum(layer => coverage.Count(plan.Area.Bounds, layer.Minimum, layer.Maximum, cancellationToken));
                 long done = 0;
                 for (var z = plan.BaseLayers.MinimumZoom; z <= plan.BaseLayers.MaximumZoom; z++)
                 {
@@ -93,8 +111,10 @@ public sealed class TmapPackExporter
                             cancellationToken.ThrowIfCancellationRequested();
                             if (!coverage.Includes(z, x, y)) continue;
                             var tile = new TileCoordinate(z, x, y);
-                            foreach (var layer in layers)
+                            foreach (var selectedLayer in layers)
                             {
+                                if (z < selectedLayer.Minimum || z > selectedLayer.Maximum) continue;
+                                var layer = selectedLayer.Layer;
                                 if (layer == 3)
                                     satellite!.AddTile(3, z, x, y, await sources.Satellite(z, x, y, cancellationToken).ConfigureAwait(false));
                                 else

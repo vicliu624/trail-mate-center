@@ -112,9 +112,6 @@ public sealed class OsmPlaceExtractor
         var lon = node.Longitude.Value;
         if (!bounds.Contains(lat, lon))
             return null;
-        if (polygonFilter is not null && !polygonFilter.Contains(lat, lon))
-            return null;
-
         var tags = ToDictionary(node.Tags);
         var mapping = _tagMapper.Map(tags);
         if (mapping is null)
@@ -122,6 +119,9 @@ public sealed class OsmPlaceExtractor
 
         var names = PlaceNameNormalizer.CollectNames(tags, options.NameLanguage);
         if (names.Count == 0)
+            return null;
+        // Geometry nodes without searchable names must not pay for boundary lookup.
+        if (polygonFilter is not null && !polygonFilter.Contains(lat, lon))
             return null;
 
         return new PlaceRecord
