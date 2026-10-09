@@ -122,7 +122,8 @@ public sealed class TmapBuilder : IDisposable
             ("$lat", checked((int)Math.Round(latitude * 1e7))), ("$lon", checked((int)Math.Round(longitude * 1e7))), ("$g", geometry));
     }
 
-    public TmapBuildResult Complete(string outputPath, MapPackAreaSelection area, TmapOptions options)
+    public TmapBuildResult Complete(string outputPath, MapPackAreaSelection area, TmapOptions options,
+        TmapAdministrativeAreas? administrativeAreas = null)
     {
         if (string.IsNullOrWhiteSpace(options.PackageKey) || string.IsNullOrWhiteSpace(options.Series)) throw new ArgumentException("Stable package and series keys are required.");
         if (!double.IsFinite(area.Bounds.West) || !double.IsFinite(area.Bounds.East) || !double.IsFinite(area.Bounds.South) || !double.IsFinite(area.Bounds.North) ||
@@ -142,7 +143,8 @@ public sealed class TmapBuilder : IDisposable
             WriteContainer(temporary, area, options);
             TmapFastLabels.Append(temporary, _token, _maximumBytes, updateIdentity: false);
             if (!string.IsNullOrWhiteSpace(options.AdministrativeBoundaryManifest))
-                TmapAdministrativeSections.Upgrade(temporary, options.AdministrativeBoundaryManifest, _token, _maximumBytes, updateIdentity: false);
+                TmapAdministrativeSections.Upgrade(temporary, administrativeAreas ?? new TmapAdministrativeAreas(options.AdministrativeBoundaryManifest, _token),
+                    _token, _maximumBytes, updateIdentity: false);
             if (options.GenerateFontPacks)
                 TmapFontSections.Upgrade(temporary, options.FontOutputDirectory ?? TmapLayout.FontRootForPackage(target), _token, _maximumBytes, updateIdentity: false);
             _token.ThrowIfCancellationRequested();

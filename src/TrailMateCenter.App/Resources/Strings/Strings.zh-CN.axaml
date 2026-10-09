@@ -1,9 +1,14 @@
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
   <x:String x:Key="App.Title">TrailMate 指挥中心</x:String>
+  <x:String x:Key="Ui.MapPack.TmapAdministrativeTitle">POI 行政区位置</x:String>
+  <x:String x:Key="Ui.MapPack.TmapAdministrativePath">行政区数据清单（.json）</x:String>
+  <x:String x:Key="Ui.MapPack.TmapAdministrativePick">选择数据集</x:String>
+  <x:String x:Key="Ui.MapPack.TmapAdministrativeHint">数据清单记录边界文件及其层级，为搜索结果添加国家、地区和当地行政区名称。地图处理前会校验来源和几何；缺少的层级标记为不完整。</x:String>
+  <x:String x:Key="Ui.MapPack.TmapAdministrativeMissing">尚未选择数据集：导出的 POI 不含行政区位置。请选择数据集，以区分同名地点。</x:String>
   <x:String x:Key="Ui.MapPack.TmapOutput">制作 TMAP 离线地图（每种底图一个文件）</x:String>
   <x:String x:Key="Ui.MapPack.TmapSources">OSM 使用本地原始 .osm.pbf；地形固定使用 Tilezen Terrarium 高程 + PBF 土地覆盖，生成无文字山体阴影；卫星使用 Esri World Imagery。首次制作地形/卫星需要联网，后续复用缓存。Copernicus 尚未接入。</x:String>
-  <x:String x:Key="Ui.MapPack.TmapExportHint">所选输出文件夹下生成 maps/tmap/osm、terrain、satellite。POI 和搜索索引保存在 OSM 包中，即使只选地形或卫星也会生成 OSM 数据包。成功后自动登记供主地图预览；复制 maps/tmap 到 SD 卡同名目录。体积估算不含全部索引、下载缓存和暂存空间。</x:String>
+  <x:String x:Key="Ui.MapPack.TmapExportHint">所选输出文件夹下生成 maps/tmap/osm、terrain、satellite。POI 和搜索索引保存在 OSM 包中，即使只选地形或卫星也会生成 OSM 数据包。成功后自动登记供主地图预览；请把 maps/tmap 和生成的 trailmate/packs/fonts 目录复制到 SD 卡同名位置。体积估算不含全部索引、字库、下载缓存和暂存空间。</x:String>
   <x:String x:Key="Ui.MapPack.TmapHint">分别生成 OSM、无文字地形和卫星 TMAP，桌面与设备读取相同成品。完整 POI、独立标注和地点搜索保存在 OSM 包中；地形高程与卫星影像按需获取并复用缓存。需要支持 TMAP 的设备固件；当前不包含道路导航路网。</x:String>
   <x:String x:Key="Ui.MapPack.TmapCustom">自定义缩放范围</x:String>
   <x:String x:Key="Ui.MapPack.TmapWorld">全球：0–7 级</x:String>

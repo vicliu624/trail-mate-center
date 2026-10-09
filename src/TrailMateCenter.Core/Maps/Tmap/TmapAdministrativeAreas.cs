@@ -25,13 +25,15 @@ public sealed class TmapAdministrativeAreas
         ManifestJson = File.ReadAllText(manifestPath);
         var manifest = JsonSerializer.Deserialize<TmapAdministrativeManifest>(ManifestJson,
             new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? throw new InvalidDataException("Missing administrative manifest.");
-        if (manifest.Version != 1 || manifest.Sources.Count == 0) throw new InvalidDataException("Unsupported or empty administrative manifest.");
+        if (manifest.Version != 1 || manifest.Sources is null || manifest.Sources.Count == 0) throw new InvalidDataException("Unsupported or empty administrative manifest.");
         var root = System.IO.Path.GetDirectoryName(manifestPath)!;
         foreach (var source in manifest.Sources)
         {
             token.ThrowIfCancellationRequested();
-            if (source.Level is < 0 or > 5 || string.IsNullOrWhiteSpace(source.CountryCode) ||
-                string.IsNullOrWhiteSpace(source.Source) || string.IsNullOrWhiteSpace(source.License))
+            if (source is null || source.Level is < 0 or > 5 || string.IsNullOrWhiteSpace(source.Path) ||
+                source.CountryCode is null || source.CountryCode.Length != 3 || source.CountryCode.Any(c => c is < 'A' or > 'Z') ||
+                string.IsNullOrWhiteSpace(source.CountryName) || source.Sha256 is null || source.Sha256.Length != 64 ||
+                source.Sha256.Any(c => !Uri.IsHexDigit(c)) || string.IsNullOrWhiteSpace(source.Source) || string.IsNullOrWhiteSpace(source.License))
                 throw new InvalidDataException("Administrative sources need level, country, provenance and license.");
             var path = System.IO.Path.GetFullPath(System.IO.Path.Combine(root, source.Path));
             if (!path.StartsWith(root + System.IO.Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
@@ -59,14 +61,20 @@ public sealed class TmapAdministrativeAreas
 
     public TmapAdministrativeLocation Resolve(double latitude, double longitude)
     {
-        var point = _factory.CreatePoint(new Coordinate(longitude, latitude));
+        if (!double.IsFinite(latitude) || !double.IsFinite(longitude) || latitude is < -90 or > 90 || longitude is < -180 or > 180)
+            throw new ArgumentException("Administrative lookup needs WGS84 coordinates.");
+        // Rings crossing the dateline are stored in continuous longitude space.
+        // Three equivalent points keep the STRtree query bounded and avoid an
+        // incorrect planar polygon spanning almost the entire world.
+        var points = new[] { longitude, longitude - 360, longitude + 360 }
+            .Select(x => _factory.CreatePoint(new Coordinate(x, latitude))).ToArray();
         var names = new List<string>(6);
         string country = "";
         byte levels = 0, flags = 0;
         for (var level = 0; level < _trees.Length; level++)
         {
-            var candidates = _trees[level].Query(point.EnvelopeInternal)
-                .Where(a => (country.Length == 0 || a.Country == country) && a.Prepared.Covers(point)).ToArray();
+            var candidates = points.SelectMany(point => _trees[level].Query(point.EnvelopeInternal)
+                .Where(a => (country.Length == 0 || a.Country == country) && a.Prepared.Covers(point))).Distinct().ToArray();
             // Overlapping boundary sources are uncertain, not a licence to
             // guess the closest place or silently pick the smallest polygon.
             if (candidates.Length > 1) { flags |= 2; break; }
@@ -85,8 +93,12 @@ public sealed class TmapAdministrativeAreas
         return new(path, levels, flags, country);
     }
 
-    private static string? Text(JsonElement properties, string? key) => key is not null && properties.TryGetProperty(key, out var value) &&
-        value.ValueKind == JsonValueKind.String ? value.GetString() : null;
+    private static string? Text(JsonElement properties, string? key)
+    {
+        if (key is null || !properties.TryGetProperty(key, out var value) || value.ValueKind != JsonValueKind.String) return null;
+        var text = value.GetString();
+        return string.IsNullOrWhiteSpace(text) ? null : text;
+    }
     private Geometry ReadGeometry(JsonElement value)
     {
         var coordinates = value.GetProperty("coordinates");
@@ -99,14 +111,37 @@ public sealed class TmapAdministrativeAreas
     }
     private Polygon Polygon(JsonElement value)
     {
-        var rings = value.EnumerateArray().Select(r => _factory.CreateLinearRing(r.EnumerateArray().Select(p =>
+        var coordinates = value.EnumerateArray().Select(r => r.EnumerateArray().Select(p =>
         {
             var longitude = p[0].GetDouble(); var latitude = p[1].GetDouble();
             if (!double.IsFinite(longitude) || !double.IsFinite(latitude) || longitude is < -180 or > 180 || latitude is < -90 or > 90)
                 throw new InvalidDataException("Administrative geometry must use WGS84 coordinates.");
             return new Coordinate(longitude, latitude);
-        }).ToArray())).ToArray();
-        if (rings.Length == 0) throw new InvalidDataException("Missing polygon ring.");
+        }).ToArray()).ToArray();
+        if (coordinates.Length == 0) throw new InvalidDataException("Missing polygon ring.");
+        foreach (var ring in coordinates)
+        {
+            if (ring.Length < 4 || !ring[0].Equals2D(ring[^1])) throw new InvalidDataException("Administrative rings must be closed.");
+            // A cut polar cap may explicitly include a full-width pole edge.
+            // Preserve that planar representation instead of collapsing it.
+            if (ring.Zip(ring.Skip(1)).Any(pair => Math.Abs(pair.First.Y) == 90 && pair.First.Y == pair.Second.Y &&
+                Math.Abs(pair.First.X - pair.Second.X) == 360)) continue;
+            for (var i = 1; i < ring.Length; i++)
+            {
+                while (ring[i].X - ring[i - 1].X > 180) ring[i].X -= 360;
+                while (ring[i].X - ring[i - 1].X < -180) ring[i].X += 360;
+            }
+            if (!ring[0].Equals2D(ring[^1]))
+                throw new InvalidDataException("Split a pole-winding administrative ring into closed GeoJSON polygons.");
+        }
+        var shellCenter = (coordinates[0].Min(c => c.X) + coordinates[0].Max(c => c.X)) / 2;
+        foreach (var hole in coordinates.Skip(1))
+        {
+            var center = (hole.Min(c => c.X) + hole.Max(c => c.X)) / 2;
+            var shift = 360 * Math.Round((shellCenter - center) / 360);
+            foreach (var point in hole) point.X += shift;
+        }
+        var rings = coordinates.Select(r => _factory.CreateLinearRing(r)).ToArray();
         return _factory.CreatePolygon(rings[0], rings.Skip(1).ToArray());
     }
 }

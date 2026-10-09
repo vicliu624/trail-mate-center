@@ -8,9 +8,13 @@ public static class TmapAdministrativeSections
 
     public static Result Upgrade(string path, string boundaryManifest, CancellationToken token = default,
         long maximumBytes = long.MaxValue, bool updateIdentity = true)
+        => Upgrade(path, new TmapAdministrativeAreas(boundaryManifest, token), token, maximumBytes, updateIdentity);
+
+    public static Result Upgrade(string path, TmapAdministrativeAreas areas, CancellationToken token = default,
+        long maximumBytes = long.MaxValue, bool updateIdentity = true)
     {
+        ArgumentNullException.ThrowIfNull(areas);
         path = System.IO.Path.GetFullPath(path);
-        var areas = new TmapAdministrativeAreas(boundaryManifest, token);
         var work = path + ".admin-" + Guid.NewGuid().ToString("N"); Directory.CreateDirectory(work);
         var references = System.IO.Path.Combine(work, "references");
         var stringsPath = System.IO.Path.Combine(work, "strings");
@@ -48,8 +52,13 @@ public static class TmapAdministrativeSections
             }
             File.WriteAllText(provenance, JsonSerializer.Serialize(new
             {
-                schema = 1, method = "WGS84 polygon containment; no nearest-city substitution",
-                manifest = JsonSerializer.Deserialize<JsonElement>(areas.ManifestJson), places, located, incomplete, ambiguous
+                schema = 1,
+                method = "WGS84 polygon containment; no nearest-city substitution",
+                manifest = JsonSerializer.Deserialize<JsonElement>(areas.ManifestJson),
+                places,
+                located,
+                incomplete,
+                ambiguous
             }));
             TmapExtensionPublisher.Publish(path,
                 [new(50, references, places), new(51, stringsPath, paths), new(54, provenance, 1, false)], token, maximumBytes, updateIdentity);

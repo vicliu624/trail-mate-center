@@ -87,6 +87,9 @@ public sealed partial class MapPackBuilderViewModel : ObservableObject
     [ObservableProperty] private string _tmapPackageKey = "";
     [ObservableProperty] private string _tmapCountryCode = "";
     [ObservableProperty] private string _tmapAdminCode = "";
+    [ObservableProperty] private string _tmapAdministrativeBoundaryManifest = "";
+    public bool HasTmapAdministrativeDataset => !string.IsNullOrWhiteSpace(TmapAdministrativeBoundaryManifest);
+    partial void OnTmapAdministrativeBoundaryManifestChanged(string value) => OnPropertyChanged(nameof(HasTmapAdministrativeDataset));
     [ObservableProperty] private int _tmapTierIndex;
     partial void OnTmapTierIndexChanged(int value)
     {
@@ -283,6 +286,7 @@ public sealed partial class MapPackBuilderViewModel : ObservableObject
                 PackageKey = TmapPackageKey.Trim(),
                 CountryCode = TmapCountryCode.Trim(),
                 AdminCode = TmapAdminCode.Trim(),
+                AdministrativeBoundaryManifest = HasTmapAdministrativeDataset ? Path.GetFullPath(TmapAdministrativeBoundaryManifest.Trim()) : null,
                 Tier = (TrailMateCenter.Maps.Tmap.TmapRegionTier)TmapTierIndex,
             } : null,
         };

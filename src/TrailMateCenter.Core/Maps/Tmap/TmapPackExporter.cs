@@ -11,6 +11,8 @@ public sealed class TmapPackExporter
     public static void Validate(MapPackExportPlan plan)
     {
         var options = plan.Tmap ?? throw new ArgumentException("TMAP options are required.");
+        if (!string.IsNullOrWhiteSpace(options.AdministrativeBoundaryManifest) && !File.Exists(options.AdministrativeBoundaryManifest))
+            throw new FileNotFoundException("Select an existing administrative dataset manifest.", options.AdministrativeBoundaryManifest);
         if (!File.Exists(plan.Poi.PbfPath)) throw new FileNotFoundException("Select the local OSM PBF for this region.", plan.Poi.PbfPath);
         if (string.IsNullOrWhiteSpace(plan.OutputDirectory) || string.IsNullOrWhiteSpace(options.PackageKey)) throw new ArgumentException("Output directory and stable package key are required.");
         if (Path.GetFileName(options.FileName) != options.FileName || !options.FileName.EndsWith(".tmap", StringComparison.OrdinalIgnoreCase) || options.FileName.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
@@ -43,6 +45,10 @@ public sealed class TmapPackExporter
         if (plan.BaseLayers.IncludeContours && addContours is null) throw new ArgumentException("Contour input is unavailable.");
         return Task.Run(async () =>
         {
+            // Validate once before importing PBF or staging raster pixels.
+            // Retain this exact geometry/provenance snapshot through publication.
+            var administrativeAreas = string.IsNullOrWhiteSpace(plan.Tmap!.AdministrativeBoundaryManifest) ? null :
+                new TmapAdministrativeAreas(plan.Tmap.AdministrativeBoundaryManifest, cancellationToken);
             var temporary = Path.Combine(Path.GetFullPath(plan.OutputDirectory), ".tmap-source-" + Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(temporary);
             try
@@ -129,11 +135,17 @@ public sealed class TmapPackExporter
                 var root = TmapLayout.Root(plan.OutputDirectory); var packages = new List<TmapBuildResult>();
                 void Stage(TmapBuilder output, string style, string attribution)
                 {
-                    var options = plan.Tmap with { FileName = TmapLayout.FileName(plan.Tmap.FileName, style),
-                        PackageKey = plan.Tmap.PackageKey + ":" + style, Attribution = attribution,
-                        GenerateFontPacks = style == "osm", FontOutputDirectory = temporary,
-                        AdministrativeBoundaryManifest = style == "osm" ? plan.Tmap.AdministrativeBoundaryManifest : null };
-                    var result = output.Complete(Path.Combine(temporary, style, options.FileName), plan.Area, options);
+                    var options = plan.Tmap with
+                    {
+                        FileName = TmapLayout.FileName(plan.Tmap.FileName, style),
+                        PackageKey = plan.Tmap.PackageKey + ":" + style,
+                        Attribution = attribution,
+                        GenerateFontPacks = style == "osm",
+                        FontOutputDirectory = temporary,
+                        AdministrativeBoundaryManifest = style == "osm" ? plan.Tmap.AdministrativeBoundaryManifest : null
+                    };
+                    var result = output.Complete(Path.Combine(temporary, style, options.FileName), plan.Area, options,
+                        style == "osm" ? administrativeAreas : null);
                     packages.Add(result);
                 }
                 // One authoritative OSM package contains full POI/search and
@@ -154,9 +166,9 @@ public sealed class TmapPackExporter
                         Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
                         if (!Directory.Exists(destination)) Directory.Move(source, destination);
                         else foreach (var file in Directory.EnumerateFiles(source))
-                            if (!File.Exists(Path.Combine(destination, Path.GetFileName(file))) ||
-                                !File.ReadAllBytes(file).SequenceEqual(File.ReadAllBytes(Path.Combine(destination, Path.GetFileName(file)))))
-                                throw new InvalidDataException("Existing map font differs from its content-addressed identity.");
+                                if (!File.Exists(Path.Combine(destination, Path.GetFileName(file))) ||
+                                    !File.ReadAllBytes(file).SequenceEqual(File.ReadAllBytes(Path.Combine(destination, Path.GetFileName(file)))))
+                                    throw new InvalidDataException("Existing map font differs from its content-addressed identity.");
                     }
                 for (var i = 0; i < packages.Count; i++)
                 {
@@ -194,19 +206,31 @@ public sealed class TmapPackExporter
             return result;
         }
         for (var y = 0; y < 256; y++) for (var x = 0; x < 256; x++)
-        {
-            var p = bitmap.GetPixel(x, y);
-            if (alpha) { result[offset++] = p.Red; result[offset++] = p.Green; result[offset++] = p.Blue; result[offset++] = p.Alpha; }
-            else { if (p.Alpha != 255) throw new InvalidDataException("An opaque base tile contains transparent pixels."); TmapFormat.Put16(result, offset, (p.Red >> 3 << 11) | (p.Green >> 2 << 5) | (p.Blue >> 3)); offset += 2; }
-        }
+            {
+                var p = bitmap.GetPixel(x, y);
+                if (alpha) { result[offset++] = p.Red; result[offset++] = p.Green; result[offset++] = p.Blue; result[offset++] = p.Alpha; }
+                else { if (p.Alpha != 255) throw new InvalidDataException("An opaque base tile contains transparent pixels."); TmapFormat.Put16(result, offset, (p.Red >> 3 << 11) | (p.Green >> 2 << 5) | (p.Blue >> 3)); offset += 2; }
+            }
         return result;
     }
     public static void ImportRasterDirectory(TmapBuilder builder, string mapsRoot, CancellationToken token = default)
     {
         var layers = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
-        { ["base/osm"] = 1, ["base/terrain"] = 2, ["base/satellite"] = 3, ["contour/major-500"] = 100, ["contour/major-200"] = 101,
-            ["contour/major-100"] = 102, ["contour/major-50"] = 103, ["contour/major-25"] = 104, ["contour/minor-100"] = 110,
-            ["contour/minor-50"] = 111, ["contour/minor-20"] = 112, ["contour/minor-10"] = 113, ["contour/minor-5"] = 114 };
+        {
+            ["base/osm"] = 1,
+            ["base/terrain"] = 2,
+            ["base/satellite"] = 3,
+            ["contour/major-500"] = 100,
+            ["contour/major-200"] = 101,
+            ["contour/major-100"] = 102,
+            ["contour/major-50"] = 103,
+            ["contour/major-25"] = 104,
+            ["contour/minor-100"] = 110,
+            ["contour/minor-50"] = 111,
+            ["contour/minor-20"] = 112,
+            ["contour/minor-10"] = 113,
+            ["contour/minor-5"] = 114
+        };
         foreach (var (folder, layer) in layers)
         {
             var root = Path.Combine(mapsRoot, folder); if (!Directory.Exists(root)) continue;

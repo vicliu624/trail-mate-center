@@ -60,6 +60,19 @@ public partial class MapPackBuilderDialog : Window
             ViewModel.SetLocalPbfPath(path);
     }
 
+    private async void OnPickAdministrativeDatasetClicked(object? sender, RoutedEventArgs e)
+    {
+        if (ViewModel is null || !StorageProvider.CanOpen) return;
+        var files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        {
+            AllowMultiple = false,
+            Title = Loc.GetString("Ui.MapPack.TmapAdministrativeTitle"),
+            FileTypeFilter = [new FilePickerFileType("JSON") { Patterns = ["*.json"] }],
+        });
+        var path = files.FirstOrDefault()?.TryGetLocalPath();
+        if (!string.IsNullOrWhiteSpace(path)) ViewModel.TmapAdministrativeBoundaryManifest = path;
+    }
+
     private async void OnImportBoundaryClicked(object? sender, RoutedEventArgs e)
     {
         if (ViewModel is null || !StorageProvider.CanOpen)

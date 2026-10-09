@@ -1,9 +1,14 @@
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
   <x:String x:Key="App.Title">TrailMate Center</x:String>
+  <x:String x:Key="Ui.MapPack.TmapAdministrativeTitle">POI administrative locations</x:String>
+  <x:String x:Key="Ui.MapPack.TmapAdministrativePath">Administrative dataset manifest (.json)</x:String>
+  <x:String x:Key="Ui.MapPack.TmapAdministrativePick">Choose dataset</x:String>
+  <x:String x:Key="Ui.MapPack.TmapAdministrativeHint">The dataset lists boundary files and their levels. It adds country, region and local area names to search results. Sources and geometry are validated before map processing; missing levels are marked incomplete.</x:String>
+  <x:String x:Key="Ui.MapPack.TmapAdministrativeMissing">No dataset selected: exported POIs will have no administrative location. Select a dataset to distinguish places with the same name.</x:String>
   <x:String x:Key="Ui.MapPack.TmapOutput">Build TMAP offline maps (one file per basemap style)</x:String>
   <x:String x:Key="Ui.MapPack.TmapSources">OSM uses a local raw .osm.pbf extract. Terrain uses Tilezen Terrarium elevation plus PBF land cover to render text-free hillshade. Satellite uses Esri World Imagery. Initial terrain/imagery acquisition needs Internet access; cached sources are reused. Copernicus is not integrated yet.</x:String>
-  <x:String x:Key="Ui.MapPack.TmapExportHint">Creates maps/tmap/osm, terrain and satellite under the output folder. POIs and search indexes live in the OSM package, which is also generated when only terrain or satellite is selected. Successful exports are registered for main-map preview. Copy maps/tmap to the matching SD directory. Estimates exclude full indexes, download caches and staging space.</x:String>
+  <x:String x:Key="Ui.MapPack.TmapExportHint">Creates maps/tmap/osm, terrain and satellite under the output folder. POIs and search indexes live in the OSM package, which is also generated when only terrain or satellite is selected. Successful exports are registered for main-map preview. Copy maps/tmap and the generated trailmate/packs/fonts directories to the matching SD locations. Estimates exclude full indexes, fonts, download caches and staging space.</x:String>
   <x:String x:Key="Ui.MapPack.TmapHint">Creates separate OSM, text-free terrain and satellite TMAP packages for desktop and device display. Full POIs, annotations and place search live in the OSM package. Elevation and imagery are fetched as needed and cached. Requires TMAP-capable firmware; road routing data is not included yet.</x:String>
   <x:String x:Key="Ui.MapPack.TmapCustom">Custom zoom range</x:String>
   <x:String x:Key="Ui.MapPack.TmapWorld">World: zoom 0–7</x:String>
