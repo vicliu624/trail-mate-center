@@ -37,7 +37,7 @@ public static class MapAnnotationFontPackBuilder
         {
             token.ThrowIfCancellationRequested();
             var subset = group.Append(0x2026).Distinct().Order().ToArray();
-            var identity = "map-multiscript-16px-2bpp-v1:" + sourceIdentity + ":" + string.Join(",", subset);
+            var identity = "map-multiscript-16px-2bpp-v2:" + sourceIdentity + ":" + string.Join(",", subset);
             var id = "map-" + Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(identity)).AsSpan(0, 8)).ToLowerInvariant();
             var root = Path.Combine(stagedSdRoot, "trailmate", "packs", "fonts"); Directory.CreateDirectory(root);
             var directory = Path.Combine(root, id);
@@ -47,7 +47,13 @@ public static class MapAnnotationFontPackBuilder
             {
                 LvglAnnotationFontWriter.Write(sources, subset, Path.Combine(pending, "font.bin"), token);
                 var size = new FileInfo(Path.Combine(pending, "font.bin")).Length;
-                var estimate = size + subset.Length * 24L + 4096;
+                // The emitted format includes 4-byte glyph headers, 4-byte
+                // loca offsets and 2-byte sparse cmap entries. LVGL's loader
+                // replaces the first two with <=16-byte glyph descriptors;
+                // its transient loca array costs another 4 bytes per glyph.
+                // File size + 12 bytes/glyph + 4 KiB covers that peak for this
+                // uncompressed format, including the LARGE descriptor layout.
+                var estimate = size + subset.Length * 12L + 4096;
                 if (estimate > 640 * 1024) throw new InvalidDataException("A map font subset exceeds the device content-font budget.");
                 File.WriteAllText(Path.Combine(pending, "manifest.ini"),
                     $"kind=font\nid={id}\ndisplay_name=TMAP place and administrative names\nusage=content\nestimated_ram_bytes={estimate}\nsource=binfont\nfile=font.bin\nranges=ranges.txt\n", new UTF8Encoding(false));
