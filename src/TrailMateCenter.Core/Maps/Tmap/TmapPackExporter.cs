@@ -28,7 +28,8 @@ public sealed class TmapPackExporter
         if (options.MaximumOutputBytes <= 0) throw new ArgumentOutOfRangeException(nameof(options.MaximumOutputBytes));
         // Conservative raw preflight estimate; deduplication savings are known only after staging.
         var layers = (l.IncludeOsm ? 1L : 0) + (l.IncludeTerrain ? 1L : 0) + (l.IncludeSatellite ? 1L : 0);
-        var bytes = checked(ExportEstimator.CountTiles(b, l.MinimumZoom, l.MaximumZoom) * layers * 131072L);
+        var coverage = new TmapTileCoverage(plan.Area);
+        var bytes = checked(coverage.Count(b, l.MinimumZoom, l.MaximumZoom) * layers * 131072L);
         if (bytes > options.MaximumOutputBytes) throw new IOException($"Native raster payload alone requires {bytes:N0} bytes, exceeding the output budget.");
         var workingBytes = checked(bytes * 2 + 64L * 1024 * 1024);
         var drive = new DriveInfo(Path.GetPathRoot(Path.GetFullPath(plan.OutputDirectory))!);
@@ -56,7 +57,8 @@ public sealed class TmapPackExporter
                 using var builder = new TmapBuilder(temporary, plan.Tmap!.MaximumOutputBytes, cancellationToken);
                 using var terrain = plan.BaseLayers.IncludeTerrain ? new TmapBuilder(temporary, plan.Tmap.MaximumOutputBytes, cancellationToken) : null;
                 using var satellite = plan.BaseLayers.IncludeSatellite ? new TmapBuilder(temporary, plan.Tmap.MaximumOutputBytes, cancellationToken) : null;
-                using var sources = new TmapRasterSources();
+                using var sources = new TmapRasterSources(plan.Tmap.SourceCacheDirectory);
+                var coverage = new TmapTileCoverage(plan.Area);
                 using var store = new PbfBasemapStore(Path.Combine(temporary, "geometry.sqlite"));
                 store.Import(plan.Poi.PbfPath, (stage, n) => progress?.Report(new(stage, n, 0)), cancellationToken, plan.Area.Bounds, includeAnnotations: true);
                 var polygon = GeoJsonPointInPolygonFilter.TryCreate(plan.Area.BoundaryGeoJson);
@@ -80,7 +82,7 @@ public sealed class TmapPackExporter
                 }, cancellationToken: cancellationToken).ConfigureAwait(false);
 
                 var layers = new List<int>(); if (plan.BaseLayers.IncludeOsm) layers.Add(1); if (plan.BaseLayers.IncludeTerrain) layers.Add(2); if (plan.BaseLayers.IncludeSatellite) layers.Add(3);
-                var total = ExportEstimator.CountTiles(plan.Area.Bounds, plan.BaseLayers.MinimumZoom, plan.BaseLayers.MaximumZoom) * layers.Count;
+                var total = coverage.Count(plan.Area.Bounds, plan.BaseLayers.MinimumZoom, plan.BaseLayers.MaximumZoom, cancellationToken) * layers.Count;
                 long done = 0;
                 for (var z = plan.BaseLayers.MinimumZoom; z <= plan.BaseLayers.MaximumZoom; z++)
                 {
@@ -88,7 +90,9 @@ public sealed class TmapPackExporter
                     for (var x = range.MinX; x <= range.MaxX; x++)
                         for (var y = range.MinY; y <= range.MaxY; y++)
                         {
-                            cancellationToken.ThrowIfCancellationRequested(); var tile = new TileCoordinate(z, x, y);
+                            cancellationToken.ThrowIfCancellationRequested();
+                            if (!coverage.Includes(z, x, y)) continue;
+                            var tile = new TileCoordinate(z, x, y);
                             foreach (var layer in layers)
                             {
                                 if (layer == 3)

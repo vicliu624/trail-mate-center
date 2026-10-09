@@ -3,6 +3,11 @@
   "license": "NotoSans-OFL.txt",
   "sources": [
     {
+      "file": "NotoSansLisu-Regular.ttf",
+      "url": "https://raw.githubusercontent.com/notofonts/noto-fonts/ffebf8c1ee449e544955a7e813c54f9b73848eac/hinted/ttf/NotoSansLisu/NotoSansLisu-Regular.ttf",
+      "sha256": "7e06cb8eb69b5b10641eee665e82770ad361aefffa752b1dcae467bb1e661f09"
+    },
+    {
       "file": "NotoSans-Regular.ttf",
       "url": "https://raw.githubusercontent.com/notofonts/noto-fonts/ffebf8c1ee449e544955a7e813c54f9b73848eac/hinted/ttf/NotoSans/NotoSans-Regular.ttf",
       "sha256": "b85c38ecea8a7cfb39c24e395a4007474fa5a4fc864f6ee33309eb4948d232d5"

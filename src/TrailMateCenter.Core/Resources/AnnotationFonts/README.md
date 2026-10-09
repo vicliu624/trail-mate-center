@@ -14,6 +14,10 @@ fonts use the top-level pinned revision; Jomolhari and Noto Emoji URLs pin their
 Google Fonts revision individually. The Jigmo URL identifies its dated archive.
 Generated resources include license files and their source hashes.
 
+Noto Sans Lisu covers the Fraser-script administrative names found during the
+China administrative-boundary upgrade. It uses the pinned Noto revision and
+`NotoSans-OFL.txt`, and only the required glyphs enter device resources.
+
 The generator collects POI names, searchable aliases and available administrative
 paths. It checks glyph coverage before publishing the package. Unsupported
 characters produce `missing-map-glyphs.json` and stop publication. Private-use

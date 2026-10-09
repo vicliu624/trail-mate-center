@@ -111,6 +111,7 @@ public sealed record TmapOptions
     public string? AdministrativeBoundaryManifest { get; init; }
     public bool GenerateFontPacks { get; init; } = true;
     public string? FontOutputDirectory { get; init; }
+    public string? SourceCacheDirectory { get; init; }
     public static (int Minimum, int Maximum) Zooms(TmapRegionTier tier) => tier switch
     { TmapRegionTier.World => (0, 7), TmapRegionTier.LargeCountry => (8, 12), TmapRegionTier.AdministrativeRegion => (13, 17), _ => (0, 18) };
 }
