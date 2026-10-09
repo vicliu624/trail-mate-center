@@ -8,6 +8,54 @@ public sealed record MapAnnotationFontPack(string Id, string Directory, int Glyp
 /// <summary>Builds the existing firmware content-font package layout in a staging SD root.</summary>
 public static class MapAnnotationFontPackBuilder
 {
+    public static IReadOnlyList<MapAnnotationFontPack> BuildMany(string stagedSdRoot, IEnumerable<int> requiredCodepoints,
+        CancellationToken token = default)
+    {
+        var codes = requiredCodepoints.Where(c => c > 127).Distinct().Order().ToArray();
+        if (codes.Length == 0) return [];
+        var resources = Path.Combine(AppContext.BaseDirectory, "Resources", "AnnotationFonts");
+        var primary = Path.Combine(resources, "NotoSansCJKsc-Regular.otf");
+        var license = Path.Combine(resources, "OFL.txt");
+        if (!File.Exists(primary) || !File.Exists(license)) throw new FileNotFoundException("Bundled annotation font resources are missing.");
+        var sources = new[] { primary }.Concat(Directory.EnumerateFiles(resources)
+            .Where(p => p != primary && (p.EndsWith(".ttf", StringComparison.OrdinalIgnoreCase) || p.EndsWith(".otf", StringComparison.OrdinalIgnoreCase)))
+            .Order(StringComparer.Ordinal)).ToArray();
+        var sourceIdentity = string.Join(":", sources.Select(p => Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(p)))));
+        var missing = LvglAnnotationFontWriter.MissingGlyphs(sources, codes);
+        if (missing.Count != 0)
+        {
+            Directory.CreateDirectory(stagedSdRoot);
+            File.WriteAllText(Path.Combine(stagedSdRoot, "missing-map-glyphs.json"), System.Text.Json.JsonSerializer.Serialize(missing));
+            throw new InvalidDataException($"Map font sources lack {missing.Count} characters: " +
+                string.Join(",", missing.Take(64).Select(c => $"U+{c:X}")) + "; see missing-map-glyphs.json.");
+        }
+        var result = new List<MapAnnotationFontPack>();
+        // Keep common non-CJK scripts together: a Russian label should not
+        // require loading a large Han subset just to render a Cyrillic glyph.
+        foreach (var group in codes.GroupBy(c => c is >= 0x3400 and <= 0x9fff or >= 0xf900 and <= 0xfaff or >= 0x20000 and <= 0x3134f ? 1 : 0)
+                     .OrderBy(g => g.Key).SelectMany(g => g.Chunk(2048)))
+        {
+            token.ThrowIfCancellationRequested();
+            var subset = group.Append(0x2026).Distinct().Order().ToArray();
+            var identity = "map-multiscript-16px-2bpp-v1:" + sourceIdentity + ":" + string.Join(",", subset);
+            var id = "map-" + Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(identity)).AsSpan(0, 8)).ToLowerInvariant();
+            var directory = Path.Combine(stagedSdRoot, "trailmate", "packs", "fonts", id); Directory.CreateDirectory(directory);
+            LvglAnnotationFontWriter.Write(sources, subset, Path.Combine(directory, "font.bin"), token);
+            var size = new FileInfo(Path.Combine(directory, "font.bin")).Length;
+            var estimate = size + subset.Length * 24L + 4096;
+            if (estimate > 640 * 1024) throw new InvalidDataException("A map font subset exceeds the device content-font budget.");
+            File.WriteAllText(Path.Combine(directory, "manifest.ini"),
+                $"kind=font\nid={id}\ndisplay_name=TMAP place and administrative names\nusage=content\nestimated_ram_bytes={estimate}\nsource=binfont\nfile=font.bin\nranges=ranges.txt\n", new UTF8Encoding(false));
+            File.WriteAllText(Path.Combine(directory, "ranges.txt"), string.Join(",", subset.Select(c => $"0x{c:X}")), new UTF8Encoding(false));
+            File.Copy(license, Path.Combine(directory, "OFL.txt"), true);
+            foreach (var extra in Directory.EnumerateFiles(resources, "*-OFL.txt")) File.Copy(extra, Path.Combine(directory, Path.GetFileName(extra)), true);
+            File.WriteAllText(Path.Combine(directory, "sources.json"), System.Text.Json.JsonSerializer.Serialize(sources.Select(p => new
+            { file = Path.GetFileName(p), sha256 = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(p))) })));
+            result.Add(new(id, directory, subset.Length, size, estimate));
+        }
+        return result;
+    }
+
     public static MapAnnotationFontPack? Build(string stagedSdRoot, IEnumerable<int> requiredCodepoints, CancellationToken token = default)
     {
         var codes = requiredCodepoints.Where(c => c > 127).Append(0x2026).Distinct().Order().ToArray();

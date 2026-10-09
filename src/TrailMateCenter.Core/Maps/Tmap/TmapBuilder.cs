@@ -141,15 +141,24 @@ public sealed class TmapBuilder : IDisposable
         {
             WriteContainer(temporary, area, options);
             TmapFastLabels.Append(temporary, _token, _maximumBytes, updateIdentity: false);
+            if (!string.IsNullOrWhiteSpace(options.AdministrativeBoundaryManifest))
+                TmapAdministrativeSections.Upgrade(temporary, options.AdministrativeBoundaryManifest, _token, _maximumBytes, updateIdentity: false);
+            if (options.GenerateFontPacks)
+                TmapFontSections.Upgrade(temporary, options.FontOutputDirectory ?? TmapLayout.FontRootForPackage(target), _token, _maximumBytes, updateIdentity: false);
             _token.ThrowIfCancellationRequested();
             using (var reader = new TmapReader(temporary)) reader.ValidateAllPages(_token);
             _token.ThrowIfCancellationRequested();
             File.Move(temporary, target, overwrite: true);
+            if (File.Exists(temporary + ".font-resources.json")) File.Move(temporary + ".font-resources.json", target + ".font-resources.json", true);
             _completed = true;
             return new(target, tileCount, poiCount, nameCount, new FileInfo(target).Length)
             { UniqueTilePayloads = Scalar("SELECT COUNT(*) FROM payloads"), StoredPixelBytes = _estimatedBytes };
         }
-        finally { File.Delete(temporary); }
+        finally
+        {
+            File.Delete(temporary); File.Delete(temporary + ".extensions-base");
+            File.Delete(temporary + ".font-resources.json");
+        }
     }
 
     private void CompilePlaces()

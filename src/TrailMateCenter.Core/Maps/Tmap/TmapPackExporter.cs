@@ -130,7 +130,9 @@ public sealed class TmapPackExporter
                 void Stage(TmapBuilder output, string style, string attribution)
                 {
                     var options = plan.Tmap with { FileName = TmapLayout.FileName(plan.Tmap.FileName, style),
-                        PackageKey = plan.Tmap.PackageKey + ":" + style, Attribution = attribution };
+                        PackageKey = plan.Tmap.PackageKey + ":" + style, Attribution = attribution,
+                        GenerateFontPacks = style == "osm", FontOutputDirectory = temporary,
+                        AdministrativeBoundaryManifest = style == "osm" ? plan.Tmap.AdministrativeBoundaryManifest : null };
                     var result = output.Complete(Path.Combine(temporary, style, options.FileName), plan.Area, options);
                     packages.Add(result);
                 }
@@ -140,6 +142,22 @@ public sealed class TmapPackExporter
                 if (terrain is not null) Stage(terrain, "terrain", plan.Tmap.Attribution + "; Terrain Tiles: https://github.com/tilezen/joerd/blob/master/docs/attribution.md");
                 if (satellite is not null) Stage(satellite, "satellite", "Esri World Imagery; https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer");
                 if (packages.Sum(p => p.FileBytes) > plan.Tmap.MaximumOutputBytes) throw new IOException("Combined TMAP output exceeds the configured budget.");
+                // Publish content-addressed font resources before making their
+                // dependent TMAP visible. Unrelated SD resources are preserved.
+                var stagedFonts = Path.Combine(temporary, "trailmate", "packs", "fonts");
+                if (Directory.Exists(stagedFonts))
+                    foreach (var source in Directory.EnumerateDirectories(stagedFonts))
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
+                        var destination = Path.Combine(TmapLayout.FontRootForPackage(Path.Combine(root, "osm", plan.Tmap.FileName)),
+                            "trailmate", "packs", "fonts", Path.GetFileName(source));
+                        Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
+                        if (!Directory.Exists(destination)) Directory.Move(source, destination);
+                        else foreach (var file in Directory.EnumerateFiles(source))
+                            if (!File.Exists(Path.Combine(destination, Path.GetFileName(file))) ||
+                                !File.ReadAllBytes(file).SequenceEqual(File.ReadAllBytes(Path.Combine(destination, Path.GetFileName(file)))))
+                                throw new InvalidDataException("Existing map font differs from its content-addressed identity.");
+                    }
                 for (var i = 0; i < packages.Count; i++)
                 {
                     cancellationToken.ThrowIfCancellationRequested();
@@ -147,6 +165,8 @@ public sealed class TmapPackExporter
                     var target = Path.Combine(root, style, Path.GetFileName(packages[i].FilePath));
                     Directory.CreateDirectory(Path.GetDirectoryName(target)!);
                     File.Move(packages[i].FilePath, target, true);
+                    if (File.Exists(packages[i].FilePath + ".font-resources.json"))
+                        File.Move(packages[i].FilePath + ".font-resources.json", target + ".font-resources.json", true);
                     packages[i] = packages[i] with { FilePath = target }; TmapPackageRegistry.Register(target);
                 }
                 return packages[0] with { Packages = packages, TileCount = packages.Sum(p => p.TileCount), FileBytes = packages.Sum(p => p.FileBytes) };

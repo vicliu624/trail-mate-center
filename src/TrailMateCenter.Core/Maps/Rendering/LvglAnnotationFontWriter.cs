@@ -6,13 +6,23 @@ namespace TrailMateCenter.Maps.Rendering;
 /// <summary>Uncompressed 2-bpp LVGL binfont subset, written without an external runtime.</summary>
 public static class LvglAnnotationFontWriter
 {
+    public static IReadOnlyList<int> MissingGlyphs(IReadOnlyList<string> sources, IEnumerable<int> codes)
+    {
+        using var set = new SourceFonts(sources);
+        return codes.Distinct().Where(code => !Invisible(code) && !set.Fonts.Any(f =>
+            f.GetGlyphs(new Rune(code).ToString()).All(g => g != 0))).Order().ToArray();
+    }
+    private static bool Invisible(int code) => Rune.GetUnicodeCategory(new Rune(code)) == System.Globalization.UnicodeCategory.Format ||
+        code is >= 0xfe00 and <= 0xfe0f or >= 0xe0100 and <= 0xe01ef;
     public static void Write(string fontSource, IEnumerable<int> codepoints, string output, CancellationToken token = default)
+        => Write([fontSource], codepoints, output, token);
+
+    public static void Write(IReadOnlyList<string> fontSources, IEnumerable<int> codepoints, string output, CancellationToken token = default)
     {
         var codes = codepoints.Distinct().Order().ToArray();
         if (codes.Length == 0 || codes.Length > 60000 || codes.Any(c => !Rune.IsValid(c)))
             throw new ArgumentException("A nonempty valid Unicode subset is required.");
-        using var typeface = SKTypeface.FromFile(fontSource) ?? throw new InvalidDataException("Cannot load annotation font.");
-        using var font = new SKFont(typeface, 16) { Edging = SKFontEdging.Antialias };
+        using var set = new SourceFonts(fontSources);
         using var paint = new SKPaint { Color = SKColors.White, IsAntialias = true };
         var glyphs = new List<byte[]> { new byte[4] };
         var ascent = 0;
@@ -20,8 +30,10 @@ public static class LvglAnnotationFontWriter
         foreach (var code in codes)
         {
             token.ThrowIfCancellationRequested();
+            if (Invisible(code)) { glyphs.Add(new byte[4]); continue; }
             var text = new Rune(code).ToString();
-            if (font.GetGlyphs(text).Any(g => g == 0)) throw new InvalidDataException($"Annotation font lacks U+{code:X}.");
+            var font = set.Fonts.FirstOrDefault(f => f.GetGlyphs(text).All(g => g != 0))
+                ?? throw new InvalidDataException($"Annotation font sources lack U+{code:X}; add a licensed source font before publishing this map.");
             var bounds = new SKRect();
             var advance = (int)Math.Round(font.MeasureText(text, out bounds));
             var left = (int)Math.Floor(bounds.Left); var top = (int)Math.Floor(bounds.Top);
@@ -97,5 +109,24 @@ public static class LvglAnnotationFontWriter
         void Table(string tag, byte[] data) { final.Write((uint)(data.Length + 8)); final.Write(Encoding.ASCII.GetBytes(tag)); final.Write(data); }
         Table("head", head.ToArray()); Table("cmap", cmap.ToArray()); Table("loca", loca.ToArray());
         Table("glyf", glyphs.SelectMany(g => g).ToArray());
+    }
+
+    private sealed class SourceFonts : IDisposable
+    {
+        private readonly List<SKTypeface> _faces = new();
+        public List<SKFont> Fonts { get; } = new();
+        public SourceFonts(IReadOnlyList<string> sources)
+        {
+            try
+            {
+                foreach (var source in sources)
+                {
+                    var face = SKTypeface.FromFile(source) ?? throw new InvalidDataException($"Cannot load annotation font: {source}");
+                    _faces.Add(face); Fonts.Add(new SKFont(face, 16) { Edging = SKFontEdging.Antialias });
+                }
+            }
+            catch { Dispose(); throw; }
+        }
+        public void Dispose() { foreach (var font in Fonts) font.Dispose(); foreach (var face in _faces) face.Dispose(); }
     }
 }

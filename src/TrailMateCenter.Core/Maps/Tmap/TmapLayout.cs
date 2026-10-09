@@ -2,6 +2,15 @@ namespace TrailMateCenter.Maps.Tmap;
 
 public static class TmapLayout
 {
+    public static string FontRootForPackage(string package)
+    {
+        var directory = Path.GetDirectoryName(Path.GetFullPath(package))!;
+        if (Path.GetFileName(directory) is "osm" or "terrain" or "satellite" &&
+            Path.GetFileName(Path.GetDirectoryName(directory)) == "tmap") directory = Path.GetDirectoryName(directory)!;
+        if (Path.GetFileName(directory) == "tmap") directory = Path.GetDirectoryName(directory)!;
+        if (Path.GetFileName(directory) == "maps") directory = Path.GetDirectoryName(directory)!;
+        return directory;
+    }
     public static string Root(string destination)
     {
         destination = Path.GetFullPath(destination);

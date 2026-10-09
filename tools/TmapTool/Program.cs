@@ -9,6 +9,14 @@ using var cancel = new CancellationTokenSource();
 Console.CancelKeyPress += (_, e) => { e.Cancel = true; cancel.Cancel(); };
 try
 {
+    if (args.Length == 3 && args[0] == "fonts-upgrade")
+    {
+        Console.WriteLine(JsonSerializer.Serialize(TmapFontSections.Upgrade(args[1], args[2], cancel.Token), json)); return 0;
+    }
+    if (args.Length == 3 && args[0] == "admin-upgrade")
+    {
+        Console.WriteLine(JsonSerializer.Serialize(TmapAdministrativeSections.Upgrade(args[1], args[2], cancel.Token), json)); return 0;
+    }
     if (args.Length == 2 && args[0] == "register")
     {
         TmapPackageRegistry.Register(args[1]); Console.WriteLine(JsonSerializer.Serialize(TmapPackageRegistry.Paths(), json)); return 0;

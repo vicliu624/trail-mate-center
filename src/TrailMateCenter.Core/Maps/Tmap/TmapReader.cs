@@ -1,7 +1,12 @@
 namespace TrailMateCenter.Maps.Tmap;
 
 public enum TmapSearchMode { Exact, Prefix, Substring }
-public sealed record TmapPoiInfo(ulong Row, byte[] StableId, double Latitude, double Longitude, uint Category, int Importance, string Name);
+public sealed record TmapPoiInfo(ulong Row, byte[] StableId, double Latitude, double Longitude, uint Category, int Importance, string Name)
+{
+    public string AdministrativePath { get; init; } = "";
+    public byte AdministrativeFlags { get; init; } = 1;
+    public string CountryCode { get; init; } = "";
+}
 public sealed record TmapTile(int Layer, int Zoom, int X, int Y, ushort Codec, byte[] Pixels);
 public sealed record TmapAnnotation(TmapPoiInfo Poi, int Kind, int Priority, double Latitude, double Longitude,
     IReadOnlyList<(double Latitude, double Longitude)> Path);
@@ -24,6 +29,22 @@ public sealed class TmapReader : IDisposable
     public bool HasRasterLayer(int layer) => _sections.Values.Any(s => s.Type == 10 && s.Owner == layer);
     public bool HasAnnotations => Section(40).Count != 0;
     public bool HasFastLabels => _sections.ContainsKey(43) && _sections.ContainsKey(44);
+    public bool HasAdministrativeAreas => _sections.ContainsKey(50) && _sections.ContainsKey(51);
+    public IEnumerable<string> SearchableNames(CancellationToken token = default)
+    {
+        for (ulong row = 1; row <= Section(22).Count; row++)
+        { token.ThrowIfCancellationRequested(); yield return String(TmapFormat.U64(Row(22, row, 48), 8)); }
+    }
+    public TmapAdministrativeLocation ReadAdministrativeLocation(ulong row)
+    {
+        if (!HasAdministrativeAreas) return new("", 0, 1, "");
+        if (Section(50).Count != PoiCount) throw new InvalidDataException("Administrative reference count does not match POIs.");
+        var record = Row(50, row, 16); var reference = TmapFormat.U64(record, 0);
+        if ((record[8] & ~63) != 0 || (record[9] & ~3) != 0 || record[13] != 0 || record[14] != 0 || record[15] != 0)
+            throw new InvalidDataException("Invalid administrative reference flags.");
+        return new(reference == 0 ? "" : String(reference, 51), record[8], record[9],
+            TmapFormat.Utf8.GetString(record, 10, 3).TrimEnd('\0'));
+    }
     internal IEnumerable<(int Zoom, int X, int Y)> AnnotationTiles()
     {
         foreach (var entry in Entries(Section(40), TmapKeyKind.Number, TmapFormat.OrderedKey(0)))
@@ -188,9 +209,9 @@ public sealed class TmapReader : IDisposable
         if ((uint)slot >= TmapFormat.U32(page, 16) || TmapFormat.U16(page, 20) != size) throw new InvalidDataException("Invalid record page.");
         return page.AsSpan(64 + slot * size, size).ToArray();
     }
-    private string String(ulong reference)
+    private string String(ulong reference, uint section = 23)
     {
-        var page = Page(Section(23), reference / 4096 * 4096); var at = (int)(reference % 4096);
+        var page = Page(Section(section), reference / 4096 * 4096); var at = (int)(reference % 4096);
         if (at < 64 || at + 4 > 4096) throw new InvalidDataException("Invalid string reference.");
         var n = TmapFormat.U16(page, at); if (n > 512 || at + 4 + n > 4096) throw new InvalidDataException("Invalid string length.");
         return TmapFormat.Utf8.GetString(page.AsSpan(at + 4, n));
@@ -198,8 +219,10 @@ public sealed class TmapReader : IDisposable
     public TmapPoiInfo ReadPoi(ulong row)
     {
         var p = Row(20, row, 96); var name = TmapFormat.U64(p, 32);
+        var location = ReadAdministrativeLocation(row);
         return new(row, p.AsSpan(0, 16).ToArray(), TmapFormat.I32(p, 16) / 1e7, TmapFormat.I32(p, 20) / 1e7,
-            TmapFormat.U32(p, 24), TmapFormat.U16(p, 56), name == 0 ? "" : String(TmapFormat.U64(Row(22, name, 48), 8)));
+            TmapFormat.U32(p, 24), TmapFormat.U16(p, 56), name == 0 ? "" : String(TmapFormat.U64(Row(22, name, 48), 8)))
+        { AdministrativePath = location.Path, AdministrativeFlags = location.Flags, CountryCode = location.CountryCode };
     }
     public TmapPoiInfo? FindPoi(byte[] stableId)
     { if (stableId.Length != 16) throw new ArgumentException("Expected a 16-byte identity."); var r = Find(21, TmapKeyKind.Id, stableId); return r is null ? null : ReadPoi(TmapFormat.U64(r, 0)); }
