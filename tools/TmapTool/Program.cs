@@ -9,6 +9,11 @@ using var cancel = new CancellationTokenSource();
 Console.CancelKeyPress += (_, e) => { e.Cancel = true; cancel.Cancel(); };
 try
 {
+    if (args.Length is 3 or 4 && args[0] == "extensions-install")
+    {
+        Console.WriteLine(JsonSerializer.Serialize(TmapExtensionInstaller.Install(args[1], args[2], cancel.Token,
+            args.Length == 4 ? args[3] : null), json)); return 0;
+    }
     if (args.Length == 3 && args[0] == "fonts-upgrade")
     {
         Console.WriteLine(JsonSerializer.Serialize(TmapFontSections.Upgrade(args[1], args[2], cancel.Token), json)); return 0;

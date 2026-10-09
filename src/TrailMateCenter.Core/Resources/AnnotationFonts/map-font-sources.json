@@ -121,6 +121,36 @@
       "file": "NotoSerifTibetan-Regular.ttf",
       "url": "https://raw.githubusercontent.com/notofonts/noto-fonts/ffebf8c1ee449e544955a7e813c54f9b73848eac/hinted/ttf/NotoSerifTibetan/NotoSerifTibetan-Regular.ttf",
       "sha256": "3dd3876c670008cef5e29a79392fc8874d9bb9e349fc54755b2861c050c0fd7c"
+    },
+    {
+      "file": "NotoSansSymbols2-Regular.ttf",
+      "url": "https://raw.githubusercontent.com/notofonts/noto-fonts/ffebf8c1ee449e544955a7e813c54f9b73848eac/hinted/ttf/NotoSansSymbols2/NotoSansSymbols2-Regular.ttf",
+      "license": "NotoSans-OFL.txt",
+      "sha256": "630846d528dbe4c4981370a4d0a9475a1fd1491a129bb411f8e157cdb5de13c6"
+    },
+    {
+      "file": "Jomolhari-Regular.ttf",
+      "url": "https://raw.githubusercontent.com/google/fonts/62e55e586fc0c29d428ee47b7c359cd33143f93d/ofl/jomolhari/Jomolhari-Regular.ttf",
+      "license": "Jomolhari-OFL.txt",
+      "sha256": "4507597ac6d8faad3908c06a4698167f8204a1101d38bf32b04582cc2d22e86c"
+    },
+    {
+      "file": "NotoEmoji-Regular.ttf",
+      "url": "https://raw.githubusercontent.com/google/fonts/62e55e586fc0c29d428ee47b7c359cd33143f93d/ofl/notoemoji/NotoEmoji%5Bwght%5D.ttf",
+      "license": "NotoEmoji-OFL.txt",
+      "sha256": "de6c18832938afc99caf132b39d6a30a19bac7f2e812e28db2535b4608d27551"
+    },
+    {
+      "file": "Jigmo2.ttf",
+      "url": "https://kamichikoichi.github.io/jigmo/Jigmo-20250912.zip",
+      "license": "Jigmo-LICENSE.txt",
+      "sha256": "5da3582efe77e22073b86b3b86b556d7111148a76b957cfb53318a91da2efff0"
+    },
+    {
+      "file": "Jigmo3.ttf",
+      "url": "https://kamichikoichi.github.io/jigmo/Jigmo-20250912.zip",
+      "license": "Jigmo-LICENSE.txt",
+      "sha256": "815b18c1c670103723fe743090559208fdea47dc587ecb057a5a4721ee8dfeff"
     }
   ]
 }

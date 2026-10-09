@@ -32,26 +32,54 @@ public static class MapAnnotationFontPackBuilder
         var result = new List<MapAnnotationFontPack>();
         // Keep common non-CJK scripts together: a Russian label should not
         // require loading a large Han subset just to render a Cyrillic glyph.
-        foreach (var group in codes.GroupBy(c => c is >= 0x3400 and <= 0x9fff or >= 0xf900 and <= 0xfaff or >= 0x20000 and <= 0x3134f ? 1 : 0)
+        foreach (var group in codes.GroupBy(c => c is >= 0x3400 and <= 0x9fff or >= 0xf900 and <= 0xfaff or >= 0x20000 and <= 0x3347f ? 1 : 0)
                      .OrderBy(g => g.Key).SelectMany(g => g.Chunk(2048)))
         {
             token.ThrowIfCancellationRequested();
             var subset = group.Append(0x2026).Distinct().Order().ToArray();
             var identity = "map-multiscript-16px-2bpp-v1:" + sourceIdentity + ":" + string.Join(",", subset);
             var id = "map-" + Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(identity)).AsSpan(0, 8)).ToLowerInvariant();
-            var directory = Path.Combine(stagedSdRoot, "trailmate", "packs", "fonts", id); Directory.CreateDirectory(directory);
-            LvglAnnotationFontWriter.Write(sources, subset, Path.Combine(directory, "font.bin"), token);
-            var size = new FileInfo(Path.Combine(directory, "font.bin")).Length;
-            var estimate = size + subset.Length * 24L + 4096;
-            if (estimate > 640 * 1024) throw new InvalidDataException("A map font subset exceeds the device content-font budget.");
-            File.WriteAllText(Path.Combine(directory, "manifest.ini"),
-                $"kind=font\nid={id}\ndisplay_name=TMAP place and administrative names\nusage=content\nestimated_ram_bytes={estimate}\nsource=binfont\nfile=font.bin\nranges=ranges.txt\n", new UTF8Encoding(false));
-            File.WriteAllText(Path.Combine(directory, "ranges.txt"), string.Join(",", subset.Select(c => $"0x{c:X}")), new UTF8Encoding(false));
-            File.Copy(license, Path.Combine(directory, "OFL.txt"), true);
-            foreach (var extra in Directory.EnumerateFiles(resources, "*-OFL.txt")) File.Copy(extra, Path.Combine(directory, Path.GetFileName(extra)), true);
-            File.WriteAllText(Path.Combine(directory, "sources.json"), System.Text.Json.JsonSerializer.Serialize(sources.Select(p => new
-            { file = Path.GetFileName(p), sha256 = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(p))) })));
-            result.Add(new(id, directory, subset.Length, size, estimate));
+            var root = Path.Combine(stagedSdRoot, "trailmate", "packs", "fonts"); Directory.CreateDirectory(root);
+            var directory = Path.Combine(root, id);
+            var pending = Path.Combine(root, ".build-" + id + "-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(pending);
+            try
+            {
+                LvglAnnotationFontWriter.Write(sources, subset, Path.Combine(pending, "font.bin"), token);
+                var size = new FileInfo(Path.Combine(pending, "font.bin")).Length;
+                var estimate = size + subset.Length * 24L + 4096;
+                if (estimate > 640 * 1024) throw new InvalidDataException("A map font subset exceeds the device content-font budget.");
+                File.WriteAllText(Path.Combine(pending, "manifest.ini"),
+                    $"kind=font\nid={id}\ndisplay_name=TMAP place and administrative names\nusage=content\nestimated_ram_bytes={estimate}\nsource=binfont\nfile=font.bin\nranges=ranges.txt\n", new UTF8Encoding(false));
+                File.WriteAllText(Path.Combine(pending, "ranges.txt"), string.Join(",", subset.Select(c => $"0x{c:X}")), new UTF8Encoding(false));
+                File.Copy(license, Path.Combine(pending, "OFL.txt"), true);
+                foreach (var extra in Directory.EnumerateFiles(resources).Where(p => p.EndsWith("-OFL.txt", StringComparison.Ordinal) || p.EndsWith("-LICENSE.txt", StringComparison.Ordinal)))
+                    File.Copy(extra, Path.Combine(pending, Path.GetFileName(extra)), true);
+                File.WriteAllText(Path.Combine(pending, "sources.json"), System.Text.Json.JsonSerializer.Serialize(sources.Select(p => new
+                { file = Path.GetFileName(p), sha256 = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(p))) })));
+                token.ThrowIfCancellationRequested();
+                using var lease = new FileStream(Path.Combine(root, "." + id + ".lock"), FileMode.OpenOrCreate,
+                    FileAccess.ReadWrite, FileShare.None, 1, FileOptions.DeleteOnClose);
+                if (!Directory.Exists(directory)) Directory.Move(pending, directory);
+                else foreach (var path in Directory.EnumerateFiles(pending))
+                    {
+                        token.ThrowIfCancellationRequested();
+                        var existing = Path.Combine(directory, Path.GetFileName(path));
+                        if (!File.Exists(existing)) throw new InvalidDataException($"Incomplete existing font resource {id}.");
+                        using var old = File.OpenRead(existing); using var current = File.OpenRead(path);
+                        if (old.Length != current.Length || !SHA256.HashData(old).AsSpan().SequenceEqual(SHA256.HashData(current)))
+                            throw new InvalidDataException($"Existing font resource {id} differs from its content identity.");
+                    }
+                result.Add(new(id, directory, subset.Length, size, estimate));
+            }
+            finally
+            {
+                if (Directory.Exists(pending))
+                {
+                    foreach (var path in Directory.EnumerateFiles(pending)) File.Delete(path);
+                    Directory.Delete(pending);
+                }
+            }
         }
         return result;
     }

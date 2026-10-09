@@ -8,6 +8,7 @@ public sealed record TmapPoiInfo(ulong Row, byte[] StableId, double Latitude, do
     public string CountryCode { get; init; } = "";
 }
 public sealed record TmapTile(int Layer, int Zoom, int X, int Y, ushort Codec, byte[] Pixels);
+public sealed record TmapFontDependency(string Id, byte[] Sha256, uint GlyphCount, uint EstimatedRamBytes, ulong FileBytes);
 public sealed record TmapAnnotation(TmapPoiInfo Poi, int Kind, int Priority, double Latitude, double Longitude,
     IReadOnlyList<(double Latitude, double Longitude)> Path);
 internal sealed record TmapReadSection(uint Type, uint Id, uint Owner, ulong Offset, ulong Length, ulong Count, ulong Root, bool Paged);
@@ -30,6 +31,26 @@ public sealed class TmapReader : IDisposable
     public bool HasAnnotations => Section(40).Count != 0;
     public bool HasFastLabels => _sections.ContainsKey(43) && _sections.ContainsKey(44);
     public bool HasAdministrativeAreas => _sections.ContainsKey(50) && _sections.ContainsKey(51);
+    public IReadOnlyList<TmapFontDependency> RequiredFonts()
+    {
+        if (!_sections.ContainsKey(52) && !_sections.ContainsKey(53)) return [];
+        if (!_sections.ContainsKey(52) || !_sections.ContainsKey(53) || Section(52).Count > 64)
+            throw new InvalidDataException("Invalid font dependency sections.");
+        var result = new List<TmapFontDependency>();
+        var ids = new HashSet<string>(StringComparer.Ordinal);
+        for (ulong index = 1; index <= Section(52).Count; index++)
+        {
+            var record = Row(52, index, 64); var id = String(TmapFormat.U64(record, 0), 53);
+            if (id.Length != 20 || !id.StartsWith("map-", StringComparison.Ordinal) ||
+                id.AsSpan(4).ContainsAnyExcept("0123456789abcdef") || !ids.Add(id) ||
+                TmapFormat.U16(record, 56) != 16 || record[58] != 2 ||
+                record.AsSpan(59, 5).ContainsAnyExcept((byte)0))
+                throw new InvalidDataException("Invalid or duplicate map font dependency.");
+            result.Add(new(id, record.AsSpan(8, 32).ToArray(), TmapFormat.U32(record, 40),
+                TmapFormat.U32(record, 44), TmapFormat.U64(record, 48)));
+        }
+        return result;
+    }
     public IEnumerable<string> SearchableNames(CancellationToken token = default)
     {
         for (ulong row = 1; row <= Section(22).Count; row++)
@@ -157,7 +178,8 @@ public sealed class TmapReader : IDisposable
     private static int LowerBound(byte[] p, byte[] key, TmapKeyKind kind, bool inner)
     {
         var lo = 0; var hi = (int)TmapFormat.U32(p, 16);
-        while (lo < hi) { var m = lo + (hi - lo) / 2; if (Entry(p, m, kind, inner).Key.AsSpan().SequenceCompareTo(key) < 0) lo = m + 1; else hi = m; } return lo;
+        while (lo < hi) { var m = lo + (hi - lo) / 2; if (Entry(p, m, kind, inner).Key.AsSpan().SequenceCompareTo(key) < 0) lo = m + 1; else hi = m; }
+        return lo;
     }
     private IEnumerable<TmapTreeEntry> Entries(TmapReadSection s, TmapKeyKind kind, byte[] lower)
     {

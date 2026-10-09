@@ -85,7 +85,7 @@ internal static class TmapExtensionPublisher
         catch { if (mutated) Restore(path, journal); else File.Delete(journal); throw; }
     }
 
-    private static void Restore(string path, string journal)
+    internal static void Restore(string path, string journal)
     {
         var backup = File.ReadAllBytes(journal);
         if (backup.Length != 8244 || !backup.AsSpan(0, 8).SequenceEqual("TMAPEXT1"u8) ||
