@@ -11,6 +11,9 @@
         WindowStartupLocation="CenterOwner"
         Title="{DynamicResource Ui.MapPack.Title}">
   <Window.Styles>
+    <Style Selector="ComboBox">
+      <Setter Property="MaxDropDownHeight" Value="240"/>
+    </Style>
     <Style Selector="TextBlock.sectionHeader">
       <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
       <Setter Property="FontWeight" Value="SemiBold"/>
