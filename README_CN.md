@@ -4,6 +4,8 @@
 
 [English](README.md) | [中文](README_CN.md)
 
+离线地图：参见 [TMAP 单文件制作、文件结构与查询算法](docs/map/TMAP_IMPLEMENTATION.md)，支持桌面制作入口及 `tools/TmapTool` 命令行。
+
 ---
 
 ## 这是什么

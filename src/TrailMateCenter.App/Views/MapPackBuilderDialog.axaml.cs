@@ -60,6 +60,19 @@ public partial class MapPackBuilderDialog : Window
             ViewModel.SetLocalPbfPath(path);
     }
 
+    private async void OnPickAdministrativeDatasetClicked(object? sender, RoutedEventArgs e)
+    {
+        if (ViewModel is null || !StorageProvider.CanOpen) return;
+        var files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        {
+            AllowMultiple = false,
+            Title = Loc.GetString("Ui.MapPack.TmapAdministrativeTitle"),
+            FileTypeFilter = [new FilePickerFileType("JSON") { Patterns = ["*.json"] }],
+        });
+        var path = files.FirstOrDefault()?.TryGetLocalPath();
+        if (!string.IsNullOrWhiteSpace(path)) ViewModel.TmapAdministrativeBoundaryManifest = path;
+    }
+
     private async void OnImportBoundaryClicked(object? sender, RoutedEventArgs e)
     {
         if (ViewModel is null || !StorageProvider.CanOpen)
@@ -120,8 +133,10 @@ public partial class MapPackBuilderDialog : Window
         {
             ViewModel.ApplyManualBounds();
             var plan = ViewModel.BuildPlan();
-            var localRendering = plan.Annotations is not null || plan.Poi.EnablePoiSeparation;
-            if (localRendering)
+            var localRendering = plan.Tmap is not null || plan.Annotations is not null || plan.Poi.EnablePoiSeparation;
+            if (plan.Tmap is not null)
+                TrailMateCenter.Maps.Tmap.TmapPackExporter.Validate(plan);
+            else if (localRendering)
                 TrailMateCenter.Maps.Rendering.LocalMapPackExporter.Validate(plan);
             exportTaskRegion = await _ownerViewModel.RegisterMapPackExportTaskAsync(plan, cancellationToken);
             if (ViewModel.HasTileSelection && (!localRendering || plan.BaseLayers.IncludeContours))

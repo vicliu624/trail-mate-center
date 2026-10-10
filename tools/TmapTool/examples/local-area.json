@@ -1,0 +1,28 @@
+{
+  "Name": "昆明局部地图",
+  "Area": {
+    "Name": "昆明局部",
+    "Bounds": { "West": 102.70, "South": 25.00, "East": 102.73, "North": 25.03 }
+  },
+  "BaseLayers": {
+    "IncludeOsm": true,
+    "IncludeTerrain": false,
+    "IncludeSatellite": false,
+    "IncludeContours": false,
+    "MinimumZoom": 13,
+    "MaximumZoom": 14
+  },
+  "Poi": { "PbfPath": "../../../../map-sources/yunnan.osm.pbf", "EnablePoiSeparation": true },
+  "Annotations": {},
+  "OutputDirectory": "../../../artifacts/tmap",
+  "Tmap": {
+    "FileName": "local-area.tmap",
+    "PackageKey": "cn-kunming-example-z13-14",
+    "CountryCode": "CN",
+    "AdminCode": "CN-YN",
+    "Series": "trail-mate-base-v1",
+    "Tier": "Custom",
+    "Revision": 1,
+    "MaximumOutputBytes": 1073741824
+  }
+}

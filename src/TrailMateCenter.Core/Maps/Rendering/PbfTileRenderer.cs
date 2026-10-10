@@ -8,7 +8,8 @@ internal static class PbfTileRenderer
 {
     public const string StyleVersion = "trailmate-hybrid-v2";
 
-    public static void Render(PbfBasemapStore store, TileCoordinate tile, bool terrain, string path, CancellationToken token, bool bakeLabels = false)
+    public static void Render(PbfBasemapStore store, TileCoordinate tile, bool terrain, string path, CancellationToken token, bool bakeLabels = false,
+        Action<SKBitmap>? pixelSink = null)
     {
         var scale = 256.0 * (1 << tile.Z);
         var left = tile.X * 256.0;
@@ -56,6 +57,12 @@ internal static class PbfTileRenderer
             else canvas.DrawPath(geometryPath, paint);
         }
         if (bakeLabels) DrawLabels(store, canvas, tile.Z, scale, left, top, token);
+        if (pixelSink is not null)
+        {
+            canvas.Flush();
+            pixelSink(bitmap);
+            return;
+        }
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         using var image = SKImage.FromBitmap(bitmap);
         using var png = image.Encode(SKEncodedImageFormat.Png, 100);

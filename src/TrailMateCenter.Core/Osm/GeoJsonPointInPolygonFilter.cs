@@ -1,16 +1,30 @@
 using System.Globalization;
 using System.Text.Json;
+using NetTopologySuite.Algorithm.Locate;
+using NetTopologySuite.Geometries;
 
 namespace TrailMateCenter.Osm;
 
 public sealed class GeoJsonPointInPolygonFilter
 {
     private readonly IReadOnlyList<IReadOnlyList<IReadOnlyList<(double Lon, double Lat)>>> _polygons;
+    private readonly IndexedPointInAreaLocator? _locator;
 
     private GeoJsonPointInPolygonFilter(
         IReadOnlyList<IReadOnlyList<IReadOnlyList<(double Lon, double Lat)>>> polygons)
     {
         _polygons = polygons;
+        try
+        {
+            var factory = new GeometryFactory();
+            var geometry = factory.CreateMultiPolygon(polygons.Select(p =>
+            {
+                var rings = p.Select(r => factory.CreateLinearRing(r.Select(c => new Coordinate(c.Lon, c.Lat)).ToArray())).ToArray();
+                return factory.CreatePolygon(rings[0], rings.Skip(1).ToArray());
+            }).ToArray());
+            if (geometry.IsValid) _locator = new IndexedPointInAreaLocator(geometry);
+        }
+        catch (ArgumentException) { /* Retain the legacy filter for malformed rings. */ }
     }
 
     public static GeoJsonPointInPolygonFilter? TryCreate(string? geoJson)
@@ -33,6 +47,13 @@ public sealed class GeoJsonPointInPolygonFilter
 
     public bool Contains(double latitude, double longitude)
     {
+        if (_locator is not null)
+        {
+            var location = _locator.Locate(new Coordinate(longitude, latitude));
+            if (location == Location.Interior) return true;
+            if (location == Location.Exterior) return false;
+            // Preserve the original ray-cast convention exactly on boundaries.
+        }
         foreach (var polygon in _polygons)
         {
             if (polygon.Count == 0)

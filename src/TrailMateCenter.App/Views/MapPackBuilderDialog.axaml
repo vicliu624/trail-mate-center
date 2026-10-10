@@ -11,6 +11,9 @@
         WindowStartupLocation="CenterOwner"
         Title="{DynamicResource Ui.MapPack.Title}">
   <Window.Styles>
+    <Style Selector="ComboBox">
+      <Setter Property="MaxDropDownHeight" Value="240"/>
+    </Style>
     <Style Selector="TextBlock.sectionHeader">
       <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
       <Setter Property="FontWeight" Value="SemiBold"/>
@@ -58,6 +61,33 @@
                     Margin="0,12,0,10"
                     VerticalScrollBarVisibility="Auto">
         <StackPanel Spacing="10">
+          <Border BorderBrush="{DynamicResource PanelBorderStrong}" BorderThickness="1" CornerRadius="6" Padding="10">
+            <StackPanel Spacing="6">
+              <CheckBox Content="{DynamicResource Ui.MapPack.TmapOutput}" IsChecked="{Binding ExportTmap}"/>
+              <StackPanel IsVisible="{Binding ExportTmap}" Spacing="6">
+                <TextBlock Text="{DynamicResource Ui.MapPack.TmapHint}" TextWrapping="Wrap" Classes="dialogHint"/>
+                <ComboBox SelectedIndex="{Binding TmapTierIndex}">
+                  <ComboBoxItem Content="{DynamicResource Ui.MapPack.TmapCustom}"/>
+                  <ComboBoxItem Content="{DynamicResource Ui.MapPack.TmapWorld}"/>
+                  <ComboBoxItem Content="{DynamicResource Ui.MapPack.TmapCountry}"/>
+                  <ComboBoxItem Content="{DynamicResource Ui.MapPack.TmapAdmin}"/>
+                </ComboBox>
+                <TextBox Text="{Binding TmapFileName}" Watermark="{DynamicResource Ui.MapPack.TmapFileName}"/>
+                <TextBox Text="{Binding TmapPackageKey}" Watermark="{DynamicResource Ui.MapPack.TmapPackageKey}"/>
+                <TextBlock Text="{DynamicResource Ui.MapPack.TmapAdministrativeTitle}"/>
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                  <TextBox Text="{Binding TmapAdministrativeBoundaryManifest, UpdateSourceTrigger=PropertyChanged}" Watermark="{DynamicResource Ui.MapPack.TmapAdministrativePath}"/>
+                  <Button Grid.Column="1" Content="{DynamicResource Ui.MapPack.TmapAdministrativePick}" Click="OnPickAdministrativeDatasetClicked"/>
+                </Grid>
+                <TextBlock Text="{DynamicResource Ui.MapPack.TmapAdministrativeHint}" TextWrapping="Wrap" Classes="dialogHint"/>
+                <TextBlock IsVisible="{Binding !HasTmapAdministrativeDataset}" Text="{DynamicResource Ui.MapPack.TmapAdministrativeMissing}" TextWrapping="Wrap" Classes="dialogHint"/>
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                  <TextBox Text="{Binding TmapCountryCode}" Watermark="{DynamicResource Ui.MapPack.TmapCountryCode}"/>
+                  <TextBox Grid.Column="1" Text="{Binding TmapAdminCode}" Watermark="{DynamicResource Ui.MapPack.TmapAdminCode}"/>
+                </Grid>
+              </StackPanel>
+            </StackPanel>
+          </Border>
           <Border BorderBrush="{DynamicResource PanelBorderStrong}" BorderThickness="1" CornerRadius="6" Padding="10" Background="{DynamicResource SurfaceDark}">
             <StackPanel Spacing="8">
               <TextBlock Text="{DynamicResource Ui.MapPack.Step.Area}" Classes="sectionHeader"/>
@@ -164,6 +194,7 @@
                 <CheckBox Content="{DynamicResource Ui.MapPack.Layer.Contours}" IsChecked="{Binding IncludeContours}" Margin="0,0,12,6"/>
                 <CheckBox Content="{DynamicResource Ui.MapPack.Layer.UltraFineContours}" IsChecked="{Binding IncludeUltraFineContours}" IsEnabled="{Binding IncludeContours}" Margin="0,0,12,6"/>
               </WrapPanel>
+              <TextBlock IsVisible="{Binding ExportTmap}" Text="{DynamicResource Ui.MapPack.TmapSources}" TextWrapping="Wrap" Classes="dialogHint"/>
               <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="10" RowSpacing="4">
                 <TextBlock Text="{DynamicResource Ui.MapPack.MinZoom}" Foreground="{DynamicResource TextPrimary}"/>
                 <TextBlock Grid.Column="1" Text="{DynamicResource Ui.MapPack.MaxZoom}" Foreground="{DynamicResource TextPrimary}"/>
@@ -179,7 +210,9 @@
                 <TextBlock Text="{DynamicResource Ui.MapPack.Step.Poi}" Classes="sectionHeader"/>
                 <CheckBox Grid.Column="1" IsVisible="{Binding !AnnotationOptions.Enabled}" Content="{DynamicResource Ui.MapPack.EnablePoi}" IsChecked="{Binding EnablePoiSeparation}"/>
               </Grid>
-              <TextBlock Text="{DynamicResource Ui.MapPack.LocalTextFreeHint}" TextWrapping="Wrap" IsVisible="{Binding !AnnotationOptions.Enabled}"/>
+              <StackPanel IsVisible="{Binding !ExportTmap}">
+                <TextBlock Text="{DynamicResource Ui.MapPack.LocalTextFreeHint}" TextWrapping="Wrap" IsVisible="{Binding !AnnotationOptions.Enabled}"/>
+              </StackPanel>
               <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
                 <TextBox Text="{Binding PbfPath, UpdateSourceTrigger=PropertyChanged}" Watermark="{DynamicResource Ui.MapPack.PbfPathWatermark}"/>
                 <Button Grid.Column="1" Content="{DynamicResource Ui.MapPack.PickPbf}" Click="OnPickPbfClicked"/>
@@ -246,8 +279,10 @@
                 <Button Grid.Column="1" Content="{DynamicResource Ui.MapPack.PickFolder}" Click="OnPickOutputFolderClicked"/>
               </Grid>
               <TextBlock Text="{DynamicResource Ui.MapPack.ExportHint}"
+                         IsVisible="{Binding !ExportTmap}"
                          Classes="dialogHint"
                          TextWrapping="Wrap"/>
+              <TextBlock Text="{DynamicResource Ui.MapPack.TmapExportHint}" IsVisible="{Binding ExportTmap}" Classes="dialogHint" TextWrapping="Wrap"/>
             </StackPanel>
           </Border>
         </StackPanel>

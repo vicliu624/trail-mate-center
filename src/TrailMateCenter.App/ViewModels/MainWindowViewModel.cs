@@ -1406,6 +1406,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
 
             if (result.Success)
             {
+                if (region.TmapPlan?.Tmap is not null) Map.ReloadTmapPackages();
                 OfflineCacheExportStatusText = BuildOfflineCacheExportStatus(loc, result);
                 selectedRegion.ApplyExportResult(
                     true,
@@ -1465,9 +1466,12 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         CancellationToken cancellationToken)
     {
         var options = region.ToBuildOptions();
-        if (options.EnablePoiSeparation && options.IncludeSatellite)
+        var isTmap = region.ToSettings().TmapPlan?.Tmap is not null;
+        if (!isTmap && options.EnablePoiSeparation && options.IncludeSatellite)
             throw new InvalidOperationException("Local PBF rendering cannot produce satellite imagery. Deselect Satellite.");
-        if (options.EnablePoiSeparation)
+        if (isTmap)
+            options = options with { IncludeOsm = false, IncludeTerrain = false, IncludeSatellite = false };
+        else if (options.EnablePoiSeparation)
             options = options with { IncludeOsm = false, IncludeTerrain = false, IncludeSatellite = false };
         var hasRasterLayers = options.IncludeOsm ||
                               options.IncludeTerrain ||
@@ -1549,9 +1553,12 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             await SaveOfflineCacheRegionsAsync();
 
             var result = await Task.Run(
-                () => ExportOfflineCacheRegion(region, GetOfflineCacheRoot(), targetRoot, cancellationToken, exportProgress),
+                () => plan.Tmap is not null
+                    ? ExportTmapPack(plan with { Poi = plan.Poi with { PbfPath = region.PoiPbfPath } }, region, GetOfflineCacheRoot(), cancellationToken, exportProgress)
+                    : ExportOfflineCacheRegion(region, GetOfflineCacheRoot(), targetRoot, cancellationToken, exportProgress),
                 cancellationToken);
 
+            if (result.Success && plan.Tmap is not null) Map.ReloadTmapPackages();
             OfflineCacheExportStatusText = result.Success
                 ? BuildOfflineCacheExportStatus(loc, result)
                 : loc.Format("Status.OfflineCache.ExportFailed", result.ErrorMessage ?? "unknown");
@@ -1690,6 +1697,9 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     {
         try
         {
+            if (region.TmapPlan is { Tmap: not null } tmapPlan)
+                return ExportTmapPack(tmapPlan with { OutputDirectory = destinationRoot, Poi = tmapPlan.Poi with { PbfPath = region.PoiPbfPath } },
+                    region, cacheRoot, cancellationToken, progress);
             if (region.EnablePoiSeparation || region.Annotations is not null)
                 return ExportLocalMapPack(region, cacheRoot, destinationRoot, cancellationToken, progress);
             var mapsRoot = ResolveMapsExportRoot(destinationRoot);
@@ -1876,6 +1886,30 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         {
             return OfflineCacheRegionExportResult.Fail(ex.Message);
         }
+    }
+
+    private static OfflineCacheRegionExportResult ExportTmapPack(MapPackExportPlan plan, MapCacheRegionSettings region,
+        string cacheRoot, CancellationToken token, IProgress<OfflineCacheExportProgress>? progress)
+    {
+        var localProgress = new Progress<TrailMateCenter.Maps.Rendering.LocalMapPackProgress>(p =>
+            progress?.Report(new OfflineCacheExportProgress(OfflineCacheExportProgressKind.LocalRendering,
+                string.Empty, p.Zoom, 0, 0, 0, 0, p.Completed, 0)));
+        var result = new TrailMateCenter.Maps.Tmap.TmapPackExporter().ExportAsync(plan, localProgress,
+            (maps, ct) =>
+            {
+                var stats = new ExportCopyStats();
+                ExportTrailMateContours(Path.Combine(cacheRoot, "contours", "tiles"), Path.Combine(maps, "contour"),
+                    plan.BaseLayers.MinimumZoom, plan.BaseLayers.MaximumZoom,
+                    (plan.Area.Bounds.West, plan.Area.Bounds.South, plan.Area.Bounds.East, plan.Area.Bounds.North),
+                    plan.BaseLayers.IncludeUltraFineContours, OfflineTileSelector.FromRegion(region), stats,
+                    "Ui.MapPack.Layer.Contours", progress, ct);
+                if (stats.SourceTiles < stats.ExpectedTiles || stats.UnreadableEntries > 0 || stats.SkippedTiles > 0)
+                    throw new InvalidDataException("Contour cache is incomplete.");
+                return Task.CompletedTask;
+            }, token).GetAwaiter().GetResult();
+        return OfflineCacheRegionExportResult.Ok(TrailMateCenter.Maps.Tmap.TmapLayout.Root(plan.OutputDirectory), result.TileCount, result.TileCount, result.TileCount, 0, 0,
+            new PoiExportResult { Success = true, PoiRoot = result.FilePath, SourcePoiCount = result.PoiCount },
+            new PlaceSearchPackExportResult { Success = true, PlaceRoot = result.FilePath, PlaceCount = result.PoiCount, NameRowsWritten = result.NameCount });
     }
 
     private static OfflineCacheRegionExportResult ExportLocalMapPack(
@@ -2201,6 +2235,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         var bounds = plan.Area.Bounds.Normalize();
         return new MapCacheRegionSettings
         {
+            TmapPlan = plan.Tmap is null ? null : plan,
             Id = Guid.NewGuid().ToString("N"),
             Name = string.IsNullOrWhiteSpace(plan.Area.Name) ? plan.Name : plan.Area.Name,
             West = bounds.West,

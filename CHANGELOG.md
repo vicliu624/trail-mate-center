@@ -6,6 +6,19 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 
 ## [Unreleased]
 
+## [0.0.5-alpha] - 2026-10-10
+
+### Added
+
+- TMAP export for OSM, text-free terrain and satellite maps, with independent zoom ranges and categorized SD-card output folders.
+- Offline POI search indexes, display annotations and administrative hierarchy inside OSM packages, with matching LVGL font subsets generated from names, aliases and administrative paths.
+- Local text-free terrain rendering from Tilezen Terrarium elevation data, and main-map preview of registered TMAP pixels and annotations.
+
+### Changed
+
+- Regional and zoom-specific indexed packages replace large collections of individual tile files. Native pixel output lets supported Trail Mate firmware read map data directly without PNG decoding.
+- POI text remains separate from map pixels, while indexed display and search data replaces separate POI JSON files. Generated fonts are exported to `trailmate/packs/fonts` beside `maps/tmap` for SD installation.
+
 ## [0.0.4-alpha] - 2026-09-15
 
 ### Added
@@ -57,7 +70,8 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 
 - Initial alpha release.
 
-[Unreleased]: https://github.com/vicliu624/trail-mate-center/compare/v0.0.4-alpha...HEAD
+[Unreleased]: https://github.com/vicliu624/trail-mate-center/compare/v0.0.5-alpha...HEAD
+[0.0.5-alpha]: https://github.com/vicliu624/trail-mate-center/compare/v0.0.4-alpha...v0.0.5-alpha
 [0.0.4-alpha]: https://github.com/vicliu624/trail-mate-center/compare/v0.0.3-alpha...v0.0.4-alpha
 [0.0.3-alpha]: https://github.com/vicliu624/trail-mate-center/compare/v0.0.2-alpha...v0.0.3-alpha
 [0.0.2-alpha]: https://github.com/vicliu624/trail-mate-center/compare/v0.0.1-alpha...v0.0.2-alpha

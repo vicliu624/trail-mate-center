@@ -82,6 +82,23 @@ public sealed partial class MapPackBuilderViewModel : ObservableObject
     [ObservableProperty]
     private string _packName = T("Ui.MapPack.DefaultPackName");
 
+    [ObservableProperty] private bool _exportTmap;
+    [ObservableProperty] private string _tmapFileName = "map.tmap";
+    [ObservableProperty] private string _tmapPackageKey = "";
+    [ObservableProperty] private string _tmapCountryCode = "";
+    [ObservableProperty] private string _tmapAdminCode = "";
+    [ObservableProperty] private string _tmapAdministrativeBoundaryManifest = "";
+    public bool HasTmapAdministrativeDataset => !string.IsNullOrWhiteSpace(TmapAdministrativeBoundaryManifest);
+    partial void OnTmapAdministrativeBoundaryManifestChanged(string value) => OnPropertyChanged(nameof(HasTmapAdministrativeDataset));
+    [ObservableProperty] private int _tmapTierIndex;
+    partial void OnTmapTierIndexChanged(int value)
+    {
+        if (value is < 1 or > 3) return;
+        var zooms = TrailMateCenter.Maps.Tmap.TmapOptions.Zooms((TrailMateCenter.Maps.Tmap.TmapRegionTier)value);
+        MinimumZoom = zooms.Minimum; MaximumZoom = zooms.Maximum;
+    }
+    partial void OnExportTmapChanged(bool value) => UpdateEstimate();
+
     [ObservableProperty]
     private string _areaSearchText = string.Empty;
 
@@ -263,6 +280,15 @@ public sealed partial class MapPackBuilderViewModel : ObservableObject
                 IndexOptions = BuildPoiIndexOptions(),
             },
             OutputDirectory = OutputDirectory,
+            Tmap = ExportTmap ? new TrailMateCenter.Maps.Tmap.TmapOptions
+            {
+                FileName = TmapFileName.Trim(),
+                PackageKey = TmapPackageKey.Trim(),
+                CountryCode = TmapCountryCode.Trim(),
+                AdminCode = TmapAdminCode.Trim(),
+                AdministrativeBoundaryManifest = HasTmapAdministrativeDataset ? Path.GetFullPath(TmapAdministrativeBoundaryManifest.Trim()) : null,
+                Tier = (TrailMateCenter.Maps.Tmap.TmapRegionTier)TmapTierIndex,
+            } : null,
         };
     }
 
@@ -560,6 +586,12 @@ public sealed partial class MapPackBuilderViewModel : ObservableObject
     private void UpdateEstimate()
     {
         var estimate = _estimator.Estimate(BuildPlan());
+        if (ExportTmap)
+        {
+            var count = ExportEstimator.CountTiles(CurrentBounds, MinimumZoom, MaximumZoom) * ((IncludeOsm ? 1L : 0) + (IncludeTerrain ? 1L : 0) + (IncludeSatellite ? 1L : 0));
+            EstimateText = F("Ui.MapPack.TmapEstimate", count, ExportEstimator.FormatBytes(checked(count * 131072L)));
+            return;
+        }
         EstimateText = string.Join(
             Environment.NewLine,
             estimate.Layers.Select(l => F("Ui.MapPack.Estimate.Layer", l.Name, l.TileCount, ExportEstimator.FormatBytes(l.EstimatedBytes)))
