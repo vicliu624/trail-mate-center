@@ -42,69 +42,69 @@ internal sealed class TmapMapProvider(int layer) : IProvider
             if ((long)(x1 - x0 + 1) * (y1 - y0 + 1) > 128) return features;
             var annotationLists = new Dictionary<(int Z, int X, int Y), IReadOnlyList<TmapAnnotation>>();
             for (var x = x0; x <= x1; x++) for (var y = y0; y <= y1; y++)
+            {
+                // Resolve each requested region independently: detailed China
+                // coverage must not hide the world pixels beside its border.
+                for (var z = requested; z >= 0; z--)
                 {
-                    // Resolve each requested region independently: detailed China
-                    // coverage must not hide the world pixels beside its border.
-                    for (var z = requested; z >= 0; z--)
-                    {
-                        var tx = x >> (requested - z); var ty = y >> (requested - z); var key = (z, tx, ty);
-                        if (painted.Contains(key)) break;
-                        var tile = ordered.Where(r => r.HasRasterLayer(layer) && (r.ZoomMask & (1U << z)) != 0)
-                            .Select(r => r.ReadTile(layer, z, tx, ty)).FirstOrDefault(t => t is not null);
-                        if (tile is null) continue;
-                        var size = HalfWorld * 2 / (1 << z);
-                        var rect = new MRect(-HalfWorld + tx * size, HalfWorld - (ty + 1) * size,
-                            -HalfWorld + (tx + 1) * size, HalfWorld - ty * size);
-                        var raster = new RasterFeature(new MRaster(Encode(tile), rect)); raster.Styles.Add(new RasterStyle());
-                        features.Add(raster); painted.Add(key); break;
-                    }
-                    // OSM annotations may live in a separate package with no
-                    // pixels. Avoid rereading a parent list for adjacent regions.
-                    if (layer >= 100) continue;
-                    for (var z = requested; z >= 0; z--)
-                    {
-                        var tx = x >> (requested - z); var ty = y >> (requested - z);
-                        var key = (z, tx, ty);
-                        if (!annotationLists.TryGetValue(key, out var annotations))
-                        {
-                            annotations = [];
-                            foreach (var reader in ordered.Where(r => r.HasAnnotations && (r.ZoomMask & (1U << z)) != 0))
-                            {
-                                annotations = reader.ReadDisplayAnnotations(z, tx, ty);
-                                if (annotations.Count != 0) break;
-                            }
-                            annotationLists.Add(key, annotations);
-                        }
-                        if (annotations.Count == 0) continue;
-                        foreach (var annotation in annotations)
-                        {
-                            if (labels.Count >= 4096) break;
-                            if (string.IsNullOrWhiteSpace(annotation.Poi.Name)) continue;
-                            var (px, py) = SphericalMercator.FromLonLat(annotation.Longitude, annotation.Latitude);
-                            if (px < extent.MinX || px > extent.MaxX || py < extent.MinY || py > extent.MaxY) continue;
-                            if (X(px) != x || Y(py) != y) continue;
-                            if (!labels.Add(Convert.ToHexString(annotation.Poi.StableId))) continue;
-                            var feature = new PointFeature(new MPoint(px, py));
-                            feature["tmap_stable_id"] = Convert.ToHexString(annotation.Poi.StableId);
-                            feature["tmap_priority"] = (int)annotation.Priority;
-                            feature["tmap_name"] = annotation.Poi.Name;
-                            feature["tmap_kind"] = annotation.Kind;
-                            feature.Styles.Add(new LabelStyle
-                            {
-                                Text = annotation.Poi.Name,
-                                ForeColor = Color.Black,
-                                BackColor = null,
-                                CollisionDetection = true,
-                                Halo = new Pen(Color.White, 2),
-                                Font = new Font { FontFamily = LabelFont, Size = annotation.Kind == 2 ? 12 : 10 },
-                                HorizontalAlignment = LabelStyle.HorizontalAlignmentEnum.Center,
-                                VerticalAlignment = LabelStyle.VerticalAlignmentEnum.Center
-                            });
-                            features.Add(feature);
-                        }
-                        break;
-                    }
+                    var tx = x >> (requested - z); var ty = y >> (requested - z); var key = (z, tx, ty);
+                    if (painted.Contains(key)) break;
+                    var tile = ordered.Where(r => r.HasRasterLayer(layer) && (r.ZoomMask & (1U << z)) != 0)
+                        .Select(r => r.ReadTile(layer, z, tx, ty)).FirstOrDefault(t => t is not null);
+                    if (tile is null) continue;
+                    var size = HalfWorld * 2 / (1 << z);
+                    var rect = new MRect(-HalfWorld + tx * size, HalfWorld - (ty + 1) * size,
+                        -HalfWorld + (tx + 1) * size, HalfWorld - ty * size);
+                    var raster = new RasterFeature(new MRaster(Encode(tile), rect)); raster.Styles.Add(new RasterStyle());
+                    features.Add(raster); painted.Add(key); break;
                 }
+                // OSM annotations may live in a separate package with no
+                // pixels. Avoid rereading a parent list for adjacent regions.
+                if (layer >= 100) continue;
+                for (var z = requested; z >= 0; z--)
+                {
+                    var tx = x >> (requested - z); var ty = y >> (requested - z);
+                    var key = (z, tx, ty);
+                    if (!annotationLists.TryGetValue(key, out var annotations))
+                    {
+                        annotations = [];
+                        foreach (var reader in ordered.Where(r => r.HasAnnotations && (r.ZoomMask & (1U << z)) != 0))
+                        {
+                            annotations = reader.ReadDisplayAnnotations(z, tx, ty);
+                            if (annotations.Count != 0) break;
+                        }
+                        annotationLists.Add(key, annotations);
+                    }
+                    if (annotations.Count == 0) continue;
+                    foreach (var annotation in annotations)
+                    {
+                        if (labels.Count >= 4096) break;
+                        if (string.IsNullOrWhiteSpace(annotation.Poi.Name)) continue;
+                        var (px, py) = SphericalMercator.FromLonLat(annotation.Longitude, annotation.Latitude);
+                        if (px < extent.MinX || px > extent.MaxX || py < extent.MinY || py > extent.MaxY) continue;
+                        if (X(px) != x || Y(py) != y) continue;
+                        if (!labels.Add(Convert.ToHexString(annotation.Poi.StableId))) continue;
+                        var feature = new PointFeature(new MPoint(px, py));
+                        feature["tmap_stable_id"] = Convert.ToHexString(annotation.Poi.StableId);
+                        feature["tmap_priority"] = (int)annotation.Priority;
+                        feature["tmap_name"] = annotation.Poi.Name;
+                        feature["tmap_kind"] = annotation.Kind;
+                        feature.Styles.Add(new LabelStyle
+                        {
+                            Text = annotation.Poi.Name,
+                            ForeColor = Color.Black,
+                            BackColor = null,
+                            CollisionDetection = true,
+                            Halo = new Pen(Color.White, 2),
+                            Font = new Font { FontFamily = LabelFont, Size = annotation.Kind == 2 ? 12 : 10 },
+                            HorizontalAlignment = LabelStyle.HorizontalAlignmentEnum.Center,
+                            VerticalAlignment = LabelStyle.VerticalAlignmentEnum.Center
+                        });
+                        features.Add(feature);
+                    }
+                    break;
+                }
+            }
             // Paint parents first, detailed pixels above them, labels last.
             features.Sort((a, b) => a is RasterFeature ar && b is RasterFeature br
                 ? br.Extent!.Width.CompareTo(ar.Extent!.Width) : a is RasterFeature ? -1 : b is RasterFeature ? 1
@@ -133,15 +133,15 @@ internal sealed class TmapMapProvider(int layer) : IProvider
             var x0 = (int)Math.Floor(rect.Left / 32); var x1 = (int)Math.Floor(rect.Right / 32);
             var y0 = (int)Math.Floor(rect.Top / 32); var y1 = (int)Math.Floor(rect.Bottom / 32); var collision = false;
             for (var x = x0; x <= x1 && !collision; x++) for (var y = y0; y <= y1 && !collision; y++)
-                    collision = cells.TryGetValue((x, y), out var entries) && entries.Any(r => r.IntersectsWith(rect));
+                collision = cells.TryGetValue((x, y), out var entries) && entries.Any(r => r.IntersectsWith(rect));
             if (collision) continue;
             if (road) roadNames.Add(name);
             result.Add(feature);
             for (var x = x0; x <= x1; x++) for (var y = y0; y <= y1; y++)
-                {
-                    if (!cells.TryGetValue((x, y), out var entries)) cells.Add((x, y), entries = []);
-                    entries.Add(rect);
-                }
+            {
+                if (!cells.TryGetValue((x, y), out var entries)) cells.Add((x, y), entries = []);
+                entries.Add(rect);
+            }
         }
         return result;
     }
