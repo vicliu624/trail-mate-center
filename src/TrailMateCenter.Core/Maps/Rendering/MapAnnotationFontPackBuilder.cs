@@ -67,7 +67,9 @@ public static class MapAnnotationFontPackBuilder
                 using var lease = new FileStream(Path.Combine(root, "." + id + ".lock"), FileMode.OpenOrCreate,
                     FileAccess.ReadWrite, FileShare.None, 1, FileOptions.DeleteOnClose);
                 if (!Directory.Exists(directory)) Directory.Move(pending, directory);
-                else foreach (var path in Directory.EnumerateFiles(pending))
+                else
+                {
+                    foreach (var path in Directory.EnumerateFiles(pending))
                     {
                         token.ThrowIfCancellationRequested();
                         var existing = Path.Combine(directory, Path.GetFileName(path));
@@ -76,6 +78,7 @@ public static class MapAnnotationFontPackBuilder
                         if (old.Length != current.Length || !SHA256.HashData(old).AsSpan().SequenceEqual(SHA256.HashData(current)))
                             throw new InvalidDataException($"Existing font resource {id} differs from its content identity.");
                     }
+                }
                 result.Add(new(id, directory, subset.Length, size, estimate));
             }
             finally

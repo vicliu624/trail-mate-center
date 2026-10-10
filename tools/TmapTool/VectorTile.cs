@@ -38,10 +38,14 @@ internal static class VectorTile
         while ((tag = p.ReadTag()) != 0)
             result = tag switch
             {
-                10 => p.ReadString(), 21 => p.ReadFloat().ToString(System.Globalization.CultureInfo.InvariantCulture),
+                10 => p.ReadString(),
+                21 => p.ReadFloat().ToString(System.Globalization.CultureInfo.InvariantCulture),
                 25 => p.ReadDouble().ToString(System.Globalization.CultureInfo.InvariantCulture),
-                32 => p.ReadInt64().ToString(), 40 => p.ReadUInt64().ToString(), 48 => p.ReadSInt64().ToString(),
-                56 => p.ReadBool() ? "true" : "false", _ => Skip(p, result)
+                32 => p.ReadInt64().ToString(),
+                40 => p.ReadUInt64().ToString(),
+                48 => p.ReadSInt64().ToString(),
+                56 => p.ReadBool() ? "true" : "false",
+                _ => Skip(p, result)
             };
         return result;
     }

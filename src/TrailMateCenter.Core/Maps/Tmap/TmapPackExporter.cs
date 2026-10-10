@@ -189,10 +189,13 @@ public sealed class TmapPackExporter
                             "trailmate", "packs", "fonts", Path.GetFileName(source));
                         Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
                         if (!Directory.Exists(destination)) Directory.Move(source, destination);
-                        else foreach (var file in Directory.EnumerateFiles(source))
+                        else
+                        {
+                            foreach (var file in Directory.EnumerateFiles(source))
                                 if (!File.Exists(Path.Combine(destination, Path.GetFileName(file))) ||
                                     !File.ReadAllBytes(file).SequenceEqual(File.ReadAllBytes(Path.Combine(destination, Path.GetFileName(file)))))
                                     throw new InvalidDataException("Existing map font differs from its content-addressed identity.");
+                        }
                     }
                 for (var i = 0; i < packages.Count; i++)
                 {
@@ -229,12 +232,15 @@ public sealed class TmapPackExporter
                 }
             return result;
         }
-        for (var y = 0; y < 256; y++) for (var x = 0; x < 256; x++)
+        for (var y = 0; y < 256; y++)
+        {
+            for (var x = 0; x < 256; x++)
             {
                 var p = bitmap.GetPixel(x, y);
                 if (alpha) { result[offset++] = p.Red; result[offset++] = p.Green; result[offset++] = p.Blue; result[offset++] = p.Alpha; }
                 else { if (p.Alpha != 255) throw new InvalidDataException("An opaque base tile contains transparent pixels."); TmapFormat.Put16(result, offset, (p.Red >> 3 << 11) | (p.Green >> 2 << 5) | (p.Blue >> 3)); offset += 2; }
             }
+        }
         return result;
     }
     public static void ImportRasterDirectory(TmapBuilder builder, string mapsRoot, CancellationToken token = default)

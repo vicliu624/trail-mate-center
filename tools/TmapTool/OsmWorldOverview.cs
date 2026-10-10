@@ -93,91 +93,106 @@ internal static class OsmWorldOverview
         {
             var side = 1 << z; counts[z] = 0;
             foreach (var coordinate in coverage?.Tiles(z) ?? WorldTiles(z))
+            {
+                var x = coordinate.X; var y = coordinate.Y;
+                token.ThrowIfCancellationRequested(); read.Parameters["$z"].Value = z;
+                read.Parameters["$x"].Value = x; read.Parameters["$y"].Value = side - 1 - y;
+                var blob = read.ExecuteScalar() as byte[];
+                List<VectorLayer> layers = [];
+                if (blob is not null)
                 {
-                    var x = coordinate.X; var y = coordinate.Y;
-                    token.ThrowIfCancellationRequested(); read.Parameters["$z"].Value = z;
-                    read.Parameters["$x"].Value = x; read.Parameters["$y"].Value = side - 1 - y;
-                    var blob = read.ExecuteScalar() as byte[];
-                    List<VectorLayer> layers = [];
-                    if (blob is not null)
+                    supplied++;
+                    if (blob.Length >= 2 && blob[0] == 0x1f && blob[1] == 0x8b)
                     {
-                        supplied++;
-                        if (blob.Length >= 2 && blob[0] == 0x1f && blob[1] == 0x8b)
-                        {
-                            using var input = new GZipStream(new MemoryStream(blob), CompressionMode.Decompress);
-                            using var unpacked = new MemoryStream(); input.CopyTo(unpacked); blob = unpacked.ToArray();
-                        }
-                        layers = VectorTile.Read(blob);
+                        using var input = new GZipStream(new MemoryStream(blob), CompressionMode.Decompress);
+                        using var unpacked = new MemoryStream(); input.CopyTo(unpacked); blob = unpacked.ToArray();
                     }
-                    else
-                    {
-                        // Ocean itself is a vector feature; source tiles with no features represent land background.
-                        empty++;
-                    }
-                    foreach (var layer in layers)
-                    {
-                        layerCounts[layer.Name] = layerCounts.GetValueOrDefault(layer.Name) + layer.Features.Count;
-                        if (!layer.Name.EndsWith("_labels", StringComparison.Ordinal) && layer.Name != "pois") continue;
-                        foreach (var feature in layer.Features.Where(f => f.Type == 1))
-                        {
-                            var parts = VectorTile.Parts(feature.Geometry); if (parts.Count == 0 || parts[0].Count == 0) continue;
-                            var point = parts[0][0]; var extent = layer.Extent;
-                            // Ignore buffer duplicates; the owner tile has the same identity and the actual label.
-                            if (point.X < 0 || point.Y < 0 || point.X >= extent || point.Y >= extent) continue;
-                            var names = new List<string>();
-                            foreach (var key in new[] { "name_zh", "name", "name_en" })
-                                if (feature.Tags.TryGetValue(key, out var text) && !string.IsNullOrWhiteSpace(text)) names.Add(text);
-                            foreach (var tag in feature.Tags.Where(t => t.Key.StartsWith("name_", StringComparison.Ordinal)).OrderBy(t => t.Key, StringComparer.Ordinal))
-                                if (!string.IsNullOrWhiteSpace(tag.Value)) names.Add(tag.Value);
-                            if (names.Count == 0) continue;
-                            if (feature.Id == 0) throw new InvalidDataException("Named feature has no source identity.");
-                            var normalizedX = (x + point.X / extent) / side;
-                            var normalizedY = (y + point.Y / extent) / side;
-                            var lon = normalizedX * 360 - 180;
-                            var lat = Math.Atan(Math.Sinh(Math.PI * (1 - 2 * normalizedY))) * 180 / Math.PI;
-                            if (coverage is not null && !coverage.Contains(lat, lon)) continue;
-                            var category = layer.Name == "boundary_labels" ? "admin" : layer.Name == "place_labels" ? "settlement" : layer.Name.StartsWith("water", StringComparison.Ordinal) ? "water" : "generic";
-                            var kind = layer.Name is "boundary_labels" or "place_labels" ? 2 : 1;
-                            var importance = layer.Name == "boundary_labels" ? 62000 : 10000;
-                            if (feature.Tags.TryGetValue("population", out var pop) && double.TryParse(pop, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var population))
-                                importance = Math.Clamp((int)(Math.Log10(Math.Max(1, population)) * 8000), 0, 60000);
-                            var id = new byte[16]; TmapFormat.Put32(id, 0, 3);
-                            // Provider vector IDs can renumber multipolygons. Keep them in a separate registered namespace.
-                            TmapFormat.Put16(id, 4, category == "admin" ? 3 : category == "settlement" ? 1 : 2); TmapFormat.Put64(id, 8, feature.Id);
-                            builder.AddPlace(new(id, lat, lon, category, names, importance, kind));
-                            builder.AddAnnotation(z, x, y, id, kind, importance, lat, lon); labels++;
-                        }
-                    }
-                    using var bitmap = Render(layers, blob is null && (y + 0.5) / side > 0.75);
-                    builder.AddTile(1, z, x, y, TmapPackExporter.Pixels(bitmap, false)); done++; counts[z]++;
-                    if (z == 0 || z == 7 && ((x, y) is (100, 49) or (101, 54) or (41, 48) or (64, 42)))
-                    {
-                        using var image = SKImage.FromBitmap(bitmap); using var png = image.Encode(SKEncodedImageFormat.Png, 100);
-                        using var preview = File.Create(Path.Combine(parent, $"world-osm-z{z}-{x}-{y}.png")); png.SaveTo(preview);
-                    }
-                    if (stopwatch.ElapsedMilliseconds / 1000 - lastReport >= 5 || counts[z] == expected[z])
-                    { Console.Error.WriteLine($"tiles {done}/{total} z{z}, labels {labels}, elapsed {stopwatch.Elapsed}"); lastReport = stopwatch.ElapsedMilliseconds / 1000; }
+                    layers = VectorTile.Read(blob);
                 }
+                else
+                {
+                    // Ocean itself is a vector feature; source tiles with no features represent land background.
+                    empty++;
+                }
+                foreach (var layer in layers)
+                {
+                    layerCounts[layer.Name] = layerCounts.GetValueOrDefault(layer.Name) + layer.Features.Count;
+                    if (!layer.Name.EndsWith("_labels", StringComparison.Ordinal) && layer.Name != "pois") continue;
+                    foreach (var feature in layer.Features.Where(f => f.Type == 1))
+                    {
+                        var parts = VectorTile.Parts(feature.Geometry); if (parts.Count == 0 || parts[0].Count == 0) continue;
+                        var point = parts[0][0]; var extent = layer.Extent;
+                        // Ignore buffer duplicates; the owner tile has the same identity and the actual label.
+                        if (point.X < 0 || point.Y < 0 || point.X >= extent || point.Y >= extent) continue;
+                        var names = new List<string>();
+                        foreach (var key in new[] { "name_zh", "name", "name_en" })
+                            if (feature.Tags.TryGetValue(key, out var text) && !string.IsNullOrWhiteSpace(text)) names.Add(text);
+                        foreach (var tag in feature.Tags.Where(t => t.Key.StartsWith("name_", StringComparison.Ordinal)).OrderBy(t => t.Key, StringComparer.Ordinal))
+                            if (!string.IsNullOrWhiteSpace(tag.Value)) names.Add(tag.Value);
+                        if (names.Count == 0) continue;
+                        if (feature.Id == 0) throw new InvalidDataException("Named feature has no source identity.");
+                        var normalizedX = (x + point.X / extent) / side;
+                        var normalizedY = (y + point.Y / extent) / side;
+                        var lon = normalizedX * 360 - 180;
+                        var lat = Math.Atan(Math.Sinh(Math.PI * (1 - 2 * normalizedY))) * 180 / Math.PI;
+                        if (coverage is not null && !coverage.Contains(lat, lon)) continue;
+                        var category = layer.Name == "boundary_labels" ? "admin" : layer.Name == "place_labels" ? "settlement" : layer.Name.StartsWith("water", StringComparison.Ordinal) ? "water" : "generic";
+                        var kind = layer.Name is "boundary_labels" or "place_labels" ? 2 : 1;
+                        var importance = layer.Name == "boundary_labels" ? 62000 : 10000;
+                        if (feature.Tags.TryGetValue("population", out var pop) && double.TryParse(pop, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var population))
+                            importance = Math.Clamp((int)(Math.Log10(Math.Max(1, population)) * 8000), 0, 60000);
+                        var id = new byte[16]; TmapFormat.Put32(id, 0, 3);
+                        // Provider vector IDs can renumber multipolygons. Keep them in a separate registered namespace.
+                        TmapFormat.Put16(id, 4, category == "admin" ? 3 : category == "settlement" ? 1 : 2); TmapFormat.Put64(id, 8, feature.Id);
+                        builder.AddPlace(new(id, lat, lon, category, names, importance, kind));
+                        builder.AddAnnotation(z, x, y, id, kind, importance, lat, lon); labels++;
+                    }
+                }
+                using var bitmap = Render(layers, blob is null && (y + 0.5) / side > 0.75);
+                builder.AddTile(1, z, x, y, TmapPackExporter.Pixels(bitmap, false)); done++; counts[z]++;
+                if (z == 0 || z == 7 && ((x, y) is (100, 49) or (101, 54) or (41, 48) or (64, 42)))
+                {
+                    using var image = SKImage.FromBitmap(bitmap); using var png = image.Encode(SKEncodedImageFormat.Png, 100);
+                    using var preview = File.Create(Path.Combine(parent, $"world-osm-z{z}-{x}-{y}.png")); png.SaveTo(preview);
+                }
+                if (stopwatch.ElapsedMilliseconds / 1000 - lastReport >= 5 || counts[z] == expected[z])
+                { Console.Error.WriteLine($"tiles {done}/{total} z{z}, labels {labels}, elapsed {stopwatch.Elapsed}"); lastReport = stopwatch.ElapsedMilliseconds / 1000; }
+            }
         }
         if (done != total) throw new InvalidDataException("Region tile pyramid is incomplete.");
         Console.Error.WriteLine("Compiling search/spatial/annotation indexes, publishing and validating...");
         var result = builder.Complete(output, new() { Name = coverage is null ? "世界地图 · OSM · 0–7" : "中国地图 · OSM · 8–12", Bounds = bounds }, new()
         {
-            FileName = Path.GetFileName(output), PackageKey = prefix, Tier = coverage is null ? TmapRegionTier.World : TmapRegionTier.LargeCountry,
+            FileName = Path.GetFileName(output),
+            PackageKey = prefix,
+            Tier = coverage is null ? TmapRegionTier.World : TmapRegionTier.LargeCountry,
             CountryCode = coverage is null ? "" : "CN",
-            Series = "trail-mate-osm-shortbread-v1", SourceNamespaceId = 3,
+            Series = "trail-mate-osm-shortbread-v1",
+            SourceNamespaceId = 3,
             SourceNamespaceUri = "https://download.versatiles.org/osm.20260608.versatiles#shortbread-feature-id",
             Attribution = "© OpenStreetMap contributors; ODbL-1.0; OSM vectors distributed by VersaTiles; https://www.openstreetmap.org/copyright",
             SourceCoverage = $"Shortbread OSM vectors z{minimum}–{maximum}: coastlines, water, administrative boundaries, transport and supplied country/city/water point labels; generalized and filtered, not all planet POIs"
         });
         var manifest = new
         {
-            result, zooms = counts.OrderBy(p => p.Key).ToDictionary(p => p.Key, p => p.Value), suppliedVectorTiles = supplied,
-            featurelessLandTiles = empty, annotationCandidates = labels, sourceFeatureCounts = layerCounts,
-            sourceUrl = "https://download.versatiles.org/osm.20260608.versatiles", sourceExtract = sourcePath,
-            sourceSnapshot = "2026-06-08", generatedAtUtc = DateTimeOffset.UtcNow,
-            bounds, coverageFiles = coverage?.SourceFiles, coveragePolicy = coverage is null ? "global" : "Intersecting XYZ tiles of union of Geofabrik China and Taiwan extraction polygons; Hong Kong/Macao within China polygon; these are extraction extents, not official administrative boundary data",
-            pixelFormat = "RGB565LE", tileSize = 256, separateLabels = true, routing = false, sourceNamespace = 3,
+            result,
+            zooms = counts.OrderBy(p => p.Key).ToDictionary(p => p.Key, p => p.Value),
+            suppliedVectorTiles = supplied,
+            featurelessLandTiles = empty,
+            annotationCandidates = labels,
+            sourceFeatureCounts = layerCounts,
+            sourceUrl = "https://download.versatiles.org/osm.20260608.versatiles",
+            sourceExtract = sourcePath,
+            sourceSnapshot = "2026-06-08",
+            generatedAtUtc = DateTimeOffset.UtcNow,
+            bounds,
+            coverageFiles = coverage?.SourceFiles,
+            coveragePolicy = coverage is null ? "global" : "Intersecting XYZ tiles of union of Geofabrik China and Taiwan extraction polygons; Hong Kong/Macao within China polygon; these are extraction extents, not official administrative boundary data",
+            pixelFormat = "RGB565LE",
+            tileSize = 256,
+            separateLabels = true,
+            routing = false,
+            sourceNamespace = 3,
             limitations = $"Search includes only point names supplied in z{minimum}–{maximum} vector tiles, not all OSM POIs. Coordinates are tile-quantized. Provider namespace IDs require mapping to raw OSM IDs for cross-source deduplication."
         };
         File.WriteAllText(Path.Combine(parent, prefix + ".manifest.json"), JsonSerializer.Serialize(manifest, new JsonSerializerOptions { WriteIndented = true }));
@@ -195,11 +210,16 @@ internal static class OsmWorldOverview
                 paint.StrokeWidth = 0.65f; paint.PathEffect = null;
                 paint.Color = layer.Name switch
                 {
-                    "ocean" => Water, "water_polygons" when kind == "glacier" => SKColor.Parse("#f1f3f0"),
+                    "ocean" => Water,
+                    "water_polygons" when kind == "glacier" => SKColor.Parse("#f1f3f0"),
                     "water_polygons" or "water_lines" => Water,
-                    "land" => SKColor.Parse("#cdddc0"), "sites" => SKColor.Parse("#ded9ce"),
-                    "boundaries" => SKColor.Parse("#b2a498"), "streets" when kind == "motorway" => SKColor.Parse("#dca77a"),
-                    "streets" => SKColor.Parse("#cbb490"), "ferries" => SKColor.Parse("#8aadc3"), _ => Land
+                    "land" => SKColor.Parse("#cdddc0"),
+                    "sites" => SKColor.Parse("#ded9ce"),
+                    "boundaries" => SKColor.Parse("#b2a498"),
+                    "streets" when kind == "motorway" => SKColor.Parse("#dca77a"),
+                    "streets" => SKColor.Parse("#cbb490"),
+                    "ferries" => SKColor.Parse("#8aadc3"),
+                    _ => Land
                 };
                 if (layer.Name == "boundaries")
                 {

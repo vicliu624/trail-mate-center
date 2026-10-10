@@ -146,9 +146,14 @@ internal static class WorldOverview
         Console.Error.WriteLine("Compiling POI/search/spatial/annotation indexes and validating output...");
         return builder.Complete(output, new() { Name = "世界概览 · Natural Earth · 0–7", Bounds = new(-180, -LatitudeLimit, 180, LatitudeLimit) }, new()
         {
-            PackageKey = "world-natural-earth-z0-7", FileName = Path.GetFileName(output), Tier = TmapRegionTier.World,
-            Series = "trail-mate-natural-earth-v1", Revision = 1, SourceNamespaceId = 2,
-            SourceNamespaceUri = "https://www.naturalearthdata.com/ne-id", Attribution = "Natural Earth v5.1.2 — public domain; https://www.naturalearthdata.com/",
+            PackageKey = "world-natural-earth-z0-7",
+            FileName = Path.GetFileName(output),
+            Tier = TmapRegionTier.World,
+            Series = "trail-mate-natural-earth-v1",
+            Revision = 1,
+            SourceNamespaceId = 2,
+            SourceNamespaceUri = "https://www.naturalearthdata.com/ne-id",
+            Attribution = "Natural Earth v5.1.2 — public domain; https://www.naturalearthdata.com/",
             SourceCoverage = "Global overview: Natural Earth 10m land, lakes, rivers, boundaries and populated places; not full OSM POIs or street navigation"
         });
     }

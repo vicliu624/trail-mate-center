@@ -41,7 +41,9 @@ public static class TmapFontSections
                 token, maximumBytes, updateIdentity);
             File.WriteAllText(path + ".font-resources.json", JsonSerializer.Serialize(new
             {
-                schema = 1, required_characters = codes.Count, install_sd_root = "trailmate/packs/fonts",
+                schema = 1,
+                required_characters = codes.Count,
+                install_sd_root = "trailmate/packs/fonts",
                 fonts = fonts.Select(f => new { id = f.Id, glyph_count = f.GlyphCount, bytes = f.FileBytes, estimated_ram_bytes = f.EstimatedRamBytes })
             }, new JsonSerializerOptions { WriteIndented = true }));
             return new(path, codes.Count, fonts);
