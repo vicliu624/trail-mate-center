@@ -59,14 +59,18 @@ internal static class OsmWorldOverview
     public static TmapBuildResult Build(string sourcePath, string output, CancellationToken token) => BuildRegion(sourcePath, output, null, token);
     public static TmapBuildResult BuildChina(string sourcePath, string output, string coverageDirectory, CancellationToken token) =>
         BuildRegion(sourcePath, output, new CountryCoverage(coverageDirectory), token);
+    public static TmapBuildResult BuildCountry(string sourcePath, string output, CountryCoverage coverage,
+        string name, string countryCode, string packageKey, CancellationToken token) =>
+        BuildRegion(sourcePath, output, coverage, token, name, countryCode, packageKey);
     private static IEnumerable<TileCoordinate> WorldTiles(int z)
     { for (var y = 0; y < 1 << z; y++) for (var x = 0; x < 1 << z; x++) yield return new(z, x, y); }
-    private static TmapBuildResult BuildRegion(string sourcePath, string output, CountryCoverage? coverage, CancellationToken token)
+    private static TmapBuildResult BuildRegion(string sourcePath, string output, CountryCoverage? coverage, CancellationToken token,
+        string? regionName = null, string countryCode = "CN", string? packageKey = null)
     {
         var minimum = coverage is null ? 0 : 8; var maximum = coverage is null ? 7 : 12;
         var expected = Enumerable.Range(minimum, maximum - minimum + 1).ToDictionary(z => z,
             z => (coverage?.Tiles(z) ?? WorldTiles(z)).Count());
-        var total = expected.Values.Sum(); var prefix = coverage is null ? "world-osm-z0-7" : "china-osm-z8-12";
+        var total = expected.Values.Sum(); var prefix = packageKey ?? (coverage is null ? "world-osm-z0-7" : "china-osm-z8-12");
         var bounds = coverage?.Bounds ?? new(-180, -LatitudeLimit, 180, LatitudeLimit);
         sourcePath = Path.GetFullPath(sourcePath); output = Path.GetFullPath(output);
         var parent = Path.GetDirectoryName(output)!; Directory.CreateDirectory(parent);
@@ -161,12 +165,12 @@ internal static class OsmWorldOverview
         }
         if (done != total) throw new InvalidDataException("Region tile pyramid is incomplete.");
         Console.Error.WriteLine("Compiling search/spatial/annotation indexes, publishing and validating...");
-        var result = builder.Complete(output, new() { Name = coverage is null ? "世界地图 · OSM · 0–7" : "中国地图 · OSM · 8–12", Bounds = bounds }, new()
+        var result = builder.Complete(output, new() { Name = regionName ?? (coverage is null ? "世界地图 · OSM · 0–7" : "中国地图 · OSM · 8–12"), Bounds = bounds }, new()
         {
             FileName = Path.GetFileName(output),
             PackageKey = prefix,
             Tier = coverage is null ? TmapRegionTier.World : TmapRegionTier.LargeCountry,
-            CountryCode = coverage is null ? "" : "CN",
+            CountryCode = coverage is null ? "" : countryCode,
             Series = "trail-mate-osm-shortbread-v1",
             SourceNamespaceId = 3,
             SourceNamespaceUri = "https://download.versatiles.org/osm.20260608.versatiles#shortbread-feature-id",
@@ -187,7 +191,7 @@ internal static class OsmWorldOverview
             generatedAtUtc = DateTimeOffset.UtcNow,
             bounds,
             coverageFiles = coverage?.SourceFiles,
-            coveragePolicy = coverage is null ? "global" : "Intersecting XYZ tiles of union of Geofabrik China and Taiwan extraction polygons; Hong Kong/Macao within China polygon; these are extraction extents, not official administrative boundary data",
+            coveragePolicy = coverage is null ? "global" : "Intersecting XYZ tiles of supplied extraction polygons; these are extraction extents, not official administrative boundary data",
             pixelFormat = "RGB565LE",
             tileSize = 256,
             separateLabels = true,

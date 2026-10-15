@@ -6,6 +6,27 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 
 ## [Unreleased]
 
+## [0.0.6-alpha] - 2026-10-15
+
+### Added
+
+- Desktop outdoor-map builder for hiking/cycling navigation graphs, elevation and height-tagged contour vectors using the independent TMAP SDK. Includes source selection, preflight validation, cancellation, retry and output summaries.
+- Finished outdoor-v2 map preview with pan/zoom, road and contour layers, bounded reads and explicit sampling limits. Numeric elevation profiles between supplied coordinates show distance, elevation, ascent/descent and coverage.
+- Center regional production CLI with automatic multi-tile HGT download, cache validation, mosaicking, numeric elevation resampling, contour extraction and source/hash provenance. Configurable limits reject oversized DEMs and contour jobs before publication.
+- Regional Shortbread overview production for selected administrative polygons. Desktop release archives now also include the TmapTool CLI and regional preparation scripts.
+- Regional preparation, geometry, navigation, preview, profile and localized desktop workflow regression tests; documented real London/Kunming production and SDK resource measurements.
+
+### Changed
+
+- Navigation production stages work before publishing, preserves existing outputs and supports an explicit conservative policy for conditional access features. Optional ALT landmarks support lower routing search-storage budgets.
+- Documented GUI/CLI capability boundaries: automatic multi-tile elevation acquisition is a CLI workflow; the desktop HGT picker imports one tile per job. Python, regional Python dependencies and independent SDK producer tools remain explicit external requirements.
+- Documented that terrain raster shading is separate from numeric elevation and dynamically displayed contour vectors. Generated outdoor-v2 data requires compatible device software; this release does not add device navigation UI.
+
+### Fixed
+
+- Added an explicit, reported opt-in for complete degenerate area relations without an outer polygon, allowing affected regional PBF exports while continuing to reject missing members and incomplete rings.
+- Validated truncated elevation downloads and shared tile seams; invalid source data and failed production jobs do not publish a finished map.
+
 ## [0.0.5-alpha] - 2026-10-10
 
 ### Added
@@ -70,7 +91,8 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 
 - Initial alpha release.
 
-[Unreleased]: https://github.com/vicliu624/trail-mate-center/compare/v0.0.5-alpha...HEAD
+[Unreleased]: https://github.com/vicliu624/trail-mate-center/compare/v0.0.6-alpha...HEAD
+[0.0.6-alpha]: https://github.com/vicliu624/trail-mate-center/compare/v0.0.5-alpha...v0.0.6-alpha
 [0.0.5-alpha]: https://github.com/vicliu624/trail-mate-center/compare/v0.0.4-alpha...v0.0.5-alpha
 [0.0.4-alpha]: https://github.com/vicliu624/trail-mate-center/compare/v0.0.3-alpha...v0.0.4-alpha
 [0.0.3-alpha]: https://github.com/vicliu624/trail-mate-center/compare/v0.0.2-alpha...v0.0.3-alpha

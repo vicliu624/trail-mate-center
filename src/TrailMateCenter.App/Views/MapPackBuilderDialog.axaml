@@ -55,6 +55,7 @@
         <TextBlock Text="{DynamicResource Ui.MapPack.Description}"
                    Classes="dialogHint"
                    TextWrapping="Wrap"/>
+        <Button Content="{DynamicResource Ui.NavigationMap.OpenBuilder}" Click="OnOpenNavigationBuilder" IsEnabled="{Binding !IsBusy}" HorizontalAlignment="Left" Margin="0,8,0,0"/>
       </StackPanel>
 
       <ScrollViewer Grid.Row="1"

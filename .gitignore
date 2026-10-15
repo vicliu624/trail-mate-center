@@ -81,3 +81,5 @@ logs/
 # Local SDK/package caches (keep out of git)
 .dotnet/
 .nuget/
+__pycache__/
+*.py[cod]

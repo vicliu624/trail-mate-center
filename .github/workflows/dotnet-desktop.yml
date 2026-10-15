@@ -54,6 +54,19 @@ jobs:
       - name: Run unit tests
         run: dotnet test ${{ env.TEST_PROJECT_PATH }} -c ${{ env.BUILD_CONFIGURATION }} --no-restore
 
+      - name: Build map production CLI
+        run: dotnet build tools/TmapTool/TmapTool.csproj -c Release
+
+      - name: Setup regional preparation Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Test regional preparation
+        run: |
+          python -m pip install -r tools/TmapTool/requirements-region.txt
+          python tests/test_region_preparation.py
+
   publish:
     name: Publish ${{ matrix.rid }}
     needs: validate
@@ -97,6 +110,23 @@ jobs:
           -p:PublishSingleFile=false
           --no-restore
           -o artifacts/publish/${{ matrix.rid }}
+
+      - name: Publish map production CLI
+        run: >
+          dotnet publish tools/TmapTool/TmapTool.csproj
+          -c ${{ env.BUILD_CONFIGURATION }}
+          -r ${{ matrix.rid }}
+          --self-contained true
+          -o artifacts/publish/${{ matrix.rid }}/tools/tmap
+
+      - name: Include production guides and changelog
+        shell: pwsh
+        run: |
+          $destination = "artifacts/publish/${{ matrix.rid }}"
+          Copy-Item CHANGELOG.md "$destination/CHANGELOG.md"
+          Copy-Item docs/map/TMAP_NAVIGATION.md "$destination/tools/tmap/TMAP_NAVIGATION.md"
+          Copy-Item docs/map/TMAP_NAVIGATION_GUI.md "$destination/TMAP_NAVIGATION_GUI.md"
+          Copy-Item tools/TmapTool/examples "$destination/tools/tmap/examples" -Recurse
 
       - name: Archive publish output (Windows)
         if: runner.os == 'Windows'

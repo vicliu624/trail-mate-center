@@ -46,7 +46,8 @@ internal sealed class PbfBasemapStore : IDisposable
         command.ExecuteNonQuery();
     }
 
-    public void Import(string pbfPath, Action<string, long>? progress, CancellationToken token, GeoBounds? requiredArea = null, bool includeAnnotations = false)
+    public void Import(string pbfPath, Action<string, long>? progress, CancellationToken token, GeoBounds? requiredArea = null, bool includeAnnotations = false,
+        bool skipDegenerateAreaRelations = false)
     {
         Envelope? requiredEnvelope = null;
         if (requiredArea is { } area)
@@ -142,6 +143,18 @@ internal sealed class PbfBasemapStore : IDisposable
                 if (outer.GetInvalidRingLines().Count > 0 || inner.GetInvalidRingLines().Count > 0)
                     throw new InvalidDataException($"PBF relation {relation.Id} has invalid polygon rings after noding.");
                 var shells = outer.GetPolygons().Cast<Geometry>().ToArray();
+                if (shells.Length == 0 && skipDegenerateAreaRelations && !memberEnvelope.IsNull)
+                {
+                    SourceIssueCount++;
+                    if (_sourceIssues.Count < 100)
+                    {
+                        static double Latitude(double y) => Math.Atan(Math.Sinh(Math.PI * (1 - 2 * y))) * 180 / Math.PI;
+                        _sourceIssues.Add(new(relation.Id, "Known complete closed members have no outer polygon area; explicitly omitted.",
+                            new(memberEnvelope.MinX * 360 - 180, Latitude(memberEnvelope.MaxY),
+                                memberEnvelope.MaxX * 360 - 180, Latitude(memberEnvelope.MinY))));
+                    }
+                    return;
+                }
                 if (shells.Length == 0)
                     throw new InvalidDataException($"PBF relation {relation.Id} has no outer polygon area.");
                 var geometry = _factory.BuildGeometry(shells).Union();

@@ -26,6 +26,14 @@ public partial class MapPackBuilderDialog : Window
 
     private MapPackBuilderViewModel? ViewModel => DataContext as MapPackBuilderViewModel;
 
+    private async void OnOpenNavigationBuilder(object? sender, RoutedEventArgs e)
+    {
+        if (ViewModel is not { } source || source.IsBusy) return;
+        var vm = new NavigationMapBuilderViewModel(source.PbfPath, source.OutputDirectory,
+            new TrailMateCenter.Maps.GeoBounds(source.West, source.South, source.East, source.North));
+        await new NavigationMapBuilderDialog(vm).ShowDialog(this);
+    }
+
     private void OnCloseClicked(object? sender, RoutedEventArgs e)
     {
         Close();

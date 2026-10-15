@@ -4,6 +4,24 @@
 
 [English](README.md) | [Chinese](README_CN.md)
 
+Navigation production: `TmapTool navigation` uses the independent TMAP SDK to
+build a v2 graph from local PBF. See [real-package resource evidence](docs/map/TMAP_NAVIGATION.md).
+Existing desktop v1 raster export remains separate.
+The map builder now opens an outdoor navigation workflow with local source
+pickers, HGT-to-contour production, preflight checks, cancel/retry and a finished
+vector-map preview. See [desktop guide](docs/map/TMAP_NAVIGATION_GUI.md).
+The finished outdoor preview also calculates a numeric DEM section between two
+coordinates, with distance/height axes, ascent/descent, coverage and cancellation.
+
+Release archives include the desktop app and the map production CLI under
+`tools/tmap` (`TmapTool.exe` on Windows, `TmapTool` on Linux/macOS), its regional
+preparation scripts and usage guides. Regional production requires Python 3.13,
+`python -m pip install -r tools/tmap/requirements-region.txt`, and the independent
+[TMAP v0.1.1 producer tools](https://github.com/vicliu624/tmap/releases/tag/v0.1.1).
+Configure their paths as described in the guides. Python and SDK tools are not
+bundled; finished-map preview does not require them. Download the latest alpha
+from [Releases](https://github.com/vicliu624/trail-mate-center/releases).
+
 ---
 
 ## What It Is
@@ -174,6 +192,7 @@ Not included:
 ## Related Docs
 
 - [Offline map cache integration notes](docs/TRAIL_MATE_CACHE_INTEGRATION.md)
+- [Regional map production from PBF and multi-tile numeric elevation](docs/map/TMAP_NAVIGATION.md#regional-production-from-original-pbf-and-elevation-sources): Center CLI preparation, overview maps, contour budgets and reproducible resource checks.
 - [Propagation implementation docs](docs/propagation/implementation/README.md)
 - [Propagation explainability docs](docs/propagation/explainability/README.md)
 - [Propagation knowledge notes](docs/propagation/knowledge/README.md)

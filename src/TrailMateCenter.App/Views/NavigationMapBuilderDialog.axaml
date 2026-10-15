@@ -1,0 +1,163 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:TrailMateCenter.ViewModels"
+        xmlns:controls="using:TrailMateCenter.Views.Controls"
+        x:Class="TrailMateCenter.Views.NavigationMapBuilderDialog"
+        x:DataType="vm:NavigationMapBuilderViewModel"
+        Title="{DynamicResource Ui.NavigationMap.Title}"
+        Width="1020" Height="820" MinWidth="820" MinHeight="600" WindowStartupLocation="CenterOwner" RequestedThemeVariant="Dark">
+  <Window.Styles>
+    <Style Selector="TextBlock"><Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/></Style>
+    <Style Selector="TextBlock.hint"><Setter Property="Foreground" Value="{DynamicResource TextDim}"/><Setter Property="FontSize" Value="12"/><Setter Property="TextWrapping" Value="Wrap"/></Style>
+    <Style Selector="TextBlock.section"><Setter Property="FontSize" Value="16"/><Setter Property="FontWeight" Value="SemiBold"/></Style>
+    <Style Selector="Border.card"><Setter Property="Padding" Value="18"/><Setter Property="CornerRadius" Value="10"/><Setter Property="BorderThickness" Value="1"/><Setter Property="BorderBrush" Value="{DynamicResource PanelBorderStrong}"/><Setter Property="Background" Value="{DynamicResource PanelBg2}"/></Style>
+    <Style Selector="TextBox"><Setter Property="MinHeight" Value="36"/></Style>
+    <Style Selector="Button"><Setter Property="MinHeight" Value="36"/></Style>
+  </Window.Styles>
+  <Grid RowDefinitions="Auto,*,Auto" Background="{DynamicResource PanelBg}">
+    <StackPanel Margin="24,20,24,16" Spacing="6">
+      <TextBlock Text="{DynamicResource Ui.NavigationMap.Title}" FontSize="24" FontWeight="SemiBold"/>
+      <TextBlock Text="{DynamicResource Ui.NavigationMap.Description}" Classes="hint"/>
+      <Button Content="{DynamicResource Ui.NavigationMap.OpenExisting}" Click="OnOpenExisting" IsEnabled="{Binding !IsBusy}" HorizontalAlignment="Left"/>
+    </StackPanel>
+    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+      <Grid ColumnDefinitions="3*,2*" ColumnSpacing="18" Margin="24,0,24,20">
+        <StackPanel Spacing="14" IsEnabled="{Binding !IsBusy}">
+          <Border Classes="card">
+            <StackPanel Spacing="10">
+              <TextBlock Classes="section" Text="{DynamicResource Ui.NavigationMap.StepSource}"/>
+              <TextBlock Text="{DynamicResource Ui.NavigationMap.Pbf}"/>
+              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                <TextBox Text="{Binding PbfPath, UpdateSourceTrigger=PropertyChanged}" Watermark=".osm.pbf / .osm" AutomationProperties.Name="{DynamicResource Ui.NavigationMap.Pbf}"/>
+                <Button Grid.Column="1" Content="{DynamicResource Ui.NavigationMap.Browse}" Click="OnPickPbf"/>
+              </Grid>
+              <TextBlock Classes="hint" Text="{DynamicResource Ui.NavigationMap.PbfHint}"/>
+              <Expander Header="{DynamicResource Ui.NavigationMap.RegionalSources}">
+                <StackPanel Spacing="8" Margin="0,8,0,0">
+                  <TextBlock Classes="hint" Text="{DynamicResource Ui.NavigationMap.RegionalHint}"/>
+                  <ListBox ItemsSource="{Binding AdditionalSources}" SelectedItem="{Binding SelectedAdditionalSource}" MaxHeight="120"/>
+                  <StackPanel Orientation="Horizontal" Spacing="8">
+                    <Button Content="{DynamicResource Ui.NavigationMap.AddSources}" Click="OnPickRegional"/>
+                    <Button Content="{DynamicResource Ui.NavigationMap.RemoveSource}" Command="{Binding RemoveSourceCommand}"/>
+                  </StackPanel>
+                </StackPanel>
+              </Expander>
+              <TextBlock Text="{DynamicResource Ui.NavigationMap.TravelMode}"/>
+              <ComboBox SelectedIndex="{Binding TravelModeIndex}" HorizontalAlignment="Stretch">
+                <ComboBoxItem Content="{DynamicResource Ui.NavigationMap.Foot}"/>
+                <ComboBoxItem Content="{DynamicResource Ui.NavigationMap.Bicycle}"/>
+              </ComboBox>
+              <CheckBox IsChecked="{Binding RuntimeConditions}" Content="{DynamicResource Ui.NavigationMap.RuntimeConditions}"/>
+              <TextBlock Classes="hint" Text="{DynamicResource Ui.NavigationMap.ConditionsHint}"/>
+            </StackPanel>
+          </Border>
+          <Border Classes="card">
+            <StackPanel Spacing="10">
+              <TextBlock Classes="section" Text="{DynamicResource Ui.NavigationMap.StepTerrain}"/>
+              <CheckBox IsChecked="{Binding IncludeTerrain}" Content="{DynamicResource Ui.NavigationMap.IncludeTerrain}"/>
+              <TextBlock Classes="hint" Text="{DynamicResource Ui.NavigationMap.TerrainHint}"/>
+              <StackPanel IsVisible="{Binding IncludeTerrain}" Spacing="10">
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                  <TextBox Text="{Binding HgtPath, UpdateSourceTrigger=PropertyChanged}" Watermark="N47E009.hgt.gz" AutomationProperties.Name="{DynamicResource Ui.NavigationMap.Hgt}"/>
+                  <Button Grid.Column="1" Content="{DynamicResource Ui.NavigationMap.Browse}" Click="OnPickHgt"/>
+                </Grid>
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                  <StackPanel><TextBlock Text="{DynamicResource Ui.NavigationMap.Interval}"/><TextBlock Classes="hint" Text="{DynamicResource Ui.NavigationMap.IntervalHint}"/></StackPanel>
+                  <NumericUpDown Grid.Column="1" Value="{Binding ContourInterval}" Minimum="5" Maximum="1000" Increment="5" Width="110" FormatString="0"/>
+                </Grid>
+                <TextBlock Text="{DynamicResource Ui.NavigationMap.Attribution}"/>
+                <TextBox Text="{Binding TerrainAttribution}" Watermark="{DynamicResource Ui.NavigationMap.AttributionHint}"/>
+                <Expander Header="{DynamicResource Ui.NavigationMap.Crop}" IsExpanded="{Binding CropExpanded}">
+                  <StackPanel Spacing="8">
+                    <TextBlock Classes="hint" Text="{DynamicResource Ui.NavigationMap.CropHint}"/>
+                    <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="8" RowSpacing="8">
+                      <StackPanel><TextBlock Text="{DynamicResource Ui.NavigationMap.West}"/><NumericUpDown Value="{Binding West}" Minimum="-180" Maximum="180" FormatString="0.0000000"/></StackPanel>
+                      <StackPanel Grid.Column="1"><TextBlock Text="{DynamicResource Ui.NavigationMap.East}"/><NumericUpDown Value="{Binding East}" Minimum="-180" Maximum="180" FormatString="0.0000000"/></StackPanel>
+                      <StackPanel Grid.Row="1"><TextBlock Text="{DynamicResource Ui.NavigationMap.South}"/><NumericUpDown Value="{Binding South}" Minimum="-90" Maximum="90" FormatString="0.0000000"/></StackPanel>
+                      <StackPanel Grid.Row="1" Grid.Column="1"><TextBlock Text="{DynamicResource Ui.NavigationMap.North}"/><NumericUpDown Value="{Binding North}" Minimum="-90" Maximum="90" FormatString="0.0000000"/></StackPanel>
+                    </Grid>
+                    <ComboBox SelectedIndex="{Binding DatumIndex}" HorizontalAlignment="Stretch">
+                      <ComboBoxItem Content="{DynamicResource Ui.NavigationMap.DatumUnknown}"/>
+                      <ComboBoxItem Content="EGM96"/><ComboBoxItem Content="EGM2008"/><ComboBoxItem Content="{DynamicResource Ui.NavigationMap.DatumEllipsoid}"/>
+                    </ComboBox>
+                  </StackPanel>
+                </Expander>
+              </StackPanel>
+            </StackPanel>
+          </Border>
+          <Border Classes="card">
+            <StackPanel Spacing="10">
+              <TextBlock Classes="section" Text="{DynamicResource Ui.NavigationMap.StepOutput}"/>
+              <TextBlock Text="{DynamicResource Ui.NavigationMap.Name}"/>
+              <TextBox Text="{Binding PackName, UpdateSourceTrigger=PropertyChanged}"/>
+              <TextBlock Text="{DynamicResource Ui.NavigationMap.Output}"/>
+              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                <TextBox Text="{Binding OutputRoot, UpdateSourceTrigger=PropertyChanged}"/>
+                <Button Grid.Column="1" Content="{DynamicResource Ui.NavigationMap.Browse}" Click="OnPickOutput"/>
+              </Grid>
+              <TextBlock Text="{Binding OutputPreview}" Classes="hint"/>
+            </StackPanel>
+          </Border>
+          <Expander Header="{DynamicResource Ui.NavigationMap.Advanced}" IsExpanded="{Binding AdvancedExpanded}">
+            <StackPanel Spacing="10" Margin="0,10">
+              <TextBlock Classes="hint" Text="{DynamicResource Ui.NavigationMap.EnvironmentHint}"/>
+              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                <TextBox Text="{Binding ToolsDirectory, UpdateSourceTrigger=PropertyChanged}" Watermark="{DynamicResource Ui.NavigationMap.Tools}"/>
+                <Button Grid.Column="1" Content="{DynamicResource Ui.NavigationMap.Browse}" Click="OnPickTools"/>
+              </Grid>
+              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                <TextBox Text="{Binding PythonExecutable, UpdateSourceTrigger=PropertyChanged}" Watermark="{DynamicResource Ui.NavigationMap.Python}"/>
+                <Button Grid.Column="1" Content="{DynamicResource Ui.NavigationMap.Browse}" Click="OnPickPython"/>
+              </Grid>
+              <TextBlock Text="{DynamicResource Ui.NavigationMap.Storage}"/>
+              <ComboBox SelectedIndex="{Binding PageIndex}" HorizontalAlignment="Stretch"><ComboBoxItem Content="1 KiB"/><ComboBoxItem Content="2 KiB"/><ComboBoxItem Content="4 KiB"/></ComboBox>
+              <TextBlock Text="{DynamicResource Ui.NavigationMap.Landmarks}"/>
+              <ComboBox SelectedIndex="{Binding LandmarkIndex}" HorizontalAlignment="Stretch"><ComboBoxItem Content="0"/><ComboBoxItem Content="2"/><ComboBoxItem Content="4"/></ComboBox>
+            </StackPanel>
+          </Expander>
+        </StackPanel>
+        <StackPanel Grid.Column="1" Spacing="14">
+          <Border Classes="card">
+            <StackPanel Spacing="10">
+              <TextBlock Classes="section" Text="{DynamicResource Ui.NavigationMap.Coverage}"/>
+              <controls:MapRegionPreviewControl West="{Binding West}" South="{Binding South}" East="{Binding East}" North="{Binding North}" Height="190"/>
+              <TextBlock Classes="hint" Text="{DynamicResource Ui.NavigationMap.PreviewHint}"/>
+            </StackPanel>
+          </Border>
+          <Border Classes="card">
+            <StackPanel Spacing="10">
+              <TextBlock Classes="section" Text="{DynamicResource Ui.NavigationMap.BeforeStart}"/>
+              <TextBlock Classes="hint" Text="{DynamicResource Ui.NavigationMap.Compatibility}"/>
+              <TextBlock Classes="hint" Text="{DynamicResource Ui.NavigationMap.CapacityHint}"/>
+              <TextBlock Text="{Binding ValidationMessage}" TextWrapping="Wrap"/>
+            </StackPanel>
+          </Border>
+          <Border Classes="card" IsVisible="{Binding HasResult}">
+            <StackPanel Spacing="10">
+              <TextBlock Classes="section" Text="{DynamicResource Ui.NavigationMap.ResultReady}"/>
+              <TextBlock Text="{Binding ResultSummary}" TextWrapping="Wrap"/>
+              <TextBox Text="{Binding ResultPath}" IsReadOnly="True" TextWrapping="Wrap"/>
+              <Button Content="{DynamicResource Ui.NavigationMap.OpenFolder}" Click="OnOpenResult" HorizontalAlignment="Left"/>
+              <Button Content="{DynamicResource Ui.NavigationMap.PreviewTitle}" Click="OnPreview" IsVisible="{Binding HasPreview}" HorizontalAlignment="Left"/>
+            </StackPanel>
+          </Border>
+          <Expander Header="{DynamicResource Ui.NavigationMap.ErrorDetails}" IsVisible="{Binding HasError}">
+            <TextBox Text="{Binding ErrorDetails}" IsReadOnly="True" TextWrapping="Wrap" MaxHeight="240"/>
+          </Expander>
+        </StackPanel>
+      </Grid>
+    </ScrollViewer>
+    <Border Grid.Row="2" BorderBrush="{DynamicResource PanelBorderStrong}" BorderThickness="0,1,0,0" Padding="24,14">
+      <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="10">
+        <StackPanel VerticalAlignment="Center" Spacing="6"><TextBlock Text="{Binding StatusText}" TextWrapping="Wrap"/><ProgressBar IsIndeterminate="True" IsVisible="{Binding IsBusy}" Height="4"/></StackPanel>
+        <Button Grid.Column="1" Content="{Binding CancelLabel}" Command="{Binding CancelCommand}" IsVisible="{Binding IsBusy}"/>
+        <Button Grid.Column="1" Content="{DynamicResource Ui.NavigationMap.Close}" Click="OnClose" IsVisible="{Binding !IsBusy}"/>
+        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8">
+          <Button Content="{DynamicResource Ui.NavigationMap.OpenFolder}" Click="OnOpenResult" IsVisible="{Binding HasResult}"/>
+          <Button Content="{DynamicResource Ui.NavigationMap.PreviewTitle}" Click="OnPreview" IsVisible="{Binding HasPreview}" Background="#167253" Foreground="White"/>
+          <Button Content="{DynamicResource Ui.NavigationMap.Create}" Command="{Binding CreateCommand}" Padding="20,8"/>
+        </StackPanel>
+      </Grid>
+    </Border>
+  </Grid>
+</Window>

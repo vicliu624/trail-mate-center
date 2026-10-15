@@ -9,6 +9,40 @@ using var cancel = new CancellationTokenSource();
 Console.CancelKeyPress += (_, e) => { e.Cancel = true; cancel.Cancel(); };
 try
 {
+    if (args.Length == 2 && args[0] == "regional-overview")
+    {
+        var plan = JsonSerializer.Deserialize<RegionalOverviewPlan>(File.ReadAllText(args[1]), json)
+            ?? throw new ArgumentException("Missing regional overview plan.");
+        Console.WriteLine(JsonSerializer.Serialize(await RegionalOverview.BuildAsync(plan, cancel.Token), json));
+        return 0;
+    }
+    if (args.Length == 2 && args[0] == "region")
+    {
+        var path = Path.GetFullPath(args[1]);
+        var plan = JsonSerializer.Deserialize<TmapRegionProductionPlan>(File.ReadAllText(path), json)
+            ?? throw new ArgumentException("Missing regional production plan.");
+        Console.WriteLine(JsonSerializer.Serialize(new { package = await new TmapRegionProductionService().ExportAsync(plan, cancel.Token) }, json));
+        return 0;
+    }
+    if (args.Length == 2 && args[0] == "navigation")
+    {
+        var path = Path.GetFullPath(args[1]);
+        var parent = Path.GetDirectoryName(path)!;
+        var plan = JsonSerializer.Deserialize<TmapNavigationExportPlan>(File.ReadAllText(path), json)
+            ?? throw new ArgumentException("Missing navigation plan.");
+        plan = plan with
+        {
+            PbfPath = Path.GetFullPath(plan.PbfPath, parent),
+            RegionalPbfPaths = plan.RegionalPbfPaths?.Select(p => Path.GetFullPath(p, parent)).ToArray()
+                ?? throw new ArgumentException("RegionalPbfPaths cannot be null."),
+            OutdoorDocumentPath = plan.OutdoorDocumentPath is null ? null : Path.GetFullPath(plan.OutdoorDocumentPath, parent),
+            HgtPath = plan.HgtPath is null ? null : Path.GetFullPath(plan.HgtPath, parent),
+            ToolsDirectory = Path.GetFullPath(plan.ToolsDirectory, parent),
+            OutputDirectory = Path.GetFullPath(plan.OutputDirectory, parent)
+        };
+        Console.WriteLine(JsonSerializer.Serialize(new { package = await new TmapNavigationExportService().ExportAsync(plan, cancel.Token) }, json));
+        return 0;
+    }
     if (args.Length is 3 or 4 && args[0] == "extensions-install")
     {
         Console.WriteLine(JsonSerializer.Serialize(TmapExtensionInstaller.Install(args[1], args[2], cancel.Token,
@@ -126,7 +160,7 @@ try
         TmapPackExporter.ImportRasterDirectory(builder, args[1], cancel.Token);
         Console.WriteLine(JsonSerializer.Serialize(builder.Complete(args[2], plan.Area, options), json)); return 0;
     }
-    Console.Error.WriteLine("TMAP: world-osm source.mbtiles output.tmap | build plan.json | batch plans.json output-folder | verify file.tmap | search file.tmap text [Exact|Prefix|Substring] | register file.tmap | fast-labels-upgrade file.tmap | fast-labels-install prepared.tmap destination.tmap | import-rasters maps-folder file.tmap metadata.json");
+    Console.Error.WriteLine("TMAP: region plan.json | regional-overview plan.json | navigation plan.json | world-osm source.mbtiles output.tmap | build plan.json | batch plans.json output-folder | verify file.tmap | search file.tmap text [Exact|Prefix|Substring] | register file.tmap | fast-labels-upgrade file.tmap | fast-labels-install prepared.tmap destination.tmap | import-rasters maps-folder file.tmap metadata.json");
     return 2;
 }
 catch (OperationCanceledException) { Console.Error.WriteLine("Canceled; unpublished output was discarded."); return 130; }

@@ -1,10 +1,20 @@
 # Trail Mate Center
 
+最新版下载：[Releases](https://github.com/vicliu624/trail-mate-center/releases)。
+发行包包含桌面程序，以及 `tools/tmap` 下的地图制作 CLI、区域准备脚本和使用说明。
+Windows 使用 `TmapTool.exe`，Linux/macOS 使用 `TmapTool`。区域生产需安装 Python 3.13，
+执行 `python -m pip install -r tools/tmap/requirements-region.txt`，并按指南配置独立的
+[TMAP v0.1.1 制作工具](https://github.com/vicliu624/tmap/releases/tag/v0.1.1)。
+Python 与 SDK 工具不内置；预览已经制作好的户外地图不需要这些生产依赖。
+
 > 面向 Trail Mate / Meshtastic 野外节点的桌面控制中心
 
 [English](README.md) | [中文](README_CN.md)
 
 离线地图：参见 [TMAP 单文件制作、文件结构与查询算法](docs/map/TMAP_IMPLEMENTATION.md)，支持桌面制作入口及 `tools/TmapTool` 命令行。
+
+导航地图：新增 `TmapTool navigation`，通过独立 TMAP SDK 从本地 PBF 制作 v2 导航路网；真实成品的容量与读取量测试见 [导航制作与真实资源证据](docs/map/TMAP_NAVIGATION.md)。现有桌面 v1 底图导出与该导航包分开。
+桌面地图制作窗口现已加入“制作导航与等高线地图”：选择本地路网及 HGT、检查缺项、后台制作、取消重试，并预览成品中的路网与等高线。使用方法见 [桌面导航地图工作流](docs/map/TMAP_NAVIGATION_GUI.md)。
 
 ---
 
@@ -176,6 +186,7 @@ Windows 下常见默认路径：
 
 - [离线地图缓存对接说明](docs/TRAIL_MATE_CACHE_INTEGRATION.md)
 - [传播分析实现文档](docs/propagation/implementation/README.md)
+- [区域地图完整制作流程](docs/map/TMAP_NAVIGATION.md#regional-production-from-original-pbf-and-elevation-sources)：通过 Center CLI 完成原始 PBF 处理、多瓦片数字高程下载与拼接、等高线和导航包制作，明确记录数据范围、制作预算及资源验证结果。
 - [传播分析可解释性文档](docs/propagation/explainability/README.md)
 - [传播分析知识笔记](docs/propagation/knowledge/README.md)
 

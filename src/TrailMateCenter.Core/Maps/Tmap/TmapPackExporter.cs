@@ -78,7 +78,8 @@ public sealed class TmapPackExporter
                 using var sources = new TmapRasterSources(plan.Tmap.SourceCacheDirectory);
                 var coverage = new TmapTileCoverage(plan.Area);
                 using var store = new PbfBasemapStore(Path.Combine(temporary, "geometry.sqlite"));
-                store.Import(plan.Poi.PbfPath, (stage, n) => progress?.Report(new(stage, n, 0)), cancellationToken, plan.Area.Bounds, includeAnnotations: true);
+                store.Import(plan.Poi.PbfPath, (stage, n) => progress?.Report(new(stage, n, 0)), cancellationToken, plan.Area.Bounds, includeAnnotations: true,
+                    skipDegenerateAreaRelations: plan.Tmap.SkipDegenerateAreaRelations);
                 var polygon = GeoJsonPointInPolygonFilter.TryCreate(plan.Area.BoundaryGeoJson);
                 var (west, north) = PbfBasemapStore.Project(plan.Area.Bounds.West, plan.Area.Bounds.North);
                 var (east, south) = PbfBasemapStore.Project(plan.Area.Bounds.East, plan.Area.Bounds.South);
@@ -157,6 +158,14 @@ public sealed class TmapPackExporter
                 }
                 progress?.Report(new("tmap-indexes", 0, 0));
                 var root = TmapLayout.Root(plan.OutputDirectory); var packages = new List<TmapBuildResult>();
+                Directory.CreateDirectory(root);
+                File.WriteAllText(Path.Combine(root, Path.GetFileNameWithoutExtension(plan.Tmap.FileName) + ".source-geometry.json"),
+                    System.Text.Json.JsonSerializer.Serialize(new
+                    {
+                        store.SourceIssueCount,
+                        store.SourceIssues,
+                        plan.Tmap.SkipDegenerateAreaRelations
+                    }, new System.Text.Json.JsonSerializerOptions { WriteIndented = true }));
                 void Stage(TmapBuilder output, string style, string attribution)
                 {
                     var options = plan.Tmap with

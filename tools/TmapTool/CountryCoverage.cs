@@ -9,9 +9,10 @@ internal sealed class CountryCoverage
     private readonly IPreparedGeometry _prepared;
     public GeoBounds Bounds { get; }
     public string[] SourceFiles { get; }
-    public CountryCoverage(string directory)
+    public CountryCoverage(string directory, params string[] polygonFiles)
     {
-        SourceFiles = [Path.Combine(directory, "china.poly"), Path.Combine(directory, "taiwan.poly")];
+        SourceFiles = (polygonFiles.Length == 0 ? new[] { "china.poly", "taiwan.poly" } : polygonFiles)
+            .Select(path => Path.GetFullPath(path, Path.GetFullPath(directory))).ToArray();
         var polygons = new List<Polygon>(); var geographic = new Envelope();
         foreach (var path in SourceFiles)
         {

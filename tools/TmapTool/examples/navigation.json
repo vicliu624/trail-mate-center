@@ -1,0 +1,11 @@
+{
+  "PbfPath": "../../../artifacts/navigation-source/region.osm.pbf",
+  "ToolsDirectory": "../../../../tmap/tools",
+  "PythonExecutable": "python3",
+  "OutputDirectory": "../../../artifacts/navigation/region-foot",
+  "PageBytes": 4096,
+  "Landmarks": 4,
+  "TravelMode": "foot",
+  "RuntimeConditions": false,
+  "TopologyEpoch": "replace-with-explicit-source-snapshot-and-profile"
+}

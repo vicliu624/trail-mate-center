@@ -6,6 +6,8 @@ Center 已有可运行的 `.tmap` 制作链：本地 OSM PBF → 无文字原始
 
 当前生成的是 **TMAP v1，normalization_profile=2**，固件 `feature/tmap-reader` 已接入原生像素与独立标注读取。2026-10 的优化新增可选段 43/44，不改变完整 POI 和搜索格式。
 
+本页表格描述原有桌面和 v1 制作流程。新增 `TmapTool navigation` 已能通过独立 TMAP SDK 从真实 PBF 生成可导航的 v2 草案路网包，并已完成摩纳哥数据的资源评估；入口、复现方法和测量范围见 [导航制作说明](TMAP_NAVIGATION.md)。该入口目前输出独立路网包，尚未接入桌面 v1 导出或把底图、等高线合入同一个包。
+
 | 能力 | 当前状态 |
 |---|---|
 | OSM 底图 | PBF 本地渲染为无文字 256×256 RGB565LE |

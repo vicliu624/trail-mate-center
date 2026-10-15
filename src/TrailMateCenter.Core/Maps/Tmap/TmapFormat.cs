@@ -111,6 +111,7 @@ public sealed record TmapOptions
     public long MaximumOutputBytes { get; init; } = long.MaxValue;
     public string? AdministrativeBoundaryManifest { get; init; }
     public bool GenerateFontPacks { get; init; } = true;
+    public bool SkipDegenerateAreaRelations { get; init; }
     public string? FontOutputDirectory { get; init; }
     public string? SourceCacheDirectory { get; init; }
     public TmapZoomRange? TerrainZoomRange { get; init; }

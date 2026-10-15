@@ -1,0 +1,24 @@
+<Window xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:map="using:TrailMateCenter.Maps.Tmap" xmlns:controls="using:TrailMateCenter.Views.Controls"
+        x:Class="TrailMateCenter.Views.OutdoorMapPreviewWindow" x:DataType="map:TmapOutdoorPreview"
+        Title="{DynamicResource Ui.NavigationMap.PreviewTitle}" Width="1000" Height="740" MinWidth="700" MinHeight="500" WindowStartupLocation="CenterOwner" RequestedThemeVariant="Dark">
+  <Grid RowDefinitions="Auto,*,Auto" Background="{DynamicResource PanelBg}">
+    <Grid ColumnDefinitions="*,Auto" Margin="20,16" ColumnSpacing="12">
+      <StackPanel Spacing="5"><TextBlock Text="{DynamicResource Ui.NavigationMap.PreviewTitle}" FontSize="21" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimary}"/><TextBlock Text="{DynamicResource Ui.NavigationMap.PreviewInteraction}" Foreground="{DynamicResource TextDim}" TextWrapping="Wrap"/></StackPanel>
+      <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+        <Button Content="{DynamicResource Ui.ElevationProfile.Title}" Click="OnProfile"/>
+        <Button Content="{DynamicResource Ui.NavigationMap.ResetView}" Click="OnReset"/>
+      </StackPanel>
+    </Grid>
+    <Border Grid.Row="1" Margin="20,0" CornerRadius="8" ClipToBounds="True" BorderThickness="1" BorderBrush="{DynamicResource PanelBorderStrong}">
+      <controls:OutdoorMapPreviewControl x:Name="PreviewMap" Data="{Binding}"/>
+    </Border>
+    <StackPanel Grid.Row="2" Margin="20,14" Spacing="10">
+      <StackPanel Orientation="Horizontal" Spacing="22">
+        <CheckBox x:Name="RoadToggle" Content="{DynamicResource Ui.NavigationMap.PreviewRoads}" IsChecked="True" Click="OnToggle"/>
+        <CheckBox x:Name="ContourToggle" Content="{DynamicResource Ui.NavigationMap.PreviewContours}" IsChecked="True" Click="OnToggle"/>
+      </StackPanel>
+      <TextBlock Text="{DynamicResource Ui.NavigationMap.PreviewSampling}" Foreground="{DynamicResource TextDim}" TextWrapping="Wrap"/>
+    </StackPanel>
+  </Grid>
+</Window>
