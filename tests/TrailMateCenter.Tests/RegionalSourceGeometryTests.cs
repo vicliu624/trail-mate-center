@@ -29,7 +29,9 @@ public sealed class RegionalSourceGeometryTests
                     node.UserName = "fixture"; node.TimeStamp = DateTime.UnixEpoch; node.Tags = new TagsCollection();
                     writer.AddNode(node);
                 }
-                writer.AddWay(new Way { Id = 10, Version = 1, Nodes = [1, 2, 3, 4, 1] });
+                // Closed but zero-area: unlike a valid ring with a wrong role,
+                // this cannot be recovered by inferring shell containment.
+                writer.AddWay(new Way { Id = 10, Version = 1, Nodes = [1, 2, 1] });
                 writer.AddRelation(new Relation
                 {
                     Id = 20,

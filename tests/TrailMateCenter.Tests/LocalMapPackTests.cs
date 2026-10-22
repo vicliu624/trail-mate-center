@@ -117,6 +117,7 @@ public sealed class LocalMapPackTests : IDisposable
         var b = TileMath.TileToBounds(Tile.X, Tile.Y, Tile.Z);
         return new MapPackExportPlan
         {
+            StrictGeometry = true,
             OutputDirectory = Path.Combine(_root, name),
             Area = new MapPackAreaSelection { Name = name, Bounds = new(b.West + 0.000001, b.South + 0.000001, b.East - 0.000001, b.North - 0.000001) },
             BaseLayers = new MapPackBaseLayerSelection { IncludeOsm = true, MinimumZoom = Tile.Z, MaximumZoom = Tile.Z },
@@ -224,7 +225,9 @@ public sealed class LocalMapPackTests : IDisposable
         }
         target.AddWay(new Way { Id = 100, Nodes = [1, 2], Version = 1, Tags = new TagsCollection(new Tag("highway", "primary"), new Tag("name", label)) });
         target.AddWay(new Way { Id = 101, Nodes = retracedOuter ? [3, 4, 5, 6, 3, 14] : [3, 4, 5, 6, 3], Version = 1, Tags = new TagsCollection(new Tag("natural", "water")) });
-        target.AddWay(new Way { Id = 102, Nodes = openHole ? [7, 8, 9, 10] : [7, 8, 9, 10, 7], Version = 1, Tags = new TagsCollection() });
+        // A wrong inner role on a valid ring is recoverable. Failure fixtures
+        // must instead contain genuinely non-area linework (a retraced segment).
+        target.AddWay(new Way { Id = 102, Nodes = missingOuter ? [7, 8, 7] : openHole ? [7, 8, 9, 10] : [7, 8, 9, 10, 7], Version = 1, Tags = new TagsCollection() });
         var members = new List<RelationMember>
         {
             new() { Id = 101, Type = OsmGeoType.Way, Role = "outer" },

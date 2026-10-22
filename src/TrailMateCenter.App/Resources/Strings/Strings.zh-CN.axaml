@@ -1016,6 +1016,8 @@
   <x:String x:Key="Ui.MapPack.Status.OperationCanceled">操作已取消。</x:String>
   <x:String x:Key="Ui.MapPack.Status.AreaSelected">已选择区域：{0}</x:String>
   <x:String x:Key="Ui.MapPack.Status.PbfSourceSelected">已选择 PBF 来源：{0}</x:String>
+  <x:String x:Key="Ui.MapPack.StrictGeometry">严格几何校验（遇到无效要素时停止导出）</x:String>
+  <x:String x:Key="Ui.MapPack.Status.GeometryWarnings">已完成，有几何数据警告：修复 {0} 个，省略 {1} 个。详情：source-geometry-report.json</x:String>
   <x:String x:Key="Ui.MapPack.Status.ExportComplete">导出完成：{0}</x:String>
   <x:String x:Key="Ui.MapPack.Status.ExportFailed">导出失败：{0}</x:String>
   <x:String x:Key="Ui.MapPack.Status.ExportStarting">正在启动地图包导出...</x:String>

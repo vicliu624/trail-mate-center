@@ -83,6 +83,7 @@ public sealed partial class MapPackBuilderViewModel : ObservableObject
     private string _packName = T("Ui.MapPack.DefaultPackName");
 
     [ObservableProperty] private bool _exportTmap;
+    [ObservableProperty] private bool _strictGeometry;
     [ObservableProperty] private string _tmapFileName = "map.tmap";
     [ObservableProperty] private string _tmapPackageKey = "";
     [ObservableProperty] private string _tmapCountryCode = "";
@@ -247,6 +248,7 @@ public sealed partial class MapPackBuilderViewModel : ObservableObject
     {
         return new MapPackExportPlan
         {
+            StrictGeometry = StrictGeometry,
             Annotations = AnnotationOptions.ToOptions(),
             Name = string.IsNullOrWhiteSpace(PackName)
                 ? (string.IsNullOrWhiteSpace(AreaName) ? T("Ui.MapPack.DefaultPackName") : AreaName.Trim())

@@ -1,6 +1,7 @@
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
+using System.Text.Json;
 using TrailMateCenter.Localization;
 using TrailMateCenter.ViewModels;
 
@@ -166,6 +167,15 @@ public partial class MapPackBuilderDialog : Window
             ViewModel.StatusText = result.Success
                 ? $"{Loc.Format("Ui.MapPack.Status.ExportComplete", result.TargetMapRoot)} {_ownerViewModel.OfflineCacheExportStatusText}"
                 : Loc.Format("Ui.MapPack.Status.ExportFailed", result.ErrorMessage ?? Loc.GetString("Ui.MapPack.Unknown"));
+            if (result.Success && result.TargetMapRoot is { } mapsRoot &&
+                File.Exists(Path.Combine(mapsRoot, "source-geometry-report.json")))
+            {
+                using var report = JsonDocument.Parse(await File.ReadAllTextAsync(Path.Combine(mapsRoot, "source-geometry-report.json")));
+                var repaired = report.RootElement.GetProperty("repaired_relations").GetInt32();
+                var omitted = report.RootElement.GetProperty("omitted_elements").GetInt32();
+                if (repaired > 0 || omitted > 0)
+                    ViewModel.StatusText += " " + Loc.Format("Ui.MapPack.Status.GeometryWarnings", repaired, omitted);
+            }
         }
         catch (OperationCanceledException)
         {

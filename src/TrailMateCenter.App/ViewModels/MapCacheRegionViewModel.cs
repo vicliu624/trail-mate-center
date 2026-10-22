@@ -345,6 +345,7 @@ public sealed partial class MapCacheRegionViewModel : ObservableObject
         var options = ToBuildOptions();
         return new MapCacheRegionSettings
         {
+            StrictGeometry = StrictGeometry,
             TmapPlan = TmapPlan,
             Id = string.IsNullOrWhiteSpace(Id) ? Guid.NewGuid().ToString("N") : Id.Trim(),
             Name = string.IsNullOrWhiteSpace(Name) ? "Area" : Name.Trim(),
@@ -418,6 +419,7 @@ public sealed partial class MapCacheRegionViewModel : ObservableObject
 
         return new MapCacheRegionViewModel
         {
+            StrictGeometry = settings.StrictGeometry,
             TmapPlan = settings.TmapPlan,
             Id = string.IsNullOrWhiteSpace(settings.Id) ? Guid.NewGuid().ToString("N") : settings.Id.Trim(),
             Name = settings.Name ?? string.Empty,
@@ -465,6 +467,7 @@ public sealed partial class MapCacheRegionViewModel : ObservableObject
 
     public void ApplySettings(MapCacheRegionSettings settings)
     {
+        StrictGeometry = settings.StrictGeometry;
         TmapPlan = settings.TmapPlan;
         var options = new OfflineCacheBuildOptions
         {
@@ -502,6 +505,7 @@ public sealed partial class MapCacheRegionViewModel : ObservableObject
     }
 
     public MapPackExportPlan? TmapPlan { get; private set; }
+    public bool StrictGeometry { get; private set; }
 
     public void ApplyBuildOptions(OfflineCacheBuildOptions options)
     {

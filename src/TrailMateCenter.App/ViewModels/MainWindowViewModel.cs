@@ -1920,6 +1920,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         var plan = new MapPackExportPlan
         {
             Name = region.Name,
+            StrictGeometry = region.StrictGeometry,
             OutputDirectory = destinationRoot,
             Annotations = region.Annotations,
             Area = new MapPackAreaSelection
@@ -2236,6 +2237,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         return new MapCacheRegionSettings
         {
             TmapPlan = plan.Tmap is null ? null : plan,
+            StrictGeometry = plan.StrictGeometry,
             Id = Guid.NewGuid().ToString("N"),
             Name = string.IsNullOrWhiteSpace(plan.Area.Name) ? plan.Name : plan.Area.Name,
             West = bounds.West,

@@ -6,6 +6,13 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 
 ## [Unreleased]
 
+### Fixed
+
+- Align ordinary map export with Tilemaker as the compatibility target: retain exact assembly for valid geometry, close and repair broken area boundaries as a fallback, and continue past unrecoverable individual features. Keep an optional strict validation mode and record repairs, added closing edges and omissions in geometry reports.
+- Use the bundled multilingual fallback fonts for raster-map annotation packages, so extended Latin and other supported scripts in OSM names do not abort map publication.
+- Assemble complete OSM multipolygon rings by geometric containment instead of trusting member roles. Incorrect inner/outer roles no longer block recoverable areas, and islands inside holes remain visible. PNG and TMAP exports record role corrections separately from repaired or omitted geometry; incomplete boundaries and missing references still fail in strict mode.
+- Added offline real-data regressions for Étang du Bois d'Amour (relation 7815642 v4) and Forêt de Loudéac (relation 6730991 v8/v9), covering ordinary v8 repair, strict-mode rejection of the broken v8 boundary, and preservation of v9's five shells and fifteen holes.
+
 ## [0.0.6-alpha] - 2026-10-15
 
 ### Added

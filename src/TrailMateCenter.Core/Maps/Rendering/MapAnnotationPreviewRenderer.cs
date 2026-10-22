@@ -16,7 +16,7 @@ public static class MapAnnotationPreviewRenderer
         try
         {
             using var store = new PbfBasemapStore(Path.Combine(work, "geometry.sqlite"));
-            store.Import(pbf, null, token, area, includeAnnotations: true);
+            store.Import(pbf, null, token, area, includeAnnotations: true, strictGeometry: false);
             return Render(store, area, zoom, options, work, token);
         }
         finally { if (Directory.Exists(work)) Directory.Delete(work, true); }

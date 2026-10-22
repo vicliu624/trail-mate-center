@@ -101,11 +101,15 @@ public static class MapAnnotationFontPackBuilder
         var font = Path.Combine(resources, "NotoSansCJKsc-Regular.otf");
         var license = Path.Combine(resources, "OFL.txt");
         if (!File.Exists(font) || !File.Exists(license)) throw new FileNotFoundException("The bundled annotation font resources are missing. Reinstall Center.");
-        var identity = "noto-cjk-sc-16px-2bpp-v1:" + string.Join(",", codes);
+        var sources = new[] { font }.Concat(Directory.EnumerateFiles(resources)
+            .Where(path => path != font && (path.EndsWith(".ttf", StringComparison.OrdinalIgnoreCase) || path.EndsWith(".otf", StringComparison.OrdinalIgnoreCase)))
+            .Order(StringComparer.Ordinal)).ToArray();
+        var sourceIdentity = string.Join(":", sources.Select(path => Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(path)))));
+        var identity = "map-raster-multiscript-16px-2bpp-v2:" + sourceIdentity + ":" + string.Join(",", codes);
         var id = "map-" + Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(identity)).AsSpan(0, 8)).ToLowerInvariant();
         var directory = Path.Combine(stagedSdRoot, "trailmate", "packs", "fonts", id);
         System.IO.Directory.CreateDirectory(directory);
-        LvglAnnotationFontWriter.Write(font, codes, Path.Combine(directory, "font.bin"), token);
+        LvglAnnotationFontWriter.Write(sources, codes, Path.Combine(directory, "font.bin"), token);
         var size = new FileInfo(Path.Combine(directory, "font.bin")).Length;
         // Conservative cost of decoded glyph descriptors, cmap lists and bitmap.
         var estimate = size + codes.Length * 24L + 4096;
@@ -114,6 +118,10 @@ public static class MapAnnotationFontPackBuilder
             $"kind=font\nid={id}\ndisplay_name=Map annotation names\nusage=content\nestimated_ram_bytes={estimate}\nsource=binfont\nfile=font.bin\nranges=ranges.txt\n", new UTF8Encoding(false));
         File.WriteAllText(Path.Combine(directory, "ranges.txt"), string.Join(",", codes.Select(c => $"0x{c:X}")), new UTF8Encoding(false));
         File.Copy(license, Path.Combine(directory, "OFL.txt"), true);
+        foreach (var extra in Directory.EnumerateFiles(resources).Where(path => path.EndsWith("-OFL.txt", StringComparison.Ordinal) || path.EndsWith("-LICENSE.txt", StringComparison.Ordinal)))
+            File.Copy(extra, Path.Combine(directory, Path.GetFileName(extra)), true);
+        File.WriteAllText(Path.Combine(directory, "sources.json"), System.Text.Json.JsonSerializer.Serialize(sources.Select(path => new
+        { file = Path.GetFileName(path), sha256 = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(path))) })));
         return new(id, directory, codes.Length, size, estimate);
     }
 }

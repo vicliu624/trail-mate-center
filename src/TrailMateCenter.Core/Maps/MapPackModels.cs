@@ -40,6 +40,7 @@ public sealed record MapPackAreaSelection
 
 public sealed record MapPackExportPlan
 {
+    public bool StrictGeometry { get; init; }
     public string Name { get; init; } = "Map Pack";
     public MapPackAreaSelection Area { get; init; } = new();
     public MapPackBaseLayerSelection BaseLayers { get; init; } = new();
