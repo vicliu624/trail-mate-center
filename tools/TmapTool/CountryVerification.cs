@@ -41,10 +41,10 @@ internal static class CountryVerification
             var center = TileMath.LonLatToTile(lon, lat, 12);
             using var detail = new SKBitmap(768, 768, SKColorType.Rgba8888, SKAlphaType.Opaque); using var detailCanvas = new SKCanvas(detail);
             for (var dy = -1; dy <= 1; dy++) for (var dx = -1; dx <= 1; dx++)
-            {
-                var raster = reader.ReadTile(1, 12, center.X + dx, center.Y + dy) ?? throw new InvalidDataException("Missing preview tile.");
-                using var bitmap = Decode(raster.Pixels); detailCanvas.DrawBitmap(bitmap, (dx + 1) * 256, (dy + 1) * 256);
-            }
+                {
+                    var raster = reader.ReadTile(1, 12, center.X + dx, center.Y + dy) ?? throw new InvalidDataException("Missing preview tile.");
+                    using var bitmap = Decode(raster.Pixels); detailCanvas.DrawBitmap(bitmap, (dx + 1) * 256, (dy + 1) * 256);
+                }
             detailCanvas.Flush(); Save(detail, Path.Combine(Path.GetDirectoryName(Path.GetFullPath(path))!, $"china-osm-{name}-z12.png"));
         }
         reader.ValidateAllPages(token); canvas.Flush(); Save(mosaic, Path.Combine(Path.GetDirectoryName(Path.GetFullPath(path))!, "china-osm-z8-preview.png"));

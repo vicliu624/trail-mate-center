@@ -30,18 +30,18 @@ public sealed class TmapRasterSources : IDisposable
         var maxY = (int)Math.Floor(((y * 256.0 + 256) / scale + 1) / 256);
         var required = new HashSet<(int Z, int X, int Y)>();
         for (var tx = minX; tx <= maxX; tx++) for (var ty = minY; ty <= maxY; ty++)
-            required.Add((sourceZ, (tx % n + n) % n, Math.Clamp(ty, 0, n - 1)));
+                required.Add((sourceZ, (tx % n + n) % n, Math.Clamp(ty, 0, n - 1)));
         foreach (var old in _heights.Keys.Where(k => !required.Contains(k)).ToArray()) _heights.Remove(old);
         for (var tx = minX; tx <= maxX; tx++) for (var ty = minY; ty <= maxY; ty++)
-        {
-            var key = (sourceZ, (tx % n + n) % n, Math.Clamp(ty, 0, n - 1));
-            if (_heights.ContainsKey(key)) continue;
-            using var image = await Load("tmap-elevation-cache", "png", ElevationUrl, key.sourceZ, key.Item2, key.Item3, token).ConfigureAwait(false);
-            var data = new float[65536];
-            for (var py = 0; py < 256; py++) for (var px = 0; px < 256; px++)
-            { var p = image.GetPixel(px, py); data[py * 256 + px] = (float)(p.Red * 256 + p.Green + p.Blue / 256.0 - 32768); }
-            _heights.Add(key, data);
-        }
+            {
+                var key = (sourceZ, (tx % n + n) % n, Math.Clamp(ty, 0, n - 1));
+                if (_heights.ContainsKey(key)) continue;
+                using var image = await Load("tmap-elevation-cache", "png", ElevationUrl, key.sourceZ, key.Item2, key.Item3, token).ConfigureAwait(false);
+                var data = new float[65536];
+                for (var py = 0; py < 256; py++) for (var px = 0; px < 256; px++)
+                    { var p = image.GetPixel(px, py); data[py * 256 + px] = (float)(p.Red * 256 + p.Green + p.Blue / 256.0 - 32768); }
+                _heights.Add(key, data);
+            }
         double Sample(int gx, int gy)
         {
             gx = (gx % (n * 256) + n * 256) % (n * 256); gy = Math.Clamp(gy, 0, n * 256 - 1);
