@@ -73,15 +73,23 @@ public sealed class LocalMapPackExporter
             var labelledLevels = plan.Annotations is not null ? Array.Empty<int>() : allLevels.Where(z => !independentPolicy.IsEnabledAtZoom(z)).ToArray();
             var sourceIssueCount = 0;
             BasemapSourceIssue[] sourceIssues = [];
+            var roleCorrectionCount = 0;
+            BasemapRoleCorrection[] roleCorrections = [];
+            var repairCount = 0;
+            BasemapGeometryRepair[] repairs = [];
             if (layers.Count > 0 || plan.Annotations is not null)
             {
                 await Task.Run(async () =>
                 {
                     using var store = new PbfBasemapStore(Path.Combine(work, "geometry.sqlite"));
                     store.Import(plan.Poi.PbfPath, (stage, count) => progress?.Report(new(stage, count, 0)), cancellationToken, plan.Area.Bounds,
-                        includeAnnotations: plan.Annotations is not null);
+                        includeAnnotations: plan.Annotations is not null, strictGeometry: plan.StrictGeometry);
                     sourceIssueCount = store.SourceIssueCount;
                     sourceIssues = store.SourceIssues.ToArray();
+                    roleCorrectionCount = store.RoleCorrectionCount;
+                    roleCorrections = store.RoleCorrections.ToArray();
+                    repairCount = store.RepairCount;
+                    repairs = store.Repairs.ToArray();
                     var (west, north) = PbfBasemapStore.Project(plan.Area.Bounds.West, plan.Area.Bounds.North);
                     var (east, south) = PbfBasemapStore.Project(plan.Area.Bounds.East, plan.Area.Bounds.South);
                     if (layers.Count > 0 && !store.Query(new NetTopologySuite.Geometries.Envelope(west, east, north, south), plan.BaseLayers.MaximumZoom).Any())
@@ -148,15 +156,37 @@ public sealed class LocalMapPackExporter
             }
             if (plan.BaseLayers.IncludeContours) await addContours!(stagedMaps, cancellationToken).ConfigureAwait(false);
 
+            await File.WriteAllTextAsync(Path.Combine(stagedMaps, "source-geometry-report.json"),
+                JsonSerializer.Serialize(new
+                {
+                    strict_geometry = plan.StrictGeometry,
+                    repaired_relations = repairCount,
+                    omitted_elements = sourceIssueCount,
+                    role_corrected_relations = roleCorrectionCount,
+                    repairs,
+                    omissions = sourceIssues,
+                    role_corrections = roleCorrections,
+                    examples_truncated = repairCount > repairs.Length || sourceIssueCount > sourceIssues.Length || roleCorrectionCount > roleCorrections.Length,
+                }, new JsonSerializerOptions { WriteIndented = true }), cancellationToken).ConfigureAwait(false);
+
             var sourceDiagnostics = new
             {
-                ignored_invalid_relations_outside_requested_area = sourceIssueCount,
+                ignored_invalid_relations_outside_requested_area = plan.StrictGeometry ? sourceIssueCount : 0,
+                omitted_invalid_elements = sourceIssueCount,
                 examples = sourceIssues,
                 examples_truncated = sourceIssueCount > sourceIssues.Length,
             };
             if (sourceIssueCount > 0)
                 await File.WriteAllTextAsync(Path.Combine(stagedMaps, "source-geometry-warnings.json"),
                     JsonSerializer.Serialize(sourceDiagnostics, new JsonSerializerOptions { WriteIndented = true }), cancellationToken).ConfigureAwait(false);
+            if (roleCorrectionCount > 0)
+                await File.WriteAllTextAsync(Path.Combine(stagedMaps, "source-role-corrections.json"),
+                    JsonSerializer.Serialize(new
+                    {
+                        corrected_relations = roleCorrectionCount,
+                        examples = roleCorrections,
+                        examples_truncated = roleCorrectionCount > roleCorrections.Length,
+                    }, new JsonSerializerOptions { WriteIndented = true }), cancellationToken).ConfigureAwait(false);
 
             await File.WriteAllTextAsync(Path.Combine(stagedMaps, "map-pack.json"), JsonSerializer.Serialize(new
             {

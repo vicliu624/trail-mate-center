@@ -79,7 +79,7 @@ public sealed class TmapPackExporter
                 var coverage = new TmapTileCoverage(plan.Area);
                 using var store = new PbfBasemapStore(Path.Combine(temporary, "geometry.sqlite"));
                 store.Import(plan.Poi.PbfPath, (stage, n) => progress?.Report(new(stage, n, 0)), cancellationToken, plan.Area.Bounds, includeAnnotations: true,
-                    skipDegenerateAreaRelations: plan.Tmap.SkipDegenerateAreaRelations);
+                    skipDegenerateAreaRelations: plan.Tmap.SkipDegenerateAreaRelations && !plan.StrictGeometry, strictGeometry: plan.StrictGeometry);
                 var polygon = GeoJsonPointInPolygonFilter.TryCreate(plan.Area.BoundaryGeoJson);
                 var (west, north) = PbfBasemapStore.Project(plan.Area.Bounds.West, plan.Area.Bounds.North);
                 var (east, south) = PbfBasemapStore.Project(plan.Area.Bounds.East, plan.Area.Bounds.South);
@@ -164,6 +164,11 @@ public sealed class TmapPackExporter
                     {
                         store.SourceIssueCount,
                         store.SourceIssues,
+                        store.RoleCorrectionCount,
+                        store.RoleCorrections,
+                        plan.StrictGeometry,
+                        store.RepairCount,
+                        store.Repairs,
                         plan.Tmap.SkipDegenerateAreaRelations
                     }, new System.Text.Json.JsonSerializerOptions { WriteIndented = true }));
                 void Stage(TmapBuilder output, string style, string attribution)

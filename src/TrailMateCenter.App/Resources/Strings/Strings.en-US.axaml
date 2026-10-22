@@ -1017,6 +1017,8 @@
   <x:String x:Key="Ui.MapPack.Status.OperationCanceled">Operation canceled.</x:String>
   <x:String x:Key="Ui.MapPack.Status.AreaSelected">Area selected: {0}</x:String>
   <x:String x:Key="Ui.MapPack.Status.PbfSourceSelected">PBF source selected: {0}</x:String>
+  <x:String x:Key="Ui.MapPack.StrictGeometry">Strict geometry validation (stop on invalid features)</x:String>
+  <x:String x:Key="Ui.MapPack.Status.GeometryWarnings">Completed with geometry warnings: {0} repaired, {1} omitted. Details: source-geometry-report.json</x:String>
   <x:String x:Key="Ui.MapPack.Status.ExportComplete">Export complete: {0}</x:String>
   <x:String x:Key="Ui.MapPack.Status.ExportFailed">Export failed: {0}</x:String>
   <x:String x:Key="Ui.MapPack.Status.ExportStarting">Starting map pack export...</x:String>

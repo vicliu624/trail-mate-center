@@ -8,7 +8,8 @@ using OsmSharp.Streams;
 
 namespace TrailMateCenter.Maps.Rendering;
 
-internal sealed record BasemapSourceIssue(long? RelationId, string Reason, GeoBounds KnownMemberBounds);
+internal sealed record BasemapSourceIssue(long? RelationId, string Reason, GeoBounds? KnownMemberBounds, long? WayId = null);
+internal sealed record BasemapRoleCorrection(long? RelationId, int MemberCount);
 
 /// <summary>Disk-backed geometry and label staging. The renderer chooses labels per zoom.</summary>
 internal sealed class PbfBasemapStore : IDisposable
@@ -23,6 +24,12 @@ internal sealed class PbfBasemapStore : IDisposable
     private readonly List<BasemapSourceIssue> _sourceIssues = new();
     public IReadOnlyList<BasemapSourceIssue> SourceIssues => _sourceIssues;
     public int SourceIssueCount { get; private set; }
+    private readonly List<BasemapRoleCorrection> _roleCorrections = new();
+    public IReadOnlyList<BasemapRoleCorrection> RoleCorrections => _roleCorrections;
+    public int RoleCorrectionCount { get; private set; }
+    private readonly List<BasemapGeometryRepair> _repairs = new();
+    public IReadOnlyList<BasemapGeometryRepair> Repairs => _repairs;
+    public int RepairCount { get; private set; }
 
     public PbfBasemapStore(string path)
     {
@@ -47,7 +54,7 @@ internal sealed class PbfBasemapStore : IDisposable
     }
 
     public void Import(string pbfPath, Action<string, long>? progress, CancellationToken token, GeoBounds? requiredArea = null, bool includeAnnotations = false,
-        bool skipDegenerateAreaRelations = false)
+        bool skipDegenerateAreaRelations = false, bool strictGeometry = true)
     {
         Envelope? requiredEnvelope = null;
         if (requiredArea is { } area)
@@ -81,7 +88,13 @@ internal sealed class PbfBasemapStore : IDisposable
                 lookup.Parameters[0].Value = way.Nodes[i];
                 using var row = lookup.ExecuteReader();
                 if (!row.Read())
-                    throw new InvalidDataException($"PBF way {way.Id} references missing node {way.Nodes[i]}. Use a complete regional PBF.");
+                {
+                    var reason = $"PBF way {way.Id} references missing node {way.Nodes[i]}. Use a complete regional PBF.";
+                    if (strictGeometry) throw new InvalidDataException(reason);
+                    SourceIssueCount++;
+                    if (_sourceIssues.Count < 100) _sourceIssues.Add(new(null, reason, null, way.Id));
+                    return;
+                }
                 coordinates[i] = new Coordinate(row.GetDouble(0), row.GetDouble(1));
             }
             var line = _factory.CreateLineString(coordinates);
@@ -132,34 +145,64 @@ internal sealed class PbfBasemapStore : IDisposable
             try
             {
                 if (missingMember is not null) throw new InvalidDataException(missingMember);
-                // Check source closure before dissolving retraced edges. A closed
-                // boundary can leave non-area cut edges after noding (e.g. two
-                // forest lobes joined by a segment traversed in both directions).
-                // Those are not evidence of missing source geometry.
-                if (!HasClosedLinework(outerLines) || !HasClosedLinework(innerLines))
-                    throw new InvalidDataException($"PBF relation {relation.Id} has incomplete polygon rings.");
-                var outer = PolygonizeRings(outerLines);
-                var inner = PolygonizeRings(innerLines);
-                if (outer.GetInvalidRingLines().Count > 0 || inner.GetInvalidRingLines().Count > 0)
-                    throw new InvalidDataException($"PBF relation {relation.Id} has invalid polygon rings after noding.");
-                var shells = outer.GetPolygons().Cast<Geometry>().ToArray();
-                if (shells.Length == 0 && skipDegenerateAreaRelations && !memberEnvelope.IsNull)
+                Geometry geometry;
+                try
                 {
-                    SourceIssueCount++;
-                    if (_sourceIssues.Count < 100)
+                    // Check source closure before dissolving retraced edges. A closed
+                    // boundary can leave non-area cut edges after noding (e.g. two
+                    // forest lobes joined by a segment traversed in both directions).
+                    // Those are not evidence of missing source geometry.
+                    var lines = outerLines.Concat(innerLines).ToArray();
+                    if (!HasClosedLinework(lines))
+                        throw new InvalidDataException($"PBF relation {relation.Id} has incomplete polygon rings.");
+                    // Roles are hints supplied by mappers, not a geometric definition.
+                    // Assemble all complete linework first, then infer shells and holes
+                    // from containment. This also preserves islands inside holes.
+                    var rings = PolygonizeRings(lines);
+                    if (rings.GetInvalidRingLines().Count > 0)
+                        throw new InvalidDataException($"PBF relation {relation.Id} has invalid polygon rings after noding.");
+                    var faces = rings.GetPolygons().Cast<Polygon>().ToArray();
+                    var boundaries = faces.Select(face => _factory.CreatePolygon((LinearRing)face.ExteriorRing.Copy())).ToArray();
+                    var shells = faces.Where((face, index) =>
+                        boundaries.Count(parent => parent.Area > boundaries[index].Area &&
+                            parent.EnvelopeInternal.Contains(boundaries[index].EnvelopeInternal) && parent.Covers(boundaries[index])) % 2 == 0)
+                        .Cast<Geometry>().ToArray();
+                    if (shells.Length == 0 && skipDegenerateAreaRelations && !memberEnvelope.IsNull)
                     {
-                        static double Latitude(double y) => Math.Atan(Math.Sinh(Math.PI * (1 - 2 * y))) * 180 / Math.PI;
-                        _sourceIssues.Add(new(relation.Id, "Known complete closed members have no outer polygon area; explicitly omitted.",
-                            new(memberEnvelope.MinX * 360 - 180, Latitude(memberEnvelope.MaxY),
-                                memberEnvelope.MaxX * 360 - 180, Latitude(memberEnvelope.MinY))));
+                        SourceIssueCount++;
+                        if (_sourceIssues.Count < 100)
+                        {
+                            static double Latitude(double y) => Math.Atan(Math.Sinh(Math.PI * (1 - 2 * y))) * 180 / Math.PI;
+                            _sourceIssues.Add(new(relation.Id, "Known complete closed members have no outer polygon area; explicitly omitted.",
+                                new(memberEnvelope.MinX * 360 - 180, Latitude(memberEnvelope.MaxY),
+                                    memberEnvelope.MaxX * 360 - 180, Latitude(memberEnvelope.MinY))));
+                        }
+                        return;
                     }
-                    return;
+                    if (shells.Length == 0)
+                        throw new InvalidDataException($"PBF relation {relation.Id} has no outer polygon area.");
+                    geometry = _factory.BuildGeometry(shells).Union();
+                    if (!geometry.IsValid)
+                        throw new InvalidDataException($"PBF relation {relation.Id} has invalid assembled polygon geometry.");
+                    var polygons = Enumerable.Range(0, geometry.NumGeometries).Select(i => (Polygon)geometry.GetGeometryN(i)).ToArray();
+                    var exteriorBoundary = _factory.BuildGeometry(polygons.Select(p => (Geometry)p.ExteriorRing).ToArray());
+                    var holeBoundary = _factory.BuildGeometry(polygons.SelectMany(p => Enumerable.Range(0, p.NumInteriorRings)
+                        .Select(i => (Geometry)p.GetInteriorRingN(i))).ToArray());
+                    var correctedMembers = innerLines.Count(line => line.Intersection(exteriorBoundary).Length > 0) +
+                        outerLines.Count(line => line.Intersection(holeBoundary).Length > 0);
+                    if (correctedMembers > 0)
+                    {
+                        RoleCorrectionCount++;
+                        if (_roleCorrections.Count < 100) _roleCorrections.Add(new(relation.Id, correctedMembers));
+                    }
                 }
-                if (shells.Length == 0)
-                    throw new InvalidDataException($"PBF relation {relation.Id} has no outer polygon area.");
-                var geometry = _factory.BuildGeometry(shells).Union();
-                var holes = inner.GetPolygons().Cast<Geometry>().ToArray();
-                if (holes.Length > 0) geometry = geometry.Difference(_factory.BuildGeometry(holes).Union());
+                catch (Exception error) when (!strictGeometry && error is InvalidDataException or TopologyException)
+                {
+                    var repaired = TilemakerAreaRepair.Assemble(relation.Id, error.Message, outerLines, innerLines, token);
+                    geometry = repaired.Geometry;
+                    RepairCount++;
+                    if (_repairs.Count < 100) _repairs.Add(repaired.Report);
+                }
                 // A tagged outer way must not fill a relation's holes underneath the relation.
                 foreach (var member in relation.Members.Where(m => m.Type == OsmGeoType.Way))
                 {
@@ -173,17 +216,17 @@ internal sealed class PbfBasemapStore : IDisposable
             }
             catch (Exception ex) when (ex is InvalidDataException or TopologyException)
             {
-                // A regional PBF includes unrelated areas. Only geometries whose
-                // known, complete members are disjoint from the requested area
-                // may be omitted. Unknown extents and missing members still fail.
-                if (requiredEnvelope is null || memberEnvelope.IsNull || missingMember is not null || memberEnvelope.Intersects(requiredEnvelope))
+                // Strict validation may omit only complete, known-disjoint
+                // geometry. Ordinary display-map export isolates the failed
+                // element and records its omission, including unknown extents.
+                if (strictGeometry && (requiredEnvelope is null || memberEnvelope.IsNull || missingMember is not null || memberEnvelope.Intersects(requiredEnvelope)))
                     throw;
                 SourceIssueCount++;
                 if (_sourceIssues.Count < 100)
                 {
                     static double Latitude(double y) => Math.Atan(Math.Sinh(Math.PI * (1 - 2 * y))) * 180 / Math.PI;
                     _sourceIssues.Add(new BasemapSourceIssue(relation.Id, ex.Message,
-                        new GeoBounds(memberEnvelope.MinX * 360 - 180, Latitude(memberEnvelope.MaxY),
+                        memberEnvelope.IsNull ? null : new GeoBounds(memberEnvelope.MinX * 360 - 180, Latitude(memberEnvelope.MaxY),
                             memberEnvelope.MaxX * 360 - 180, Latitude(memberEnvelope.MinY))));
                 }
             }
